@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { useForm } from "react-hook-form";
-import { Check } from "lucide-react";
+import { FaCheck } from "react-icons/fa";
 
 const Page = () => {
   const {
@@ -49,7 +49,7 @@ const Page = () => {
               className="w-full px-6 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white text-black text-lg"
             />
             {Object.values(validations).every(Boolean) && (
-              <Check className="absolute right-5 top-14 text-green-500" size={32} />
+              <FaCheck className="absolute right-5 top-14 text-green-500" />
             )}
             {errors.password && (
               <span className="text-red-400 text-xs absolute left-0 -bottom-6">Este campo es requerido</span>
@@ -69,7 +69,7 @@ const Page = () => {
               className="w-full px-6 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white text-black text-lg"
             />
             {passwordsMatch && (
-              <Check className="absolute right-5 top-14 text-green-500" size={32} />
+              <FaCheck className="absolute right-5 top-14 text-green-500" />
             )}
             {errors.confirmPassword && (
               <span className="text-red-400 text-xs absolute left-0 -bottom-6">
