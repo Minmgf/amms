@@ -1,3 +1,4 @@
+import Link from "next/link";
 import React from "react";
 import { FaLock, FaUser } from "react-icons/fa";
 
@@ -72,18 +73,18 @@ const page = () => {
 
               {/* Forgot password */}
               <div className="text-center">
-                <a
-                  href="#"
+                <Link
+                  href="/recovery"
                   className="text-white/80 hover:text-white underline-offset-4 hover:underline"
                 >
                   Forgot your password?
-                </a>
+                </Link>
               </div>
             </form>
           </div>
           <div className="flex justify-center mt-7 gap-2">
             <a href="" className="hover:underline">New here?</a>
-            <a href="" className="hover:underline font-bold">Sign Up</a>
+            <Link href="/singup" className="hover:underline font-bold">Sign Up</Link>
           </div>
         </div>
       </div>
