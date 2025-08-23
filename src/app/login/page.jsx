@@ -1,4 +1,6 @@
 import React from "react";
+import { FaLock, FaUser } from "react-icons/fa";
+
 
 const page = () => {
   return (
@@ -8,12 +10,12 @@ const page = () => {
     >
       <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 md:gap-[40px] items-center min-h-screen">
         <div className="flex flex-col items-center justify-center gap-8 relative">
-          <div className="bg-[#D9D9D9] w-[186px] h-[186px] md:w-[286px] md:h-[286px] rounded-full flex justify-center items-center absolute md:relative bottom-[-230px]">
-            <span className="text-black text-[33px] md:text-[51px] font-bold">LOGO</span>
-          </div>
           <h2 className="hidden md:block md:text-[30px] font-bold">
             ADMINISTRA TU MAQUINARIA Y NÓMINA
           </h2>
+          <div className="bg-[#D9D9D9] w-[186px] h-[186px] md:w-[286px] md:h-[286px] rounded-full flex justify-center items-center absolute md:relative md:bottom-0 bottom-[-230px]">
+            <span className="text-black text-[33px] md:text-[51px] font-bold">LOGO</span>
+          </div>
         </div>
 
         <div className="px-4 md:px-0">
@@ -27,17 +29,11 @@ const page = () => {
               <label className="block">
                 <span className="sr-only">Username</span>
                 <div className="relative">
-                  <img
-                    src="/icons/User.svg"
-                    alt=""
-                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5"
-                  />
+                  <FaUser className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
                   <input
                     type="text"
                     placeholder="Username"
-                    className="w-full rounded-xl bg-white text-gray-900 placeholder-gray-400 shadow
-                         pl-12 pr-4 py-2 outline-none ring-0
-                         focus:ring-2 focus:ring-[#D7D7D7]"
+                    className="w-full rounded-xl bg-white text-gray-900 placeholder-gray-400 shadow pl-12 pr-4 py-2 outline-none ring-0 focus:ring-2 focus:ring-[#D7D7D7]"
                   />
                 </div>
               </label>
@@ -46,17 +42,11 @@ const page = () => {
               <label className="block">
                 <span className="sr-only">Password</span>
                 <div className="relative">
-                  <img
-                    src="/icons/Lock.svg"
-                    alt=""
-                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5"
-                  />
+                  <FaLock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
                   <input
                     type="password"
                     placeholder="Password"
-                    className="w-full rounded-xl bg-white text-gray-900 placeholder-gray-400 shadow
-                         pl-12 pr-4 py-2 outline-none ring-0
-                         focus:ring-2 focus:ring-[#D7D7D7]"
+                    className="w-full rounded-xl bg-white text-gray-900 placeholder-gray-400 shadow pl-12 pr-4 py-2 outline-none ring-0 focus:ring-2 focus:ring-[#D7D7D7]"
                   />
                 </div>
               </label>
@@ -65,8 +55,7 @@ const page = () => {
               <label className="mt-2 w-full flex items-center gap-3 select-none">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 rounded border-white/30 bg-black/30
-                       accent-black"
+                  className="h-4 w-4 rounded border-white/30 bg-black/30 accent-black"
                 />
                 <span className="text-white/90 font-xl">Remember me</span>
               </label>
@@ -75,8 +64,7 @@ const page = () => {
               <div className="flex justify-center items-center">
                 <button
                   type="submit"
-                  className="w-fit px-14 py-1 mt-8 rounded-xl bg-red-600 text-lg font-semibold
-                     shadow cursor-pointer hover:bg-red-500 active:bg-red-700 transition-colors"
+                  className="w-fit px-14 py-1 mt-8 rounded-xl bg-red-600 text-lg font-semibold shadow cursor-pointer hover:bg-red-500 active:bg-red-700 transition-colors"
                 >
                   Login
                 </button>
