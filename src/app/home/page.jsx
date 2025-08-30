@@ -2,9 +2,8 @@ import React from 'react'
 
 const page = () => {
     return (
-        <div>
+        <div className="mt-8 p-2">
             <h1>Welcome to the Home Page</h1>
-            <p>This is the main content area.</p>
         </div>
     )
 }
