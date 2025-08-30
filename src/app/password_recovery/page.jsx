@@ -1,7 +1,8 @@
 'use client';
 import React, { useState } from 'react';
+import Page from '../recovery/page';
 
-const PasswordRecovery = () => {
+const page = () => {
     const [email, setEmail] = useState('');
 
     const handleSubmit = (e) => {
@@ -51,4 +52,4 @@ const PasswordRecovery = () => {
     );
 };
 
-export default Page;
+export default page;
