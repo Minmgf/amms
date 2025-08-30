@@ -47,6 +47,7 @@ const Page = () => {
               type="password"
               {...register("password", { required: true })}
               className="w-full px-6 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white text-black text-lg"
+              placeholder="Sisma1999"
             />
             {Object.values(validations).every(Boolean) && (
               <FaCheck className="absolute right-5 top-14 text-green-500" />
@@ -67,6 +68,7 @@ const Page = () => {
                 validate: (value) => value === password
               })}
               className="w-full px-6 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white text-black text-lg"
+              placeholder="Sisma1999"
             />
             {passwordsMatch && (
               <FaCheck className="absolute right-5 top-14 text-green-500" />
