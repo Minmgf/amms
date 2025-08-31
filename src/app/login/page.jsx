@@ -12,7 +12,7 @@ const page = () => {
       <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 md:gap-[40px] items-center min-h-screen">
         <div className="flex flex-col items-center justify-center gap-8 relative">
           <h2 className="hidden md:block md:text-[30px] font-bold">
-            ADMINISTRA TU MAQUINARIA Y NÓMINA
+            SIGMA
           </h2>
           <div className="bg-[#D9D9D9] w-[186px] h-[186px] md:w-[286px] md:h-[286px] rounded-full flex justify-center items-center absolute md:relative md:bottom-0 bottom-[-230px]">
             <span className="text-black text-[33px] md:text-[51px] font-bold">LOGO</span>
@@ -81,10 +81,10 @@ const page = () => {
                 </Link>
               </div>
             </form>
-          </div>
-          <div className="flex justify-center mt-7 gap-2">
+                      <div className="flex justify-center mt-7 gap-2">
             <a href="" className="hover:underline">New here?</a>
             <Link href="/singup" className="hover:underline font-bold">Sign Up</Link>
+          </div>
           </div>
         </div>
       </div>
