@@ -9,23 +9,25 @@ const page = () => {
         backgroundImage: "url('/images/login-background.jpg')",
       }}
     >
-
-      <div className="flex flex-col lg:flex-row w-full h-full">
-      
-        <div className="hidden lg:flex w-1/2 h-screen flex-col items-center justify-center">
-          <div className="w-40 h-40 rounded-full bg-gray-200 flex items-center justify-center text-2xl font-bold shadow-lg">
-            LOGO
+      <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 md:gap-[40px] items-center min-h-screen">
+        <div className="flex flex-col items-center justify-center gap-8 relative">
+          <div className="bg-[#D9D9D9] w-[186px] h-[186px] md:w-[250px] md:h-[250px] rounded-full flex justify-center items-center absolute md:relative md:bottom-0 bottom-[-230px]">
+            <span className="text-black text-[33px] md:text-[51px] font-bold">
+              LOGO
+            </span>
           </div>
-          <h1 className="text-white text-xl font-semibold mt-4">SIGMA</h1>
+          <h2 className="hidden text-white md:block md:text-[30px] font-bold">
+            SIGMA
+          </h2>
         </div>
 
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="bg-black/60 backdrop-blur-md p-6 sm:p-8 md:p-10 rounded-xl w-full max-w-md text-white shadow-lg">
+        <div className="px-4 md:px-0 flex-1 flex items-center justify-center p-4">
+          <div className="bg-black/60 backdrop-blur-md p-6 sm:p-8 md:p-10 rounded-xl w-full text-white shadow-lg">
             <h2 className="text-2xl font-semibold mb-6 text-center">Sign up</h2>
 
-            <form className="space-y-4">
+            <form className="space-y-4 w-full">
               <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 w-full">
-                <select className="h-10 px-4 rounded-md border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full sm:w-auto">
+                <select className="h-10 px-4 rounded-md border border-gray-300 bg-white text-black mb-3 sm:mb-0 sm:w-32">
                   <option>C.C</option>
                   <option>T.I</option>
                   <option>Pasaporte</option>
@@ -34,12 +36,12 @@ const page = () => {
                 <input
                   type="text"
                   placeholder="Identification number"
-                  className="h-10 px-4 rounded-md border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full sm:w-auto"
+                  className="h-10 px-4 rounded-md border border-gray-300 bg-white text-black flex-1"
                   required
                 />
               </div>
 
-              <div className="flex items-center border border-gray-300 rounded-md px-4 py-2 bg-white text-black">
+              <div className="flex items-center border border-gray-300 rounded-md px-4 py-2 bg-white text-black w-full">
                 <FaRegCalendarAlt className="text-gray-500 mr-2" />
                 <input
                   type="date"
