@@ -10,7 +10,7 @@ const page = () => {
     >
       <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 md:gap-[40px] items-center min-h-screen">
         <div className="flex flex-col items-center justify-center gap-8 relative">
-          <h2 className="hidden md:block md:text-[30px] font-bold">SIGMA</h2>
+          <h2 className="hidden md:block md:text-[30px] font-bold text-white">SIGMA</h2>
           <div className="bg-[#D9D9D9] w-[186px] h-[186px] md:w-[286px] md:h-[286px] rounded-full flex justify-center items-center absolute md:relative md:bottom-0 bottom-[-230px]">
             <span className="text-black text-[33px] md:text-[51px] font-bold">
               LOGO
@@ -20,12 +20,12 @@ const page = () => {
 
         <div className="px-4 md:px-0">
         
-          <div className="bg-black/40 rounded-[16px] pb-10 md:pb-4 p-4 min-h-auto md:min-h-[70vh] flex flex-col justify-center items-center gap-12">
+          <div className="bg-black/60 text-white rounded-[16px] pb-10 md:pb-4 p-4 min-h-auto flex flex-col justify-center items-center gap-12">
             <img className="w-24 mt-10" src="/images/activation-icon.png" alt="" srcset="" />
             <h1 className="text-center font-bold text-[31px] tracking-wide mb-0 mt-4 md:mt-0 md:mb-0">
               Email Confirmed!
             </h1>
-            <div className="text-center px-7 flex flex-col gap-5">
+            <div className="text-center px-7 flex flex-col gap-5 text-lg">
               <div>
                 <p>
                   Your email address has been successfully verified. Welcome to
@@ -54,7 +54,7 @@ const page = () => {
                 </button>
               </div>
             </form>
-            <div className="flex justify-center mt-7 gap-2">
+            <div className="flex justify-center mt-7 mt-2 gap-2">
               <a href="" className="hover:underline">
                 Already have an account
               </a>

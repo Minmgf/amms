@@ -2,7 +2,6 @@ import Link from "next/link";
 import React from "react";
 import { FaLock, FaUser } from "react-icons/fa";
 
-
 const page = () => {
   return (
     <div
@@ -11,17 +10,19 @@ const page = () => {
     >
       <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 md:gap-[40px] items-center min-h-screen">
         <div className="flex flex-col items-center justify-center gap-8 relative">
-          <h2 className="hidden md:block md:text-[30px] font-bold">
+          <div className="bg-[#D9D9D9] w-[186px] h-[186px] md:w-[250px] md:h-[250px] rounded-full flex justify-center items-center absolute md:relative md:bottom-0 bottom-[-230px]">
+            <span className="text-black text-[33px] md:text-[51px] font-bold">
+              LOGO
+            </span>
+          </div>
+          <h2 className="hidden text-white md:block md:text-[30px] font-bold">
             SIGMA
           </h2>
-          <div className="bg-[#D9D9D9] w-[186px] h-[186px] md:w-[286px] md:h-[286px] rounded-full flex justify-center items-center absolute md:relative md:bottom-0 bottom-[-230px]">
-            <span className="text-black text-[33px] md:text-[51px] font-bold">LOGO</span>
-          </div>
         </div>
 
         <div className="px-4 md:px-0">
-          <div className="bg-black/40 rounded-[16px] pb-10 md:pb-4 p-4 min-h-auto md:min-h-[70vh] flex flex-col justify-center items-center gap-12">
-            <h1 className="text-center font-bold text-[31px] tracking-wide mb-0 mt-20 md:mt-0 md:mb-6">
+          <div className="bg-black/60 rounded-[16px] pb-10 md:pb-4 p-4 min-h-auto md:min-h-[70vh] flex flex-col justify-center items-center gap-12">
+            <h1 className="text-center text-white font-bold text-[31px] tracking-wide mb-0 mt-20 md:mt-20 md:mb-6">
               LOGIN
             </h1>
 
@@ -65,7 +66,7 @@ const page = () => {
               <div className="flex justify-center items-center">
                 <button
                   type="submit"
-                  className="w-fit px-14 py-1 mt-8 rounded-xl bg-red-600 text-lg font-semibold shadow cursor-pointer hover:bg-red-500 active:bg-red-700 transition-colors"
+                  className="w-fit text-white px-14 py-1 mt-8 rounded-xl bg-red-600 text-lg font-semibold shadow cursor-pointer hover:bg-red-500 active:bg-red-700 transition-colors"
                 >
                   Login
                 </button>
@@ -81,10 +82,14 @@ const page = () => {
                 </Link>
               </div>
             </form>
-                      <div className="flex justify-center mt-7 gap-2">
-            <a href="" className="hover:underline">New here?</a>
-            <Link href="/singup" className="hover:underline font-bold">Sign Up</Link>
-          </div>
+            <div className="flex justify-center mt-7 mb-12 gap-2">
+              <a href="" className="hover:underline">
+                New here?
+              </a>
+              <Link href="/singup" className="hover:underline font-bold">
+                Sign Up
+              </Link>
+            </div>
           </div>
         </div>
       </div>
