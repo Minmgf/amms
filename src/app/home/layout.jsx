@@ -10,7 +10,7 @@ export default function DashboardLayout({ children }) {
       <body className="flex h-screen">
         <Sidebar isOpen={isOpen} setIsOpen={setIsOpen} />
         <main
-          className={`flex-1 p-4 overflow-y-auto transition-all duration-300 ${isOpen ? "ml-64" : "ml-0"
+          className={`flex-1 overflow-y-auto transition-all duration-300 ${isOpen ? "ml-64" : "ml-0"
             }`}
         >
           {children}
