@@ -1,7 +1,15 @@
+"use client";
+
 import React from "react";
 import { FaRegCalendarAlt } from "react-icons/fa";
+import ChangeProfilePhoto from "../modals/ChangeProfilePhoto";
+import { useState } from "react";
 
 const page = () => {
+  /* MOMENTANEO PARA ABRIR MODAL DE CAMBIAR FOTO */
+  const [openModal, setOpenModal] = useState(false);
+  /* MOMENTANEO PARA ABRIR MODAL DE CAMBIAR FOTO */
+
   return (
     <div
       className="min-h-screen w-full bg-cover bg-center flex items-center justify-center"
@@ -37,7 +45,6 @@ const page = () => {
                   type="text"
                   placeholder="Identification number"
                   className="h-10 px-4 rounded-md border border-gray-300 bg-white text-black flex-1"
-                  required
                 />
               </div>
 
@@ -51,11 +58,14 @@ const page = () => {
               </div>
 
               <button
-                type="submit"
+                onClick={() => setOpenModal(true)}
                 className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded-md transition"
               >
                 Continue
               </button>
+              {openModal && (
+                <ChangeProfilePhoto onClose={() => setOpenModal(false)} />
+              )}
             </form>
 
             <p className="text-sm text-gray-300 mt-6 text-center">
