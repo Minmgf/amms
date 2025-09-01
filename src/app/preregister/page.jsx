@@ -1,8 +1,16 @@
+"use client";
+
 import React from "react";
 import Logo from "../components/Logo";
 import LoginCard from "../components/LoginCard";
+import ChangeProfilePhoto from "../modals/ChangeProfilePhoto";
+import { useState } from "react";
 
 const page = () => {
+  /* MOMENTANEO PARA ABRIR MODAL DE CAMBIAR FOTO */
+  const [openModal, setOpenModal] = useState(false);
+  /* MOMENTANEO PARA ABRIR MODAL DE CAMBIAR FOTO */
+
   return (
     <div
       className="min-h-screen w-full bg-cover bg-center flex items-center justify-center"
@@ -44,13 +52,15 @@ const page = () => {
                 required
               />
             </div>
-
             <button
-              type="submit"
+              onClick={() => setOpenModal(true)}
               className="w-full text-white py-2 mt-6 rounded-lg bg-red-600 text-lg font-semibold shadow hover:bg-red-500 active:bg-red-700 transition-colors"
             >
               Continue
             </button>
+            {openModal && (
+                <ChangeProfilePhoto onClose={() => setOpenModal(false)} />
+              )}
           </form>
 
           <p className="text-sm text-gray-300 mt-6 text-center">
