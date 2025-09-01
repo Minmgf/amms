@@ -1,0 +1,137 @@
+[
+  {
+    "id": 1,
+    "fullName": "Torres Hernán Dario",
+    "documentType": "Passport",
+    "documentNumber": "1033123123",
+    "email": "hernan.torres@company.com",
+    "roles": ["Administrator"],
+    "status": "Active"
+  },
+  {
+    "id": 2,
+    "fullName": "María Elena Rodríguez",
+    "documentType": "C.C",
+    "documentNumber": "1045678901",
+    "email": "maria.rodriguez@company.com",
+    "roles": ["Employee", "Administrator"],
+    "status": "Inactive"
+  },
+  {
+    "id": 3,
+    "fullName": "Carlos Alberto López",
+    "documentType": "C.C",
+    "documentNumber": "1056789012",
+    "email": "carlos.lopez@company.com",
+    "roles": ["Employee"],
+    "status": "Active"
+  },
+  {
+    "id": 4,
+    "fullName": "Ana Sofía Martínez",
+    "documentType": "Passport",
+    "documentNumber": "1067890123",
+    "email": "ana.martinez@company.com",
+    "roles": ["Manager"],
+    "status": "Active"
+  },
+  {
+    "id": 5,
+    "fullName": "Luis Fernando Silva",
+    "documentType": "C.C",
+    "documentNumber": "1078901234",
+    "email": "luis.silva@company.com",
+    "roles": ["Employee"],
+    "status": "Inactive"
+  },
+  {
+    "id": 6,
+    "fullName": "Patricia González",
+    "documentType": "Passport",
+    "documentNumber": "1089012345",
+    "email": "patricia.gonzalez@company.com",
+    "roles": ["Administrator", "Manager"],
+    "status": "Active"
+  },
+  {
+    "id": 7,
+    "fullName": "Roberto Jiménez",
+    "documentType": "C.C",
+    "documentNumber": "1090123456",
+    "email": "roberto.jimenez@company.com",
+    "roles": ["Employee"],
+    "status": "Active"
+  },
+  {
+    "id": 8,
+    "fullName": "Carmen Elena Vargas",
+    "documentType": "C.C",
+    "documentNumber": "1101234567",
+    "email": "carmen.vargas@company.com",
+    "roles": ["Manager"],
+    "status": "Inactive"
+  },
+  {
+    "id": 9,
+    "fullName": "Diego Alejandro Morales",
+    "documentType": "Passport",
+    "documentNumber": "1112345678",
+    "email": "diego.morales@company.com",
+    "roles": ["Employee"],
+    "status": "Active"
+  },
+  {
+    "id": 10,
+    "fullName": "Laura Cristina Herrera",
+    "documentType": "C.C",
+    "documentNumber": "1123456789",
+    "email": "laura.herrera@company.com",
+    "roles": ["Manager"],
+    "status": "Active"
+  },
+  {
+    "id": 11,
+    "fullName": "Andrés Felipe Rojas",
+    "documentType": "Passport",
+    "documentNumber": "1134567890",
+    "email": "andres.rojas@company.com",
+    "roles": ["Employee"],
+    "status": "Inactive"
+  },
+  {
+    "id": 12,
+    "fullName": "Sofía Alejandra Castro",
+    "documentType": "C.C",
+    "documentNumber": "1145678901",
+    "email": "sofia.castro@company.com",
+    "roles": ["Administrator"],
+    "status": "Active"
+  },
+  {
+    "id": 13,
+    "fullName": "Juan Carlos Mendoza",
+    "documentType": "Passport",
+    "documentNumber": "1156789012",
+    "email": "juan.mendoza@company.com",
+    "roles": ["Employee"],
+    "status": "Active"
+  },
+  {
+    "id": 14,
+    "fullName": "Valentina Isabel Ruiz",
+    "documentType": "C.C",
+    "documentNumber": "1167890123",
+    "email": "valentina.ruiz@company.com",
+    "roles": ["Manager"],
+    "status": "Active"
+  },
+  {
+    "id": 15,
+    "fullName": "Miguel Ángel Torres",
+    "documentType": "Passport",
+    "documentNumber": "1178901234",
+    "email": "miguel.torres@company.com",
+    "roles": ["Employee"],
+    "status": "Inactive"
+  }
+]

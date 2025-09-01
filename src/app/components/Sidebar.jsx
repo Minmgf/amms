@@ -4,9 +4,8 @@ import { FaHome, FaCogs, FaTools, FaMoneyCheckAlt, FaClipboardList, FaUsers, FaB
 import { MdSettings } from "react-icons/md";
 import { FiLogOut, FiBell, FiMenu, FiChevronDown, FiChevronRight, FiX } from "react-icons/fi";
 
-export default function Sidebar({ isOpen, setIsOpen }) {
+export default function Sidebar({ isOpen, setIsOpen, active, setActive }) {
     const [openMenus, setOpenMenus] = useState({});
-    const [active, setActive] = useState("Home");
 
     // Detecta tamaño de pantalla para definir estado inicial
     useEffect(() => {
@@ -18,6 +17,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             }
         }
     }, [setIsOpen]);
+    
+
 
     const toggleMenu = (menu) => {
         setOpenMenus((prev) => ({
@@ -76,7 +77,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             )}
 
             <aside
-                className={`fixed top-0 left-0 h-full overflow-y-auto bg-white shadow-md flex flex-col justify-between transform transition-transform duration-300 z-40
+                className={`fixed top-0 left-0 h-screen overflow-y-auto bg-white shadow-md flex flex-col justify-between transform transition-transform duration-300 z-40
                  ${isOpen ? "translate-x-0 w-64" : "-translate-x-full w-64"}`}
             >
                 <div className="flex flex-col relative">
@@ -111,9 +112,12 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                             {menuItems.map((item) => (
                                 <div key={item.name}>
                                     <button
-                                        onClick={() =>
-                                            item.sub ? toggleMenu(item.name) : setActive(item.name)
-                                        }
+                                        onClick={() => {
+                                            if (item.sub) {
+                                                toggleMenu(item.name);
+                                            }
+                                            setActive(item.name);
+                                        }}
                                         className={`flex justify-between items-center w-full p-2 rounded-lg transition 
                                             ${active === item.name
                                                 ? "bg-yellow-200 font-medium text-black"
@@ -131,14 +135,15 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                                     </button>
                                     {openMenus[item.name] && item.sub && (
                                         <div className="ml-8 flex flex-col gap-1 text-sm text-gray-600">
-                                            {item.sub.map((sub) => (
-                                                <button
-                                                    key={sub.name}
-                                                    className={`p-1 hover:text-black hover:font-medium text-left flex items-center gap-3 ${active === sub.name ? "bg-gray-200" : ""}`}
-                                                >
-                                                    {sub.icon} {sub.name}
-                                                </button>
-                                            ))}
+                                                                                    {item.sub.map((sub) => (
+                                            <button
+                                                key={sub.name}
+                                                onClick={() => setActive(sub.name)}
+                                                className={`p-1 hover:text-black hover:font-medium text-left flex items-center gap-3 ${active === sub.name ? "bg-gray-200" : ""}`}
+                                            >
+                                                {sub.icon} {sub.name}
+                                            </button>
+                                        ))}
                                         </div>
                                     )}
                                 </div>
