@@ -13,8 +13,8 @@ const ProfilePage = () => {
     documentType: 'C.C',
     documentNumber: '1033123123',
     gender: 'Masculino',
-    birthDate: '14/3/1985',
-    expeditionDate: '14/3/2003',
+    birthDate: '1985-03-14',
+    expeditionDate: '2003-03-14',
     country: 'Colombia',
     region: 'Cundinamarca',
     city: 'Bogotá',
@@ -22,15 +22,109 @@ const ProfilePage = () => {
     phoneNumber: '3123234234234'
   });
 
+  const [errors, setErrors] = useState({});
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [isChangePhotoModalOpen, setIsChangePhotoModalOpen] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState(null);
 
+  const validateField = (name, value) => {
+    let error = '';
+    
+    switch (name) {
+      case 'name':
+      case 'lastName':
+        if (!value.trim()) {
+          error = 'Este campo es requerido';
+        } else if (value.trim().length < 2) {
+          error = 'Debe tener al menos 2 caracteres';
+        } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value)) {
+          error = 'Solo se permiten letras y espacios';
+        }
+        break;
+        
+      case 'email':
+        if (!value.trim()) {
+          error = 'El email es requerido';
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          error = 'Formato de email inválido';
+        }
+        break;
+        
+      case 'documentNumber':
+        if (!value.trim()) {
+          error = 'El número de documento es requerido';
+        } else if (formData.documentType === 'C.C' && !/^\d{8,10}$/.test(value)) {
+          error = 'Cédula debe tener entre 8 y 10 dígitos';
+        } else if (formData.documentType === 'C.E' && !/^\d{6,12}$/.test(value)) {
+          error = 'Cédula de extranjería debe tener entre 6 y 12 dígitos';
+        } else if (formData.documentType === 'Passport' && !/^[A-Z0-9]{6,12}$/.test(value)) {
+          error = 'Pasaporte debe tener entre 6 y 12 caracteres alfanuméricos';
+        }
+        break;
+        
+      case 'birthDate':
+        if (!value) {
+          error = 'La fecha de nacimiento es requerida';
+        } else {
+          const birthDate = new Date(value);
+          const today = new Date();
+          const age = today.getFullYear() - birthDate.getFullYear();
+          if (age < 18 || age > 100) {
+            error = 'Debe ser mayor de 18 años y menor de 100';
+          }
+        }
+        break;
+        
+      case 'expeditionDate':
+        if (!value) {
+          error = 'La fecha de expedición es requerida';
+        } else {
+          const expeditionDate = new Date(value);
+          const birthDate = new Date(formData.birthDate);
+          const today = new Date();
+          
+          if (expeditionDate > today) {
+            error = 'La fecha no puede ser futura';
+          } else if (expeditionDate < birthDate) {
+            error = 'No puede ser anterior a la fecha de nacimiento';
+          }
+        }
+        break;
+        
+      case 'phoneNumber':
+        if (!value.trim()) {
+          error = 'El número de teléfono es requerido';
+        } else if (!/^\d{10}$/.test(value.replace(/\s/g, ''))) {
+          error = 'Debe tener exactamente 10 dígitos';
+        }
+        break;
+        
+      case 'address':
+        if (!value.trim()) {
+          error = 'La dirección es requerida';
+        } else if (value.trim().length < 10) {
+          error = 'La dirección debe tener al menos 10 caracteres';
+        }
+        break;
+    }
+    
+    return error;
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // Actualizar el valor
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }));
+    
+    // Validar el campo y actualizar errores
+    const error = validateField(name, value);
+    setErrors(prev => ({
+      ...prev,
+      [name]: error
     }));
   };
 
@@ -115,35 +209,125 @@ const ProfilePage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-4 gap-y-6 gap-x-8 text-sm">
                 <div>
                   <span className="font-semibold text-gray-800 block mb-2">Name</span>
-                  <p className="text-gray-900 font-medium">{formData.name}</p>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${
+                      errors.name 
+                        ? 'border-red-300 focus:ring-red-500' 
+                        : 'border-gray-300 focus:ring-blue-500'
+                    }`}
+                  />
+                  {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
                 </div>
                 <div>
                   <span className="font-semibold text-gray-800 block mb-2">Last name</span>
-                  <p className="text-gray-900 font-medium">{formData.lastName}</p>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleInputChange}
+                    className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${
+                      errors.lastName 
+                        ? 'border-red-300 focus:ring-red-500' 
+                        : 'border-gray-300 focus:ring-blue-500'
+                    }`}
+                  />
+                  {errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>}
                 </div>
                 <div>
                   <span className="font-semibold text-gray-800 block mb-2">Document type</span>
-                  <p className="text-gray-900 font-medium">{formData.documentType}</p>
+                  <div className="relative">
+                    <select 
+                      name="documentType"
+                      value={formData.documentType}
+                      onChange={handleInputChange}
+                      className="w-full border border-gray-300 rounded-lg p-2 appearance-none bg-white text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="C.C">C.C</option>
+                      <option value="C.E">C.E</option>
+                      <option value="Passport">Passport</option>
+                    </select>
+                    <MdKeyboardArrowDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  </div>
                 </div>
                 <div>
                   <span className="font-semibold text-gray-800 block mb-2">Document number</span>
-                  <p className="text-gray-900 font-medium">{formData.documentNumber}</p>
+                  <input
+                    type="text"
+                    name="documentNumber"
+                    value={formData.documentNumber}
+                    onChange={handleInputChange}
+                    className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${
+                      errors.documentNumber 
+                        ? 'border-red-300 focus:ring-red-500' 
+                        : 'border-gray-300 focus:ring-blue-500'
+                    }`}
+                  />
+                  {errors.documentNumber && <p className="text-red-500 text-xs mt-1">{errors.documentNumber}</p>}
                 </div>
                 <div>
                   <span className="font-semibold text-gray-800 block mb-2">Email</span>
-                  <p className="text-gray-900 font-medium">{formData.email}</p>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${
+                      errors.email 
+                        ? 'border-red-300 focus:ring-red-500' 
+                        : 'border-gray-300 focus:ring-blue-500'
+                    }`}
+                  />
+                  {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
                 </div>
                 <div>
                   <span className="font-semibold text-gray-800 block mb-2">Género</span>
-                  <p className="text-gray-900 font-medium">{formData.gender}</p>
+                  <div className="relative">
+                    <select 
+                      name="gender"
+                      value={formData.gender}
+                      onChange={handleInputChange}
+                      className="w-full border border-gray-300 rounded-lg p-2 appearance-none bg-white text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="Masculino">Masculino</option>
+                      <option value="Femenino">Femenino</option>
+                      <option value="Otro">Otro</option>
+                    </select>
+                    <MdKeyboardArrowDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  </div>
                 </div>
                 <div>
                   <span className="font-semibold text-gray-800 block mb-2">Birth date</span>
-                  <p className="text-gray-900 font-medium">{formData.birthDate}</p>
+                  <input
+                    type="date"
+                    name="birthDate"
+                    value={formData.birthDate}
+                    onChange={handleInputChange}
+                    className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${
+                      errors.birthDate 
+                        ? 'border-red-300 focus:ring-red-500' 
+                        : 'border-gray-300 focus:ring-blue-500'
+                    }`}
+                  />
+                  {errors.birthDate && <p className="text-red-500 text-xs mt-1">{errors.birthDate}</p>}
                 </div>
                 <div>
                   <span className="font-semibold text-gray-800 block mb-2">Expedition date</span>
-                  <p className="text-gray-900 font-medium">{formData.expeditionDate}</p>
+                  <input
+                    type="date"
+                    name="expeditionDate"
+                    value={formData.expeditionDate}
+                    onChange={handleInputChange}
+                    className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${
+                      errors.expeditionDate 
+                        ? 'border-red-300 focus:ring-red-500' 
+                        : 'border-gray-300 focus:ring-blue-500'
+                    }`}
+                  />
+                  {errors.expeditionDate && <p className="text-red-500 text-xs mt-1">{errors.expeditionDate}</p>}
                 </div>
               </div>
 
@@ -209,8 +393,13 @@ const ProfilePage = () => {
                     value={formData.address}
                     onChange={handleInputChange}
                     placeholder="Example..."
-                    className="w-full border-2 border-red-300 rounded-lg p-3 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    className={`w-full border-2 rounded-lg p-3 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 ${
+                      errors.address 
+                        ? 'border-red-300 focus:ring-red-500 focus:border-transparent' 
+                        : 'border-red-300 focus:ring-red-500 focus:border-transparent'
+                    }`}
                   />
+                  {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-800 mb-3">Phone number</label>
@@ -221,22 +410,31 @@ const ProfilePage = () => {
                       </select>
                       <MdKeyboardArrowDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                     </div>
-                    <input
-                      type="text"
-                      name="phoneNumber"
-                      value={formData.phoneNumber}
-                      onChange={handleInputChange}
-                      className="min-w-0 border border-gray-300 rounded-lg p-3 text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <div>
+                      <input
+                        type="text"
+                        name="phoneNumber"
+                        value={formData.phoneNumber}
+                        onChange={handleInputChange}
+                        className={`w-full border rounded-lg p-3 text-gray-900 font-medium focus:outline-none focus:ring-2 ${
+                          errors.phoneNumber 
+                            ? 'border-red-300 focus:ring-red-500' 
+                            : 'border-gray-300 focus:ring-blue-500'
+                        }`}
+                      />
+                      {errors.phoneNumber && <p className="text-red-500 text-xs mt-1">{errors.phoneNumber}</p>}
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Error Message */}
-              <div className="grid grid-cols-[auto_1fr] gap-3 items-center text-red-600 ">
-                <MdWarning className="w-5 h-5" />
-                <p className="text-sm font-medium">Please complete all required fields before submitting the form.</p>
-              </div>
+              {(Object.keys(errors).some(key => errors[key]) || !formData.address.trim()) && (
+                <div className="grid grid-cols-[auto_1fr] gap-3 items-center text-red-600">
+                  <MdWarning className="w-5 h-5" />
+                  <p className="text-sm font-medium">Please complete all required fields before submitting the form.</p>
+                </div>
+              )}
 
               {/* Buttons */}
               <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-center">
