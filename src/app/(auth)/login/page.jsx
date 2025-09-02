@@ -2,8 +2,8 @@
 import Link from "next/link";
 import React, { useState } from "react";
 import { FaLock, FaUser, FaEye, FaEyeSlash } from "react-icons/fa";
-import Logo from "../components/Logo";
-import LoginCard from "../components/LoginCard";
+import Logo from "../../components/auth/Logo";
+import LoginCard from "../../components/auth/LoginCard";
 
 const Page = () => {
   const [showPassword, setShowPassword] = useState(false);

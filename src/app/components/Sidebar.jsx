@@ -1,23 +1,37 @@
 "use client";
 import { useState, useEffect } from "react";
-import { FaHome, FaCogs, FaTools, FaMoneyCheckAlt, FaClipboardList, FaUsers, FaBroadcastTower, FaCalendarCheck, FaRegNewspaper, FaFileInvoice, FaClipboardCheck, FaUserShield, FaHistory, FaLock, FaDesktop, FaRssSquare } from "react-icons/fa";
+import { usePathname } from "next/navigation";
+import {
+    FaHome, FaCogs, FaTools, FaMoneyCheckAlt, FaClipboardList, FaUsers,
+    FaBroadcastTower, FaCalendarCheck, FaRegNewspaper, FaFileInvoice,
+    FaClipboardCheck, FaUserShield, FaHistory, FaDesktop, FaRssSquare
+} from "react-icons/fa";
 import { MdSettings } from "react-icons/md";
 import { FiLogOut, FiBell, FiMenu, FiChevronDown, FiChevronRight, FiX } from "react-icons/fi";
+import Link from "next/link";
 
-export default function Sidebar({ isOpen, setIsOpen, active, setActive }) {
+export default function Sidebar({ isOpen, setIsOpen }) {
     const [openMenus, setOpenMenus] = useState({});
+    const pathname = usePathname(); // 👈 detecta la ruta actual
 
-    // Detecta tamaño de pantalla para definir estado inicial
     useEffect(() => {
         if (typeof window !== "undefined") {
             if (window.innerWidth < 1024) {
-                setIsOpen(false); // móvil -> cerrado por defecto
+                setIsOpen(false);
             } else {
-                setIsOpen(true); // escritorio -> abierto por defecto
+                setIsOpen(true);
             }
         }
     }, [setIsOpen]);
-    
+
+    useEffect(() => {
+        // Abrir automáticamente el menú padre si estás en una ruta hija
+        menuItems.forEach((item) => {
+            if (item.sub && pathname.startsWith(item.path)) {
+                setOpenMenus((prev) => ({ ...prev, [item.name]: true }));
+            }
+        });
+    }, [pathname]);
 
 
     const toggleMenu = (menu) => {
@@ -28,41 +42,45 @@ export default function Sidebar({ isOpen, setIsOpen, active, setActive }) {
     };
 
     const menuItems = [
-        { name: "Home", icon: <FaHome /> },
-        { name: "Machinery", icon: <FaCogs /> },
-        { name: "Maintenance", icon: <FaTools />,
+        { name: "Home", icon: <FaHome />, path: "/home" },
+        { name: "Machinery", icon: <FaCogs />, path: "/machinery" },
+        {
+            name: "Maintenance", icon: <FaTools />, path: "/maintenance",
             sub: [
-                { name: "Schedule Maintenance", icon: <FaCalendarCheck /> },
-                { name: "Maintenance Requests", icon: <FaRegNewspaper /> },
+                { name: "Schedule Maintenance", icon: <FaCalendarCheck />, path: "/maintenance/scheduleMaintenance" },
+                { name: "Maintenance Requests", icon: <FaRegNewspaper />, path: "/maintenance/maintenanceRequest" },
             ],
         },
-        { name: "Payroll", icon: <FaMoneyCheckAlt />,
+        {
+            name: "Payroll", icon: <FaMoneyCheckAlt />, path: "/payroll",
             sub: [
-                { name: "Reports", icon: <FaFileInvoice /> },
-                { name: "Novelty", icon: <FaClipboardCheck /> },
-                { name: "Payrolls", icon: <FaClipboardList /> },
+                { name: "Reports", icon: <FaFileInvoice />, path: "/payroll/reports" },
+                { name: "Novelty", icon: <FaClipboardCheck />, path: "/payroll/novelty" },
+                { name: "Payrolls", icon: <FaClipboardList />, path: "/payroll/payrolls" },
             ],
         },
-        { name: "Requests", icon: <FaClipboardList />,
+        {
+            name: "Requests", icon: <FaClipboardList />, path: "/requests",
             sub: [
-                { name: "Clients", icon: <FaUsers /> },
-                { name: "Service Managements", icon: <FaTools /> },
+                { name: "Clients", icon: <FaUsers />, path: "/requests/clients" },
+                { name: "Service Managements", icon: <FaTools />, path: "/requests/serviceManagement" },
             ],
         },
-        { name: "User Management", icon: <FaUsers />,
+        {
+            name: "User Management", icon: <FaUsers />, path: "/userManagement",
             sub: [
-                { name: "Role Management", icon: <FaUserShield /> },
-                { name: "Audit Log", icon: <FaHistory /> },
-                { name: "Permission Management", icon: <FaLock /> },
+                { name: "Role Management", icon: <FaUserShield />, path: "/userManagement/roleManagement" },
+                { name: "Audit Log", icon: <FaHistory />, path: "/userManagement/auditLog" },
             ],
         },
-        { name: "Monitoring", icon: <FaBroadcastTower />,
+        {
+            name: "Monitoring", icon: <FaBroadcastTower />, path: "/monitoring",
             sub: [
-                { name: "Devices Management", icon: <FaDesktop /> },
-                { name: "Threshold", icon: <FaRssSquare /> },
+                { name: "Devices Management", icon: <FaDesktop />, path: "/monitoring/devicesManagement" },
+                { name: "Threshold", icon: <FaRssSquare />, path: "/monitoring/threshold" },
             ],
         },
-        { name: "Parameterization", icon: <MdSettings /> },
+        { name: "Parameterization", icon: <MdSettings />, path: "/parametrization" },
     ];
 
     return (
@@ -78,7 +96,7 @@ export default function Sidebar({ isOpen, setIsOpen, active, setActive }) {
 
             <aside
                 className={`fixed top-0 left-0 h-screen overflow-y-auto bg-white shadow-md flex flex-col justify-between transform transition-transform duration-300 z-40
-                 ${isOpen ? "translate-x-0 w-64" : "-translate-x-full w-64"}`}
+         ${isOpen ? "translate-x-0 w-64" : "-translate-x-full w-64"}`}
             >
                 <div className="flex flex-col relative">
                     <button
@@ -89,15 +107,22 @@ export default function Sidebar({ isOpen, setIsOpen, active, setActive }) {
                     </button>
 
                     <div className="flex items-center justify-between p-4 border-b border-gray-100 mt-8">
-                        <div className="flex items-center gap-2">
-                            <div className="w-10 h-10 rounded-full bg-green-200 flex items-center justify-center font-bold">
-                                JV
-                            </div>
-                            <div className="leading-tight">
-                                <p className="text-xs text-gray-500">Bienvenido!</p>
-                                <p className="text-sm font-semibold">[Nombre Usuario]</p>
-                            </div>
-                        </div>
+                        <Link href="/userProfile" legacyBehavior>
+                            <a
+                                className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition 
+                                        ${pathname === "/userProfile"
+                                        ? "bg-yellow-200 font-medium text-black"
+                                        : "hover:bg-gray-100 text-gray-700"}`}
+                            >
+                                <div className="w-10 h-10 rounded-full bg-green-200 flex items-center justify-center font-bold">
+                                    JV
+                                </div>
+                                <div className="leading-tight">
+                                    <p className="text-xs text-gray-500">Bienvenido!</p>
+                                    <p className="text-sm font-semibold">[Nombre Usuario]</p>
+                                </div>
+                            </a>
+                        </Link>
                         <FiBell className="text-xl cursor-pointer text-gray-700" />
                     </div>
 
@@ -109,45 +134,62 @@ export default function Sidebar({ isOpen, setIsOpen, active, setActive }) {
 
                     <div className="flex-1 overflow-y-auto">
                         <nav className="flex flex-col gap-1 px-2">
-                            {menuItems.map((item) => (
-                                <div key={item.name}>
-                                    <button
-                                        onClick={() => {
-                                            if (item.sub) {
-                                                toggleMenu(item.name);
-                                            }
-                                            setActive(item.name);
-                                        }}
-                                        className={`flex justify-between items-center w-full p-2 rounded-lg transition 
-                                            ${active === item.name
-                                                ? "bg-yellow-200 font-medium text-black"
-                                                : "hover:bg-gray-100 text-gray-700"
-                                            } ${item.sub ? "text-gray-600" : ""}`}
-                                    >
-                                        <span className="flex items-center gap-3">{item.icon} {item.name}</span>
-                                        {item.sub && (
-                                            openMenus[item.name] ? (
-                                                <FiChevronDown className="text-gray-600" />
-                                            ) : (
-                                                <FiChevronRight className="text-gray-600" />
-                                            )
-                                        )}
-                                    </button>
-                                    {openMenus[item.name] && item.sub && (
-                                        <div className="ml-8 flex flex-col gap-1 text-sm text-gray-600">
-                                                                                    {item.sub.map((sub) => (
-                                            <button
-                                                key={sub.name}
-                                                onClick={() => setActive(sub.name)}
-                                                className={`p-1 hover:text-black hover:font-medium text-left flex items-center gap-3 ${active === sub.name ? "bg-gray-200" : ""}`}
+                            {menuItems.map((item) => {
+                                const isActiveParent =
+                                    pathname === item.path || pathname.startsWith(item.path + "/");
+
+                                return (
+                                    <div key={item.name}>
+                                        {!item.sub ? (
+                                            <Link
+                                                href={item.path}
+                                                className={`flex justify-between items-center w-full p-2 rounded-lg transition 
+                                                ${isActiveParent
+                                                        ? "bg-yellow-200 font-medium text-black"
+                                                        : "hover:bg-gray-100 text-gray-700"
+                                                    }`}
                                             >
-                                                {sub.icon} {sub.name}
-                                            </button>
-                                        ))}
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+                                                <span className="flex items-center gap-3">{item.icon} {item.name}</span>
+                                            </Link>
+                                        ) : (
+                                            <>
+                                                <Link
+                                                    href={item.path}
+                                                    onClick={() => { toggleMenu(item.name) }}
+                                                    className={`flex justify-between items-center w-full p-2 rounded-lg transition 
+                                                            ${isActiveParent
+                                                            ? "bg-yellow-200 font-medium text-black"
+                                                            : "hover:bg-gray-100 text-gray-700"
+                                                        }`}
+                                                >
+                                                    <span className="flex items-center gap-3">{item.icon} {item.name}</span>
+                                                    {openMenus[item.name] ? <FiChevronDown /> : <FiChevronRight />}
+                                                </Link>
+
+                                                {openMenus[item.name] && (
+                                                    <div className="ml-8 flex flex-col gap-1 text-sm text-gray-600">
+                                                        {item.sub.map((sub) => {
+                                                            const isActiveSub = pathname === sub.path;
+                                                            return (
+                                                                <Link
+                                                                    key={sub.name}
+                                                                    href={sub.path}
+                                                                    className={
+                                                                        `p-1 hover:text-black hover:font-medium rounded-lg text-left flex items-center gap-3 
+                                                                        ${isActiveSub ? "bg-gray-200 font-medium" : ""
+                                                                        }`}
+                                                                >
+                                                                    {sub.icon} {sub.name}
+                                                                </Link>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </nav>
                     </div>
                 </div>

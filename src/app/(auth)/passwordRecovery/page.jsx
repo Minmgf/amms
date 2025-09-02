@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
-import Logo from "../components/Logo";
-import LoginCard from "../components/LoginCard";
+import Logo from "../../components/auth/Logo";
+import LoginCard from "../../components/auth/LoginCard";
 
 const page = () => {
     const [email, setEmail] = useState('');

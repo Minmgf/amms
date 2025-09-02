@@ -1,8 +1,8 @@
 'use client';
 import { useEffect, useState, useMemo } from 'react';
-import Sidebar from '../components/Sidebar';
+import Sidebar from '../../../../components/Sidebar';
 
-
+/*
 const MOCK_CATEGORIES = [
   {
     id: 'machinery',
@@ -75,6 +75,7 @@ const MOCK_CATEGORIES = [
     ]
   }
 ];
+*/
 
 const MOCK_ROLE = {
   id: 'role-123',
@@ -109,11 +110,11 @@ export default function UpdateRolePage() {
   // Carga inicial (simulación)
   useEffect(() => {
     // TODO: Reemplazar por fetch real
-    setCategories(MOCK_CATEGORIES);
+    //setCategories(MOCK_CATEGORIES);
     setRoleName(MOCK_ROLE.name);
     setRoleDescription(MOCK_ROLE.description);
     setSelectedPermissions(new Set(MOCK_ROLE.permissions));
-    setSelectedCategoryId(MOCK_CATEGORIES[0].id);
+    //setSelectedCategoryId(MOCK_CATEGORIES[0].id);
     setLoading(false);
   }, []);
 

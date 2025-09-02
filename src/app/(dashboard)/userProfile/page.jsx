@@ -2,8 +2,8 @@
 import React, { useState } from "react";
 import { MdKeyboardArrowDown, MdWarning } from "react-icons/md";
 import { HiOutlinePencilAlt } from "react-icons/hi";
-import ChangePasswordModal from "../modals/ChangePasswordModal";
-import ChangePhotoModal from "../modals/ChangePhotoModal";
+import ChangePasswordModal from "../../components/userProfile/modals/ChangePasswordModal";
+import ChangePhotoModal from "../../components/userProfile/modals/ChangePhotoModal";
 
 const ProfilePage = () => {
   const [formData, setFormData] = useState({

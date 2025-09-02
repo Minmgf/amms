@@ -11,7 +11,7 @@ import {
 } from '@tanstack/react-table';
 import { FaSearch, FaFilter, FaUserPlus, FaEdit, FaTrash, FaEye, FaSort, FaSortUp, FaSortDown, FaArrowLeft, FaPlus, FaExclamationTriangle } from 'react-icons/fa';
 import * as Dialog from '@radix-ui/react-dialog';
-import userData from '../data/users.json';
+import userData from '../../data/users.json';
 
 const columnHelper = createColumnHelper();
 

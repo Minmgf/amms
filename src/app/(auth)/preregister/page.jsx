@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import Logo from "../components/Logo";
-import LoginCard from "../components/LoginCard";
-import ChangeProfilePhoto from "../modals/ChangeProfilePhoto";
+import Logo from "../../components/auth/Logo";
+import LoginCard from "../../components/auth/LoginCard";
+import ChangeProfilePhoto from "../../components/userProfile/modals/ChangeProfilePhoto";
 import { useState } from "react";
 
 const page = () => {

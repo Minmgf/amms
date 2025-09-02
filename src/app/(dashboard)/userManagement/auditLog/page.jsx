@@ -1,7 +1,29 @@
 "use client";
+import AuditLogFilter from "@/app/components/auditLog/filters/AuditLogFilter";
 import { useEffect, useState } from "react";
-import { FiSearch, FiFilter, FiEye, FiEdit2, FiLock, FiUnlock, FiPlus } from "react-icons/fi";
-import RoleManagementFilter from "../../components/modals/filters/RoleManagementFilter";
+import { FiSearch, FiFilter } from "react-icons/fi";
+
+const badgeColors = [
+    "bg-red-500 text-white",
+    "bg-pink-500 text-white",
+    "bg-orange-400 text-white",
+    "bg-yellow-400 text-black",
+    "bg-green-500 text-white",
+    "bg-emerald-500 text-white",
+    "bg-teal-500 text-white",
+    "bg-blue-500 text-white",
+    "bg-indigo-500 text-white",
+    "bg-purple-500 text-white",
+];
+
+// 🔄 Función para asignar siempre el mismo color a cada acción
+const getRandomColor = (action) => {
+    const index =
+        action
+            .split("")
+            .reduce((acc, char) => acc + char.charCodeAt(0), 0) % badgeColors.length;
+    return badgeColors[index];
+};
 
 const page = () => {
     const [search, setSearch] = useState("");
@@ -17,21 +39,35 @@ const page = () => {
             .catch(() => {
                 setData([
                     {
-                        roleName: "Admin",
-                        description: "Full system access with all permissions including user management, system configuration, and data administration",
-                        status: "Active",
+                        date: "2024-01-15 14:30:25",
+                        user: "Torres Hernán Darío",
+                        action: "Edit",
+                        description: "Edited personal information",
                     },
                     {
-                        roleName: "Employee",
-                        description: "Standard employee access with basic functionality for daily operations and task management",
-                        status: "Inactive",
+                        date: "2024-01-15 13:45:12",
+                        user: "María Elena Rodríguez",
+                        action: "Change password",
+                        description: "Example",
+                    },
+                    {
+                        date: "2024-01-15 12:20:08",
+                        user: "Carlos Alberto Mendez",
+                        action: "Deactivate account",
+                        description: "Example",
+                    },
+                    {
+                        date: "2024-01-15 11:15:33",
+                        user: "Ana Patricia Silva",
+                        action: "Assign role",
+                        description: "Example",
                     },
                 ]);
             });
     }, []);
 
     const filteredData = data.filter((item) =>
-        item.roleName.toLowerCase().includes(search.toLowerCase())
+        item.user.toLowerCase().includes(search.toLowerCase())
     );
 
     const totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -54,7 +90,7 @@ const page = () => {
                     <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                         type="text"
-                        placeholder="Introduce a role name..."
+                        placeholder="Introduce a name..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="w-full bg-white pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500"
@@ -66,73 +102,37 @@ const page = () => {
                 >
                     <FiFilter /> Filter by
                 </button>
-                <RoleManagementFilter
+                <AuditLogFilter
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
                 />
-                <button
-                    className="flex bg-white items-center justify-center gap-2 border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-100 transition"
-                >
-                    <FiPlus /> Add role
-                </button>
             </div>
 
             <div className="overflow-x-auto bg-white shadow rounded-xl">
                 <table className="w-full text-left">
                     <thead className="bg-gray-50 text-gray-900 text-sm">
                         <tr>
-                            <th className="px-6 py-3">Role name</th>
+                            <th className="px-6 py-3">Date</th>
+                            <th className="px-6 py-3">User name</th>
+                            <th className="px-6 py-3">Action type</th>
                             <th className="px-6 py-3">Description</th>
-                            <th className="px-6 py-3">Status</th>
-                            <th className="px-6 py-3">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white text-gray-600 text-sm">
                         {currentData.map((item, index) => (
-                            <tr key={index} className="group border-t border-gray-300">
-                                <td className="px-6 py-3 whitespace-nowrap">{item.roleName}</td>
-                                <td className="px-6 py-3">{item.description}</td>
+                            <tr key={index} className="border-t border-gray-300">
+                                <td className="px-6 py-3 whitespace-nowrap">{item.date}</td>
+                                <td className="px-6 py-3">{item.user}</td>
                                 <td className="px-6 py-3">
                                     <span
-                                        className={`px-3 text-white py-1 rounded-full text-xs font-medium ${item.status === 'Active' ? "bg-green-500" : "bg-rose-500"}`}
+                                        className={`px-3 py-1 rounded-full text-xs font-medium ${getRandomColor(
+                                            item.action
+                                        )}`}
                                     >
-                                        {item.status}
+                                        {item.action}
                                     </span>
                                 </td>
-                                <td className="px-6 py-3">
-                                    <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                        <button
-                                            type="button"
-                                            className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-100"
-                                        >
-                                            <FiEye className="text-gray-600" />
-                                            <span>View</span>
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-100"
-                                        >
-                                            <FiEdit2 className="text-gray-600" />
-                                            <span>Edit</span>
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-100"
-                                        >
-                                            {item.status === "Active" ? (
-                                                <>
-                                                    <FiLock className="text-rose-500" />
-                                                    <span>Disable</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <FiUnlock className="text-green-500" />
-                                                    <span>Enable</span>
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
-                                </td>
+                                <td className="px-6 py-3">{item.description}</td>
                             </tr>
                         ))}
 
