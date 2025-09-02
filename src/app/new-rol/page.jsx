@@ -10,7 +10,7 @@ const page = () => {
   };
 
   return (
-    <div className="flex gap-3 bg-white">
+    <div className="w-full flex gap-3 bg-white">
       {/* navigation */}
       <div className="w-[24%] bg-white"></div>
 
@@ -69,14 +69,14 @@ const page = () => {
                 </label>
                 <textarea
                   placeholder=""
-                  className="border rounded-lg px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 h-28"
+                  className="border-3 border-[#D7D7D7] text-black rounded-lg px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:border-[#D7D7D7] h-28"
                 />
               </div>
             </div>
 
             {/* Permission */}
-            <div className="flex justify-between">
-              <div className="flex flex-col">
+            <div className="grid grid-cols-7 gap-7">
+              <div className="col-span-4 flex flex-col">
                 <div className="border rounded-lg">
                   <div className="grid grid-cols-[1fr_auto] items-center rounded-t-lg px-4 py-2 font-medium bg-[#787880]">
                     <span>Permission Name</span>
@@ -95,31 +95,37 @@ const page = () => {
                   )}
                 </div>
 
-
                 {/* Permissions list */}
-                <div className="col-span-2">
+                <div className="col-span-2 bg-[#F9F9F9] px-8 py-4">
                   {/* Footer info */}
-                  <div className="flex items-center gap-2 mt-2 text-sm text-neutral-600">
-                    <span className="h-2 w-2 rounded-full bg-blue-500 inline-block"></span>
-                    Currently configuring:
-                    <span className="font-medium text-blue-600">Machinery</span>
+                  <div className="flex justify-between items-center gap-2 text-sm text-neutral-600">
+                    <div className="flex gap-1">
+                      <div>
+                        <span className="h-2 w-2 rounded-full bg-blue-500 inline-block mr-1"></span>
+                        Currently configuring:
+                      </div>
+                      <span className="font-medium text-blue-600">
+                        Machinery
+                      </span>
+                    </div>
+
                     <span className="ml-2">
                       Active permissions: <b>0</b> of <b>4</b>
                     </span>
                   </div>
                 </div>
 
-                                <div>
+                <div className="mt-5">
                   <div className="flex gap-3">
                     <button
                       type="button"
-                      className="px-4 py-2 rounded-lg border border-neutral-300 text-neutral-700 hover:bg-neutral-100"
+                      className="px-5 py-3 rounded-lg bg-[#787880]/12 text-black hover:bg-neutral-100"
                     >
                       Reset All
                     </button>
                     <button
                       type="button"
-                      className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                      className="px-4 py-2 rounded-lg shadow bg-[#007AFF] text-white hover:bg-blue-700"
                     >
                       Save
                     </button>
@@ -127,10 +133,8 @@ const page = () => {
                 </div>
               </div>
 
-              
-
               {/* Side categories */}
-              <div className="col-span-2 grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="col-span-3 grid grid-cols-1 md:grid-cols-2 gap-3">
                 {[
                   "Machinery",
                   "Payroll",
@@ -142,12 +146,15 @@ const page = () => {
                 ].map((cat) => (
                   <div
                     key={cat}
-                    className="shadow-sm rounded-lg p-3 text-sm text-neutral-700 bg-neutral-50"
+                    className="shadow-md rounded-xl px-4 py-5 text-sm text-neutral-700 bg-white"
                   >
-                    <div className="flex flex-col items-center justify-between">
-                      <span>{cat}</span>
-                      <span className="text-xs text-neutral-500">
-                        0/4 active
+                    <div className="flex flex-col items-start justify-between">
+                      <span className="font-semibold text-black">{cat}</span>
+                      <span className="text-xs text-black">
+                        <div className="flex justify-center items-center gap-2">
+                          <div className="w-2 h-2 rounded-lg shadow bg-[#CCCCCC] text-white hover:bg-neutral-500"></div>
+                          0/4 active
+                        </div>
                       </span>
                     </div>
                   </div>
@@ -156,7 +163,7 @@ const page = () => {
             </div>
 
             {/* Buttons */}
-            <div className="col-span-2 flex justify-between mt-6">
+            <div className="w-full flex justify-end">
               <div className="flex gap-3">
                 <button
                   type="button"
