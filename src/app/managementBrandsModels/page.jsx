@@ -170,7 +170,7 @@ const ParameterizationView = () => {
           </button>
         </div>
 
-        {/* Navigation Menu */}
+        {/* Navigation Menu(component) */}
         <div className="mb-6 md:mb-8">
           <NavigationMenu
             activeItem={activeMenuItem}
