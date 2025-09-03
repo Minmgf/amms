@@ -2,7 +2,7 @@ import Cookies from "js-cookie";
 import { apiUsers } from "@/lib/axios";
 
 export const login = async (payload) => {
-    const { data } = await apiUsers.post("/auth/login", payload);
+    const { data } = await apiUsers.post("/auth/login/", payload);
     // guardar token en cookie (expira en 1 hora por ejemplo)
     Cookies.set("token", data.access_token, { expires: 12 / 24 });
 
@@ -52,4 +52,4 @@ export const activateAccount = async (token) => {
 
 export const completePreregister = async (payload) => {
     const { data } = await apiUsers.post("/users/pre-register/complete", payload)
-
+}

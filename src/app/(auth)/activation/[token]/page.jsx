@@ -34,7 +34,7 @@ const page = () => {
   return (
     <div
       className="relative min-h-screen bg-cover bg-center"
-      style={{ backgroundImage: "url('/images/login-background.jpg')" }}
+      style={{ backgroundImage: "url('./images/login-background.jpg')" }}
     >
       <div className="absolute inset-0 bg-black/50"></div>
       <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 items-center min-h-screen">
@@ -47,7 +47,7 @@ const page = () => {
             <Logo variant="mobile" />
 
             {status === "success" && (
-              <img className="w-24 mt-10" src="/images/activation-icon.png" alt="" />
+              <img className="w-24 mt-10" src="./images/activation-icon.png" alt="" />
             )}
             {status === "error" && (
               <AiOutlineCloseCircle className="w-24 h-24 mt-10 text-red-600" />

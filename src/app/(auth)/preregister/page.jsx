@@ -61,7 +61,7 @@ const Page = () => {
   return (
     <div
       className="min-h-screen w-full bg-cover bg-center flex items-center justify-center"
-      style={{ backgroundImage: "url('/images/login-background.jpg')" }}
+      style={{ backgroundImage: "url('./images/login-background.jpg')" }}
     >
       <div className="absolute inset-0 bg-black/50"></div>
       <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 items-center min-h-screen">
