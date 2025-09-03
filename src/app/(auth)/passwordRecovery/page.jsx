@@ -1,22 +1,32 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import Logo from "../../components/auth/Logo";
 import LoginCard from "../../components/auth/LoginCard";
 import { requestResetPassword } from '@/services/authService';
 import { useForm } from "react-hook-form";
+import {
+    SuccessModal,
+    ErrorModal,
+} from "@/app/components/shared/SuccessErrorModal";
 
 const Page = () => {
-    const { 
-        register, 
-        handleSubmit, 
-        formState: { errors } 
+    const [successOpen, setSuccessOpen] = useState(false);
+    const [errorOpen, setErrorOpen] = useState(false);
+    const [modalMessage, setModalMessage] = useState("");
+    const {
+        register,
+        handleSubmit,
+        formState: { errors }
     } = useForm();
 
     const onSubmit = async (data) => {
         try {
             const response = await requestResetPassword({ email: data.email });
+            setModalMessage(response.message);
+            setSuccessOpen(true);            
         } catch (error) {
-            console.log(error);
+            setModalMessage(error.response.data.detail);
+            setErrorOpen(true);
         }
     };
 
@@ -39,8 +49,8 @@ const Page = () => {
                             type="email"
                             placeholder="Enter your email address"
                             className="py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-1 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
-                            {...register("email", { 
-                                required: "Email is required", 
+                            {...register("email", {
+                                required: "Email is required",
                                 pattern: {
                                     value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
                                     message: "Invalid email format"
@@ -50,8 +60,8 @@ const Page = () => {
                         {errors.email && (
                             <p className="text-red-400 text-sm mt-1">{errors.email.message}</p>
                         )}
-                        <button 
-                            type="submit" 
+                        <button
+                            type="submit"
                             className="w-full text-white py-2 mt-6 rounded-lg bg-red-600 text-lg font-semibold shadow hover:bg-red-500 active:bg-red-700 transition-colors"
                         >
                             Send
@@ -61,6 +71,18 @@ const Page = () => {
                         Already have an account? <a href="/login" className="text-white font-bold underline">Log in here</a>
                     </div>
                 </LoginCard>
+                <SuccessModal
+                    isOpen={successOpen}
+                    onClose={() => setSuccessOpen(false)}
+                    title="Request Successful"
+                    message={modalMessage}
+                />
+                <ErrorModal
+                    isOpen={errorOpen}
+                    onClose={() => setErrorOpen(false)}
+                    title="Request Failed"
+                    message={modalMessage}
+                />
             </div>
         </div>
     );

@@ -51,5 +51,11 @@ export const activateAccount = async (token) => {
 };
 
 export const completePreregister = async (payload) => {
-    const { data } = await apiUsers.post("/users/pre-register/complete", payload)
-}
+    const { data } = await apiUsers.post("/users/pre-register/complete", payload);
+    return data;
+};
+
+export const recoverPassword = async (token, payload) => {
+    const { data } = await apiUsers.post(`/auth/reset-password/${token}`, payload);
+    return data;
+};

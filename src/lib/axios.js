@@ -11,7 +11,7 @@ export const apiUsers = axios.create({
 
 // Instancia para el microservicio principal
 export const apiMain = axios.create({
-  baseURL: "https://api.inmero.co/sigma/main" || "http://localhost:8000",
+  baseURL: "https://api.inmero.co/sigma/main",
   timeout: 30000,
   headers: {
     "Content-Type": "application/json",
