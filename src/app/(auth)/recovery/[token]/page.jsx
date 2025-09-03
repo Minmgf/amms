@@ -1,9 +1,21 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { FaCheck } from "react-icons/fa";
+import { useParams, useRouter } from "next/navigation";
+import { recoverPassword } from "@/services/authService";
+import {
+  SuccessModal,
+  ErrorModal,
+} from "@/app/components/shared/SuccessErrorModal";
 
 const Page = () => {
+  const { token } = useParams();
+  const router = useRouter();
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+  const [loading, setLoading] = useState(false);
   const {
     register,
     handleSubmit,
@@ -18,14 +30,33 @@ const Page = () => {
     upper: /[A-Z]/.test(password),
     lower: /[a-z]/.test(password),
     number: /[0-9]/.test(password),
-    length: password.length >= 8,
+    length: password.length >= 12,
   };
 
   const passwordsMatch = password && confirmPassword && password === confirmPassword;
 
-  const onSubmit = (data) => {
-    // Aquí puedes manejar el envío del formulario
-    console.log(data);
+  const onSubmit = async (data) => {
+    setLoading(true);
+    const payload = {
+      new_password: data.password,
+      confirm_password: data.confirmPassword,
+    };
+    try {
+      const response = await recoverPassword(token, payload);
+      setModalMessage(response.message || "Recuperación exitosa");
+      setSuccessOpen(true);
+      setTimeout(() => {
+        setSuccessOpen(false);
+        router.push("/login");
+      }, 2000);
+
+    } catch (error) {
+      console.log(error);
+      setModalMessage(error.response.data.detail);
+      setErrorOpen(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -85,16 +116,28 @@ const Page = () => {
             <p className={validations.upper ? "text-green-400" : "text-red-400"}>✔ Include at least one capital letter (A-Z).</p>
             <p className={validations.lower ? "text-green-400" : "text-red-400"}>✔ Include at least one lowercase letter (a-z).</p>
             <p className={validations.number ? "text-green-400" : "text-red-400"}>✔ Include at least one number (0-9).</p>
-            <p className={validations.length ? "text-green-400" : "text-red-400"}>✔ Have a minimum of 8 characters.</p>
+            <p className={validations.length ? "text-green-400" : "text-red-400"}>✔ Have a minimum of 12 characters.</p>
           </div>
           <button
             type="submit"
-            disabled={!(Object.values(validations).every(Boolean) && passwordsMatch)}
+            disabled={!(Object.values(validations).every(Boolean) && passwordsMatch) || loading}
             className="w-full text-white py-2 mt-6 rounded-lg bg-red-600 text-lg font-semibold shadow hover:bg-red-500 active:bg-red-700 transition-colors"
           >
             Send
           </button>
         </form>
+        <SuccessModal
+          isOpen={successOpen}
+          onClose={() => setSuccessOpen(false)}
+          title="Recovery Successful"
+          message={modalMessage}
+        />
+        <ErrorModal
+          isOpen={errorOpen}
+          onClose={() => setErrorOpen(false)}
+          title="Recovery Failed"
+          message={modalMessage}
+        />
       </div>
     </div>
   );
