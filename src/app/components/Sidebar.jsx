@@ -28,7 +28,13 @@ import {
   FiX,
 } from "react-icons/fi";
 import Link from "next/link";
-
+import { logout } from "@/services/authService";
+import { useRouter } from "next/navigation";
+import {
+  SuccessModal,
+  ErrorModal,
+  ConfirmModal,
+} from "./shared/SuccessErrorModal";
 // ---- NOTIFICATIONS ----
 const initialNotis = [
   {
@@ -76,12 +82,36 @@ const initialNotis = [
 export default function Sidebar({ isOpen, setIsOpen }) {
   const [openMenus, setOpenMenus] = useState({});
   const pathname = usePathname(); // 👈 detecta la ruta actual
-
+  const router = useRouter();
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [showNotis, setShowNotis] = useState(false);
   const [notis, setNotis] = useState(initialNotis);
   const overlayRef = useRef(null);
   const panelRef = useRef(null);
   const unreadCount = notis.filter((n) => n.status === "unread").length;
+
+  const handleLogout = async () => {
+    try {
+      setLoading(true);
+      const response = await logout();
+      setModalMessage(response.message);
+      setSuccessOpen(true);
+      setTimeout(() => {
+        setSuccessOpen(false);
+        router.push("/login");
+      }, 2000);
+    } catch (error) {
+      setModalMessage(error.response.data.detail);
+      setErrorOpen(true);
+    } finally {
+      setLoading(false);
+      setConfirmOpen(false);
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -265,11 +295,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
             <Link href="/userProfile" legacyBehavior>
               <a
                 className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition 
-                                        ${
-                                          pathname === "/userProfile"
-                                            ? "bg-yellow-200 font-medium text-black"
-                                            : "hover:bg-gray-100 text-gray-700"
-                                        }`}
+                                        ${pathname === "/userProfile"
+                    ? "bg-yellow-200 font-medium text-black"
+                    : "hover:bg-gray-100 text-gray-700"
+                  }`}
               >
                 <div className="w-10 h-10 rounded-full bg-green-200 flex items-center justify-center font-bold">
                   JV
@@ -299,7 +328,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           </div>
 
           <div className="flex justify-center p-4">
-            <button className="flex items-center gap-2 px-4 py-2 border border-yellow-400 text-red-500 text-sm rounded-lg hover:bg-yellow-50 transition">
+            <button
+              onClick={() => setConfirmOpen(true)}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 border border-yellow-400 text-red-500 text-sm rounded-lg hover:bg-yellow-50 transition">
               <FiLogOut /> Log Out
             </button>
           </div>
@@ -317,11 +349,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                       <Link
                         href={item.path}
                         className={`flex justify-between items-center w-full p-2 rounded-lg transition 
-                                                ${
-                                                  isActiveParent
-                                                    ? "bg-yellow-200 font-medium text-black"
-                                                    : "hover:bg-gray-100 text-gray-700"
-                                                }`}
+                                                ${isActiveParent
+                            ? "bg-yellow-200 font-medium text-black"
+                            : "hover:bg-gray-100 text-gray-700"
+                          }`}
                       >
                         <span className="flex items-center gap-3">
                           {item.icon} {item.name}
@@ -335,11 +366,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                             toggleMenu(item.name);
                           }}
                           className={`flex justify-between items-center w-full p-2 rounded-lg transition 
-                                                            ${
-                                                              isActiveParent
-                                                                ? "bg-yellow-200 font-medium text-black"
-                                                                : "hover:bg-gray-100 text-gray-700"
-                                                            }`}
+                                                            ${isActiveParent
+                              ? "bg-yellow-200 font-medium text-black"
+                              : "hover:bg-gray-100 text-gray-700"
+                            }`}
                         >
                           <span className="flex items-center gap-3">
                             {item.icon} {item.name}
@@ -360,11 +390,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                                   key={sub.name}
                                   href={sub.path}
                                   className={`p-1 hover:text-black hover:font-medium rounded-lg text-left flex items-center gap-3 
-                                                                        ${
-                                                                          isActiveSub
-                                                                            ? "bg-gray-200 font-medium"
-                                                                            : ""
-                                                                        }`}
+                                                                        ${isActiveSub
+                                      ? "bg-gray-200 font-medium"
+                                      : ""
+                                    }`}
                                 >
                                   {sub.icon} {sub.name}
                                 </Link>
@@ -388,6 +417,30 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           <span className="text-yellow-500 font-bold text-lg">SIGMA</span>
         </div>
       </aside>
+
+      <SuccessModal
+        isOpen={successOpen}
+        onClose={() => setSuccessOpen(false)}
+        title="Logout Successful"
+        message={modalMessage}
+      />
+      <ErrorModal
+        isOpen={errorOpen}
+        onClose={() => setErrorOpen(false)}
+        title="Logout Failed"
+        message={modalMessage}
+      />
+      <ConfirmModal
+        isOpen={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleLogout}
+        title="Confirm Logout"
+        message="Are you sure you want to log out?"
+        confirmText="<Confirm"
+        cancelText="Cancel"
+        confirmColor="bg-red-600 hover:bg-red-500 active:bg-red-700"
+        cancelColor="bg-gray-600 hover:bg-gray-500"
+      />
 
       {showNotis && (
         <div
@@ -433,9 +486,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
               {notis.map((n) => (
                 <li
                   key={n.id}
-                  className={`p-4 ${
-                    n.status === "unread" ? "bg-[#FEF7FF]" : ""
-                  }`}
+                  className={`p-4 ${n.status === "unread" ? "bg-[#FEF7FF]" : ""
+                    }`}
                 >
                   {n.status === "unread" && (
                     <span className="mt-1 h-2 w-2 rounded-full bg-purple-500" />
