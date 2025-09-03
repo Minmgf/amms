@@ -150,7 +150,7 @@ const Page = () => {
             <div className="flex justify-center mt-6 gap-2 text-sm">
               <span className="text-white/80">New here?</span>
               <Link
-                href="/signup"
+                href="/preregister"
                 className="hover:underline font-bold text-white"
               >
                 Sign Up

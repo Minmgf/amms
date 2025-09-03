@@ -49,3 +49,7 @@ export const activateAccount = async (token) => {
     const { data } = await apiUsers.get(`/users/activate-account/${token}`);
     return data;
 };
+
+export const completePreregister = async (payload) => {
+    const { data } = await apiUsers.post("/users/pre-register/complete", payload)
+
