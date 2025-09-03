@@ -1,14 +1,23 @@
 'use client';
-import React, { useState } from 'react';
+import React from 'react';
 import Logo from "../../components/auth/Logo";
 import LoginCard from "../../components/auth/LoginCard";
+import { requestResetPassword } from '@/services/authService';
+import { useForm } from "react-hook-form";
 
-const page = () => {
-    const [email, setEmail] = useState('');
+const Page = () => {
+    const { 
+        register, 
+        handleSubmit, 
+        formState: { errors } 
+    } = useForm();
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        alert('Se ha enviado el enlace de recuperación a: ' + email);
+    const onSubmit = async (data) => {
+        try {
+            const response = await requestResetPassword({ email: data.email });
+        } catch (error) {
+            console.log(error);
+        }
     };
 
     return (
@@ -23,18 +32,28 @@ const page = () => {
                     <p className="mb-8 text-center text-white">
                         Enter your email address and we'll send you a link to reset your password.
                     </p>
-                    <form onSubmit={handleSubmit} className="w-full">
+                    <form onSubmit={handleSubmit(onSubmit)} className="w-full">
                         <label htmlFor="email" className="block text-sm font-medium text-white mb-1">Email Address</label>
                         <input
                             id="email"
                             type="email"
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
                             placeholder="Enter your email address"
-                            required
-                            className="py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
+                            className="py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-1 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
+                            {...register("email", { 
+                                required: "Email is required", 
+                                pattern: {
+                                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                                    message: "Invalid email format"
+                                }
+                            })}
                         />
-                        <button type="submit" className="w-full text-white py-2 mt-6 rounded-lg bg-red-600 text-lg font-semibold shadow hover:bg-red-500 active:bg-red-700 transition-colors">
+                        {errors.email && (
+                            <p className="text-red-400 text-sm mt-1">{errors.email.message}</p>
+                        )}
+                        <button 
+                            type="submit" 
+                            className="w-full text-white py-2 mt-6 rounded-lg bg-red-600 text-lg font-semibold shadow hover:bg-red-500 active:bg-red-700 transition-colors"
+                        >
                             Send
                         </button>
                     </form>
@@ -47,4 +66,4 @@ const page = () => {
     );
 };
 
-export default page;
+export default Page;

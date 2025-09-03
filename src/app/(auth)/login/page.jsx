@@ -139,7 +139,7 @@ const Page = () => {
 
               <div className="text-center mt-3">
                 <Link
-                  href="/recovery"
+                  href="/passwordRecovery"
                   className="text-white/80 hover:text-white underline-offset-4 hover:underline"
                 >
                   Forgot your password?
