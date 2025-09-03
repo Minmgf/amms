@@ -4,9 +4,27 @@ import React, { useState } from "react";
 import { FaLock, FaUser, FaEye, FaEyeSlash } from "react-icons/fa";
 import Logo from "../../components/auth/Logo";
 import LoginCard from "../../components/auth/LoginCard";
+import { login } from "@/services/authService";
+import { useRouter } from "next/navigation";
 
 const Page = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const router = useRouter();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await login({ email, password });
+      console.log("Login exitoso:", response);
+      router.push("/home");
+    } catch (error) {
+      console.error("Error en login:", error);
+      alert("Credenciales inválidas");
+    }
+  };
 
   return (
     <div
@@ -20,12 +38,14 @@ const Page = () => {
         </div>
 
         <LoginCard title="Log In">
-          <form className="space-y-5 w-[90%] md:w-[90%]">
+          <form className="space-y-5 w-[90%] md:w-[90%]" onSubmit={handleSubmit}>
             <div className="relative">
               <FaUser className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
               <input
                 type="text"
                 placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 pl-12 pr-4 py-2 outline-none shadow focus:ring-2 focus:ring-red-500"
               />
             </div>
@@ -34,6 +54,8 @@ const Page = () => {
               <FaLock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
               <input
                 type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
                 className="w-full rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 pl-12 pr-12 py-2 outline-none shadow focus:ring-2 focus:ring-red-500"
               />

@@ -18,7 +18,7 @@ const page = () => {
           <div className="bg-black/60 rounded-xl p-6 md:p-10 min-h-[70vh] w-full md:w-4/5 lg:w-3/4 flex flex-col justify-center items-center relative">
             <Logo variant="mobile" />
 
-            <img className="w-24 mt-10" src="/images/activation-icon.png" alt="" srcset="" />
+            <img className="w-24 mt-10" src="/images/activation-icon.png" alt="" srcSet="" />
             <h1 className="text-center font-bold text-xl text-white tracking-wide mb-4 mt-6">
               Email Confirmed!
             </h1>
