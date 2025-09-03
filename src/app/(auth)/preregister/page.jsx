@@ -22,10 +22,10 @@ const page = () => {
           <Logo variant="desktop" />
         </div>
 
-        <LoginCard title="Sing Up">
+        <LoginCard title="Sign Up">
           <form className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 w-full">
-              <select className="py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full sm:w-auto outline-none shadow focus:ring-2 focus:ring-red-500">
+              <select className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full sm:w-auto outline-none shadow focus:ring-2 focus:ring-red-500">
                 <option>C.C</option>
                 <option>T.I</option>
                 <option>Pasaporte</option>
@@ -34,7 +34,7 @@ const page = () => {
               <input
                 type="text"
                 placeholder="Identification number"
-                className="py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full sm:w-auto outline-none shadow focus:ring-2 focus:ring-red-500"
+                className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full sm:w-auto outline-none shadow focus:ring-2 focus:ring-red-500"
                 required
               />
             </div>
@@ -48,7 +48,7 @@ const page = () => {
               <input
                 id="expeditionDate"
                 type="date"
-                className="py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
+                className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
                 required
               />
             </div>

@@ -9,10 +9,23 @@ import {
 import { MdSettings } from "react-icons/md";
 import { FiLogOut, FiBell, FiMenu, FiChevronDown, FiChevronRight, FiX } from "react-icons/fi";
 import Link from "next/link";
+import { logout } from "@/services/authService";
+import { useRouter } from "next/navigation";
 
 export default function Sidebar({ isOpen, setIsOpen }) {
     const [openMenus, setOpenMenus] = useState({});
     const pathname = usePathname(); // 👈 detecta la ruta actual
+    const router = useRouter();
+
+    const handleLogout = async () => {
+        try {
+            const response = await logout(); // 👈 llamas al servicio
+            router.push("/login"); // 👈 redirección  
+        } catch (error) {
+
+        }
+
+    };
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -127,7 +140,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                     </div>
 
                     <div className="flex justify-center p-4">
-                        <button className="flex items-center gap-2 px-4 py-2 border border-yellow-400 text-red-500 text-sm rounded-lg hover:bg-yellow-50 transition">
+                        <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-2 px-4 py-2 border border-yellow-400 text-red-500 text-sm rounded-lg hover:bg-yellow-50 transition">
                             <FiLogOut /> Log Out
                         </button>
                     </div>

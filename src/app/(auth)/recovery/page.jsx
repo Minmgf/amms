@@ -80,12 +80,12 @@ const Page = () => {
               </span>
             )}
           </div>
-          <div className="text-base text-white mb-10">
-            <p className="mb-2 font-semibold">Por seguridad, tu contraseña debe cumplir con los siguientes requisitos:</p>
-            <p className={validations.upper ? "text-green-400" : "text-red-400"}>✔ Incluir al menos una letra mayúscula (A-Z).</p>
-            <p className={validations.lower ? "text-green-400" : "text-red-400"}>✔ Incluir al menos una letra minúscula (a-z).</p>
-            <p className={validations.number ? "text-green-400" : "text-red-400"}>✔ Incluir al menos un número (0-9).</p>
-            <p className={validations.length ? "text-green-400" : "text-red-400"}>✔ Tener un mínimo de 8 caracteres.</p>
+          <div className="text-sm text-white mb-6">
+            <p className="mb-2 font-semibold">For security reasons, your password must meet the following requirements:</p>
+            <p className={validations.upper ? "text-green-400" : "text-red-400"}>✔ Include at least one capital letter (A-Z).</p>
+            <p className={validations.lower ? "text-green-400" : "text-red-400"}>✔ Include at least one lowercase letter (a-z).</p>
+            <p className={validations.number ? "text-green-400" : "text-red-400"}>✔ Include at least one number (0-9).</p>
+            <p className={validations.length ? "text-green-400" : "text-red-400"}>✔ Have a minimum of 8 characters.</p>
           </div>
           <button
             type="submit"
