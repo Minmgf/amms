@@ -19,7 +19,7 @@ import ParameterAddTypesModal from '../modals/ParameterAddTypesModal';
 
 // Componente principal
 const ParameterizationView = () => {
-  const [activeMenuItem, setActiveMenuItem] = useState('Brands');
+  const [activeMenuItem, setActiveMenuItem] = useState('Type...');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [data, setData] = useState([]);
@@ -66,7 +66,7 @@ const ParameterizationView = () => {
   ];
 
   // Función para obtener datos del backend
-  const fetchData = async (menuItem = 'Brands') => {
+  const fetchData = async (menuItem = 'Types...') => {
     setLoading(true);
     setError(null);
     

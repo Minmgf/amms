@@ -1,18 +1,25 @@
+"use client";
 import React, { useState, useEffect } from 'react';
 import { FiX } from 'react-icons/fi';
 
-const ParameterModifyStatusModal = ({ isOpen, onClose, parameter, onSave }) => {
+const ParameterModifyStatusModal = ({ 
+  isOpen, 
+  onClose, 
+  parameter = null,
+  onSave 
+}) => {
   const [formData, setFormData] = useState({
-    category: 'Maintenance Status',
+    category: 'Machinery Status',
     typeName: '',
     description: '',
     isActive: true
   });
 
+  // Cargar datos cuando se abre el modal o cambia el parámetro
   useEffect(() => {
     if (parameter) {
       setFormData({
-        category: 'Maintenance Status',
+        category: 'Machinery Status',
         typeName: parameter.name || '',
         description: parameter.description || '',
         isActive: parameter.isActive ?? true
@@ -37,8 +44,26 @@ const ParameterModifyStatusModal = ({ isOpen, onClose, parameter, onSave }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(formData);
+    if (formData.typeName.trim() && formData.description.trim()) {
+      onSave({
+        ...parameter,
+        name: formData.typeName,
+        description: formData.description,
+        isActive: formData.isActive
+      });
+      onClose();
+    }
+  };
+
+  const handleClose = () => {
     onClose();
+    // Reset form
+    setFormData({
+      category: 'Machinery Status',
+      typeName: '',
+      description: '',
+      isActive: true
+    });
   };
 
   if (!isOpen) return null;
@@ -52,8 +77,8 @@ const ParameterModifyStatusModal = ({ isOpen, onClose, parameter, onSave }) => {
             Modify parameter
           </h2>
           <button
-            onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+            onClick={handleClose}
+            className="p-2 hover:bg-gray-100 rounded-md transition-colors"
           >
             <FiX className="w-5 h-5 text-gray-500" />
           </button>
@@ -69,11 +94,9 @@ const ParameterModifyStatusModal = ({ isOpen, onClose, parameter, onSave }) => {
               </label>
               <input
                 type="text"
-                name="category"
                 value={formData.category}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-gray-500 cursor-not-allowed"
                 disabled
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600 cursor-not-allowed"
               />
             </div>
 
@@ -107,28 +130,32 @@ const ParameterModifyStatusModal = ({ isOpen, onClose, parameter, onSave }) => {
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Enter description"
+                required
               />
             </div>
 
             {/* Activate/Deactivate Toggle */}
-            <div className="flex items-end">
-              <div className="flex items-center justify-between w-full">
-                <label className="text-sm font-medium text-gray-700">
-                  Activate/Deactivate
-                </label>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Activate/Deactivate
+              </label>
+              <div className="flex items-center mt-3">
                 <button
                   type="button"
                   onClick={handleToggleChange}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
                     formData.isActive ? 'bg-red-500' : 'bg-gray-200'
                   }`}
                 >
                   <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      formData.isActive ? 'translate-x-6' : 'translate-x-1'
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      formData.isActive ? 'translate-x-5' : 'translate-x-0'
                     }`}
                   />
                 </button>
+                <span className="ml-3 text-sm text-gray-600">
+                  {formData.isActive ? 'Active' : 'Inactive'}
+                </span>
               </div>
             </div>
           </div>
@@ -137,7 +164,7 @@ const ParameterModifyStatusModal = ({ isOpen, onClose, parameter, onSave }) => {
           <div className="flex justify-center">
             <button
               type="submit"
-              className="bg-black text-white px-8 py-2 rounded-md hover:bg-gray-800 transition-colors font-medium"
+              className="px-8 py-3 bg-black text-white rounded-md hover:bg-gray-800 transition-colors font-medium"
             >
               Update
             </button>

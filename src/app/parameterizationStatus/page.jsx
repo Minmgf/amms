@@ -17,8 +17,8 @@ import ParameterStatusModal from '../modals/ParameterStatusModal';
 import ParameterModifyStatusModal from '../modals/ParameterModifyStatusModal';
 import ParameterAddStatusModal from '../modals/ParameterAddStatusModal';
 
-// Componente principal para Status
-const ParameterizationStatus = () => {
+// Componente principal
+const ParameterizationView = () => {
   const [activeMenuItem, setActiveMenuItem] = useState('Status');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -29,29 +29,44 @@ const ParameterizationStatus = () => {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showModifyStatusModal, setShowModifyStatusModal] = useState(false);
   const [showAddStatusModal, setShowAddStatusModal] = useState(false);
-  const [selectedParameter, setSelectedParameter] = useState(null);
+  const [selectedStatus, setSelectedStatus] = useState(null);
 
-  // Datos de ejemplo para Status
-  const mockStatusData = [
-    { id: 1, name: 'Active Status', description: 'Status activos del sistema', details: '' },
-    { id: 2, name: 'Inactive Status', description: 'Status inactivos del sistema', details: '' },
-    { id: 3, name: 'Maintenance Status', description: 'Status de mantenimiento', details: '' },
-    { id: 4, name: 'Out of Service Status', description: 'Status fuera de servicio', details: '' },
-    { id: 5, name: 'Operational Status', description: 'Status operacionales', details: '' },
-    { id: 6, name: 'Standby Status', description: 'Status en espera', details: '' },
-    { id: 7, name: 'Emergency Status', description: 'Status de emergencia', details: '' },
-    { id: 8, name: 'Testing Status', description: 'Status de prueba', details: '' },
-    { id: 9, name: 'Repair Status', description: 'Status en reparación', details: '' },
-    { id: 10, name: 'Inspection Status', description: 'Status en inspección', details: '' },
-    { id: 11, name: 'Calibration Status', description: 'Status de calibración', details: '' },
-    { id: 12, name: 'Cleaning Status', description: 'Status de limpieza', details: '' },
-    { id: 13, name: 'Upgrade Status', description: 'Status de actualización', details: '' },
-    { id: 14, name: 'Retired Status', description: 'Status retirado', details: '' },
-    { id: 15, name: 'Reserved Status', description: 'Status reservado', details: '' }
+  // Datos de ejemplo
+  const mockData = [
+    { id: 1, name: 'Machinery', description: 'Módulo de maquinaria', details: '' },
+    { id: 2, name: 'Motors', description: 'Módulo de maquinaria', details: '' },
+    { id: 3, name: 'Wheels', description: 'Módulo de maquinaria', details: '' },
+    { id: 4, name: 'Engines', description: 'Módulo de motores', details: '' },
+    { id: 5, name: 'Transmissions', description: 'Módulo de transmisiones', details: '' },
+    { id: 6, name: 'Hydraulics', description: 'Sistema hidráulico', details: '' },
+    { id: 7, name: 'Electronics', description: 'Componentes electrónicos', details: '' },
+    { id: 8, name: 'Cooling', description: 'Sistema de refrigeración', details: '' },
+    { id: 9, name: 'Fuel System', description: 'Sistema de combustible', details: '' },
+    { id: 10, name: 'Brakes', description: 'Sistema de frenos', details: '' },
+    { id: 11, name: 'Suspension', description: 'Sistema de suspensión', details: '' },
+    { id: 12, name: 'Steering', description: 'Sistema de dirección', details: '' },
+    { id: 13, name: 'Exhaust', description: 'Sistema de escape', details: '' },
+    { id: 14, name: 'Lighting', description: 'Sistema de iluminación', details: '' },
+    { id: 15, name: 'Safety', description: 'Sistemas de seguridad', details: '' },
+    { id: 16, name: 'Comfort', description: 'Sistemas de confort', details: '' },
+    { id: 17, name: 'Navigation', description: 'Sistemas de navegación', details: '' },
+    { id: 18, name: 'Communication', description: 'Sistemas de comunicación', details: '' },
+    { id: 19, name: 'Storage', description: 'Sistemas de almacenamiento', details: '' },
+    { id: 20, name: 'Maintenance', description: 'Sistemas de mantenimiento', details: '' },
+    { id: 21, name: 'Monitoring', description: 'Sistemas de monitoreo', details: '' },
+    { id: 22, name: 'Control', description: 'Sistemas de control', details: '' },
+    { id: 23, name: 'Power', description: 'Sistemas de energía', details: '' },
+    { id: 24, name: 'Tools', description: 'Herramientas', details: '' },
+    { id: 25, name: 'Accessories', description: 'Accesorios', details: '' },
+    { id: 26, name: 'Spare Parts', description: 'Repuestos', details: '' },
+    { id: 27, name: 'Consumables', description: 'Consumibles', details: '' },
+    { id: 28, name: 'Lubricants', description: 'Lubricantes', details: '' },
+    { id: 29, name: 'Filters', description: 'Filtros', details: '' },
+    { id: 30, name: 'Status', description: 'Estados de maquinaria', details: '' }
   ];
 
   // Función para obtener datos del backend
-  const fetchStatusData = async (menuItem = 'Status') => {
+  const fetchData = async (menuItem = 'Status') => {
     setLoading(true);
     setError(null);
     
@@ -59,7 +74,7 @@ const ParameterizationStatus = () => {
       // Simular delay del backend
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      setData(mockStatusData);
+      setData(mockData);
       
     } catch (err) {
       setError(err.message);
@@ -71,58 +86,73 @@ const ParameterizationStatus = () => {
 
   // Cargar datos al montar el componente y cuando cambien las dependencias
   useEffect(() => {
-    fetchStatusData(activeMenuItem);
+    fetchData(activeMenuItem);
   }, [activeMenuItem]);
 
   const handleMenuItemChange = (item) => {
     setActiveMenuItem(item);
   };
 
-  // FUNCIÓN PARA ABRIR EL MODAL DE STATUS
-  const handleViewStatusDetails = (statusId) => {
-    console.log('View status details for:', statusId);
-    setShowStatusModal(true);
+  // FUNCIÓN MODIFICADA PARA ABRIR EL MODAL DE STATUS
+  const handleViewDetails = (categoryId) => {
+    console.log('View details for category:', categoryId);
+    
+    // Encontrar la categoría por ID
+    const category = mockData.find(item => item.id === categoryId);
+    
+    // Si es la categoría "Status" o cualquier categoría cuando activeMenuItem es "Status"
+    if (activeMenuItem === 'Status' || (category && category.name === 'Status')) {
+      setShowStatusModal(true);
+    } else {
+      // Para otras categorías, aquí podrías agregar otros modales específicos
+      console.log('Opening modal for category:', category?.name);
+    }
   };
 
   // FUNCIONES PARA MANEJAR LOS MODALES DE STATUS
-  const handleAddStatusParameter = () => {
+  const handleAddStatus = () => {
     setShowStatusModal(false);
     setShowAddStatusModal(true);
   };
 
-  const handleEditStatusParameter = (parameter) => {
-    setSelectedParameter(parameter);
+  const handleEditStatus = (status) => {
+    setSelectedStatus(status);
     setShowStatusModal(false);
     setShowModifyStatusModal(true);
   };
 
-  const handleSaveNewStatusParameter = (parameterData) => {
-    console.log('Saving new status parameter:', parameterData);
-    // Aquí implementarías la lógica para guardar el nuevo parámetro de status
+  const handleSaveNewStatus = (statusData) => {
+    console.log('Saving new status:', statusData);
+    // Aquí implementarías la lógica para guardar el nuevo status
     // Por ejemplo, hacer una petición POST a tu API
+    
+    // Cerrar el modal de agregar y volver al modal principal
     setShowAddStatusModal(false);
+    setShowStatusModal(true);
+    
+    // Opcional: Refrescar los datos
+    // fetchData(activeMenuItem);
   };
 
-  const handleUpdateStatusParameter = (parameterData) => {
-    console.log('Updating status parameter:', parameterData);
-    // Aquí implementarías la lógica para actualizar el parámetro de status
+  const handleUpdateStatus = (statusData) => {
+    console.log('Updating status:', statusData);
+    // Aquí implementarías la lógica para actualizar el status
     // Por ejemplo, hacer una petición PUT a tu API
+    
+    // Cerrar el modal de modificar y volver al modal principal
     setShowModifyStatusModal(false);
-    setSelectedParameter(null);
+    setShowStatusModal(true);
+    
+    // Opcional: Refrescar los datos
+    // fetchData(activeMenuItem);
   };
 
-  // Funciones para cerrar modales
-  const handleCloseStatusModal = () => {
+  // FUNCIONES PARA CERRAR TODOS LOS MODALES
+  const handleCloseAllModals = () => {
     setShowStatusModal(false);
-  };
-
-  const handleCloseModifyModal = () => {
     setShowModifyStatusModal(false);
-    setSelectedParameter(null);
-  };
-
-  const handleCloseAddModal = () => {
     setShowAddStatusModal(false);
+    setSelectedStatus(null);
   };
 
   // Definir columnas usando TanStack Table
@@ -131,7 +161,7 @@ const ParameterizationStatus = () => {
   const columns = useMemo(
     () => [
       columnHelper.accessor('name', {
-        header: 'Status Category',
+        header: 'Category name',
         cell: info => (
           <div className="font-medium text-gray-900">
             {info.getValue()}
@@ -150,9 +180,9 @@ const ParameterizationStatus = () => {
         header: 'Details',
         cell: info => (
           <button 
-            onClick={() => handleViewStatusDetails(info.getValue())}
+            onClick={() => handleViewDetails(info.getValue())}
             className="p-2 hover:bg-gray-100 rounded-md transition-colors"
-            title="View status details"
+            title="View details"
           >
             <FiEye className="w-4 h-4 text-gray-500 hover:text-gray-700" />
           </button>
@@ -186,7 +216,7 @@ const ParameterizationStatus = () => {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6 md:mb-10">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Status Parameterization</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Parameterization</h1>
           
           <div className="flex items-center space-x-2 md:space-x-4">
             <button className="p-2 hover:bg-gray-100 rounded-md">
@@ -221,7 +251,7 @@ const ParameterizationStatus = () => {
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-6 md:mb-8">
           {loading ? (
             <div className="p-8 text-center text-gray-500">
-              Loading status data...
+              Loading...
             </div>
           ) : error ? (
             <div className="p-8 text-center text-red-500">
@@ -422,27 +452,27 @@ const ParameterizationStatus = () => {
         {/* MODALES DE STATUS */}
         <ParameterStatusModal
           isOpen={showStatusModal}
-          onClose={handleCloseStatusModal}
+          onClose={handleCloseAllModals}
           category="Machinery Status"
-          onAddParameter={handleAddStatusParameter}
-          onEditParameter={handleEditStatusParameter}
+          onAddParameter={handleAddStatus}
+          onEditParameter={handleEditStatus}
         />
 
         <ParameterModifyStatusModal
           isOpen={showModifyStatusModal}
-          onClose={handleCloseModifyModal}
-          parameter={selectedParameter}
-          onSave={handleUpdateStatusParameter}
+          onClose={handleCloseAllModals}
+          parameter={selectedStatus}
+          onSave={handleUpdateStatus}
         />
 
         <ParameterAddStatusModal
           isOpen={showAddStatusModal}
-          onClose={handleCloseAddModal}
-          onSave={handleSaveNewStatusParameter}
+          onClose={handleCloseAllModals}
+          onSave={handleSaveNewStatus}
         />
       </div>
     </div>
   );
 };
 
-export default ParameterizationStatus;
+export default ParameterizationView;
