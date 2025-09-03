@@ -19,3 +19,23 @@ export const logout = async () => {
     localStorage.removeItem("token");
     return data;
 };
+
+export const getTypeDocuments = async () => {
+    const { data } = await apiUsers.get("/users/type-documents");
+    return data;
+};
+
+export const getGenders = async () => {
+    const { data } = await apiUsers.get("/users/genders");
+    return data;
+};
+
+export const getRoles = async () => {
+    const { data } = await apiUsers.get("/roles");
+    return data;
+};
+
+export const validateDocument = async (payload) => {
+    const { data } = await apiUsers.post("/users/pre-register/validate", payload);
+    return data;
+};
