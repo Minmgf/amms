@@ -39,3 +39,7 @@ export const validateDocument = async (payload) => {
     const { data } = await apiUsers.post("/users/pre-register/validate", payload);
     return data;
 };
+
+export const completePreregister = async (payload) => {
+    const { data } = await apiUsers.post("/users/pre-register/complete", payload)
+}
