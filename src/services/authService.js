@@ -39,3 +39,13 @@ export const validateDocument = async (payload) => {
     const { data } = await apiUsers.post("/users/pre-register/validate", payload);
     return data;
 };
+
+export const requestResetPassword = async (payload) => {
+    const { data } = await apiUsers.post("/auth/request-reset-password", payload);
+    return data;
+};
+
+export const activateAccount = async (token) => {
+    const { data } = await apiUsers.get(`/users/activate-account/${token}`);
+    return data;
+};

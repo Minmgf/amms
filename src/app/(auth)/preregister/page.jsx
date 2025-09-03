@@ -1,5 +1,8 @@
 "use client";
-
+import {
+  SuccessModal,
+  ErrorModal,
+} from "@/app/components/shared/SuccessErrorModal";
 import React, { useEffect, useState } from "react";
 import Logo from "../../components/auth/Logo";
 import LoginCard from "../../components/auth/LoginCard";
@@ -9,6 +12,9 @@ import { validateDocument, getTypeDocuments } from "@/services/authService";
 
 const Page = () => {
   const [identificationTypes, setIdentificationTypes] = useState([]);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
   const router = useRouter();
 
   const {
@@ -38,13 +44,17 @@ const Page = () => {
       };
 
       const response = await validateDocument(payload);
-
       localStorage.setItem("validationToken", response.token);
-      console.log("exitoso:", response);
-      router.push("/completeRegister");
+      setModalMessage(response.message);
+      setSuccessOpen(true);
+      setTimeout(() => {
+        setSuccessOpen(false);
+        router.push("/completeRegister");
+      }, 3000);
+
     } catch (error) {
-      console.error("Error en login:", error);
-      alert("error");
+      setModalMessage(error.response.data.detail);
+      setErrorOpen(true);
     }
   };
 
@@ -139,6 +149,18 @@ const Page = () => {
             </button>
           </p>
         </LoginCard>
+        <SuccessModal
+          isOpen={successOpen}
+          onClose={() => setSuccessOpen(false)}
+          title="Validation Successful"
+          message={modalMessage}
+        />
+        <ErrorModal
+          isOpen={errorOpen}
+          onClose={() => setErrorOpen(false)}
+          title="Validation Failed"
+          message={modalMessage}
+        />
       </div>
     </div>
   );
