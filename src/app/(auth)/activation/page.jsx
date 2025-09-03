@@ -6,7 +6,7 @@ const page = () => {
   return (
     <div
       className="relative min-h-screen bg-cover bg-center"
-      style={{ backgroundImage: "url('/sigma/images/login-background.jpg')" }}
+      style={{ backgroundImage: "url('./images/login-background.jpg')" }}
     >
       <div className="absolute inset-0 bg-black/50"></div>
       <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 items-center min-h-screen">
@@ -18,7 +18,7 @@ const page = () => {
           <div className="bg-black/60 rounded-xl p-6 md:p-10 min-h-[70vh] w-full md:w-4/5 lg:w-3/4 flex flex-col justify-center items-center relative">
             <Logo variant="mobile" />
 
-            <img className="w-24 mt-10" src="/sigma/images/activation-icon.png" alt="" srcset="" />
+            <img className="w-24 mt-10" src="./images/activation-icon.png" alt="" srcset="" />
             <h1 className="text-center font-bold text-xl text-white tracking-wide mb-4 mt-6">
               Email Confirmed!
             </h1>
