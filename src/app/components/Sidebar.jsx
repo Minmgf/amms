@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import {
   FaHome,
@@ -28,42 +28,60 @@ import {
   FiX,
 } from "react-icons/fi";
 import Link from "next/link";
-import { logout } from "@/services/authService";
-import { useRouter } from "next/navigation";
-import {
-  SuccessModal,
-  ErrorModal,
-  ConfirmModal,
-} from "./shared/SuccessErrorModal";
+
+// ---- NOTIFICATIONS ----
+const initialNotis = [
+  {
+    id: "n1",
+    title: "Maintenance Request Approved",
+    body: "Your maintenance request for Tractor CATO0D5GPWGBO1070 has been approved and scheduled.",
+    date: "15/01/2024",
+    status: "unread",
+    type: "success",
+  },
+  {
+    id: "n2",
+    title: "New Employee Added",
+    body: "Hernán Torres has been successfully added to the payroll system.",
+    date: "15/01/2024",
+    status: "unread",
+    type: "info",
+  },
+  {
+    id: "n3",
+    title: "System Maintenance",
+    body: "Scheduled system maintenance will occur tonight from 2:00 AM to 4:00 AM.",
+    date: "14/01/2024",
+    status: "read",
+    type: "warning",
+  },
+  {
+    id: "n4",
+    title: "Payroll Generated",
+    body: "Monthly payroll for December 2023 has been successfully generated.",
+    date: "14/01/2024",
+    status: "read",
+    type: "success",
+  },
+  {
+    id: "n5",
+    title: "Permission Request",
+    body: "New permission request from Maria Rodríguez requires your approval.",
+    date: "14/01/2024",
+    status: "unread",
+    type: "info",
+  },
+];
 
 export default function Sidebar({ isOpen, setIsOpen }) {
   const [openMenus, setOpenMenus] = useState({});
   const pathname = usePathname(); // 👈 detecta la ruta actual
-  const router = useRouter();
-  const [successOpen, setSuccessOpen] = useState(false);
-  const [errorOpen, setErrorOpen] = useState(false);
-  const [modalMessage, setModalMessage] = useState("");
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  const handleLogout = async () => {
-    try {
-      setLoading(true);
-      const response = await logout();
-      setModalMessage(response.message);
-      setSuccessOpen(true);
-      setTimeout(() => {
-        setSuccessOpen(false);
-        router.push("/login");
-      }, 2000);
-    } catch (error) {
-      setModalMessage(error.response.data.detail);
-      setErrorOpen(true);
-    } finally {
-      setLoading(false);
-      setConfirmOpen(false);
-    }
-  };
+  const [showNotis, setShowNotis] = useState(false);
+  const [notis, setNotis] = useState(initialNotis);
+  const overlayRef = useRef(null);
+  const panelRef = useRef(null);
+  const unreadCount = notis.filter((n) => n.status === "unread").length;
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -89,6 +107,43 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       ...prev,
       [menu]: !prev[menu],
     }));
+  };
+
+  // ---- Notis: close with click-outside / ESC ----
+  useEffect(() => {
+    if (!showNotis) return;
+
+    function onKey(e) {
+      if (e.key === "Escape") setShowNotis(false);
+    }
+    function onClick(e) {
+      if (!panelRef.current) return;
+      if (panelRef.current.contains(e.target)) return;
+      setShowNotis(false);
+    }
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onClick);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onClick);
+    };
+  }, [showNotis]);
+
+  const markAllAsRead = () =>
+    setNotis((prev) => prev.map((n) => ({ ...n, status: "read" })));
+
+  const markOneAsRead = (id) =>
+    setNotis((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, status: "read" } : n))
+    );
+
+  const iconDot = (type) => {
+    const map = {
+      success: "bg-green-500",
+      warning: "bg-yellow-500",
+      info: "bg-purple-500",
+    };
+    return map[type] || "bg-gray-400";
   };
 
   const menuItems = [
@@ -225,15 +280,26 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                 </div>
               </a>
             </Link>
-            <FiBell className="text-xl cursor-pointer text-gray-700" />
+            <button
+              type="button"
+              onClick={() => setShowNotis((s) => !s)}
+              className="relative inline-flex items-center justify-center rounded-md p-2 hover:bg-gray-100 text-gray-700 cursor-pointer"
+              aria-haspopup="dialog"
+              aria-expanded={showNotis}
+              aria-controls="notifications-panel"
+              aria-label="Open notifications"
+            >
+              <FiBell className="text-xl" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-red-500 text-white text-[10px] leading-4 text-center">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
           </div>
 
           <div className="flex justify-center p-4">
-            <button
-              onClick={() => setConfirmOpen(true)}
-              disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 border border-yellow-400 text-red-500 text-sm rounded-lg hover:bg-yellow-50 transition"
-            >
+            <button className="flex items-center gap-2 px-4 py-2 border border-yellow-400 text-red-500 text-sm rounded-lg hover:bg-yellow-50 transition">
               <FiLogOut /> Log Out
             </button>
           </div>
@@ -322,29 +388,95 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           <span className="text-yellow-500 font-bold text-lg">SIGMA</span>
         </div>
       </aside>
-      <SuccessModal
-        isOpen={successOpen}
-        onClose={() => setSuccessOpen(false)}
-        title="Logout Successful"
-        message={modalMessage}
-      />
-      <ErrorModal
-        isOpen={errorOpen}
-        onClose={() => setErrorOpen(false)}
-        title="Logout Failed"
-        message={modalMessage}
-      />
-      <ConfirmModal
-        isOpen={confirmOpen}
-        onClose={() => setConfirmOpen(false)}
-        onConfirm={handleLogout}
-        title="Confirm Logout"
-        message="Are you sure you want to log out?"
-        confirmText="<Confirm"
-        cancelText="Cancel"
-        confirmColor="bg-red-600 hover:bg-red-500 active:bg-red-700"
-        cancelColor="bg-gray-600 hover:bg-gray-500"
-      />
+
+      {showNotis && (
+        <div
+          ref={overlayRef}
+          className="fixed inset-0 z-50"
+          role="dialog"
+          aria-modal="true"
+          id="notifications-panel"
+        >
+          {/* Fondo */}
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px]" />
+
+          {/* Panel (top-right) */}
+          <div
+            ref={panelRef}
+            className="absolute right-4 top-4 w-[380px] max-w-[92vw] rounded-2xl bg-white shadow-2xl border border-gray-200 overflow-hidden"
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b bg-[#F9F9F9]">
+              <div className="flex items-center gap-2">
+                <h2 className="font-semibold text-black">Notifications</h2>
+                <span className="text-sm text-gray-500">
+                  {unreadCount} {unreadCount === 1 ? "unread" : "unread"}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={markAllAsRead}
+                  className="text-sm text-blue-600 cursor-pointer hover:underline"
+                >
+                  Mark all as read
+                </button>
+                <button
+                  onClick={() => setShowNotis(false)}
+                  className="rounded-md cursor-pointer hover:bg-gray-100"
+                  aria-label="Close notifications"
+                >
+                  <FiX size={18} className="text-gray-400" />
+                </button>
+              </div>
+            </div>
+
+            <ul className="max-h-[70vh] overflow-y-auto divide-y">
+              {notis.map((n) => (
+                <li
+                  key={n.id}
+                  className={`p-4 ${
+                    n.status === "unread" ? "bg-[#FEF7FF]" : ""
+                  }`}
+                >
+                  {n.status === "unread" && (
+                    <span className="mt-1 h-2 w-2 rounded-full bg-purple-500" />
+                  )}
+                  <div className="flex items-start gap-3">
+                    {/* left status icon */}
+                    <span
+                      className={`mt-1 inline-block h-[32px] w-[32px] rounded-full ${iconDot(
+                        n.type
+                      )}`}
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between">
+                        <p className="font-medium text-black">{n.title}</p>
+                      </div>
+                      <p className="text-sm text-gray-600">{n.body}</p>
+                      <div className="flex justify-between mt-2">
+                        <span className="text-xs text-gray-400">{n.date}</span>
+                        {n.status === "unread" ? (
+                          <button
+                            onClick={() => markOneAsRead(n.id)}
+                            className="text-xs text-blue-600 cursor-pointer hover:underline"
+                          >
+                            Mark as read
+                          </button>
+                        ) : (
+                          <span className="text-xs text-gray-400">Read</span>
+                        )}
+                      </div>
+                    </div>
+                    {/* unread dot */}
+                    {n.status === "unread" && (
+                      <span className="mt-1 h-2 w-2 rounded-full bg-purple-500" />
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
     </>
   );
 }
