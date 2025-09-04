@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import Sidebar from "../components/Sidebar";
+import Header from "../components/Header";
 import React from "react";
 
 export default function DashboardLayout({ children }) {
@@ -11,11 +12,11 @@ export default function DashboardLayout({ children }) {
   const router = useRouter();
 
   useEffect(() => {
-    const token = Cookies.get("token"); // 👈 revisar cookie
+    const token = Cookies.get("token");
     if (!token) {
-      router.replace("/login"); // si no hay token, redirige
+      router.replace("/login");
     } else {
-      setLoading(false); // hay sesión, puede mostrar dashboard
+      setLoading(false);
     }
   }, [router]);
 
@@ -28,14 +29,21 @@ export default function DashboardLayout({ children }) {
   }
 
   return (
-    <div className="flex h-screen">
-      <Sidebar isOpen={isOpen} setIsOpen={setIsOpen} />
-      <main
-        className={`flex-1 overflow-y-auto transition-all duration-300 ${isOpen ? "ml-64" : "ml-0"
+    <div className="flex flex-col h-screen">
+      {/* Header siempre arriba */}
+      <Header />
+
+      {/* Contenido debajo del header */}
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar isOpen={isOpen} setIsOpen={setIsOpen} />
+        <main
+          className={`flex-1 overflow-y-auto transition-all duration-300 ${
+            isOpen ? "ml-64" : "ml-0"
           }`}
-      >
-        {children}
-      </main>
+        >
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
