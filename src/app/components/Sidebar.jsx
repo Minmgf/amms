@@ -198,12 +198,17 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         className={`fixed top-0 left-0 h-screen overflow-y-auto bg-white shadow-md flex flex-col transform transition-transform duration-300 z-40
         ${isOpen ? "translate-x-0 w-64" : "-translate-x-full w-64"}`}
       >
-        {/* LOGO + NOMBRE SIGMA */}
-        <div className="flex items-center justify-center px-6 py-6 border-b border-gray-100">
+        <button
+          className="absolute top-2 right-2 p-2 rounded-lg hover:bg-gray-100 lg:block"
+          onClick={() => setIsOpen(false)}
+        >
+          <FiX size={18} />
+        </button>
+
+        <div className="py-4 px-2">
           <img
-            src="/logo-sigma.png"
-            alt="SIGMA Logo"
-            className="h-12 object-contain"
+            src="./images/logoHorizontal.png"
+            alt="SIGMA"
           />
         </div>
 
@@ -220,11 +225,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                     <Link
                       href={item.path}
                       className={`flex justify-between items-center w-full p-2 rounded-lg transition 
-                                                ${
-                                                  isActiveParent
-                                                    ? "bg-yellow-200 font-medium text-black"
-                                                    : "hover:bg-gray-100 text-gray-700"
-                                                }`}
+                                                ${isActiveParent
+                          ? "bg-yellow-200 font-medium text-black"
+                          : "hover:bg-gray-100 text-gray-700"
+                        }`}
                     >
                       <span className="flex items-center gap-3">
                         {item.icon} {item.name}
@@ -238,11 +242,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                           toggleMenu(item.name);
                         }}
                         className={`flex justify-between items-center w-full p-2 rounded-lg transition 
-                                                            ${
-                                                              isActiveParent
-                                                                ? "bg-yellow-200 font-medium text-black"
-                                                                : "hover:bg-gray-100 text-gray-700"
-                                                            }`}
+                                                            ${isActiveParent
+                            ? "bg-yellow-200 font-medium text-black"
+                            : "hover:bg-gray-100 text-gray-700"
+                          }`}
                       >
                         <span className="flex items-center gap-3">
                           {item.icon} {item.name}
@@ -263,11 +266,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                                 key={sub.name}
                                 href={sub.path}
                                 className={`p-1 hover:text-black hover:font-medium rounded-lg text-left flex items-center gap-3 
-                                                                        ${
-                                                                          isActiveSub
-                                                                            ? "bg-gray-200 font-medium"
-                                                                            : ""
-                                                                        }`}
+                                                                        ${isActiveSub
+                                    ? "bg-gray-200 font-medium"
+                                    : ""
+                                  }`}
                               >
                                 {sub.icon} {sub.name}
                               </Link>
