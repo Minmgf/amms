@@ -47,7 +47,7 @@ const page = () => {
 
     return (
         <div className="p-6 w-full bg-gray-100 min-h-screen">
-            <h1 className="text-2xl font-bold mb-6">Access and Audit Log</h1>
+            <h1 className="text-2xl font-bold mb-6">Role Management</h1>
 
             <div className="flex items-center gap-3 mb-6">
                 <div className="relative flex-1 min-w-0 sm:flex-none sm:w-72">
