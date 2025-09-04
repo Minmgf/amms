@@ -4,7 +4,7 @@ import { MdKeyboardArrowDown, MdWarning } from "react-icons/md";
 import { HiOutlinePencilAlt } from "react-icons/hi";
 import ChangePasswordModal from "../../components/userProfile/modals/ChangePasswordModal";
 import ChangePhotoModal from "../../components/userProfile/modals/ChangePhotoModal";
-import { getUserData } from "@/services/profileService";
+import { getUserData, getTypeDocuments, getGenders } from "@/services/profileService";
 
 const ProfilePage = () => {
   const [formData, setFormData] = useState({
@@ -25,10 +25,11 @@ const ProfilePage = () => {
   const [id, setId] = useState("");
   const [userData, setUserData] = useState([]);
   const [errors, setErrors] = useState({});
-  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] =
-    useState(false);
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [isChangePhotoModalOpen, setIsChangePhotoModalOpen] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState(null);
+  const [documentTypes, setDocumentTypes] = useState([]);
+  const [genders, setGenders] = useState([]);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("userData");
@@ -50,7 +51,7 @@ const ProfilePage = () => {
       try {
         const response = await getUserData(id);
         if (response.success && response.data.length > 0) {
-          const data = response.data[0]; 
+          const data = response.data[0];
 
           setUserData(data);
           setFormData({
@@ -82,7 +83,27 @@ const ProfilePage = () => {
       }
     };
 
+    const getTypeDocument = async () => {
+      try {
+        const response = await getTypeDocuments();
+        setDocumentTypes(response.data);
+      } catch (error) {
+        console.error("Error fetching data", error);
+      }
+    };
+
+    const getGender = async () => {
+      try {
+        const response = await getGenders();
+        setGenders(response.data);
+      } catch (error) {
+        console.error("Error fetching data", error);
+      }
+    };
+
     getData();
+    getTypeDocument();
+    getGender();
   }, [id]);
 
   const validateField = (name, value) => {
@@ -274,8 +295,8 @@ const ProfilePage = () => {
                     value={formData.name}
                     onChange={handleInputChange}
                     className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${errors.name
-                        ? "border-red-300 focus:ring-red-500"
-                        : "border-gray-300 focus:ring-blue-500"
+                      ? "border-red-300 focus:ring-red-500"
+                      : "border-gray-300 focus:ring-blue-500"
                       }`}
                   />
                   {errors.name && (
@@ -292,8 +313,8 @@ const ProfilePage = () => {
                     value={formData.lastName}
                     onChange={handleInputChange}
                     className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${errors.lastName
-                        ? "border-red-300 focus:ring-red-500"
-                        : "border-gray-300 focus:ring-blue-500"
+                      ? "border-red-300 focus:ring-red-500"
+                      : "border-gray-300 focus:ring-blue-500"
                       }`}
                   />
                   {errors.lastName && (
@@ -313,9 +334,12 @@ const ProfilePage = () => {
                       onChange={handleInputChange}
                       className="w-full border border-gray-300 rounded-lg p-2 appearance-none bg-white text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="C.C">C.C</option>
-                      <option value="C.E">C.E</option>
-                      <option value="Passport">Passport</option>
+                      <option value="">Select...</option>
+                      {documentTypes.map((doc) => (
+                        <option key={doc.id} value={doc.name}>
+                          {doc.name}
+                        </option>
+                      ))}
                     </select>
                     <MdKeyboardArrowDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                   </div>
@@ -330,8 +354,8 @@ const ProfilePage = () => {
                     value={formData.documentNumber}
                     onChange={handleInputChange}
                     className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${errors.documentNumber
-                        ? "border-red-300 focus:ring-red-500"
-                        : "border-gray-300 focus:ring-blue-500"
+                      ? "border-red-300 focus:ring-red-500"
+                      : "border-gray-300 focus:ring-blue-500"
                       }`}
                   />
                   {errors.documentNumber && (
@@ -350,8 +374,8 @@ const ProfilePage = () => {
                     value={formData.email}
                     onChange={handleInputChange}
                     className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${errors.email
-                        ? "border-red-300 focus:ring-red-500"
-                        : "border-gray-300 focus:ring-blue-500"
+                      ? "border-red-300 focus:ring-red-500"
+                      : "border-gray-300 focus:ring-blue-500"
                       }`}
                   />
                   {errors.email && (
@@ -369,9 +393,12 @@ const ProfilePage = () => {
                       onChange={handleInputChange}
                       className="w-full border border-gray-300 rounded-lg p-2 appearance-none bg-white text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="Masculino">Masculino</option>
-                      <option value="Femenino">Femenino</option>
-                      <option value="Otro">Otro</option>
+                      <option value="">Select...</option>
+                      {genders.map((doc) => (
+                        <option key={doc.id} value={doc.name}>
+                          {doc.name}
+                        </option>
+                      ))}
                     </select>
                     <MdKeyboardArrowDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                   </div>
@@ -386,8 +413,8 @@ const ProfilePage = () => {
                     value={formData.birthDate}
                     onChange={handleInputChange}
                     className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${errors.birthDate
-                        ? "border-red-300 focus:ring-red-500"
-                        : "border-gray-300 focus:ring-blue-500"
+                      ? "border-red-300 focus:ring-red-500"
+                      : "border-gray-300 focus:ring-blue-500"
                       }`}
                   />
                   {errors.birthDate && (
@@ -406,8 +433,8 @@ const ProfilePage = () => {
                     value={formData.expeditionDate}
                     onChange={handleInputChange}
                     className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${errors.expeditionDate
-                        ? "border-red-300 focus:ring-red-500"
-                        : "border-gray-300 focus:ring-blue-500"
+                      ? "border-red-300 focus:ring-red-500"
+                      : "border-gray-300 focus:ring-blue-500"
                       }`}
                   />
                   {errors.expeditionDate && (
@@ -487,8 +514,8 @@ const ProfilePage = () => {
                     onChange={handleInputChange}
                     placeholder="Example..."
                     className={`w-full border-2 rounded-lg p-3 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 ${errors.address
-                        ? "border-red-300 focus:ring-red-500 focus:border-transparent"
-                        : "border-red-300 focus:ring-red-500 focus:border-transparent"
+                      ? "border-red-300 focus:ring-red-500 focus:border-transparent"
+                      : "border-red-300 focus:ring-red-500 focus:border-transparent"
                       }`}
                   />
                   {errors.address && (
@@ -515,8 +542,8 @@ const ProfilePage = () => {
                         value={formData.phoneNumber}
                         onChange={handleInputChange}
                         className={`w-full border rounded-lg p-3 text-gray-900 font-medium focus:outline-none focus:ring-2 ${errors.phoneNumber
-                            ? "border-red-300 focus:ring-red-500"
-                            : "border-gray-300 focus:ring-blue-500"
+                          ? "border-red-300 focus:ring-red-500"
+                          : "border-gray-300 focus:ring-blue-500"
                           }`}
                       />
                       {errors.phoneNumber && (
@@ -572,6 +599,7 @@ const ProfilePage = () => {
       <ChangePhotoModal
         isOpen={isChangePhotoModalOpen}
         onClose={() => setIsChangePhotoModalOpen(false)}
+        onSave={(newPhotoUrl) => setProfilePhoto(newPhotoUrl)}
       />
     </div>
   );
