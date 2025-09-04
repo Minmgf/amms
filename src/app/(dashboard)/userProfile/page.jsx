@@ -1,35 +1,87 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { MdKeyboardArrowDown, MdWarning } from "react-icons/md";
 import { HiOutlinePencilAlt } from "react-icons/hi";
 import ChangePasswordModal from "../../components/userProfile/modals/ChangePasswordModal";
 import ChangePhotoModal from "../../components/userProfile/modals/ChangePhotoModal";
+import { getUserData } from "@/services/profileService";
 
 const ProfilePage = () => {
   const [formData, setFormData] = useState({
-    name: 'Hernán Darío',
-    lastName: 'Torres Ramírez',
-    email: 'hernan.torres@company.com',
-    documentType: 'C.C',
-    documentNumber: '1033123123',
-    gender: 'Masculino',
-    birthDate: '1985-03-14',
-    expeditionDate: '2003-03-14',
-    country: 'Colombia',
-    region: 'Cundinamarca',
-    city: 'Bogotá',
-    address: '',
-    phoneNumber: '3123234234234'
+    name: "",             
+    lastName: "",         
+    email: "",            
+    documentType: "",     
+    documentNumber: "",   
+    gender: "",           
+    birthDate: "",        
+    expeditionDate: "",   
+    country: "",          
+    region: "",           
+    city: "",             
+    address: "",          
+    phoneNumber: "",      
   });
-
+  const [id, setId] = useState("");
+  const [userData, setUserData] = useState([]);
   const [errors, setErrors] = useState({});
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [isChangePhotoModalOpen, setIsChangePhotoModalOpen] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState(null);
 
+  useEffect(() => {
+    const storedUser = localStorage.getItem("userData");
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setId(userData.id); // esto se actualiza asincrónicamente
+      } catch (err) {
+        console.error("Error parsing userData", err);
+      }
+    }
+  }, []);
+
+  // este efecto depende de id
+  useEffect(() => {
+    if (!id) return; // si id aún no existe, no ejecuto nada
+
+    const getData = async () => {
+      try {
+        const response = await getUserData(id);
+        if (response.success && response.data.length > 0) {
+          setUserData(response.data[0]);
+          setFormData({
+            name: userData.name || "",
+            lastName: `${userData.first_last_name || ""} ${userData.second_last_name || ""}`.trim(),
+            email: userData.email || "",
+            documentType: userData.type_document_name || "C.C",
+            documentNumber: userData.document_number?.toString() || "",
+            gender: userData.gender_name || "",
+            birthDate: userData.birthday ? userData.birthday.split("T")[0] : "",
+            expeditionDate: userData.date_issuance_document ? userData.date_issuance_document.split("T")[0] : "",
+            country: userData.country || "",
+            region: userData.department || "",
+            city: userData.city?.toString() || "",
+            address: userData.address || "",
+            phoneNumber: userData.phone || "",
+          });
+
+          // Foto de perfil
+          if (userData.profile_picture) {
+            setProfilePhoto(userData.profile_picture);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching data", error);
+      }
+    };
+
+    getData();
+  }, [id]);
+
   const validateField = (name, value) => {
     let error = '';
-    
+
     switch (name) {
       case 'name':
       case 'lastName':
@@ -41,7 +93,7 @@ const ProfilePage = () => {
           error = 'Solo se permiten letras y espacios';
         }
         break;
-        
+
       case 'email':
         if (!value.trim()) {
           error = 'El email es requerido';
@@ -49,7 +101,7 @@ const ProfilePage = () => {
           error = 'Formato de email inválido';
         }
         break;
-        
+
       case 'documentNumber':
         if (!value.trim()) {
           error = 'El número de documento es requerido';
@@ -61,7 +113,7 @@ const ProfilePage = () => {
           error = 'Pasaporte debe tener entre 6 y 12 caracteres alfanuméricos';
         }
         break;
-        
+
       case 'birthDate':
         if (!value) {
           error = 'La fecha de nacimiento es requerida';
@@ -74,7 +126,7 @@ const ProfilePage = () => {
           }
         }
         break;
-        
+
       case 'expeditionDate':
         if (!value) {
           error = 'La fecha de expedición es requerida';
@@ -82,7 +134,7 @@ const ProfilePage = () => {
           const expeditionDate = new Date(value);
           const birthDate = new Date(formData.birthDate);
           const today = new Date();
-          
+
           if (expeditionDate > today) {
             error = 'La fecha no puede ser futura';
           } else if (expeditionDate < birthDate) {
@@ -90,7 +142,7 @@ const ProfilePage = () => {
           }
         }
         break;
-        
+
       case 'phoneNumber':
         if (!value.trim()) {
           error = 'El número de teléfono es requerido';
@@ -98,7 +150,7 @@ const ProfilePage = () => {
           error = 'Debe tener exactamente 10 dígitos';
         }
         break;
-        
+
       case 'address':
         if (!value.trim()) {
           error = 'La dirección es requerida';
@@ -107,19 +159,19 @@ const ProfilePage = () => {
         }
         break;
     }
-    
+
     return error;
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
+
     // Actualizar el valor
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-    
+
     // Validar el campo y actualizar errores
     const error = validateField(name, value);
     setErrors(prev => ({
@@ -148,21 +200,21 @@ const ProfilePage = () => {
       {/* Title outside container */}
       <div className="w-full max-w-5xl 2xl:max-w-none xl:w-8/9 2xl:w-9/10">
         <h1 className="text-3xl font-bold mb-8 text-gray-900">My profile</h1>
-        
+
         <div className="bg-white rounded-2xl shadow p-6 md:p-10">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Section */}
             <div className="grid place-items-center grid-rows-[auto_auto_auto_1fr] gap-6">
               {/* Avatar */}
-              <div 
+              <div
                 className="w-40 h-40 rounded-full bg-green-200 relative cursor-pointer group hover:bg-green-300 overflow-hidden flex items-center justify-center hadow-md border border-gray-100 hover:shadow-xl transition-all duration-300 ease-in-out"
                 onClick={() => setIsChangePhotoModalOpen(true)}
               >
                 {profilePhoto ? (
                   <>
-                    <img 
-                      src={profilePhoto} 
-                      alt="Profile" 
+                    <img
+                      src={profilePhoto}
+                      alt="Profile"
                       className="w-full h-full object-cover rounded-full"
                     />
                   </>
@@ -214,11 +266,10 @@ const ProfilePage = () => {
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${
-                      errors.name 
-                        ? 'border-red-300 focus:ring-red-500' 
-                        : 'border-gray-300 focus:ring-blue-500'
-                    }`}
+                    className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${errors.name
+                      ? 'border-red-300 focus:ring-red-500'
+                      : 'border-gray-300 focus:ring-blue-500'
+                      }`}
                   />
                   {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
                 </div>
@@ -229,18 +280,17 @@ const ProfilePage = () => {
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleInputChange}
-                    className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${
-                      errors.lastName 
-                        ? 'border-red-300 focus:ring-red-500' 
-                        : 'border-gray-300 focus:ring-blue-500'
-                    }`}
+                    className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${errors.lastName
+                      ? 'border-red-300 focus:ring-red-500'
+                      : 'border-gray-300 focus:ring-blue-500'
+                      }`}
                   />
                   {errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>}
                 </div>
                 <div>
                   <span className="font-semibold text-gray-800 block mb-2">Document type</span>
                   <div className="relative">
-                    <select 
+                    <select
                       name="documentType"
                       value={formData.documentType}
                       onChange={handleInputChange}
@@ -260,11 +310,10 @@ const ProfilePage = () => {
                     name="documentNumber"
                     value={formData.documentNumber}
                     onChange={handleInputChange}
-                    className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${
-                      errors.documentNumber 
-                        ? 'border-red-300 focus:ring-red-500' 
-                        : 'border-gray-300 focus:ring-blue-500'
-                    }`}
+                    className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${errors.documentNumber
+                      ? 'border-red-300 focus:ring-red-500'
+                      : 'border-gray-300 focus:ring-blue-500'
+                      }`}
                   />
                   {errors.documentNumber && <p className="text-red-500 text-xs mt-1">{errors.documentNumber}</p>}
                 </div>
@@ -275,18 +324,17 @@ const ProfilePage = () => {
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${
-                      errors.email 
-                        ? 'border-red-300 focus:ring-red-500' 
-                        : 'border-gray-300 focus:ring-blue-500'
-                    }`}
+                    className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${errors.email
+                      ? 'border-red-300 focus:ring-red-500'
+                      : 'border-gray-300 focus:ring-blue-500'
+                      }`}
                   />
                   {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
                 </div>
                 <div>
                   <span className="font-semibold text-gray-800 block mb-2">Género</span>
                   <div className="relative">
-                    <select 
+                    <select
                       name="gender"
                       value={formData.gender}
                       onChange={handleInputChange}
@@ -306,11 +354,10 @@ const ProfilePage = () => {
                     name="birthDate"
                     value={formData.birthDate}
                     onChange={handleInputChange}
-                    className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${
-                      errors.birthDate 
-                        ? 'border-red-300 focus:ring-red-500' 
-                        : 'border-gray-300 focus:ring-blue-500'
-                    }`}
+                    className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${errors.birthDate
+                      ? 'border-red-300 focus:ring-red-500'
+                      : 'border-gray-300 focus:ring-blue-500'
+                      }`}
                   />
                   {errors.birthDate && <p className="text-red-500 text-xs mt-1">{errors.birthDate}</p>}
                 </div>
@@ -321,11 +368,10 @@ const ProfilePage = () => {
                     name="expeditionDate"
                     value={formData.expeditionDate}
                     onChange={handleInputChange}
-                    className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${
-                      errors.expeditionDate 
-                        ? 'border-red-300 focus:ring-red-500' 
-                        : 'border-gray-300 focus:ring-blue-500'
-                    }`}
+                    className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${errors.expeditionDate
+                      ? 'border-red-300 focus:ring-red-500'
+                      : 'border-gray-300 focus:ring-blue-500'
+                      }`}
                   />
                   {errors.expeditionDate && <p className="text-red-500 text-xs mt-1">{errors.expeditionDate}</p>}
                 </div>
@@ -340,7 +386,7 @@ const ProfilePage = () => {
                 <div>
                   <label className="block text-sm font-semibold text-gray-800 mb-3">Country</label>
                   <div className="relative">
-                    <select 
+                    <select
                       name="country"
                       value={formData.country}
                       onChange={handleInputChange}
@@ -354,7 +400,7 @@ const ProfilePage = () => {
                 <div>
                   <label className="block text-sm font-semibold text-gray-800 mb-3">Region</label>
                   <div className="relative">
-                    <select 
+                    <select
                       name="region"
                       value={formData.region}
                       onChange={handleInputChange}
@@ -368,7 +414,7 @@ const ProfilePage = () => {
                 <div>
                   <label className="block text-sm font-semibold text-gray-800 mb-3">City</label>
                   <div className="relative">
-                    <select 
+                    <select
                       name="city"
                       value={formData.city}
                       onChange={handleInputChange}
@@ -393,11 +439,10 @@ const ProfilePage = () => {
                     value={formData.address}
                     onChange={handleInputChange}
                     placeholder="Example..."
-                    className={`w-full border-2 rounded-lg p-3 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 ${
-                      errors.address 
-                        ? 'border-red-300 focus:ring-red-500 focus:border-transparent' 
-                        : 'border-red-300 focus:ring-red-500 focus:border-transparent'
-                    }`}
+                    className={`w-full border-2 rounded-lg p-3 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 ${errors.address
+                      ? 'border-red-300 focus:ring-red-500 focus:border-transparent'
+                      : 'border-red-300 focus:ring-red-500 focus:border-transparent'
+                      }`}
                   />
                   {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
                 </div>
@@ -416,11 +461,10 @@ const ProfilePage = () => {
                         name="phoneNumber"
                         value={formData.phoneNumber}
                         onChange={handleInputChange}
-                        className={`w-full border rounded-lg p-3 text-gray-900 font-medium focus:outline-none focus:ring-2 ${
-                          errors.phoneNumber 
-                            ? 'border-red-300 focus:ring-red-500' 
-                            : 'border-gray-300 focus:ring-blue-500'
-                        }`}
+                        className={`w-full border rounded-lg p-3 text-gray-900 font-medium focus:outline-none focus:ring-2 ${errors.phoneNumber
+                          ? 'border-red-300 focus:ring-red-500'
+                          : 'border-gray-300 focus:ring-blue-500'
+                          }`}
                       />
                       {errors.phoneNumber && <p className="text-red-500 text-xs mt-1">{errors.phoneNumber}</p>}
                     </div>
@@ -438,7 +482,7 @@ const ProfilePage = () => {
 
               {/* Buttons */}
               <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-center">
-                <button 
+                <button
                   onClick={() => setIsChangePasswordModalOpen(true)}
                   className="bg-black text-white font-semibold px-8 py-3 rounded-lg hover:bg-gray-800 transition-colors justify-self-center md:justify-self-start"
                 >
@@ -464,7 +508,7 @@ const ProfilePage = () => {
         onClose={() => setIsChangePasswordModalOpen(false)}
         onSubmit={handlePasswordChange}
       />
-      
+
       <ChangePhotoModal
         isOpen={isChangePhotoModalOpen}
         onClose={() => setIsChangePhotoModalOpen(false)}
