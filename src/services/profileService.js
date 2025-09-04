@@ -11,3 +11,8 @@ export const changeProfilePhoto = async (userId, formData) => {
     );
     return data;
 };
+
+export const changeUserPassword = async (userId, payload) => {
+    const { data } = await apiUsers.post(`users/${userId}/change-password`, payload);
+    return data;
+};
