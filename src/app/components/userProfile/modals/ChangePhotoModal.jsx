@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from "react";
 import { AiOutlineClose, AiOutlinePlus } from "react-icons/ai";
 import { HiOutlineUpload } from "react-icons/hi";
 import { useForm } from "react-hook-form";
-import axios from "axios";
 import { changeProfilePhoto, getUserData } from "@/services/profileService";
 import { SuccessModal, ErrorModal } from "../../shared/SuccessErrorModal";
 
@@ -61,6 +60,15 @@ const ChangePhotoModal = ({ isOpen, onClose, onSave }) => {
       const response = await changeProfilePhoto(id, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
+      // Obtener usuario actualizado
+      const userResponse = await getUserData(id);
+      const newPhotoUrl = userResponse.data[0]?.profile_picture || null;
+
+      if (newPhotoUrl) {
+        localStorage.setItem("userPhoto", newPhotoUrl);
+        window.dispatchEvent(new Event("userPhotoChanged"));
+        onSave?.(newPhotoUrl);
+      }
       reset();
       setPreviewUrl(null);
       setModalMessage(response.data);
@@ -69,7 +77,7 @@ const ChangePhotoModal = ({ isOpen, onClose, onSave }) => {
         setSuccessOpen(false);
         onClose();
       }, 2000);
-      await getData(id); 
+      await getData(id);
     } catch (error) {
       setModalMessage(error.response.data.detail);
       setErrorOpen(true);

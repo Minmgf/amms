@@ -18,6 +18,14 @@ export const apiMain = axios.create({
   },
 });
 
+
+export const apiLocation = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_BASE_URL_LOCATION,
+  headers: {
+    "X-CSCAPI-KEY": process.env.NEXT_PUBLIC_CSC_API_KEY, // tu API key
+  },
+});
+
 // Función para agregar interceptores
 const addInterceptors = (instance) => {
   instance.interceptors.request.use(

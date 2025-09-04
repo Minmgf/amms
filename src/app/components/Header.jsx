@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { FiBell, FiUser, FiX } from "react-icons/fi";
 import { MdPalette } from "react-icons/md";
+import { getUserData } from "@/services/profileService";
 
 const initialNotis = [
   {
@@ -33,6 +34,7 @@ const initialNotis = [
 
 export default function Header() {
   const [username, setUsername] = useState("");
+  const [profilePhoto, setProfilePhoto] = useState(null);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const [showNotis, setShowNotis] = useState(false);
@@ -50,6 +52,32 @@ export default function Header() {
         console.error("Error parsing userData", err);
       }
     }
+
+    async function fetchUserPhoto() {
+      try {
+        const response = await getUserData();
+        if (response.data.profile_picture) {
+          setProfilePhoto(response.data.profile_picture);
+        }
+      } catch (err) {
+        console.error("Error fetching user photo:", err);
+      }
+    }
+
+    fetchUserPhoto();
+  }, []);
+
+  useEffect(() => {
+    const photo = localStorage.getItem("userPhoto");
+    if (photo) setProfilePhoto(photo);
+
+    function handlePhotoChange() {
+      const photo = localStorage.getItem("userPhoto");
+      if (photo) setProfilePhoto(photo);
+    }
+
+    window.addEventListener("userPhotoChanged", handlePhotoChange);
+    return () => window.removeEventListener("userPhotoChanged", handlePhotoChange);
   }, []);
 
   // Cerrar menú si se hace clic fuera
@@ -227,9 +255,17 @@ export default function Header() {
           href="/userProfile"
           className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition"
         >
-          <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white font-bold">
-            JV
-          </div>
+          {profilePhoto ? (
+            <img
+              src={profilePhoto}
+              alt="Profile"
+              className="w-8 h-8 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white">
+              <FiUser size={20} />
+            </div>
+          )}
           <span className="text-sm text-gray-700 dark:text-gray-200">
             Bienvenido!
             <br />
