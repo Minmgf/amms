@@ -13,9 +13,9 @@ import {
 import NavigationMenu from '../components/ParameterNavigation';
 
 // IMPORTAR LOS MODALES - Ajusta la ruta según donde tengas la carpeta de modales
-import ParameterTypesModal from '../modals/ParameterTypesModal';
-import ParameterModifyTypesModal from '../modals/ParameterModifyTypesModal';
-import ParameterAddTypesModal from '../modals/ParameterAddTypesModal';
+import ParameterTypesModal from '../components/userParameterization/ParameterTypesModal';
+import ParameterModifyTypesModal from '../components/userParameterization/ParameterModifyTypesModal';
+import ParameterAddTypesModal from '../components/userParameterization/ParameterAddTypesModal';
 
 // Componente principal
 const ParameterizationView = () => {
