@@ -45,6 +45,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
   const [modalMessage, setModalMessage] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showNotis, setShowNotis] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const handleLogout = async () => {
     try {
