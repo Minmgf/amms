@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -9,33 +9,38 @@ import {
   flexRender,
   createColumnHelper,
 } from '@tanstack/react-table';
-import { FaSearch, FaFilter, FaUserPlus, FaEdit, FaTrash, FaEye, FaSort, FaSortUp, FaSortDown, FaArrowLeft, FaPlus, FaExclamationTriangle } from 'react-icons/fa';
-import * as Dialog from '@radix-ui/react-dialog';
-import userData from '../../data/users.json';
+import { FaSearch, FaFilter, FaUserPlus, FaSort, FaSortUp, FaSortDown, FaExclamationTriangle } from 'react-icons/fa';
+import { getUsersList, getUserInfo } from '../../../services/authService';
+import AddUserModal from './AddUserModal';
+import UserDetailsModal from './userDetailsModal';
 
 const columnHelper = createColumnHelper();
 
 const columns = [
-  columnHelper.accessor('fullName', {
-    header: 'Full name',
-    cell: info => info.getValue(),
+  columnHelper.accessor('name', {
+    header: 'Nombre',
+    cell: info => {
+      const user = info.row.original;
+      const fullName = `${user.name} ${user.first_last_name} ${user.second_last_name || ''}`.trim();
+      return fullName;
+    },
     enableSorting: true,
   }),
-  columnHelper.accessor('documentType', {
-    header: 'Document type',
+  columnHelper.accessor('type_document_name', {
+    header: 'Tipo de documento',
     cell: info => (
       <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
         {info.getValue()}
       </span>
     ),
   }),
-  columnHelper.accessor('documentNumber', {
-    header: 'Document number',
+  columnHelper.accessor('document_number', {
+    header: 'Número de documento',
     cell: info => info.getValue(),
   }),
   columnHelper.accessor('email', {
     header: 'Email',
-    cell: info => info.getValue(),
+    cell: info => info.getValue() || 'No disponible',
     enableSorting: true,
   }),
   columnHelper.accessor('roles', {
@@ -44,40 +49,26 @@ const columns = [
       <div className="flex gap-1 flex-wrap">
         {info.getValue().map((role, index) => (
           <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
-            {role}
+            {role.name}
           </span>
         ))}
       </div>
     ),
   }),
-  columnHelper.accessor('status', {
-    header: 'Status',
+  columnHelper.accessor('status_name', {
+    header: 'Estado',
     cell: info => (
       <span className={`px-2 py-1 rounded-full text-xs ${
-        info.getValue() === 'Active' 
+        info.getValue() === 'Activo' 
           ? 'bg-green-100 text-green-700' 
-          : 'bg-pink-100 text-pink-700'
+          : info.getValue() === 'Pendiente'
+          ? 'bg-yellow-100 text-yellow-700'
+          : 'bg-red-100 text-red-700'
       }`}>
         {info.getValue()}
       </span>
     ),
     enableSorting: true,
-  }),
-  columnHelper.accessor('id', {
-    header: 'Actions',
-    cell: info => (
-      <div className="flex gap-2">
-        <button className="p-1 text-blue-600 hover:text-blue-800" title="Ver">
-          <FaEye size={14} />
-        </button>
-        <button className="p-1 text-green-600 hover:text-green-800" title="Editar">
-          <FaEdit size={14} />
-        </button>
-        <button className="p-1 text-red-600 hover:text-red-800" title="Eliminar">
-          <FaTrash size={14} />
-        </button>
-      </div>
-    ),
   }),
 ];
 
@@ -85,32 +76,47 @@ export default function UserTable() {
   const [globalFilter, setGlobalFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
-  const [data] = useState(() => userData);
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  
-  // Estado del formulario
-  const [formData, setFormData] = useState({
-    identificationType: 'C.C',
-    identificationNumber: '',
-    gender: '',
-    expeditionDate: '',
-    birthDate: '',
-    role: '',
-    selectedRoles: [],
-    name: '',
-    lastName: ''
-  });
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userDetails, setUserDetails] = useState(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+
+  // Cargar datos de usuarios
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        const response = await getUsersList();
+        if (response.success) {
+          setData(response.data);
+        } else {
+          setError('Error al cargar los usuarios');
+        }
+      } catch (err) {
+        setError('Error al cargar los usuarios: ' + err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   // Filtrar datos basado en los filtros
   const filteredData = useMemo(() => {
     return data.filter(user => {
+      const fullName = `${user.name} ${user.first_last_name} ${user.second_last_name || ''}`.trim();
       const matchesGlobal = globalFilter === '' || 
-        user.fullName.toLowerCase().includes(globalFilter.toLowerCase()) ||
-        user.email.toLowerCase().includes(globalFilter.toLowerCase()) ||
-        user.documentNumber.includes(globalFilter);
+        fullName.toLowerCase().includes(globalFilter.toLowerCase()) ||
+        (user.email && user.email.toLowerCase().includes(globalFilter.toLowerCase())) ||
+        user.document_number.toString().includes(globalFilter);
       
-      const matchesStatus = statusFilter === '' || user.status === statusFilter;
-      const matchesRole = roleFilter === '' || user.roles.includes(roleFilter);
+      const matchesStatus = statusFilter === '' || user.status_name === statusFilter;
+      const matchesRole = roleFilter === '' || user.roles.some(role => role.name === roleFilter);
       
       return matchesGlobal && matchesStatus && matchesRole;
     });
@@ -129,43 +135,62 @@ export default function UserTable() {
     onGlobalFilterChange: setGlobalFilter,
   });
 
-  const handleAddRole = () => {
-    if (formData.role && !formData.selectedRoles.includes(formData.role)) {
-      setFormData(prev => ({
-        ...prev,
-        selectedRoles: [...prev.selectedRoles, prev.role],
-        role: ''
-      }));
+  const handleUserCreated = () => {
+    // Recargar la lista de usuarios después de crear uno nuevo
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        const response = await getUsersList();
+        if (response.success) {
+          setData(response.data);
+        } else {
+          setError('Error al cargar los usuarios');
+        }
+      } catch (err) {
+        setError('Error al cargar los usuarios: ' + err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUsers();
+  };
+
+  const handleUserClick = async (user) => {
+    try {
+      console.log('Click en usuario:', user);
+      setSelectedUser(user);
+      setIsDetailsModalOpen(true);
+      setDetailsLoading(true);
+      setUserDetails(null);
+
+      // Obtener información detallada del usuario
+      const response = await getUserInfo(user.id);
+      console.log('Respuesta del API:', response);
+      if (response.success && response.data && response.data.length > 0) {
+        // La respuesta tiene la estructura { success: true, data: [userObject] }
+        setUserDetails(response.data[0]);
+      } else {
+        console.error('Error al obtener detalles del usuario');
+        // Si falla, usar los datos básicos de la tabla
+        setUserDetails(user);
+      }
+    } catch (err) {
+      console.error('Error al obtener detalles del usuario:', err);
+      // Si falla, usar los datos básicos de la tabla
+      setUserDetails(user);
+    } finally {
+      setDetailsLoading(false);
     }
   };
 
-  const handleRemoveRole = (roleToRemove) => {
-    setFormData(prev => ({
-      ...prev,
-      selectedRoles: prev.selectedRoles.filter(role => role !== roleToRemove)
-    }));
+  const handleCloseDetailsModal = () => {
+    setIsDetailsModalOpen(false);
+    setSelectedUser(null);
+    setUserDetails(null);
+    setDetailsLoading(false);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Aquí puedes agregar la lógica para crear el usuario
-    console.log('Datos del formulario:', formData);
-    setIsCreateModalOpen(false);
-    // Resetear el formulario
-    setFormData({
-      identificationType: 'C.C',
-      identificationNumber: '',
-      gender: '',
-      expeditionDate: '',
-      birthDate: '',
-      role: '',
-      selectedRoles: [],
-      name: '',
-      lastName: ''
-    });
-  };
 
-  const isFormValid = formData.name && formData.lastName && formData.identificationNumber;
 
   return (
     <div className="space-y-6">
@@ -191,8 +216,9 @@ export default function UserTable() {
             className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="">Todos los estados</option>
-            <option value="Active">Activo</option>
-            <option value="Inactive">Inactivo</option>
+            <option value="Activo">Activo</option>
+            <option value="Pendiente">Pendiente</option>
+            <option value="Inactivo">Inactivo</option>
           </select>
           
           <select
@@ -201,9 +227,8 @@ export default function UserTable() {
             className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="">Todos los roles</option>
-            <option value="Administrator">Administrador</option>
-            <option value="Manager">Gerente</option>
-            <option value="Employee">Empleado</option>
+            <option value="administrador">Administrador</option>
+            <option value="usuario">Usuario</option>
           </select>
           
           <button 
@@ -218,228 +243,13 @@ export default function UserTable() {
             Limpiar filtros
           </button>
           
-          <Dialog.Root open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-            <Dialog.Trigger asChild>
-              <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                <FaUserPlus />
-                Add user
-              </button>
-            </Dialog.Trigger>
-            
-            <Dialog.Portal>
-              <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
-              <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl z-50 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                <div className="p-6">
-                  {/* Header */}
-                  <div className="flex items-center gap-3 mb-6">
-                    <button
-                      onClick={() => setIsCreateModalOpen(false)}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition"
-                    >
-                      <FaArrowLeft className="text-gray-600" />
-                    </button>
-                    <h2 className="text-xl font-semibold text-gray-800">Register User</h2>
-                  </div>
-
-                  {/* Formulario */}
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Tipo de identificación */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Identification type
-                        </label>
-                        <select
-                          value={formData.identificationType}
-                          onChange={(e) => setFormData(prev => ({ ...prev, identificationType: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        >
-                          <option value="C.C">C.C</option>
-                          <option value="T.I">T.I</option>
-                          <option value="C.E">C.E</option>
-                          <option value="PASSPORT">PASSPORT</option>
-                        </select>
-                      </div>
-
-                      {/* Número de identificación */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Identification number
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.identificationNumber}
-                          onChange={(e) => setFormData(prev => ({ ...prev, identificationNumber: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Ingrese número de identificación"
-                        />
-                      </div>
-
-                      {/* Género */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Gender
-                        </label>
-                        <select
-                          value={formData.gender}
-                          onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        >
-                          <option value="">Seleccionar género</option>
-                          <option value="Male">Masculino</option>
-                          <option value="Female">Femenino</option>
-                          <option value="Other">Otro</option>
-                        </select>
-                      </div>
-
-                      {/* Fecha de expedición */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Expedition date
-                        </label>
-                        <input
-                          type="date"
-                          value={formData.expeditionDate}
-                          onChange={(e) => setFormData(prev => ({ ...prev, expeditionDate: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-
-                      {/* Fecha de nacimiento */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Birth date
-                        </label>
-                        <input
-                          type="date"
-                          value={formData.birthDate}
-                          onChange={(e) => setFormData(prev => ({ ...prev, birthDate: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-
-                      {/* Rol */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Role
-                        </label>
-                        <div className="flex gap-2">
-                          <select
-                            value={formData.role}
-                            onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))}
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          >
-                            <option value="">Seleccionar rol</option>
-                            <option value="Administrator">Administrador</option>
-                            <option value="Manager">Gerente</option>
-                            <option value="Employee">Empleado</option>
-                            <option value="User">Usuario</option>
-                          </select>
-                          <button
-                            type="button"
-                            onClick={handleAddRole}
-                            className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition"
-                          >
-                            <FaPlus size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Roles seleccionados */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Selected roles
-                      </label>
-                      <div className="bg-gray-100 rounded-lg p-3 min-h-[60px]">
-                        {formData.selectedRoles.length === 0 ? (
-                          <p className="text-gray-500 text-sm">
-                            No roles added yet. Select an item from the dropdown above and click 'Add'.
-                          </p>
-                        ) : (
-                          <div className="flex flex-wrap gap-2">
-                            {formData.selectedRoles.map((role, index) => (
-                              <span
-                                key={index}
-                                className="px-3 py-1 bg-white text-gray-700 rounded-full text-sm flex items-center gap-2"
-                              >
-                                {role}
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveRole(role)}
-                                  className="text-red-500 hover:text-red-700"
-                                >
-                                  ×
-                                </button>
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Nombre */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Name *
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.name}
-                          onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                            !formData.name ? 'border-red-500' : 'border-gray-300'
-                          }`}
-                          placeholder="Ingrese nombre"
-                        />
-                      </div>
-
-                      {/* Apellido */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Last Name
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.lastName}
-                          onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Ingrese apellido"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Mensaje de advertencia */}
-                    {!isFormValid && (
-                      <div className="flex items-center gap-2 text-red-600 text-sm">
-                        <FaExclamationTriangle />
-                        Please complete all required fields before submitting the form.
-                      </div>
-                    )}
-
-                    {/* Botones */}
-                    <div className="flex justify-end gap-3 pt-4">
-                      <button
-                        type="button"
-                        onClick={() => setIsCreateModalOpen(false)}
-                        className="px-6 py-2 border border-gray-300 text-red-600 rounded-lg hover:bg-red-50 transition"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={!isFormValid}
-                        className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Submit
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </Dialog.Content>
-            </Dialog.Portal>
-          </Dialog.Root>
+          <button 
+            onClick={() => setIsCreateModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          >
+            <FaUserPlus />
+            Add user
+          </button>
         </div>
       </div>
 
@@ -455,58 +265,77 @@ export default function UserTable() {
         </div>
       )}
 
-      {/* Tabla */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              {table.getHeaderGroups().map(headerGroup => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map(header => (
-                    <th
-                      key={header.id}
-                      className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
-                        header.column.getCanSort() ? 'cursor-pointer select-none' : ''
-                      }`}
-                      onClick={header.column.getToggleSortingHandler()}
-                    >
-                      <div className="flex items-center gap-2">
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                        {header.column.getCanSort() && (
-                          <span>
-                            {{
-                              asc: <FaSortUp className="text-gray-400" />,
-                              desc: <FaSortDown className="text-gray-400" />,
-                            }[header.column.getIsSorted()] ?? <FaSort className="text-gray-300" />}
-                          </span>
-                        )}
-                      </div>
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {table.getRowModel().rows.map(row => (
-                <tr key={row.id} className="hover:bg-gray-50">
-                  {row.getVisibleCells().map(cell => (
-                    <td key={cell.id} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Loading y Error States */}
+      {loading && (
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Cargando usuarios...</p>
         </div>
+      )}
 
-        {/* Paginación */}
-        <div className="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-800">{error}</p>
+        </div>
+      )}
+
+      {/* Tabla */}
+      {!loading && !error && (
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                {table.getHeaderGroups().map(headerGroup => (
+                  <tr key={headerGroup.id}>
+                    {headerGroup.headers.map(header => (
+                      <th
+                        key={header.id}
+                        className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
+                          header.column.getCanSort() ? 'cursor-pointer select-none' : ''
+                        }`}
+                        onClick={header.column.getToggleSortingHandler()}
+                      >
+                        <div className="flex items-center gap-2">
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                          {header.column.getCanSort() && (
+                            <span>
+                              {{
+                                asc: <FaSortUp className="text-gray-400" />,
+                                desc: <FaSortDown className="text-gray-400" />,
+                              }[header.column.getIsSorted()] ?? <FaSort className="text-gray-300" />}
+                            </span>
+                          )}
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {table.getRowModel().rows.map(row => (
+                  <tr 
+                    key={row.id} 
+                    className="hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => handleUserClick(row.original)}
+                  >
+                    {row.getVisibleCells().map(cell => (
+                      <td key={cell.id} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+                    </div>
+
+          {/* Paginación */}
+          <div className="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
           <div className="flex items-center justify-between">
             <div className="flex-1 flex justify-between sm:hidden">
               <button
@@ -600,8 +429,24 @@ export default function UserTable() {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-  );
+                 </div>
+       </div>
+     )}
+
+     {/* Modal de Detalles del Usuario */}
+     <UserDetailsModal
+       isOpen={isDetailsModalOpen}
+       onClose={handleCloseDetailsModal}
+       userData={userDetails}
+       onUserUpdated={handleUserCreated}
+     />
+
+     {/* Modal de Crear Usuario */}
+     <AddUserModal
+       isOpen={isCreateModalOpen}
+       onClose={() => setIsCreateModalOpen(false)}
+       onUserCreated={handleUserCreated}
+     />
+   </div>
+ );
 }

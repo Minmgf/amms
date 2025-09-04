@@ -1,22 +1,105 @@
 "use client";
-import React from "react";
+import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
+import { firstLogin } from "@/services/userService";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
+import { getCountries, getStates, getCities } from "@/services/locationService";
 
 const Page = () => {
+  const [id, setId] = useState("");
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+  const [countriesList, setCountriesList] = useState([]);
+  const [statesList, setStatesList] = useState([]);
+  const [citiesList, setCitiesList] = useState([]);
+  const router = useRouter();
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors }
   } = useForm();
+  const watchCountry = watch("country");
+  const watchState = watch("region");
 
-  const onSubmit = (data) => {
-    console.log("Form Data:", data);
+  useEffect(() => {
+    const storedUser = localStorage.getItem("userData");
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setId(userData.id); // esto se actualiza asincrónicamente
+      } catch (err) {
+        console.error("Error parsing userData", err);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    getCountries().then((data) => setCountriesList(data)).catch(console.error);
+  }, []);
+
+  // Cuando cambia el país, carga los estados
+  useEffect(() => {
+    if (!watchCountry) return; // watchCountry vendrá de React Hook Form
+    getStates(watchCountry)
+      .then(setStatesList)
+      .catch(console.error);
+    setCitiesList([]);
+  }, [watchCountry]);
+
+  // Cuando cambia el estado, carga las ciudades
+  useEffect(() => {
+    if (!watchState) return; // watchState vendrá de React Hook Form
+    getCities(watchCountry, watchState)
+      .then(setCitiesList)
+      .catch(console.error);
+  }, [watchState]);
+
+
+  const onSubmit = async (data) => {
+    try {
+      // Armamos FormData para enviar archivo + texto
+      const formData = new FormData();
+      formData.append("user_id", id);
+      formData.append("country", data.country);
+      formData.append("department", data.region);
+      formData.append("city", data.city);
+      formData.append("address", data.address);
+      formData.append("phoneCode", data.phoneCode);
+      formData.append("phone", data.phone);
+
+      if (data.photo && data.photo.length > 0) {
+        formData.append("photo", data.photo[0]); // archivo real
+      }
+
+      // Aquí haces la petición con Axios
+      const response = await firstLogin(
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data"
+          }
+        }
+      );
+
+      setModalMessage(response.data.message);
+      setSuccessOpen(true);
+      setTimeout(() => {
+        setSuccessOpen(false);
+        router.push("/home");
+      }, 2000);
+    } catch (error) {
+      setModalMessage(error.response.data.detail);
+      setErrorOpen(true);
+    }
   };
 
   return (
     <div
       className="relative min-h-screen bg-cover bg-center flex items-center justify-center"
-      style={{ backgroundImage: "url('/images/singup-background.jpg')" }}
+      style={{ backgroundImage: "url('./images/singup-background.jpg')" }}
     >
       <div className="absolute inset-0 bg-black/50"></div>
       <div className="relative z-10 bg-black/60 text-white rounded-2xl shadow-2xl w-full max-w-4xl p-12 flex flex-col justify-center">
@@ -32,17 +115,17 @@ const Page = () => {
             <div className="relative">
               <label className="block mb-2 text-sm font-medium">Country</label>
               <select
-                {...register("country", { required: true })}
+                {...register("country", { required: "Country is required" })}
                 className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
               >
                 <option value="">Select...</option>
-                <option value="colombia">Colombia</option>
-                <option value="mexico">Mexico</option>
-                <option value="usa">USA</option>
+                {countriesList.map((c) => (
+                  <option key={c.iso2} value={c.iso2}>{c.name}</option>
+                ))}
               </select>
               {errors.country && (
                 <span className="text-red-400 text-xs absolute left-0 -bottom-5">
-                  Este campo es requerido
+                  {errors.country.message}
                 </span>
               )}
             </div>
@@ -50,16 +133,17 @@ const Page = () => {
             <div className="relative">
               <label className="block mb-2 text-sm font-medium">Region</label>
               <select
-                {...register("region", { required: true })}
+                {...register("region", { required: "Region is required" })} disabled={!statesList.length}
                 className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
               >
                 <option value="">Select...</option>
-                <option value="huila">Huila</option>
-                <option value="cundinamarca">Cundinamarca</option>
+                {statesList.map((s) => (
+                  <option key={s.iso2} value={s.iso2}>{s.name}</option>
+                ))}
               </select>
               {errors.region && (
                 <span className="text-red-400 text-xs absolute left-0 -bottom-5">
-                  Este campo es requerido
+                  {errors.region.message}
                 </span>
               )}
             </div>
@@ -67,16 +151,17 @@ const Page = () => {
             <div className="relative">
               <label className="block mb-2 text-sm font-medium">City</label>
               <select
-                {...register("city", { required: true })}
+                {...register("city", { required: "City is required" })} disabled={!citiesList.length}
                 className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
               >
                 <option value="">Select...</option>
-                <option value="neiva">Neiva</option>
-                <option value="bogota">Bogotá</option>
+                {citiesList.map((c) => (
+                  <option key={c.id} value={c.name}>{c.name}</option>
+                ))}
               </select>
               {errors.city && (
                 <span className="text-red-400 text-xs absolute left-0 -bottom-5">
-                  Este campo es requerido
+                  {errors.city.message}
                 </span>
               )}
             </div>
@@ -87,12 +172,12 @@ const Page = () => {
               <input
                 type="text"
                 placeholder="Ej: Calle 123 # 45-67"
-                {...register("address", { required: true })}
+                {...register("address", { required: "Address is required" })}
                 className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
               />
               {errors.address && (
                 <span className="text-red-400 text-xs absolute left-0 -bottom-5">
-                  Este campo es requerido
+                  {errors.address.message}
                 </span>
               )}
             </div>
@@ -117,12 +202,18 @@ const Page = () => {
                 <input
                   type="text"
                   placeholder="Ej: 3112224444"
-                  {...register("phone", { required: true })}
+                  {...register("phone", {
+                    required: "Phone number is required",
+                    pattern: {
+                      value: /^[0-9+\-()\s]*$/,
+                      message: "Only numbers and characters + - ( ) are allowed"
+                    }
+                  })}
                   className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
                 />
                 {errors.phone && (
                   <span className="text-red-400 text-xs absolute left-0 -bottom-5">
-                    Este campo es requerido
+                    {errors.phone.message}
                   </span>
                 )}
               </div>
@@ -145,9 +236,28 @@ const Page = () => {
                 id="photo"
                 type="file"
                 accept="image/png, image/jpeg"
-                {...register("photo")}
+                {...register("photo", {
+                  validate: (fileList) => {
+                    if (fileList.length === 0) return true;
+                    const file = fileList[0];
+                    const allowedTypes = ["image/jpeg", "image/png"];
+                    if (!allowedTypes.includes(file.type)) {
+                      return "Only JPG or PNG images are allowed";
+                    }
+                    if (file.size > 5 * 1024 * 1024) {
+                      return "The file must not exceed 5MB";
+                    }
+                    return true;
+                  }
+                })}
+
                 className="hidden"
               />
+              {errors.photo?.message && (
+                <span className="text-red-400 text-xs mt-2 block">
+                  {errors.photo.message}
+                </span>
+              )}
               <div className="flex flex-col">
                 <button
                   type="button"
@@ -176,6 +286,18 @@ const Page = () => {
             Continue
           </button>
         </form>
+        <SuccessModal
+          isOpen={successOpen}
+          onClose={() => setSuccessOpen(false)}
+          title="Successfully Completed"
+          message={modalMessage}
+        />
+        <ErrorModal
+          isOpen={errorOpen}
+          onClose={() => setErrorOpen(false)}
+          title="Error Submitting data"
+          message={modalMessage}
+        />
       </div>
     </div>
   );
