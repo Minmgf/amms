@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { FiBell, FiUser, FiX } from "react-icons/fi";
 import { MdPalette } from "react-icons/md";
@@ -31,7 +32,7 @@ const initialNotis = [
 ];
 
 export default function Header() {
-  const [darkMode, setDarkMode] = useState(false);
+  const [username, setUsername] = useState("");
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const [showNotis, setShowNotis] = useState(false);
@@ -39,14 +40,17 @@ export default function Header() {
   const panelRef = useRef(null);
   const unreadCount = notis.filter((n) => n.status === "unread").length;
 
-  // Dark mode sync
   useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
+    const storedUser = localStorage.getItem("userData");
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUsername(userData.name);
+      } catch (err) {
+        console.error("Error parsing userData", err);
+      }
     }
-  }, [darkMode]);
+  }, []);
 
   // Cerrar menú si se hace clic fuera
   useEffect(() => {
@@ -96,7 +100,7 @@ export default function Header() {
   };
 
   return (
-    <header className="w-full flex items-center justify-end px-6 bg-gray-100 py-4 dark:bg-gray-900 relative">
+    <header className="w-full flex items-center justify-end px-6 bg-gray-100 py-4 relative">
       <div className="flex items-center gap-4">
         {/* Botón Tema */}
         <div className="relative" ref={menuRef}>
@@ -110,19 +114,11 @@ export default function Header() {
           {themeMenuOpen && (
             <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
               <button
-                onClick={() => {
-                  setDarkMode(false);
-                  setThemeMenuOpen(false);
-                }}
                 className="block w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 Claro
               </button>
               <button
-                onClick={() => {
-                  setDarkMode(true);
-                  setThemeMenuOpen(false);
-                }}
                 className="block w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 Oscuro
@@ -189,9 +185,8 @@ export default function Header() {
                 {notis.map((n) => (
                   <li
                     key={n.id}
-                    className={`p-4 ${
-                      n.status === "unread" ? "bg-[#FEF7FF]" : ""
-                    }`}
+                    className={`p-4 ${n.status === "unread" ? "bg-[#FEF7FF]" : ""
+                      }`}
                   >
                     <div className="flex items-start gap-3">
                       {/* icon */}
@@ -228,17 +223,20 @@ export default function Header() {
         )}
 
         {/* Usuario */}
-        <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
+        <Link
+          href="/userProfile"
+          className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+        >
           <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white font-bold">
             JV
           </div>
           <span className="text-sm text-gray-700 dark:text-gray-200">
             Bienvenido!
             <br />
-            [Nombre Usuario]
+            {username}
           </span>
           <FiUser className="text-gray-600 dark:text-gray-300" />
-        </div>
+        </Link>
       </div>
     </header>
   );
