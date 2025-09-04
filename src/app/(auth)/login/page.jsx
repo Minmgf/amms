@@ -25,15 +25,32 @@ const Page = () => {
     formState: { errors },
   } = useForm();
 
+  function decodeToken(token) {
+    try {
+      const arrayToken = token.split(".");
+      const tokenPayload = JSON.parse(atob(arrayToken[1]));
+      return tokenPayload; // Aquí vienen todos los datos del token (claims)
+    } catch (error) {
+      console.error("Token inválido", error);
+      return null;
+    }
+  }
+
   const onSubmit = async (data) => {
     setLoading(true);
     try {
       const response = await login(data);
+      const payload = decodeToken(response.access_token);
+      localStorage.setItem("userData", JSON.stringify(payload));
       setModalMessage("You have logged in successfully");
       setSuccessOpen(true);
       setTimeout(() => {
         setSuccessOpen(false);
-        router.push("/home");
+        if (payload.first_login_complete) {          
+          router.push("/home");
+        }else{
+          router.push("/editUser");
+        }
       }, 2000);
     } catch (error) {
       setModalMessage(error.response.data.detail);
@@ -127,10 +144,9 @@ const Page = () => {
                 type="submit"
                 disabled={loading}
                 className={`w-full text-white py-2 mt-6 rounded-lg text-lg font-semibold shadow transition-colors
-                  ${
-                    loading
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-red-600 hover:bg-red-500 active:bg-red-700"
+                  ${loading
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-red-600 hover:bg-red-500 active:bg-red-700"
                   }
                 `}
               >
