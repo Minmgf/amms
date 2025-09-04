@@ -13,7 +13,7 @@ import {
 import NavigationMenu from '../components/ParameterNavigation';
 
 // IMPORTAR LOS MODALES DE STATUS
-import ParameterStatusModal from '../modals/ParameterStatusModal';
+import ParameterStatusModal from '../components/userParameterization/ParameterStatusModal';
 import ParameterModifyStatusModal from '../components/userParameterization/ParameterModifyStatusModal';
 import ParameterAddStatusModal from '../components/userParameterization/ParameterAddStatusModal';
 
