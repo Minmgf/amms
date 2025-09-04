@@ -8,24 +8,25 @@ import { getUserData } from "@/services/profileService";
 
 const ProfilePage = () => {
   const [formData, setFormData] = useState({
-    name: "",             
-    lastName: "",         
-    email: "",            
-    documentType: "",     
-    documentNumber: "",   
-    gender: "",           
-    birthDate: "",        
-    expeditionDate: "",   
-    country: "",          
-    region: "",           
-    city: "",             
-    address: "",          
-    phoneNumber: "",      
+    name: "",
+    lastName: "",
+    email: "",
+    documentType: "",
+    documentNumber: "",
+    gender: "",
+    birthDate: "",
+    expeditionDate: "",
+    country: "",
+    region: "",
+    city: "",
+    address: "",
+    phoneNumber: "",
   });
   const [id, setId] = useState("");
   const [userData, setUserData] = useState([]);
   const [errors, setErrors] = useState({});
-  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] =
+    useState(false);
   const [isChangePhotoModalOpen, setIsChangePhotoModalOpen] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState(null);
 
@@ -49,26 +50,31 @@ const ProfilePage = () => {
       try {
         const response = await getUserData(id);
         if (response.success && response.data.length > 0) {
-          setUserData(response.data[0]);
+          const data = response.data[0]; 
+
+          setUserData(data);
           setFormData({
-            name: userData.name || "",
-            lastName: `${userData.first_last_name || ""} ${userData.second_last_name || ""}`.trim(),
-            email: userData.email || "",
-            documentType: userData.type_document_name || "C.C",
-            documentNumber: userData.document_number?.toString() || "",
-            gender: userData.gender_name || "",
-            birthDate: userData.birthday ? userData.birthday.split("T")[0] : "",
-            expeditionDate: userData.date_issuance_document ? userData.date_issuance_document.split("T")[0] : "",
-            country: userData.country || "",
-            region: userData.department || "",
-            city: userData.city?.toString() || "",
-            address: userData.address || "",
-            phoneNumber: userData.phone || "",
+            name: data.name || "",
+            lastName: `${data.first_last_name || ""} ${data.second_last_name || ""
+              }`.trim(),
+            email: data.email || "",
+            documentType: data.type_document_name || "C.C",
+            documentNumber: data.document_number?.toString() || "",
+            gender: data.gender_name || "",
+            birthDate: data.birthday ? data.birthday.split("T")[0] : "",
+            expeditionDate: data.date_issuance_document
+              ? data.date_issuance_document.split("T")[0]
+              : "",
+            country: data.country || "",
+            region: data.department || "",
+            city: data.city?.toString() || "",
+            address: data.address || "",
+            phoneNumber: data.phone || "",
           });
 
           // Foto de perfil
-          if (userData.profile_picture) {
-            setProfilePhoto(userData.profile_picture);
+          if (data.profile_picture) {
+            setProfilePhoto(data.profile_picture);
           }
         }
       } catch (error) {
@@ -80,82 +86,91 @@ const ProfilePage = () => {
   }, [id]);
 
   const validateField = (name, value) => {
-    let error = '';
+    let error = "";
 
     switch (name) {
-      case 'name':
-      case 'lastName':
+      case "name":
+      case "lastName":
         if (!value.trim()) {
-          error = 'Este campo es requerido';
+          error = "Este campo es requerido";
         } else if (value.trim().length < 2) {
-          error = 'Debe tener al menos 2 caracteres';
+          error = "Debe tener al menos 2 caracteres";
         } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value)) {
-          error = 'Solo se permiten letras y espacios';
+          error = "Solo se permiten letras y espacios";
         }
         break;
 
-      case 'email':
+      case "email":
         if (!value.trim()) {
-          error = 'El email es requerido';
+          error = "El email es requerido";
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-          error = 'Formato de email inválido';
+          error = "Formato de email inválido";
         }
         break;
 
-      case 'documentNumber':
+      case "documentNumber":
         if (!value.trim()) {
-          error = 'El número de documento es requerido';
-        } else if (formData.documentType === 'C.C' && !/^\d{8,10}$/.test(value)) {
-          error = 'Cédula debe tener entre 8 y 10 dígitos';
-        } else if (formData.documentType === 'C.E' && !/^\d{6,12}$/.test(value)) {
-          error = 'Cédula de extranjería debe tener entre 6 y 12 dígitos';
-        } else if (formData.documentType === 'Passport' && !/^[A-Z0-9]{6,12}$/.test(value)) {
-          error = 'Pasaporte debe tener entre 6 y 12 caracteres alfanuméricos';
+          error = "El número de documento es requerido";
+        } else if (
+          formData.documentType === "C.C" &&
+          !/^\d{8,10}$/.test(value)
+        ) {
+          error = "Cédula debe tener entre 8 y 10 dígitos";
+        } else if (
+          formData.documentType === "C.E" &&
+          !/^\d{6,12}$/.test(value)
+        ) {
+          error = "Cédula de extranjería debe tener entre 6 y 12 dígitos";
+        } else if (
+          formData.documentType === "Passport" &&
+          !/^[A-Z0-9]{6,12}$/.test(value)
+        ) {
+          error = "Pasaporte debe tener entre 6 y 12 caracteres alfanuméricos";
         }
         break;
 
-      case 'birthDate':
+      case "birthDate":
         if (!value) {
-          error = 'La fecha de nacimiento es requerida';
+          error = "La fecha de nacimiento es requerida";
         } else {
           const birthDate = new Date(value);
           const today = new Date();
           const age = today.getFullYear() - birthDate.getFullYear();
           if (age < 18 || age > 100) {
-            error = 'Debe ser mayor de 18 años y menor de 100';
+            error = "Debe ser mayor de 18 años y menor de 100";
           }
         }
         break;
 
-      case 'expeditionDate':
+      case "expeditionDate":
         if (!value) {
-          error = 'La fecha de expedición es requerida';
+          error = "La fecha de expedición es requerida";
         } else {
           const expeditionDate = new Date(value);
           const birthDate = new Date(formData.birthDate);
           const today = new Date();
 
           if (expeditionDate > today) {
-            error = 'La fecha no puede ser futura';
+            error = "La fecha no puede ser futura";
           } else if (expeditionDate < birthDate) {
-            error = 'No puede ser anterior a la fecha de nacimiento';
+            error = "No puede ser anterior a la fecha de nacimiento";
           }
         }
         break;
 
-      case 'phoneNumber':
+      case "phoneNumber":
         if (!value.trim()) {
-          error = 'El número de teléfono es requerido';
-        } else if (!/^\d{10}$/.test(value.replace(/\s/g, ''))) {
-          error = 'Debe tener exactamente 10 dígitos';
+          error = "El número de teléfono es requerido";
+        } else if (!/^\d{10}$/.test(value.replace(/\s/g, ""))) {
+          error = "Debe tener exactamente 10 dígitos";
         }
         break;
 
-      case 'address':
+      case "address":
         if (!value.trim()) {
-          error = 'La dirección es requerida';
+          error = "La dirección es requerida";
         } else if (value.trim().length < 10) {
-          error = 'La dirección debe tener al menos 10 caracteres';
+          error = "La dirección debe tener al menos 10 caracteres";
         }
         break;
     }
@@ -167,32 +182,17 @@ const ProfilePage = () => {
     const { name, value } = e.target;
 
     // Actualizar el valor
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
 
     // Validar el campo y actualizar errores
     const error = validateField(name, value);
-    setErrors(prev => ({
+    setErrors((prev) => ({
       ...prev,
-      [name]: error
+      [name]: error,
     }));
-  };
-
-  const handlePasswordChange = (passwordData) => {
-    console.log('Password change submitted:', passwordData);
-    // Aquí puedes agregar la lógica para cambiar la contraseña
-    setIsChangePasswordModalOpen(false);
-  };
-
-  const handlePhotoChange = (file) => {
-    console.log('Photo change submitted:', file);
-    // Crear URL para mostrar la nueva foto
-    const photoUrl = URL.createObjectURL(file);
-    setProfilePhoto(photoUrl);
-    // Aquí puedes agregar la lógica para subir la foto al servidor
-    setIsChangePhotoModalOpen(false);
   };
 
   return (
@@ -236,18 +236,23 @@ const ProfilePage = () => {
               {/* Roles Section */}
               <div className="w-full">
                 <div className="mb-3 text-center">
-                  <span className="text-sm text-gray-500 font-medium">Roles</span>
+                  <span className="text-sm text-gray-500 font-medium">
+                    Roles
+                  </span>
                 </div>
 
                 {/* Roles Grid */}
                 <div className="grid gap-2">
-                  <span className="px-4 py-2 bg-pink-200 text-sm rounded-full text-pink-800 text-center font-medium">
-                    Administrator
-                  </span>
-                  <span className="px-4 py-2 bg-pink-200 text-sm rounded-full text-pink-800 text-center font-medium">
-                    Maintenance Technician
-                  </span>
+                  {userData?.roles?.map((role) => (
+                    <span
+                      key={role.id}
+                      className="px-4 py-2 bg-pink-200 text-sm rounded-full text-pink-800 text-center font-medium"
+                    >
+                      {role.name}
+                    </span>
+                  ))}
                 </div>
+
               </div>
             </div>
 
@@ -260,35 +265,47 @@ const ProfilePage = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-4 gap-y-6 gap-x-8 text-sm">
                 <div>
-                  <span className="font-semibold text-gray-800 block mb-2">Name</span>
+                  <span className="font-semibold text-gray-800 block mb-2">
+                    Name
+                  </span>
                   <input
                     type="text"
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
                     className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${errors.name
-                      ? 'border-red-300 focus:ring-red-500'
-                      : 'border-gray-300 focus:ring-blue-500'
+                        ? "border-red-300 focus:ring-red-500"
+                        : "border-gray-300 focus:ring-blue-500"
                       }`}
                   />
-                  {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+                  {errors.name && (
+                    <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+                  )}
                 </div>
                 <div>
-                  <span className="font-semibold text-gray-800 block mb-2">Last name</span>
+                  <span className="font-semibold text-gray-800 block mb-2">
+                    Last name
+                  </span>
                   <input
                     type="text"
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleInputChange}
                     className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${errors.lastName
-                      ? 'border-red-300 focus:ring-red-500'
-                      : 'border-gray-300 focus:ring-blue-500'
+                        ? "border-red-300 focus:ring-red-500"
+                        : "border-gray-300 focus:ring-blue-500"
                       }`}
                   />
-                  {errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>}
+                  {errors.lastName && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.lastName}
+                    </p>
+                  )}
                 </div>
                 <div>
-                  <span className="font-semibold text-gray-800 block mb-2">Document type</span>
+                  <span className="font-semibold text-gray-800 block mb-2">
+                    Document type
+                  </span>
                   <div className="relative">
                     <select
                       name="documentType"
@@ -304,35 +321,47 @@ const ProfilePage = () => {
                   </div>
                 </div>
                 <div>
-                  <span className="font-semibold text-gray-800 block mb-2">Document number</span>
+                  <span className="font-semibold text-gray-800 block mb-2">
+                    Document number
+                  </span>
                   <input
                     type="text"
                     name="documentNumber"
                     value={formData.documentNumber}
                     onChange={handleInputChange}
                     className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${errors.documentNumber
-                      ? 'border-red-300 focus:ring-red-500'
-                      : 'border-gray-300 focus:ring-blue-500'
+                        ? "border-red-300 focus:ring-red-500"
+                        : "border-gray-300 focus:ring-blue-500"
                       }`}
                   />
-                  {errors.documentNumber && <p className="text-red-500 text-xs mt-1">{errors.documentNumber}</p>}
+                  {errors.documentNumber && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.documentNumber}
+                    </p>
+                  )}
                 </div>
                 <div>
-                  <span className="font-semibold text-gray-800 block mb-2">Email</span>
+                  <span className="font-semibold text-gray-800 block mb-2">
+                    Email
+                  </span>
                   <input
                     type="email"
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
                     className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${errors.email
-                      ? 'border-red-300 focus:ring-red-500'
-                      : 'border-gray-300 focus:ring-blue-500'
+                        ? "border-red-300 focus:ring-red-500"
+                        : "border-gray-300 focus:ring-blue-500"
                       }`}
                   />
-                  {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+                  {errors.email && (
+                    <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                  )}
                 </div>
                 <div>
-                  <span className="font-semibold text-gray-800 block mb-2">Género</span>
+                  <span className="font-semibold text-gray-800 block mb-2">
+                    Género
+                  </span>
                   <div className="relative">
                     <select
                       name="gender"
@@ -348,32 +377,44 @@ const ProfilePage = () => {
                   </div>
                 </div>
                 <div>
-                  <span className="font-semibold text-gray-800 block mb-2">Birth date</span>
+                  <span className="font-semibold text-gray-800 block mb-2">
+                    Birth date
+                  </span>
                   <input
                     type="date"
                     name="birthDate"
                     value={formData.birthDate}
                     onChange={handleInputChange}
                     className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${errors.birthDate
-                      ? 'border-red-300 focus:ring-red-500'
-                      : 'border-gray-300 focus:ring-blue-500'
+                        ? "border-red-300 focus:ring-red-500"
+                        : "border-gray-300 focus:ring-blue-500"
                       }`}
                   />
-                  {errors.birthDate && <p className="text-red-500 text-xs mt-1">{errors.birthDate}</p>}
+                  {errors.birthDate && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.birthDate}
+                    </p>
+                  )}
                 </div>
                 <div>
-                  <span className="font-semibold text-gray-800 block mb-2">Expedition date</span>
+                  <span className="font-semibold text-gray-800 block mb-2">
+                    Expedition date
+                  </span>
                   <input
                     type="date"
                     name="expeditionDate"
                     value={formData.expeditionDate}
                     onChange={handleInputChange}
                     className={`w-full border rounded-lg p-2 text-gray-900 font-medium focus:outline-none focus:ring-2 ${errors.expeditionDate
-                      ? 'border-red-300 focus:ring-red-500'
-                      : 'border-gray-300 focus:ring-blue-500'
+                        ? "border-red-300 focus:ring-red-500"
+                        : "border-gray-300 focus:ring-blue-500"
                       }`}
                   />
-                  {errors.expeditionDate && <p className="text-red-500 text-xs mt-1">{errors.expeditionDate}</p>}
+                  {errors.expeditionDate && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.expeditionDate}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -384,7 +425,9 @@ const ProfilePage = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-3  gap-6">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-800 mb-3">Country</label>
+                  <label className="block text-sm font-semibold text-gray-800 mb-3">
+                    Country
+                  </label>
                   <div className="relative">
                     <select
                       name="country"
@@ -398,7 +441,9 @@ const ProfilePage = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-800 mb-3">Region</label>
+                  <label className="block text-sm font-semibold text-gray-800 mb-3">
+                    Region
+                  </label>
                   <div className="relative">
                     <select
                       name="region"
@@ -412,7 +457,9 @@ const ProfilePage = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-800 mb-3">City</label>
+                  <label className="block text-sm font-semibold text-gray-800 mb-3">
+                    City
+                  </label>
                   <div className="relative">
                     <select
                       name="city"
@@ -440,14 +487,20 @@ const ProfilePage = () => {
                     onChange={handleInputChange}
                     placeholder="Example..."
                     className={`w-full border-2 rounded-lg p-3 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 ${errors.address
-                      ? 'border-red-300 focus:ring-red-500 focus:border-transparent'
-                      : 'border-red-300 focus:ring-red-500 focus:border-transparent'
+                        ? "border-red-300 focus:ring-red-500 focus:border-transparent"
+                        : "border-red-300 focus:ring-red-500 focus:border-transparent"
                       }`}
                   />
-                  {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
+                  {errors.address && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.address}
+                    </p>
+                  )}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-800 mb-3">Phone number</label>
+                  <label className="block text-sm font-semibold text-gray-800 mb-3">
+                    Phone number
+                  </label>
                   <div className="grid grid-cols-[auto_1fr] gap-3">
                     <div className="relative">
                       <select className="w-20 border border-gray-300 rounded-lg p-3 appearance-none bg-white text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -462,23 +515,31 @@ const ProfilePage = () => {
                         value={formData.phoneNumber}
                         onChange={handleInputChange}
                         className={`w-full border rounded-lg p-3 text-gray-900 font-medium focus:outline-none focus:ring-2 ${errors.phoneNumber
-                          ? 'border-red-300 focus:ring-red-500'
-                          : 'border-gray-300 focus:ring-blue-500'
+                            ? "border-red-300 focus:ring-red-500"
+                            : "border-gray-300 focus:ring-blue-500"
                           }`}
                       />
-                      {errors.phoneNumber && <p className="text-red-500 text-xs mt-1">{errors.phoneNumber}</p>}
+                      {errors.phoneNumber && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {errors.phoneNumber}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Error Message */}
-              {(Object.keys(errors).some(key => errors[key]) || !formData.address.trim()) && (
-                <div className="grid grid-cols-[auto_1fr] gap-3 items-center text-red-600">
-                  <MdWarning className="w-5 h-5" />
-                  <p className="text-sm font-medium">Please complete all required fields before submitting the form.</p>
-                </div>
-              )}
+              {(Object.keys(errors).some((key) => errors[key]) ||
+                !formData.address.trim()) && (
+                  <div className="grid grid-cols-[auto_1fr] gap-3 items-center text-red-600">
+                    <MdWarning className="w-5 h-5" />
+                    <p className="text-sm font-medium">
+                      Please complete all required fields before submitting the
+                      form.
+                    </p>
+                  </div>
+                )}
 
               {/* Buttons */}
               <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-center">
@@ -506,13 +567,11 @@ const ProfilePage = () => {
       <ChangePasswordModal
         isOpen={isChangePasswordModalOpen}
         onClose={() => setIsChangePasswordModalOpen(false)}
-        onSubmit={handlePasswordChange}
       />
 
       <ChangePhotoModal
         isOpen={isChangePhotoModalOpen}
         onClose={() => setIsChangePhotoModalOpen(false)}
-        onSave={handlePhotoChange}
       />
     </div>
   );
