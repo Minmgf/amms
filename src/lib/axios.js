@@ -25,6 +25,10 @@ const addInterceptors = (instance) => {
       const token = localStorage.getItem("token");
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
+        console.log('Token enviado en request:', token);
+        console.log('Headers completos:', config.headers);
+      } else {
+        console.warn('No se encontró token en localStorage');
       }
       return config;
     },

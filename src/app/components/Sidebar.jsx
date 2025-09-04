@@ -262,23 +262,23 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           </button>
 
           <div className="flex items-center justify-between p-4 border-b border-gray-100 mt-8">
-            <Link href="/userProfile" legacyBehavior>
-              <a
-                className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition 
+            {/* <Link href="/userProfile" legacyBehavior> */}
+            <Link
+              href="/userProfile"
+              className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition 
                                         ${
                                           pathname === "/userProfile"
                                             ? "bg-yellow-200 font-medium text-black"
                                             : "hover:bg-gray-100 text-gray-700"
                                         }`}
-              >
-                <div className="w-10 h-10 rounded-full bg-green-200 flex items-center justify-center font-bold">
-                  JV
-                </div>
-                <div className="leading-tight">
-                  <p className="text-xs text-gray-500">Bienvenido!</p>
-                  <p className="text-sm font-semibold">[Nombre Usuario]</p>
-                </div>
-              </a>
+            >
+              <div className="w-10 h-10 rounded-full bg-green-200 flex items-center justify-center font-bold">
+                JV
+              </div>
+              <div className="leading-tight">
+                <p className="text-xs text-gray-500">Bienvenido!</p>
+                <p className="text-sm font-semibold">[Nombre Usuario]</p>
+              </div>
             </Link>
             <button
               type="button"
