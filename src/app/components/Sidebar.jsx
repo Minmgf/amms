@@ -207,42 +207,12 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           <FiX size={18} />
         </button>
 
-          <div className="flex items-center justify-between p-4 border-b border-gray-100 mt-8">
-            {/* <Link href="/userProfile" legacyBehavior> */}
-            <Link
-              href="/userProfile"
-              className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition 
-                                        ${
-                                          pathname === "/userProfile"
-                                            ? "bg-yellow-200 font-medium text-black"
-                                            : "hover:bg-gray-100 text-gray-700"
-                                        }`}
-            >
-              <div className="w-10 h-10 rounded-full bg-green-200 flex items-center justify-center font-bold">
-                JV
-              </div>
-              <div className="leading-tight">
-                <p className="text-xs text-gray-500">Bienvenido!</p>
-                <p className="text-sm font-semibold">[Nombre Usuario]</p>
-              </div>
-            </Link>
-            <button
-              type="button"
-              onClick={() => setShowNotis((s) => !s)}
-              className="relative inline-flex items-center justify-center rounded-md p-2 hover:bg-gray-100 text-gray-700 cursor-pointer"
-              aria-haspopup="dialog"
-              aria-expanded={showNotis}
-              aria-controls="notifications-panel"
-              aria-label="Open notifications"
-            >
-              <FiBell className="text-xl" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-red-500 text-white text-[10px] leading-4 text-center">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-          </div>
+        <div className="py-4 px-2">
+          <img
+            src="./images/logoHorizontal.png"
+            alt="SIGMA"
+          />
+        </div>
 
         {/* MENÚ PRINCIPAL */}
         <div className="flex-1 overflow-y-auto py-4">
