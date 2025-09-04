@@ -11,14 +11,9 @@ import {
   createColumnHelper,
 } from '@tanstack/react-table';
 import NavigationMenu from '../components/ParameterNavigation';
-
-
-// POR ESTAS:
 import ParameterUnitListModal from '../components/userParameterization/ParameterUnitListModal';
-import ParameterAddUnitModal from '../components/userParameterization/ParameterAddUnitModal';
-import ParameterModifyUnitModal from '../components/userParameterization/ParameterModifyUnitModal';
+import ParameterAddModifyUnitModal from '../components/userParameterization/ParameterAddModifyUnitModal';
 
-// Componente principal
 const ParameterizationView = () => {
   const [activeMenuItem, setActiveMenuItem] = useState('Units');
   const [loading, setLoading] = useState(false);
@@ -75,9 +70,7 @@ const ParameterizationView = () => {
     try {
       // Simular delay del backend
       await new Promise(resolve => setTimeout(resolve, 500));
-      
       setData(mockData);
-      
     } catch (err) {
       setError(err.message);
       setData([]);
@@ -111,16 +104,40 @@ const ParameterizationView = () => {
 
   const handleCloseAddModal = () => {
     setShowAddModal(false);
+    if (selectedCategory) {
+      setShowUnitListModal(true);
+    }
   };
 
   const handleCloseModifyModal = () => {
     setShowModifyModal(false);
     setSelectedUnit(null);
+    if (selectedCategory) {
+      setShowUnitListModal(true);
+    }
+  };
+
+  const handleOpenAddModal = () => {
+    setShowUnitListModal(false);
+    setShowAddModal(true);
+  };
+
+  const handleOpenModifyModal = (unit) => {
+    setSelectedUnit(unit);
+    setShowUnitListModal(false);
+    setShowModifyModal(true);
   };
 
   const handleSaveUnit = (updatedUnit) => {
     console.log('Unit saved:', updatedUnit);
-    // Aquí puedes agregar la lógica para actualizar el estado o hacer la llamada al API
+    
+    setShowAddModal(false);
+    setShowModifyModal(false);
+    setSelectedUnit(null);
+    
+    if (selectedCategory) {
+      setShowUnitListModal(true);
+    }
   };
 
   // Definir columnas usando TanStack Table
@@ -149,7 +166,7 @@ const ParameterizationView = () => {
         cell: info => (
           <button 
             onClick={() => handleViewDetails(info.getValue())}
-            className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-md transition-colors opacity-0 group-hover:opacity-100"
             title="View details"
           >
             <FiEye className="w-4 h-4 text-gray-500 hover:text-gray-700" />
@@ -264,7 +281,7 @@ const ParameterizationView = () => {
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {table.getRowModel().rows.map(row => (
-                        <tr key={row.id} className="hover:bg-gray-50">
+                        <tr key={row.id} className="hover:bg-gray-50 group">
                           {row.getVisibleCells().map(cell => (
                             <td
                               key={cell.id}
@@ -282,7 +299,7 @@ const ParameterizationView = () => {
                   </table>
                 </div>
 
-              {/* Pagination */}
+                {/* Pagination */}
                 <div className="px-4 py-6 border-t border-gray-200 sm:px-6">
                   <div className="flex items-center justify-between">
                     {/* Mobile pagination */}
@@ -306,7 +323,6 @@ const ParameterizationView = () => {
                     {/* Desktop pagination */}
                     <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-center">
                       <div className="flex items-center gap-1">
-                        {/* Previous button */}
                         <button
                           onClick={() => table.previousPage()}
                           disabled={!table.getCanPreviousPage()}
@@ -315,13 +331,11 @@ const ParameterizationView = () => {
                           ← Previous
                         </button>
                         
-                        {/* Page numbers */}
                         {(() => {
                           const currentPage = table.getState().pagination.pageIndex + 1;
                           const totalPages = table.getPageCount();
                           const pages = [];
                           
-                          // Always show first page
                           if (currentPage > 3) {
                             pages.push(
                               <button
@@ -334,7 +348,6 @@ const ParameterizationView = () => {
                             );
                           }
                           
-                          // Show ellipsis if there's a gap
                           if (currentPage > 4) {
                             pages.push(
                               <span key="ellipsis1" className="inline-flex items-center justify-center w-10 h-10 text-sm text-gray-400">
@@ -343,7 +356,6 @@ const ParameterizationView = () => {
                             );
                           }
                           
-                          // Show pages around current page
                           for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
                             pages.push(
                               <button
@@ -360,7 +372,6 @@ const ParameterizationView = () => {
                             );
                           }
                           
-                          // Show ellipsis if there's a gap
                           if (currentPage < totalPages - 3) {
                             pages.push(
                               <span key="ellipsis2" className="inline-flex items-center justify-center w-10 h-10 text-sm text-gray-400">
@@ -369,7 +380,6 @@ const ParameterizationView = () => {
                             );
                           }
                           
-                          // Always show last page
                           if (currentPage < totalPages - 2) {
                             pages.push(
                               <button
@@ -385,7 +395,6 @@ const ParameterizationView = () => {
                           return pages;
                         })()}
                         
-                        {/* Next button */}
                         <button
                           onClick={() => table.nextPage()}
                           disabled={!table.getCanNextPage()}
@@ -396,7 +405,6 @@ const ParameterizationView = () => {
                       </div>
                     </div>
                     
-                    {/* Page size selector */}
                     <div className="hidden sm:block">
                       <select
                         value={table.getState().pagination.pageSize}
@@ -425,18 +433,24 @@ const ParameterizationView = () => {
         isOpen={showUnitListModal}
         onClose={handleCloseUnitListModal}
         category={selectedCategory}
+        onOpenAddModal={handleOpenAddModal}
+        onOpenModifyModal={handleOpenModifyModal}
       />
 
-      <ParameterAddUnitModal
+      <ParameterAddModifyUnitModal
         isOpen={showAddModal}
         onClose={handleCloseAddModal}
+        mode="add"
         category={selectedCategory}
+        onSave={handleSaveUnit}
       />
 
-      <ParameterModifyUnitModal
+      <ParameterAddModifyUnitModal
         isOpen={showModifyModal}
         onClose={handleCloseModifyModal}
+        mode="modify"
         unit={selectedUnit}
+        category={selectedCategory}
         onSave={handleSaveUnit}
       />
     </>

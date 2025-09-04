@@ -1,114 +1,119 @@
 "use client";
 import React, { useState } from 'react';
-import { FiX, FiEdit } from 'react-icons/fi';
+import { FiX, FiEdit3 } from 'react-icons/fi';
 
-const ParameterTypesModal = ({ 
-  isOpen, 
-  onClose, 
-  category = "Maintenance Types",
-  onAddParameter,
-  onEditParameter 
-}) => {
-  const [types] = useState([
-    { 
-      id: 1, 
-      name: 'Corrective', 
-      description: 'Example', 
-      status: 'Active' 
+const ParameterTypesModal = ({ isOpen, onClose, category = "Maintenance Types", onOpenModifyModal, onOpenAddModal }) => {
+  const [units, setUnits] = useState([
+    {
+      id: 1,
+      typeName: "Corrective",
+      description: "Example",
+      status: "Active"
     },
-    { 
-      id: 2, 
-      name: 'Corrective', 
-      description: 'Example', 
-      status: 'Inactive' 
+    {
+      id: 2,
+      typeName: "Corrective",
+      description: "Example",
+      status: "Inactive"
     }
   ]);
 
-  if (!isOpen) return null;
-
-  const getStatusBadge = (status) => {
-    const isActive = status === 'Active';
-    return (
-      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-        isActive 
-          ? 'bg-blue-100 text-blue-800' 
-          : 'bg-pink-100 text-pink-800'
-      }`}>
-        {status}
-      </span>
-    );
+  const handleEdit = (unit) => {
+    if (onOpenModifyModal) {
+      onOpenModifyModal(unit);
+    }
   };
 
+  const handleAddParameter = () => {
+    if (onOpenAddModal) {
+      onOpenAddModal();
+    }
+  };
+
+  if (!isOpen) return null;
+
   return (
-    // ...existing code...
-<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-  <div className="bg-white rounded-lg shadow-xl w-full max-w-xl max-h-[90vh] overflow-hidden">
-    <div className="flex items-center justify-between px-8 py-6 border-b border-gray-200">
-      <h2 className="text-xl font-semibold text-gray-900">Category: {category}</h2>
-      <button
-        onClick={onClose}
-        className="p-1 hover:bg-gray-100 rounded-md transition-colors"
-      >
-        <FiX className="w-5 h-5 text-gray-500" />
-      </button>
-    </div>
-    
-    <div className="px-8 py-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-      <div className="space-y-4">
-        {/* Tabla de tipos */}
-        <div className="border border-gray-300 rounded-lg overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Type name</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Description</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Status</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {types.map((type) => (
-                <tr key={type.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm text-gray-900">{type.name}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{type.description}</td>
-                  <td className="px-4 py-3 text-sm">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                      type.status === 'Active'
-                        ? 'bg-green-200 text-green-800'
-                        : 'bg-pink-200 text-pink-800'
-                    }`}>
-                      {type.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    <button
-                      onClick={() => onEditParameter(type)}
-                      className="inline-flex items-center px-3 py-1 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded border border-gray-300 transition-colors"
-                    >
-                      <FiEdit className="w-3 h-3 mr-1" />
-                      Edit
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <h2 className="text-xl font-medium text-gray-900">
+            Category: {category}
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+          >
+            <FiX className="w-5 h-5 text-gray-500" />
+          </button>
         </div>
 
-        {/* Botón Add Parameter */}
-        <div className="flex justify-center pt-4">
-          <button
-            onClick={onAddParameter}
-            className="px-6 py-2 bg-black text-white text-sm font-medium rounded-md hover:bg-gray-800 transition-colors"
-          >
-            Add Parameter
-          </button>
+        {/* Content */}
+        <div className="p-6">
+          {/* Table Container */}
+          <div className="bg-gray-50 rounded-lg p-4 mb-8">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
+                    Type name
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
+                    Description
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {units.map((unit) => (
+                  <tr key={unit.id} className="hover:bg-gray-100">
+                    <td className="px-4 py-3 text-sm text-gray-900">
+                      {unit.typeName}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900">
+                      {unit.description}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                        unit.status === 'Active' 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-pink-100 text-pink-700'
+                      }`}>
+                        {unit.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => handleEdit(unit)}
+                        className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                      >
+                        <FiEdit3 className="w-3 h-3 mr-1" />
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Add Parameter Button */}
+          <div className="flex justify-center">
+            <button
+              onClick={handleAddParameter}
+              className="px-8 py-2.5 bg-black text-white rounded-md text-sm font-medium hover:bg-gray-800 transition-colors"
+            >
+              Add Parameter
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</div>
-// ...existing code...
   );
 };
 

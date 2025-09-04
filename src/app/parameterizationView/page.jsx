@@ -12,24 +12,24 @@ import {
 } from '@tanstack/react-table';
 import NavigationMenu from '../components/ParameterNavigation';
 
-// IMPORTAR LOS MODALES - Ajusta la ruta según donde tengas la carpeta de modales
+// MODALES CORREGIDOS - usando los nombres correctos de los componentes
 import ParameterTypesModal from '../components/userParameterization/ParameterTypesModal';
-import ParameterModifyTypesModal from '../components/userParameterization/ParameterModifyTypesModal';
-import ParameterAddTypesModal from '../components/userParameterization/ParameterAddTypesModal';
+import ParameterAddModifyTypesModal from '../components/userParameterization/ParameterAddModifyTypesModal';
 
 // Componente principal
 const ParameterizationView = () => {
-  const [activeMenuItem, setActiveMenuItem] = useState('Type...');
+  const [activeMenuItem, setActiveMenuItem] = useState('Types...');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [data, setData] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
 
-  // NUEVOS ESTADOS PARA LOS MODALES
+  // ESTADOS PARA LOS MODALES CORREGIDOS
   const [showTypesModal, setShowTypesModal] = useState(false);
-  const [showModifyModal, setShowModifyModal] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [showModifyTypesModal, setShowModifyTypesModal] = useState(false);
+  const [showAddTypesModal, setShowAddTypesModal] = useState(false);
   const [selectedParameter, setSelectedParameter] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState('');
 
   // Datos de ejemplo
   const mockData = [
@@ -93,34 +93,50 @@ const ParameterizationView = () => {
     setActiveMenuItem(item);
   };
 
-  // MODIFICAR ESTA FUNCIÓN PARA ABRIR EL MODAL
+  // FUNCIÓN CORREGIDA PARA ABRIR EL MODAL
   const handleViewDetails = (categoryId) => {
-    console.log('View details for category:', categoryId);
-    setShowTypesModal(true); // Abrir el modal de tipos
+    console.log('Current data array:', data);
+    console.log('Looking for category ID:', categoryId);
+    
+    const category = data.find(item => item.id === categoryId);
+    console.log('Found category:', category);
+    
+    if (category) {
+      setSelectedCategory(category.name);
+      console.log('Setting category to:', category.name);
+    } else {
+      setSelectedCategory('Unknown Category');
+      console.log('Category not found, setting to Unknown Category');
+    }
+    
+    setShowTypesModal(true);
   };
 
-  // NUEVAS FUNCIONES PARA MANEJAR LOS MODALES
+  // FUNCIONES PARA MANEJAR LOS MODALES
   const handleAddParameter = () => {
     setShowTypesModal(false);
-    setShowAddModal(true);
+    setSelectedParameter(null);
+    setShowAddTypesModal(true);
   };
 
   const handleEditParameter = (parameter) => {
     setSelectedParameter(parameter);
     setShowTypesModal(false);
-    setShowModifyModal(true);
+    setShowModifyTypesModal(true);
   };
 
   const handleSaveNewParameter = (parameterData) => {
     console.log('Saving new parameter:', parameterData);
     // Aquí implementarías la lógica para guardar el nuevo parámetro
     // Por ejemplo, hacer una petición POST a tu API
+    setShowAddTypesModal(false);
   };
 
   const handleUpdateParameter = (parameterData) => {
     console.log('Updating parameter:', parameterData);
     // Aquí implementarías la lógica para actualizar el parámetro
     // Por ejemplo, hacer una petición PUT a tu API
+    setShowModifyTypesModal(false);
   };
 
   // Definir columnas usando TanStack Table
@@ -149,7 +165,7 @@ const ParameterizationView = () => {
         cell: info => (
           <button 
             onClick={() => handleViewDetails(info.getValue())}
-            className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-md transition-colors opacity-0 group-hover:opacity-100"
             title="View details"
           >
             <FiEye className="w-4 h-4 text-gray-500 hover:text-gray-700" />
@@ -263,7 +279,7 @@ const ParameterizationView = () => {
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {table.getRowModel().rows.map(row => (
-                      <tr key={row.id} className="hover:bg-gray-50">
+                      <tr key={row.id} className="hover:bg-gray-50 group">
                         {row.getVisibleCells().map(cell => (
                           <td
                             key={cell.id}
@@ -417,25 +433,30 @@ const ParameterizationView = () => {
           )}
         </div>
 
-        {/* MODALES - AGREGAR ESTOS AL FINAL */}
+        {/* MODALES CORREGIDOS */}
         <ParameterTypesModal
           isOpen={showTypesModal}
           onClose={() => setShowTypesModal(false)}
-          category="Maintenance Types"
-          onAddParameter={handleAddParameter}
-          onEditParameter={handleEditParameter}
+          category={selectedCategory}
+          onOpenModifyModal={handleEditParameter}
+          onOpenAddModal={handleAddParameter}
         />
 
-        <ParameterModifyTypesModal
-          isOpen={showModifyModal}
-          onClose={() => setShowModifyModal(false)}
-          parameter={selectedParameter}
+        <ParameterAddModifyTypesModal
+          isOpen={showModifyTypesModal}
+          onClose={() => setShowModifyTypesModal(false)}
+          mode="modify"
+          unit={selectedParameter}
+          category={selectedCategory}
           onSave={handleUpdateParameter}
         />
 
-        <ParameterAddTypesModal
-          isOpen={showAddModal}
-          onClose={() => setShowAddModal(false)}
+        <ParameterAddModifyTypesModal
+          isOpen={showAddTypesModal}
+          onClose={() => setShowAddTypesModal(false)}
+          mode="add"
+          unit={null}
+          category={selectedCategory}
           onSave={handleSaveNewParameter}
         />
       </div>

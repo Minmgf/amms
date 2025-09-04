@@ -14,8 +14,7 @@ import NavigationMenu from '../components/ParameterNavigation';
 
 // IMPORTAR LOS MODALES DE STATUS
 import ParameterStatusModal from '../components/userParameterization/ParameterStatusModal';
-import ParameterModifyStatusModal from '../components/userParameterization/ParameterModifyStatusModal';
-import ParameterAddStatusModal from '../components/userParameterization/ParameterAddStatusModal';
+import ParameterAddModifyStatusModal from '../components/userParameterization/ParameterAddModifyStatusModal';
 
 // Componente principal
 const ParameterizationView = () => {
@@ -181,7 +180,7 @@ const ParameterizationView = () => {
         cell: info => (
           <button 
             onClick={() => handleViewDetails(info.getValue())}
-            className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-md transition-colors opacity-0 group-hover:opacity-100"
             title="View details"
           >
             <FiEye className="w-4 h-4 text-gray-500 hover:text-gray-700" />
@@ -295,7 +294,7 @@ const ParameterizationView = () => {
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {table.getRowModel().rows.map(row => (
-                      <tr key={row.id} className="hover:bg-gray-50">
+                      <tr key={row.id} className="hover:bg-gray-50 group">
                         {row.getVisibleCells().map(cell => (
                           <td
                             key={cell.id}
@@ -458,14 +457,14 @@ const ParameterizationView = () => {
           onEditParameter={handleEditStatus}
         />
 
-        <ParameterModifyStatusModal
+        <ParameterAddModifyStatusModal
           isOpen={showModifyStatusModal}
           onClose={handleCloseAllModals}
           parameter={selectedStatus}
           onSave={handleUpdateStatus}
         />
 
-        <ParameterAddStatusModal
+        <ParameterAddModifyStatusModal
           isOpen={showAddStatusModal}
           onClose={handleCloseAllModals}
           onSave={handleSaveNewStatus}

@@ -14,25 +14,13 @@ const ParameterStatusModal = ({
     { 
       id: 1, 
       name: 'Active', 
-      description: 'Equipment is operational and in use',
+      description: 'Example',
       isActive: true 
     },
     { 
       id: 2, 
-      name: 'Inactive', 
-      description: 'Equipment is not operational',
-      isActive: false 
-    },
-    { 
-      id: 3, 
-      name: 'Under Maintenance', 
-      description: 'Equipment is being serviced',
-      isActive: true 
-    },
-    { 
-      id: 4, 
-      name: 'Out of Order', 
-      description: 'Equipment is broken and needs repair',
+      name: 'Active', 
+      description: 'Example',
       isActive: false 
     }
   ]);
@@ -50,8 +38,8 @@ const ParameterStatusModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">
@@ -72,10 +60,10 @@ const ParameterStatusModal = ({
             <table className="w-full">
               <thead className="bg-gray-100">
                 <tr>
-                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 border-r border-gray-200">
+                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">
                     Type name
                   </th>
-                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 border-r border-gray-200">
+                  <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">
                     Description
                   </th>
                   <th className="px-6 py-3 text-center text-sm font-medium text-gray-700">
@@ -85,35 +73,21 @@ const ParameterStatusModal = ({
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {statusList.map((status) => (
-                  <tr key={status.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm text-gray-900 border-r border-gray-200">
-                      <div className="flex items-center">
-                        <span className="font-medium">{status.name}</span>
-                        {status.isActive && (
-                          <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                            Active
-                          </span>
-                        )}
-                      </div>
+                  <tr key={status.id} className="hover:bg-gray-50 group">
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      <span className="font-medium">{status.name}</span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 border-r border-gray-200">
+                    <td className="px-6 py-4 text-sm text-gray-600">
                       {status.description}
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <div className="flex items-center justify-center space-x-2">
+                      <div className="flex items-center justify-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                         <button
                           onClick={() => handleEdit(status)}
-                          className="p-2 hover:bg-gray-100 rounded-md transition-colors"
-                          title="Edit status"
+                          className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md transition-colors"
                         >
-                          <FiEdit3 className="w-4 h-4 text-blue-600" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(status.id)}
-                          className="p-2 hover:bg-gray-100 rounded-md transition-colors"
-                          title="Delete status"
-                        >
-                          <FiTrash2 className="w-4 h-4 text-red-600" />
+                          <FiEdit3 className="w-3 h-3 mr-1.5" />
+                          Edit
                         </button>
                       </div>
                     </td>
