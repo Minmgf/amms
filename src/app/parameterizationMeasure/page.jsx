@@ -14,9 +14,9 @@ import NavigationMenu from '../components/ParameterNavigation';
 
 
 // POR ESTAS:
-import ParameterUnitListModal from '../modals/ParameterUnitListModal';
-import ParameterAddUnitModal from '../modals/ParameterAddUnitModal';
-import ParameterModifyUnitModal from '../modals/ParameterModifyUnitModal';
+import ParameterUnitListModal from '../components/userParameterization/ParameterUnitListModal';
+import ParameterAddUnitModal from '../components/userParameterization/ParameterAddUnitModal';
+import ParameterModifyUnitModal from '../components/userParameterization/ParameterModifyUnitModal';
 
 // Componente principal
 const ParameterizationView = () => {
