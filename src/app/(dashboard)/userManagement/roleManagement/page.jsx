@@ -1,21 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
-import {
-  FiSearch,
-  FiFilter,
-  FiEye,
-  FiEdit2,
-  FiLock,
-  FiUnlock,
-  FiPlus,
-} from "react-icons/fi";
+import { FiSearch, FiFilter, FiEye, FiEdit2, FiLock, FiUnlock, FiPlus } from "react-icons/fi";
 import RoleManagementFilter from "../../../components/roleManagement/filters/RoleManagementFilter";
 import { getRoleTypes } from "@/services/authService";
 import { changeRoleStatus } from "@/services/roleService";
-import {
-  SuccessModal,
-  ErrorModal,
-} from "@/app/components/shared/SuccessErrorModal";
+import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
+import { useRouter } from "next/navigation";
 
 const page = () => {
   const [search, setSearch] = useState("");
@@ -27,6 +17,7 @@ const page = () => {
   const [errorOpen, setErrorOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -123,7 +114,9 @@ const page = () => {
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
           />
-          <button className="flex bg-white items-center justify-center gap-2 border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-100 transition">
+          <button 
+            onClick={() => router.push("/userManagement/roleManagement/newRole")}
+            className="flex bg-white items-center justify-center gap-2 border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-100 transition">
             <FiPlus /> Add role
           </button>
         </div>

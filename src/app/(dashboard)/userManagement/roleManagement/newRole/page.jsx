@@ -1,182 +1,299 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { getPermissions, createRole } from "@/services/roleService";
+import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
 
-const page = () => {
-  const [email, setEmail] = useState("");
+const Page = () => {
+  const [permissions, setPermissions] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [filteredPermissions, setFilteredPermissions] = useState([]);
+  const [selectedPermissions, setSelectedPermissions] = useState(new Set());
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    alert("Se ha enviado el enlace de recuperación a: " + email);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm({
+    defaultValues: {
+      name: "",
+      description: "",
+    },
+  });
+
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      try {
+        const data = await getPermissions();
+        setPermissions(data);
+        const uniqueCategories = [...new Set(data.map((p) => p.category))];
+        setCategories(uniqueCategories);
+        if (uniqueCategories.length > 0) {
+          setSelectedCategory(uniqueCategories[0]);
+        }
+      } catch (err) {
+        
+      }
+    };
+    fetchPermissions();
+  }, []);
+
+  useEffect(() => {
+    if (selectedCategory) {
+      const filtered = permissions.filter(
+        (p) => p.category === selectedCategory
+      );
+      setFilteredPermissions(filtered);
+    }
+  }, [selectedCategory, permissions]);
+
+  const handleCheckboxChange = (id) => {
+    setSelectedPermissions((prev) => {
+      const updated = new Set(prev);
+      if (updated.has(id)) {
+        updated.delete(id);
+      } else {
+        updated.add(id);
+      }
+      return updated;
+    });
+  };
+
+  const countSelectedInCategory = (cat) =>
+    permissions.filter(
+      (p) => p.category === cat && selectedPermissions.has(p.id)
+    ).length;
+
+  const resetPermissions = () => {
+    setSelectedPermissions(new Set());
+  };
+
+  const onSubmit = async (data) => {
+    if (selectedPermissions.size === 0) {
+      setModalMessage("You must select at least one permission");
+      setErrorOpen(true);
+      return;
+    }
+
+    const roleData = {
+      name: data.name,
+      description: data.description,
+      permissions: Array.from(selectedPermissions),
+    };
+    setLoading(true);
+    try {
+      const response = await createRole(roleData);
+
+      if (response && response.id) {
+        setModalMessage("Role created successfully");
+        setSuccessOpen(true);
+        reset(); 
+        resetPermissions();
+      } else {
+        setModalMessage("Unexpected response from server");
+        setErrorOpen(true);
+      }
+    } catch (error) {
+      setModalMessage(error.response?.data?.detail || "Unexpected error");
+      setErrorOpen(true);
+    } finally {
+      setLoading(false);
+    }
+
   };
 
   return (
-    <div className="flex gap-3 bg-white">
-      {/* navigation */}
-      <div className="w-[24%] bg-white"></div>
-
-      {/* NEW ROL */}
-      <main className="w-full flex justify-center items-start py-10 px-4 bg-[#F1F1F1]">
-        <div className="w-full max-w-5xl bg-[#ffffff] rounded-2xl shadow p-6">
-          {/* Header */}
-          <div className="flex items-center gap-3 mb-6">
-            <button className="text-neutral-600 hover:text-black">←</button>
-            <h1 className="text-2xl font-bold text-black">Create New Role</h1>
-          </div>
-
-          {/* Form */}
-          <form className="flex flex-col gap-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-7">
-              <div className="flex flex-col">
-                {/* Role Name */}
-                <div className="flex flex-col">
-                  <label className="font-bold text-sm text-red-600">
-                    Role Name
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter role name"
-                    className="border border-red-400 text-[#282828] rounded-xl px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-red-500 placeholder-[#999999]"
-                  />
-                  <p className="text-xs text-red-600 mt-1">
-                    Please enter a name for the new role
-                  </p>
-                </div>{" "}
-                \{/* Permissions categories */}
-                <div className="flex flex-col">
-                  <label className="font-semibold text-sm text-neutral-700">
-                    Permissions categories
-                  </label>
-                  <select className="border rounded-lg px-3 py-2 mt-2 w-60 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option>Machinery</option>
-                    <option>Payroll</option>
-                    <option>Request</option>
-                    <option>Ai</option>
-                    <option>Monitoring</option>
-                    <option>Parameterization</option>
-                    <option>User Management</option>
-                  </select>
-                  <p className="text-xs text-neutral-500 mt-2">
-                    Select a category above to configure its specific
-                    permissions
-                  </p>
-                </div>
-              </div>
-
-              {/* Role Description */}
-              <div className="flex flex-col">
-                <label className="font-semibold text-sm text-neutral-700">
-                  Role Description
-                </label>
-                <textarea
-                  placeholder=""
-                  className="border rounded-lg px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 h-28"
-                />
-              </div>
+    <>
+      <div className="flex gap-3 bg-white">
+        <main className="w-full flex justify-center items-start py-10 px-4 bg-[#F1F1F1]">
+          <div className="w-full max-w-6xl bg-[#ffffff] rounded-2xl shadow p-8 border border-blue-400">
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-8">
+              <button className="text-neutral-600 hover:text-black text-xl">←</button>
+              <h1 className="text-2xl font-bold text-black">Create New Role</h1>
             </div>
 
-            {/* Permission */}
-            <div className="flex justify-between">
-              <div className="flex flex-col">
-                <div className="border rounded-lg">
-                  <div className="grid grid-cols-[1fr_auto] items-center rounded-t-lg px-4 py-2 font-medium bg-[#787880]">
-                    <span>Permission Name</span>
-                    <span></span>
+            {/* Form */}
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="flex flex-col gap-6">
+                  {/* Role Name */}
+                  <div className="flex flex-col">
+                    <label className="font-bold text-sm text-neutral-700">
+                      Role Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Enter role name"
+                      className="border text-[#282828] rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring-2 placeholder-[#999999]"
+                      {...register("name", { required: "Role name is required" })}
+                    />
+                    {errors.name && (
+                      <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>
+                    )}
                   </div>
-                  {["Example", "Example", "Example", "Example"].map(
-                    (perm, i) => (
-                      <div
-                        key={i}
-                        className="grid grid-cols-[1fr_auto] items-center px-4 py-2 border-b last:border-b-0"
-                      >
-                        <span>{perm}</span>
-                        <input type="checkbox" className="h-4 w-4" />
-                      </div>
-                    )
+
+                  {/* Permissions categories */}
+                  <div className="flex flex-col">
+                    <label className="font-semibold text-sm text-neutral-700">
+                      Permissions categories
+                    </label>
+                    <select
+                      className="border rounded-md px-3 py-2 mt-2 w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={selectedCategory}
+                      onChange={(e) => setSelectedCategory(e.target.value)}
+                    >
+                      {categories.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-neutral-500 mt-2">
+                      Select a category above to configure its specific permissions
+                    </p>
+                  </div>
+                </div>
+
+                {/* Role Description */}
+                <div className="flex flex-col">
+                  <label className="font-semibold text-sm text-neutral-700">
+                    Role Description
+                  </label>
+                  <textarea
+                    maxLength={200}
+                    className="border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 h-28"
+                    {...register("description", {
+                      required: "Role description is required",
+                    })}
+                  />
+                  <p className="text-xs text-neutral-500 mt-1 text-right">
+                    {/* react-hook-form controla el valor */}
+                  </p>
+                  {errors.description && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.description.message}
+                    </p>
                   )}
                 </div>
+              </div>
 
+              {/* Permission Section */}
+              <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
+                {/* Left side: permissions table */}
+                <div className="flex flex-col gap-4">
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="grid grid-cols-[1fr_auto] items-center px-4 py-2 font-semibold bg-[#F8F8F8] text-neutral-700 border-b">
+                      <span>Permission Name</span>
+                      <span></span>
+                    </div>
+                    {filteredPermissions.map((perm) => (
+                      <div
+                        key={perm.id}
+                        className={`grid grid-cols-[1fr_auto] items-center px-4 py-2 border-b last:border-b-0 ${
+                          selectedPermissions.has(perm.id) ? "bg-blue-50" : ""
+                        }`}
+                      >
+                        <span>{perm.description}</span>
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4"
+                          checked={selectedPermissions.has(perm.id)}
+                          onChange={() => handleCheckboxChange(perm.id)}
+                        />
+                      </div>
+                    ))}
+                  </div>
 
-                {/* Permissions list */}
-                <div className="col-span-2">
                   {/* Footer info */}
-                  <div className="flex items-center gap-2 mt-2 text-sm text-neutral-600">
+                  <div className="flex items-center gap-2 text-sm text-neutral-600">
                     <span className="h-2 w-2 rounded-full bg-blue-500 inline-block"></span>
                     Currently configuring:
-                    <span className="font-medium text-blue-600">Machinery</span>
+                    <span className="font-medium text-blue-600">{selectedCategory}</span>
                     <span className="ml-2">
-                      Active permissions: <b>0</b> of <b>4</b>
+                      Active permissions:{" "}
+                      <b>{countSelectedInCategory(selectedCategory)}</b> of{" "}
+                      <b>{filteredPermissions.length}</b>
                     </span>
                   </div>
-                </div>
 
-                                <div>
+                  {/* Buttons */}
                   <div className="flex gap-3">
                     <button
                       type="button"
-                      className="px-4 py-2 rounded-lg border border-neutral-300 text-neutral-700 hover:bg-neutral-100"
+                      onClick={resetPermissions}
+                      className="px-6 py-2 rounded-lg border border-neutral-300 text-neutral-700 hover:bg-neutral-100"
                     >
                       Reset All
                     </button>
-                    <button
-                      type="button"
-                      className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-                    >
-                      Save
-                    </button>
                   </div>
+                </div>
+
+                {/* Right side: categories summary */}
+                <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
+                  {categories.map((cat) => (
+                    <div
+                      key={cat}
+                      className="shadow-sm rounded-lg p-3 text-sm text-neutral-700 bg-neutral-50 border"
+                    >
+                      <div className="flex flex-col items-center justify-between">
+                        <span>{cat}</span>
+                        <span className="text-xs text-neutral-500">
+                          {countSelectedInCategory(cat)}/
+                          {permissions.filter((p) => p.category === cat).length} active
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              
-
-              {/* Side categories */}
-              <div className="col-span-2 grid grid-cols-2 md:grid-cols-3 gap-3">
-                {[
-                  "Machinery",
-                  "Payroll",
-                  "Request",
-                  "Ai",
-                  "Monitoring",
-                  "Parameterization",
-                  "User Management",
-                ].map((cat) => (
-                  <div
-                    key={cat}
-                    className="shadow-sm rounded-lg p-3 text-sm text-neutral-700 bg-neutral-50"
-                  >
-                    <div className="flex flex-col items-center justify-between">
-                      <span>{cat}</span>
-                      <span className="text-xs text-neutral-500">
-                        0/4 active
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Buttons */}
-            <div className="col-span-2 flex justify-between mt-6">
-              <div className="flex gap-3">
+              {/* Footer buttons */}
+              <div className="flex justify-end mt-6 gap-4">
                 <button
                   type="button"
+                  onClick={() => {
+                    reset();
+                    resetPermissions();
+                  }}
                   className="px-8 py-2 font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700"
                 >
                   Clear
                 </button>
                 <button
                   type="submit"
-                  className="px-8 py-2 font-semibold rounded-lg bg-black text-white hover:bg-neutral-800"
+                  disabled={loading}
+                  className={`px-8 py-2 font-semibold rounded-lg text-white transition 
+                    ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-black hover:bg-neutral-800"}`}
                 >
-                  Create Role
+                  {loading ? "Creating..." : "Create Role"}
                 </button>
+
               </div>
-            </div>
-          </form>
-        </div>
-      </main>
-    </div>
+            </form>
+          </div>
+        </main>
+      </div>
+      <SuccessModal
+        isOpen={successOpen}
+        onClose={() => setSuccessOpen(false)}
+        title="Successful"
+        message={modalMessage}
+      />
+      <ErrorModal
+        isOpen={errorOpen}
+        onClose={() => setErrorOpen(false)}
+        title="Failed"
+        message={modalMessage}
+      />
+    </>
   );
 };
 
-export default page;
+export default Page;
