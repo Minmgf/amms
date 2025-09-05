@@ -17,12 +17,7 @@ export const changeUserPassword = async (userId, payload) => {
     return data;
 };
 
-export const getTypeDocuments = async () => {
-    const { data } = await apiUsers.get("/users/type-documents");
-    return data;
-};
-
-export const getGenders = async () => {
-    const { data } = await apiUsers.get("/users/genders");
+export const updateBasicInformation = async (userId, payload) => {
+    const { data } = await apiUsers.put(`/users/edit-profile/${userId}`, payload);
     return data;
 };
