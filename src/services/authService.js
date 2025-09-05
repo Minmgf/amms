@@ -30,11 +30,6 @@ export const getGenders = async () => {
     return data;
 };
 
-export const getRoles = async () => {
-    const { data } = await apiUsers.get("/roles");
-    return data;
-};
-
 export const validateDocument = async (payload) => {
     const { data } = await apiUsers.post("/users/pre-register/validate", payload);
     return data;
