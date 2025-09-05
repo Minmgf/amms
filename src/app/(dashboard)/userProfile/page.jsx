@@ -4,8 +4,9 @@ import { useForm } from "react-hook-form";
 import { HiOutlinePencilAlt } from "react-icons/hi";
 import ChangePasswordModal from "../../components/userProfile/modals/ChangePasswordModal";
 import ChangePhotoModal from "../../components/userProfile/modals/ChangePhotoModal";
-import { getUserData } from "@/services/profileService";
+import { getUserData, updateBasicInformation } from "@/services/profileService";
 import { getCountries, getStates, getCities } from "@/services/locationService";
+import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
 
 const ProfilePage = () => {
   const [id, setId] = useState("");
@@ -17,6 +18,9 @@ const ProfilePage = () => {
   const [countriesList, setCountriesList] = useState([]);
   const [statesList, setStatesList] = useState([]);
   const [citiesList, setCitiesList] = useState([]);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
 
   const {
     register,
@@ -26,7 +30,7 @@ const ProfilePage = () => {
     formState: { errors },
   } = useForm();
   const watchCountry = watch("country");
-  const watchState = watch("region");
+  const watchState = watch("department");
 
   useEffect(() => {
     getCountries().then((data) => setCountriesList(data)).catch(console.error);
@@ -71,13 +75,6 @@ const ProfilePage = () => {
           const data = response.data[0];
           setUserData(data);
 
-          // Prefill form values
-          setValue("country", data.country || "Colombia");
-          setValue("region", data.department || "");
-          setValue("city", data.city || "");
-          setValue("address", data.address || "");
-          setValue("phoneNumber", data.phone || "");
-
           if (data.country) {
             const states = await getStates(data.country);
             setStatesList(states);
@@ -87,6 +84,12 @@ const ProfilePage = () => {
               setCitiesList(cities);
             }
           }
+
+          // Prefill form values
+          setValue("country", data.country || "Colombia");
+          setValue("department", data.department || "");
+          setValue("address", data.address || "");
+          setValue("phoneNumber", data.phone || "");
 
           if (data.profile_picture) {
             setProfilePhoto(data.profile_picture);
@@ -100,20 +103,31 @@ const ProfilePage = () => {
     fetchData();
   }, [id, setValue]);
 
+  useEffect(() => {
+    if (citiesList.length > 0 && userData.city) {
+      setValue("city", userData.city);
+    }
+  }, [citiesList, userData.city, setValue]);
+
   // Submit residencia
   const onSubmitResidence = async (data) => {
     try {
       const payload = {
         country: data.country,
-        region: data.region,
+        department: data.department,
         city: data.city,
         address: data.address,
-        phoneNumber: data.phoneNumber,
+        phone: data.phoneNumber,
       };
-      await updateResidenceInfo(id, payload);
-      alert("Información de residencia actualizada correctamente ✅");
+      const response = await updateBasicInformation(id, payload);
+      setModalMessage(response.data.message);
+      setSuccessOpen(true);
+      setTimeout(() => {
+        setSuccessOpen(false);
+      }, 2000);
     } catch (error) {
-      console.error("Error updating residence info", error);
+      setModalMessage(error.response.data.detail);
+      setErrorOpen(true);
     }
   };
 
@@ -259,7 +273,7 @@ const ProfilePage = () => {
                     >
                       <option value="">Select...</option>
                       {statesList.map((s) => (
-                        <option key={s.isoCode} value={s.isoCode}>{s.name}</option>
+                        <option key={s.iso2} value={s.iso2}>{s.name}</option>
                       ))}
                     </select>
                     {errors.department && (
@@ -374,6 +388,18 @@ const ProfilePage = () => {
         isOpen={isChangePhotoModalOpen}
         onClose={() => setIsChangePhotoModalOpen(false)}
         onSave={(newPhotoUrl) => setProfilePhoto(newPhotoUrl)}
+      />
+      <SuccessModal
+        isOpen={successOpen}
+        onClose={() => setSuccessOpen(false)}
+        title="Update Successful"
+        message={modalMessage}
+      />
+      <ErrorModal
+        isOpen={errorOpen}
+        onClose={() => setErrorOpen(false)}
+        title="Update Failed"
+        message={modalMessage}
       />
     </div>
   );
