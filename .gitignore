@@ -43,3 +43,30 @@ next-env.d.ts
 package-lock.json
 pnpm-lock.yaml
 yarn.lock
+
+# Ignorar entorno virtual de tests
+/tests/.venv/
+
+# Ignorar archivos de Python compilados en tests
+/tests/__pycache__/
+/tests/**/*.pyc
+/tests/**/*.pyo
+/tests/**/*.pyd
+
+# Ignorar logs y resultados de pruebas en tests
+/tests/**/*.log
+/tests/htmlcov/
+
+# Ignorar archivos de configuración locales en tests
+/tests/.env
+
+# Ignorar archivos de sistema en tests
+/tests/.DS_Store
+/tests/Thumbs.db
+
+# Ignorar drivers y binarios temporales en tests
+/tests/chromedriver.exe
+
+# Ignorar carpetas de IDE en tests
+/tests/.vscode/
+/tests/.idea/
