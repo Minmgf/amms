@@ -1,9 +1,9 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { FiEdit3, FiBell, FiPlus, FiX } from 'react-icons/fi';
-import NavigationMenu from '../components/ParameterNavigation';
-import ColorPickerModal from '../components/userParameterization/ColorPickerModal';
-import NewThemeModal from '../components/userParameterization/NewThemeModal';
+import NavigationMenu from '../../../components/ParameterNavigation';
+import ColorPickerModal from '../../../components/userParameterization/ColorPickerModal';
+import NewThemeModal from '../../../components/userParameterization/NewThemeModal';
 
 // Enhanced Color Picker Component with Modal
 const ColorPicker = ({ color, onChange, label, onOpenColorPicker }) => (
@@ -144,18 +144,6 @@ const StylesParameterizationView = () => {
           {/* Header */}
           <div className="flex items-center justify-between mb-6 md:mb-10">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Parameterization</h1>
-            
-            <div className="flex items-center space-x-2 md:space-x-4">
-              <button className="p-2 hover:bg-gray-100 rounded-md">
-                <FiEdit3 className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
-              </button>
-              <button className="p-2 hover:bg-gray-100 rounded-md">
-                <FiBell className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
-              </button>
-              <div className="w-8 h-8 md:w-10 md:h-10 bg-green-100 rounded-full flex items-center justify-center">
-                <span className="text-xs md:text-sm font-semibold text-green-700">JV</span>
-              </div>
-            </div>
           </div>
 
           {/* Navigation Menu */}

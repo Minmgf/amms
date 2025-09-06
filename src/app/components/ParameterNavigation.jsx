@@ -7,12 +7,12 @@ const NavigationMenu = ({
   onItemClick = () => {},
   // Mapeo de elementos a rutas
   routeMap = {
-    'Type...': '/parameterizationView',
-    'Status': '/parameterizationStatus', 
-    'Brands': '/managementBrandsModels',
-    'Units': '/parameterizationMeasure',
-    'Styles': '/stylesSystemAppearance',
-    'Job Titles': '/managementPositionsDepartments'
+    'Type...': '/parametrization/mainView',
+    'Status': '/parametrization/status', 
+    'Brands': '/parametrization/brands',
+    'Units': '/parametrization/units',
+    'Styles': '/parametrization/styles',
+    'Job Titles': '/parametrization/jobTitles'
   }
 }) => {
   const router = useRouter();

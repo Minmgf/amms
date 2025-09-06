@@ -10,32 +10,25 @@ import {
   flexRender,
   createColumnHelper,
 } from '@tanstack/react-table';
-import NavigationMenu from '../components/ParameterNavigation';
-import CategoryModal from '../components/userParameterization/ModelListModal';
-import BrandFormModal from '../components/userParameterization/BrandFormModal';
-import ModelFormModal from '../components/userParameterization/ModelFormModal'; 
+import NavigationMenu from '../../../components/ParameterNavigation';
+
+// IMPORTAR LOS MODALES DE STATUS
+import ParameterStatusModal from '../../../components/userParameterization/StatusModal';
+import ParameterAddModifyStatusModal from '../../../components/userParameterization/AddModifyStatusModal';
 
 // Componente principal
 const ParameterizationView = () => {
-  const [activeMenuItem, setActiveMenuItem] = useState('Brands');
+  const [activeMenuItem, setActiveMenuItem] = useState('Status');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [data, setData] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
-  
-  // Estados para CategoryModal (lista de brands)
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  
-  // Estados para BrandFormModal (agregar/editar brand)
-  const [isBrandFormModalOpen, setIsBrandFormModalOpen] = useState(false);
-  const [brandFormMode, setBrandFormMode] = useState('add'); // 'add' o 'edit'
-  const [selectedBrand, setSelectedBrand] = useState(null);
 
-  // Estados para ModelFormModal (agregar/editar model)
-  const [isModelModalOpen, setIsModelModalOpen] = useState(false);
-  const [modelModalMode, setModelModalMode] = useState('add');
-  const [selectedModelData, setSelectedModelData] = useState(null);
+  // ESTADOS PARA LOS MODALES DE STATUS
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showModifyStatusModal, setShowModifyStatusModal] = useState(false);
+  const [showAddStatusModal, setShowAddStatusModal] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState(null);
 
   // Datos de ejemplo
   const mockData = [
@@ -68,17 +61,20 @@ const ParameterizationView = () => {
     { id: 27, name: 'Consumables', description: 'Consumibles', details: '' },
     { id: 28, name: 'Lubricants', description: 'Lubricantes', details: '' },
     { id: 29, name: 'Filters', description: 'Filtros', details: '' },
-    { id: 30, name: 'Belts', description: 'Correas', details: '' }
+    { id: 30, name: 'Status', description: 'Estados de maquinaria', details: '' }
   ];
 
   // Función para obtener datos del backend
-  const fetchData = async (menuItem = 'Brands') => {
+  const fetchData = async (menuItem = 'Status') => {
     setLoading(true);
     setError(null);
     
     try {
+      // Simular delay del backend
       await new Promise(resolve => setTimeout(resolve, 500));
+      
       setData(mockData);
+      
     } catch (err) {
       setError(err.message);
       setData([]);
@@ -87,6 +83,7 @@ const ParameterizationView = () => {
     }
   };
 
+  // Cargar datos al montar el componente y cuando cambien las dependencias
   useEffect(() => {
     fetchData(activeMenuItem);
   }, [activeMenuItem]);
@@ -95,155 +92,69 @@ const ParameterizationView = () => {
     setActiveMenuItem(item);
   };
 
-  // ==================== HANDLERS PARA CategoryModal ====================
-  
-  // Abrir CategoryModal (cuando se hace click en el ojo de la tabla principal)
+  // FUNCIÓN MODIFICADA PARA ABRIR EL MODAL DE STATUS
   const handleViewDetails = (categoryId) => {
-    const category = data.find(item => item.id === categoryId);
-    if (category) {
-      setSelectedCategory(category);
-      setIsCategoryModalOpen(true);
+    console.log('View details for category:', categoryId);
+    
+    // Encontrar la categoría por ID
+    const category = mockData.find(item => item.id === categoryId);
+    
+    // Si es la categoría "Status" o cualquier categoría cuando activeMenuItem es "Status"
+    if (activeMenuItem === 'Status' || (category && category.name === 'Status')) {
+      setShowStatusModal(true);
+    } else {
+      // Para otras categorías, aquí podrías agregar otros modales específicos
+      console.log('Opening modal for category:', category?.name);
     }
   };
 
-  // Cerrar CategoryModal
-  const handleCloseCategoryModal = () => {
-    setIsCategoryModalOpen(false);
-    setSelectedCategory(null);
+  // FUNCIONES PARA MANEJAR LOS MODALES DE STATUS
+  const handleAddStatus = () => {
+    setShowStatusModal(false);
+    setShowAddStatusModal(true);
   };
 
-  // ==================== HANDLERS PARA BrandFormModal ====================
-  
-  // Abrir BrandFormModal en modo ADD (desde botón "Add Brand" del CategoryModal)
-  const handleAddBrand = () => {
-    setBrandFormMode('add');
-    setSelectedBrand(null);
-    setIsBrandFormModalOpen(true);
+  const handleEditStatus = (status) => {
+    setSelectedStatus(status);
+    setShowStatusModal(false);
+    setShowModifyStatusModal(true);
   };
 
-  // Abrir BrandFormModal en modo EDIT (desde botón "Edit" de la tabla del CategoryModal)
-  const handleEditBrand = (brandId) => {
-    // Aquí normalmente harías una llamada a la API para obtener los datos del brand
-    // Por ahora uso datos mock basados en el brandId
-    const mockBrandData = {
-      id: brandId,
-      brandName: 'Carterpillar',
-      description: 'Example',
-      status: 'Active',
-      models: [
-        { id: 1, model: 'CAT1000', description: 'Example' },
-        { id: 2, model: 'CAT1000', description: 'Example' },
-        { id: 3, model: 'CAT1000', description: 'Example' }
-      ]
-    };
+  const handleSaveNewStatus = (statusData) => {
+    console.log('Saving new status:', statusData);
+    // Aquí implementarías la lógica para guardar el nuevo status
+    // Por ejemplo, hacer una petición POST a tu API
     
-    setBrandFormMode('edit');
-    setSelectedBrand(mockBrandData);
-    setIsBrandFormModalOpen(true);
-  };
-
-  // Cerrar BrandFormModal
-  const handleCloseBrandFormModal = () => {
-    setIsBrandFormModalOpen(false);
-    setSelectedBrand(null);
-    setBrandFormMode('add');
-  };
-
-  // Guardar nuevo brand
-  const handleSaveBrand = (brandData) => {
-    console.log('Saving new brand:', brandData);
-    // Aquí harías la llamada a tu API para guardar el nuevo brand
-    // Por ejemplo: await api.brands.create(brandData);
+    // Cerrar el modal de agregar y volver al modal principal
+    setShowAddStatusModal(false);
+    setShowStatusModal(true);
     
-    // Cerrar el modal después de guardar exitosamente
-    handleCloseBrandFormModal();
-    
-    // Opcionalmente, podrías actualizar la lista de brands en CategoryModal
-    // o recargar los datos
+    // Opcional: Refrescar los datos
+    // fetchData(activeMenuItem);
   };
 
-  // Actualizar brand existente
-  const handleUpdateBrand = (brandData) => {
-    console.log('Updating brand:', brandData);
-    // Aquí harías la llamada a tu API para actualizar el brand
-    // Por ejemplo: await api.brands.update(brandData.id, brandData);
+  const handleUpdateStatus = (statusData) => {
+    console.log('Updating status:', statusData);
+    // Aquí implementarías la lógica para actualizar el status
+    // Por ejemplo, hacer una petición PUT a tu API
     
-    // Cerrar el modal después de actualizar exitosamente
-    handleCloseBrandFormModal();
+    // Cerrar el modal de modificar y volver al modal principal
+    setShowModifyStatusModal(false);
+    setShowStatusModal(true);
     
-    // Opcionalmente, podrías actualizar la lista de brands en CategoryModal
+    // Opcional: Refrescar los datos
+    // fetchData(activeMenuItem);
   };
 
-  // ==================== HANDLERS PARA ModelFormModal ====================
-  
-  // Abrir ModelFormModal en modo ADD (desde botón "Add model" del BrandFormModal)
-  const handleAddModel = () => {
-    setModelModalMode('add');
-    setSelectedModelData(null);
-    setIsModelModalOpen(true);
+  // FUNCIONES PARA CERRAR TODOS LOS MODALES
+  const handleCloseAllModals = () => {
+    setShowStatusModal(false);
+    setShowModifyStatusModal(false);
+    setShowAddStatusModal(false);
+    setSelectedStatus(null);
   };
 
-  // Abrir ModelFormModal en modo EDIT (desde botón "Edit" de la tabla del BrandFormModal)
-  const handleEditModel = (modelId) => {
-    // Buscar el modelo en los datos del brand seleccionado
-    const model = selectedBrand?.models?.find(m => m.id === modelId);
-    if (model) {
-      setModelModalMode('edit');
-      setSelectedModelData(model);
-      setIsModelModalOpen(true);
-    }
-  };
-
-  // Cerrar ModelFormModal
-  const handleModelModalClose = () => {
-    setIsModelModalOpen(false);
-    setSelectedModelData(null);
-    setModelModalMode('add');
-  };
-
-  // Guardar nuevo model
-  const handleModelSave = (modelData) => {
-    console.log('Saving new model:', modelData);
-    // Aquí harías la llamada a tu API para guardar el nuevo model
-    // Por ejemplo: await api.models.create(modelData);
-    
-    // Actualizar la lista de modelos en el brand actual
-    if (selectedBrand) {
-      const updatedBrand = {
-        ...selectedBrand,
-        models: [...(selectedBrand.models || []), modelData]
-      };
-      setSelectedBrand(updatedBrand);
-    }
-    
-    // Cerrar el modal después de guardar exitosamente
-    handleModelModalClose();
-  };
-
-  // Actualizar model existente
-  const handleModelUpdate = (modelData) => {
-    console.log('Updating model:', modelData);
-    // Aquí harías la llamada a tu API para actualizar el model
-    // Por ejemplo: await api.models.update(modelData.id, modelData);
-    
-    // Actualizar la lista de modelos en el brand actual
-    if (selectedBrand) {
-      const updatedModels = selectedBrand.models.map(model => 
-        model.id === modelData.id ? modelData : model
-      );
-      const updatedBrand = {
-        ...selectedBrand,
-        models: updatedModels
-      };
-      setSelectedBrand(updatedBrand);
-    }
-    
-    // Cerrar el modal después de actualizar exitosamente
-    handleModelModalClose();
-  };
-
-  // ==================== TABLA PRINCIPAL ====================
-
+  // Definir columnas usando TanStack Table
   const columnHelper = createColumnHelper();
 
   const columns = useMemo(
@@ -277,9 +188,10 @@ const ParameterizationView = () => {
         ),
       }),
     ],
-    [handleViewDetails]
+    []
   );
 
+  // Configurar la tabla
   const table = useReactTable({
     data,
     columns,
@@ -304,18 +216,6 @@ const ParameterizationView = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6 md:mb-10">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Parameterization</h1>
-          
-          <div className="flex items-center space-x-2 md:space-x-4">
-            <button className="p-2 hover:bg-gray-100 rounded-md">
-              <FiEdit3 className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
-            </button>
-            <button className="p-2 hover:bg-gray-100 rounded-md">
-              <FiBell className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
-            </button>
-            <div className="w-8 h-8 md:w-10 md:h-10 bg-green-100 rounded-full flex items-center justify-center">
-              <span className="text-xs md:text-sm font-semibold text-green-700">JV</span>
-            </div>
-          </div>
         </div>
 
         {/* Filter Section */}
@@ -400,9 +300,10 @@ const ParameterizationView = () => {
                 </table>
               </div>
 
-            {/* Pagination */}
+              {/* Pagination */}
               <div className="px-4 py-6 border-t border-gray-200 sm:px-6">
                 <div className="flex items-center justify-between">
+                  {/* Mobile pagination */}
                   <div className="flex-1 flex justify-between sm:hidden">
                     <button
                       onClick={() => table.previousPage()}
@@ -420,8 +321,10 @@ const ParameterizationView = () => {
                     </button>
                   </div>
                   
+                  {/* Desktop pagination */}
                   <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-center">
                     <div className="flex items-center gap-1">
+                      {/* Previous button */}
                       <button
                         onClick={() => table.previousPage()}
                         disabled={!table.getCanPreviousPage()}
@@ -430,11 +333,13 @@ const ParameterizationView = () => {
                         ← Previous
                       </button>
                       
+                      {/* Page numbers */}
                       {(() => {
                         const currentPage = table.getState().pagination.pageIndex + 1;
                         const totalPages = table.getPageCount();
                         const pages = [];
                         
+                        // Always show first page
                         if (currentPage > 3) {
                           pages.push(
                             <button
@@ -447,6 +352,7 @@ const ParameterizationView = () => {
                           );
                         }
                         
+                        // Show ellipsis if there's a gap
                         if (currentPage > 4) {
                           pages.push(
                             <span key="ellipsis1" className="inline-flex items-center justify-center w-10 h-10 text-sm text-gray-400">
@@ -455,6 +361,7 @@ const ParameterizationView = () => {
                           );
                         }
                         
+                        // Show pages around current page
                         for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
                           pages.push(
                             <button
@@ -471,6 +378,7 @@ const ParameterizationView = () => {
                           );
                         }
                         
+                        // Show ellipsis if there's a gap
                         if (currentPage < totalPages - 3) {
                           pages.push(
                             <span key="ellipsis2" className="inline-flex items-center justify-center w-10 h-10 text-sm text-gray-400">
@@ -479,6 +387,7 @@ const ParameterizationView = () => {
                           );
                         }
                         
+                        // Always show last page
                         if (currentPage < totalPages - 2) {
                           pages.push(
                             <button
@@ -494,6 +403,7 @@ const ParameterizationView = () => {
                         return pages;
                       })()}
                       
+                      {/* Next button */}
                       <button
                         onClick={() => table.nextPage()}
                         disabled={!table.getCanNextPage()}
@@ -504,6 +414,7 @@ const ParameterizationView = () => {
                     </div>
                   </div>
                   
+                  {/* Page size selector */}
                   <div className="hidden sm:block">
                     <select
                       value={table.getState().pagination.pageSize}
@@ -524,41 +435,29 @@ const ParameterizationView = () => {
             </>
           )}
         </div>
+
+        {/* MODALES DE STATUS */}
+        <ParameterStatusModal
+          isOpen={showStatusModal}
+          onClose={handleCloseAllModals}
+          category="Machinery Status"
+          onAddParameter={handleAddStatus}
+          onEditParameter={handleEditStatus}
+        />
+
+        <ParameterAddModifyStatusModal
+          isOpen={showModifyStatusModal}
+          onClose={handleCloseAllModals}
+          parameter={selectedStatus}
+          onSave={handleUpdateStatus}
+        />
+
+        <ParameterAddModifyStatusModal
+          isOpen={showAddStatusModal}
+          onClose={handleCloseAllModals}
+          onSave={handleSaveNewStatus}
+        />
       </div>
-      
-      {/* CategoryModal - Modal de lista de brands */}
-      <CategoryModal
-        isOpen={isCategoryModalOpen}
-        onClose={handleCloseCategoryModal}
-        categoryName={selectedCategory?.name || ''}
-        data={[]} // Aquí pasarías la lista de brands de la categoría seleccionada
-        onAddItem={handleAddBrand} // Se ejecuta cuando se presiona "Add Brand"
-        onEditItem={handleEditBrand} // Se ejecuta cuando se presiona "Edit" en la tabla
-      />
-
-      {/* BrandFormModal - Modal para agregar/editar brand */}
-      <BrandFormModal
-        isOpen={isBrandFormModalOpen}
-        onClose={handleCloseBrandFormModal}
-        mode={brandFormMode} // 'add' o 'edit'
-        categoryName={selectedCategory?.name || ''}
-        brandData={selectedBrand} // Datos del brand en modo edición
-        onSave={handleSaveBrand} // Se ejecuta al guardar nuevo brand
-        onUpdate={handleUpdateBrand} // Se ejecuta al actualizar brand existente
-        onAddModel={handleAddModel} // Se ejecuta cuando se presiona "Add model"
-        onEditModel={handleEditModel} // Se ejecuta cuando se presiona "Edit" en la tabla de modelos
-      />
-
-      {/* ModelFormModal - Modal para agregar/editar model */}
-      <ModelFormModal
-        isOpen={isModelModalOpen}
-        onClose={handleModelModalClose}
-        mode={modelModalMode} // 'add' o 'edit'
-        brandName={selectedBrand?.brandName || ''}
-        modelData={selectedModelData} // Datos del model en modo edición
-        onSave={handleModelSave} // Se ejecuta al guardar nuevo model
-        onUpdate={handleModelUpdate} // Se ejecuta al actualizar model existente
-      />
     </div>
   );
 };

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiX } from 'react-icons/fi';
 
-const ParameterAddModifyUnitModal = ({ isOpen, onClose, mode = 'add', unit = null, category = 'Weight', onSave }) => {
+const AddModifyUnitModal = ({ isOpen, onClose, mode = 'add', unit = null, category = 'Weight', onSave }) => {
   const [formData, setFormData] = useState({
     category: category,
     typeName: '',
@@ -201,4 +201,4 @@ const ParameterAddModifyUnitModal = ({ isOpen, onClose, mode = 'add', unit = nul
   );
 };
 
-export default ParameterAddModifyUnitModal;
+export default AddModifyUnitModal;

@@ -10,14 +10,13 @@ import {
   flexRender,
   createColumnHelper,
 } from '@tanstack/react-table';
-import NavigationMenu from '../components/ParameterNavigation';
-
+import NavigationMenu from '../../../components/ParameterNavigation';
 // MODALES CORREGIDOS - usando los nombres correctos de los componentes
-import ParameterTypesModal from '../components/userParameterization/ParameterTypesModal';
-import ParameterAddModifyTypesModal from '../components/userParameterization/ParameterAddModifyTypesModal';
+import ParameterTypesModal from '../../../components/userParameterization/TypesModal';
+import ParameterAddModifyTypesModal from '../../../components/userParameterization/AddModifyTypesModal';
 
 // Componente principal
-const ParameterizationView = () => {
+const MainView = () => {
   const [activeMenuItem, setActiveMenuItem] = useState('Types...');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -201,18 +200,6 @@ const ParameterizationView = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6 md:mb-10">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Parameterization</h1>
-          
-          <div className="flex items-center space-x-2 md:space-x-4">
-            <button className="p-2 hover:bg-gray-100 rounded-md">
-              <FiEdit3 className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
-            </button>
-            <button className="p-2 hover:bg-gray-100 rounded-md">
-              <FiBell className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
-            </button>
-            <div className="w-8 h-8 md:w-10 md:h-10 bg-green-100 rounded-full flex items-center justify-center">
-              <span className="text-xs md:text-sm font-semibold text-green-700">JV</span>
-            </div>
-          </div>
         </div>
 
         {/* Filter Section */}
@@ -464,4 +451,4 @@ const ParameterizationView = () => {
   );
 };
 
-export default ParameterizationView;
+export default MainView;
