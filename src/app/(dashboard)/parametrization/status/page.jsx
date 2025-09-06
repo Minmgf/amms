@@ -1,6 +1,6 @@
 "use client";
-import React, { useState, useEffect, useMemo } from 'react';
-import { FiFilter, FiEdit3, FiBell, FiEye } from 'react-icons/fi';
+import React, { useState, useEffect, useMemo } from "react";
+import { FiFilter, FiEdit3, FiBell, FiEye } from "react-icons/fi";
 import {
   useReactTable,
   getCoreRowModel,
@@ -9,72 +9,89 @@ import {
   getFilteredRowModel,
   flexRender,
   createColumnHelper,
-} from '@tanstack/react-table';
-import NavigationMenu from '../../../components/ParameterNavigation';
+} from "@tanstack/react-table";
+import NavigationMenu from "../../../components/ParameterNavigation";
+import StatusListModal from "../../../components/parametrization/StatusListModal";
+import AddModifyStatusModal from "../../../components/parametrization/AddModifyStatusModal";
 
-// IMPORTAR LOS MODALES DE STATUS
-import ParameterStatusModal from '../../../components/parametrization/StatusModal';
-import ParameterAddModifyStatusModal from '../../../components/parametrization/AddModifyStatusModal';
-
-// Componente principal
-const ParameterizationView = () => {
-  const [activeMenuItem, setActiveMenuItem] = useState('Status');
+// Componente para la vista de Status
+const StatusParameterizationView = () => {
+  const [activeMenuItem, setActiveMenuItem] = useState("Status");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [data, setData] = useState([]);
-  const [globalFilter, setGlobalFilter] = useState('');
+  const [globalFilter, setGlobalFilter] = useState("");
 
-  // ESTADOS PARA LOS MODALES DE STATUS
-  const [showStatusModal, setShowStatusModal] = useState(false);
-  const [showModifyStatusModal, setShowModifyStatusModal] = useState(false);
-  const [showAddStatusModal, setShowAddStatusModal] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState(null);
+  // Estados para los modales
+  const [isStatusListModalOpen, setIsStatusListModalOpen] = useState(false);
+  const [isAddModifyModalOpen, setIsAddModifyModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState('add'); // 'add' o 'modify'
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedParameter, setSelectedParameter] = useState(null);
+  const [categoryParameters, setCategoryParameters] = useState([]);
 
-  // Datos de ejemplo
+  // Datos de ejemplo para Status según el mockup
   const mockData = [
-    { id: 1, name: 'Machinery', description: 'Módulo de maquinaria', details: '' },
-    { id: 2, name: 'Motors', description: 'Módulo de maquinaria', details: '' },
-    { id: 3, name: 'Wheels', description: 'Módulo de maquinaria', details: '' },
-    { id: 4, name: 'Engines', description: 'Módulo de motores', details: '' },
-    { id: 5, name: 'Transmissions', description: 'Módulo de transmisiones', details: '' },
-    { id: 6, name: 'Hydraulics', description: 'Sistema hidráulico', details: '' },
-    { id: 7, name: 'Electronics', description: 'Componentes electrónicos', details: '' },
-    { id: 8, name: 'Cooling', description: 'Sistema de refrigeración', details: '' },
-    { id: 9, name: 'Fuel System', description: 'Sistema de combustible', details: '' },
-    { id: 10, name: 'Brakes', description: 'Sistema de frenos', details: '' },
-    { id: 11, name: 'Suspension', description: 'Sistema de suspensión', details: '' },
-    { id: 12, name: 'Steering', description: 'Sistema de dirección', details: '' },
-    { id: 13, name: 'Exhaust', description: 'Sistema de escape', details: '' },
-    { id: 14, name: 'Lighting', description: 'Sistema de iluminación', details: '' },
-    { id: 15, name: 'Safety', description: 'Sistemas de seguridad', details: '' },
-    { id: 16, name: 'Comfort', description: 'Sistemas de confort', details: '' },
-    { id: 17, name: 'Navigation', description: 'Sistemas de navegación', details: '' },
-    { id: 18, name: 'Communication', description: 'Sistemas de comunicación', details: '' },
-    { id: 19, name: 'Storage', description: 'Sistemas de almacenamiento', details: '' },
-    { id: 20, name: 'Maintenance', description: 'Sistemas de mantenimiento', details: '' },
-    { id: 21, name: 'Monitoring', description: 'Sistemas de monitoreo', details: '' },
-    { id: 22, name: 'Control', description: 'Sistemas de control', details: '' },
-    { id: 23, name: 'Power', description: 'Sistemas de energía', details: '' },
-    { id: 24, name: 'Tools', description: 'Herramientas', details: '' },
-    { id: 25, name: 'Accessories', description: 'Accesorios', details: '' },
-    { id: 26, name: 'Spare Parts', description: 'Repuestos', details: '' },
-    { id: 27, name: 'Consumables', description: 'Consumibles', details: '' },
-    { id: 28, name: 'Lubricants', description: 'Lubricantes', details: '' },
-    { id: 29, name: 'Filters', description: 'Filtros', details: '' },
-    { id: 30, name: 'Status', description: 'Estados de maquinaria', details: '' }
+    { 
+      id: 1, 
+      categoryName: "Estado de maquinaria", 
+      description: "Módulo de maquinaria"
+    },
+    { 
+      id: 2, 
+      categoryName: "Estado de maquinaria", 
+      description: "Módulo de maquinaria"
+    },
+    { 
+      id: 3, 
+      categoryName: "Estado de maquinaria", 
+      description: "Módulo de maquinaria"
+    },
+  ];
+
+  // Datos de ejemplo para los parámetros de cada categoría
+  const mockCategoryParameters = [
+    { 
+      id: 1, 
+      typeName: "Operativo", 
+      description: "Maquinaria en funcionamiento normal", 
+      status: "Active",
+      isActive: true 
+    },
+    { 
+      id: 2, 
+      typeName: "Mantenimiento", 
+      description: "Maquinaria en proceso de mantenimiento", 
+      status: "Active",
+      isActive: true 
+    },
+    { 
+      id: 3, 
+      typeName: "Fuera de servicio", 
+      description: "Maquinaria temporalmente fuera de servicio", 
+      status: "Inactive",
+      isActive: false 
+    },
+  ];
+
+  // Opciones del menú de navegación (mismo que el original)
+  const menuItems = [
+    "Type...",
+    "Status",
+    "Brands",
+    "Units",
+    "Styles",
+    "Job Titles",
   ];
 
   // Función para obtener datos del backend
-  const fetchData = async (menuItem = 'Status') => {
+  const fetchData = async (menuItem = "Status") => {
     setLoading(true);
     setError(null);
-    
+
     try {
-      // Simular delay del backend
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 500));
       setData(mockData);
-      
     } catch (err) {
       setError(err.message);
       setData([]);
@@ -83,7 +100,6 @@ const ParameterizationView = () => {
     }
   };
 
-  // Cargar datos al montar el componente y cuando cambien las dependencias
   useEffect(() => {
     fetchData(activeMenuItem);
   }, [activeMenuItem]);
@@ -92,93 +108,88 @@ const ParameterizationView = () => {
     setActiveMenuItem(item);
   };
 
-  // FUNCIÓN MODIFICADA PARA ABRIR EL MODAL DE STATUS
+  // Handler para el botón de detalles - abre el StatusListModal
   const handleViewDetails = (categoryId) => {
-    console.log('View details for category:', categoryId);
-    
-    // Encontrar la categoría por ID
-    const category = mockData.find(item => item.id === categoryId);
-    
-    // Si es la categoría "Status" o cualquier categoría cuando activeMenuItem es "Status"
-    if (activeMenuItem === 'Status' || (category && category.name === 'Status')) {
-      setShowStatusModal(true);
-    } else {
-      // Para otras categorías, aquí podrías agregar otros modales específicos
-      console.log('Opening modal for category:', category?.name);
+    console.log("View details for category:", categoryId);
+    const category = data.find(item => item.id === categoryId);
+    if (category) {
+      setSelectedCategory(category);
+      setCategoryParameters(mockCategoryParameters); // En producción, esto vendría del API
+      setIsStatusListModalOpen(true);
     }
   };
 
-  // FUNCIONES PARA MANEJAR LOS MODALES DE STATUS
-  const handleAddStatus = () => {
-    setShowStatusModal(false);
-    setShowAddStatusModal(true);
+  // Handlers para el StatusListModal
+  const handleCloseStatusListModal = () => {
+    setIsStatusListModalOpen(false);
+    setSelectedCategory(null);
+    setCategoryParameters([]);
   };
 
-  const handleEditStatus = (status) => {
-    setSelectedStatus(status);
-    setShowStatusModal(false);
-    setShowModifyStatusModal(true);
+  const handleAddParameter = () => {
+    setModalMode('add');
+    setSelectedParameter(null);
+    setIsAddModifyModalOpen(true);
   };
 
-  const handleSaveNewStatus = (statusData) => {
-    console.log('Saving new status:', statusData);
-    // Aquí implementarías la lógica para guardar el nuevo status
-    // Por ejemplo, hacer una petición POST a tu API
+  const handleEditParameter = (parameter) => {
+    setModalMode('modify');
+    setSelectedParameter(parameter);
+    setIsAddModifyModalOpen(true);
+  };
+
+  // Handlers para el AddModifyStatusModal
+  const handleCloseAddModifyModal = () => {
+    setIsAddModifyModalOpen(false);
+    setSelectedParameter(null);
+    setModalMode('add');
+  };
+
+  const handleSaveParameter = (parameterData) => {
+    console.log("Saving parameter:", parameterData);
     
-    // Cerrar el modal de agregar y volver al modal principal
-    setShowAddStatusModal(false);
-    setShowStatusModal(true);
+    if (modalMode === 'add') {
+      // Agregar nuevo parámetro
+      const newParameter = {
+        ...parameterData,
+        id: categoryParameters.length + 1
+      };
+      setCategoryParameters(prev => [...prev, newParameter]);
+    } else {
+      // Modificar parámetro existente
+      setCategoryParameters(prev => 
+        prev.map(param => 
+          param.id === selectedParameter.id 
+            ? { ...param, ...parameterData }
+            : param
+        )
+      );
+    }
     
-    // Opcional: Refrescar los datos
-    // fetchData(activeMenuItem);
+    // Cerrar el modal
+    handleCloseAddModifyModal();
   };
 
-  const handleUpdateStatus = (statusData) => {
-    console.log('Updating status:', statusData);
-    // Aquí implementarías la lógica para actualizar el status
-    // Por ejemplo, hacer una petición PUT a tu API
-    
-    // Cerrar el modal de modificar y volver al modal principal
-    setShowModifyStatusModal(false);
-    setShowStatusModal(true);
-    
-    // Opcional: Refrescar los datos
-    // fetchData(activeMenuItem);
-  };
+  // ==================== TABLA PRINCIPAL ====================
 
-  // FUNCIONES PARA CERRAR TODOS LOS MODALES
-  const handleCloseAllModals = () => {
-    setShowStatusModal(false);
-    setShowModifyStatusModal(false);
-    setShowAddStatusModal(false);
-    setSelectedStatus(null);
-  };
-
-  // Definir columnas usando TanStack Table
   const columnHelper = createColumnHelper();
 
   const columns = useMemo(
     () => [
-      columnHelper.accessor('name', {
-        header: 'Category name',
-        cell: info => (
-          <div className="font-medium text-gray-900">
-            {info.getValue()}
-          </div>
+      columnHelper.accessor("categoryName", {
+        header: "Category name",
+        cell: (info) => (
+          <div className="font-medium text-gray-900">{info.getValue()}</div>
         ),
       }),
-      columnHelper.accessor('description', {
-        header: 'Description',
-        cell: info => (
-          <div className="text-gray-600">
-            {info.getValue()}
-          </div>
-        ),
+      columnHelper.accessor("description", {
+        header: "Description",
+        cell: (info) => <div className="text-gray-600">{info.getValue()}</div>,
       }),
-      columnHelper.accessor('id', {
-        header: 'Details',
-        cell: info => (
-          <button 
+      columnHelper.accessor("id", {
+        header: "Details",
+        cell: (info) => (
+          <button
             onClick={() => handleViewDetails(info.getValue())}
             className="p-2 hover:bg-gray-100 rounded-md transition-colors opacity-0 group-hover:opacity-100"
             title="View details"
@@ -188,10 +199,9 @@ const ParameterizationView = () => {
         ),
       }),
     ],
-    []
+    [handleViewDetails]
   );
 
-  // Configurar la tabla
   const table = useReactTable({
     data,
     columns,
@@ -215,7 +225,9 @@ const ParameterizationView = () => {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6 md:mb-10">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Parameterization</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+            Parameterization
+          </h1>
         </div>
 
         {/* Filter Section */}
@@ -237,21 +249,17 @@ const ParameterizationView = () => {
         {/* Table */}
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-6 md:mb-8">
           {loading ? (
-            <div className="p-8 text-center text-gray-500">
-              Loading...
-            </div>
+            <div className="p-8 text-center text-gray-500">Loading...</div>
           ) : error ? (
-            <div className="p-8 text-center text-red-500">
-              Error: {error}
-            </div>
+            <div className="p-8 text-center text-red-500">Error: {error}</div>
           ) : (
             <>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
-                    {table.getHeaderGroups().map(headerGroup => (
+                    {table.getHeaderGroups().map((headerGroup) => (
                       <tr key={headerGroup.id}>
-                        {headerGroup.headers.map(header => (
+                        {headerGroup.headers.map((header) => (
                           <th
                             key={header.id}
                             className="px-4 md:px-6 py-3 md:py-4 text-left text-sm font-semibold text-gray-900 border-r border-gray-200 last:border-r-0"
@@ -260,9 +268,10 @@ const ParameterizationView = () => {
                               <div
                                 {...{
                                   className: header.column.getCanSort()
-                                    ? 'cursor-pointer select-none flex items-center gap-2'
-                                    : '',
-                                  onClick: header.column.getToggleSortingHandler(),
+                                    ? "cursor-pointer select-none flex items-center gap-2"
+                                    : "",
+                                  onClick:
+                                    header.column.getToggleSortingHandler(),
                                 }}
                               >
                                 {flexRender(
@@ -270,8 +279,8 @@ const ParameterizationView = () => {
                                   header.getContext()
                                 )}
                                 {{
-                                  asc: ' 🔼',
-                                  desc: ' 🔽',
+                                  asc: " 🔼",
+                                  desc: " 🔽",
                                 }[header.column.getIsSorted()] ?? null}
                               </div>
                             )}
@@ -281,9 +290,9 @@ const ParameterizationView = () => {
                     ))}
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {table.getRowModel().rows.map(row => (
+                    {table.getRowModel().rows.map((row) => (
                       <tr key={row.id} className="hover:bg-gray-50 group">
-                        {row.getVisibleCells().map(cell => (
+                        {row.getVisibleCells().map((cell) => (
                           <td
                             key={cell.id}
                             className="px-4 md:px-6 py-3 md:py-4 text-sm border-r border-gray-200 last:border-r-0"
@@ -303,7 +312,6 @@ const ParameterizationView = () => {
               {/* Pagination */}
               <div className="px-4 py-6 border-t border-gray-200 sm:px-6">
                 <div className="flex items-center justify-between">
-                  {/* Mobile pagination */}
                   <div className="flex-1 flex justify-between sm:hidden">
                     <button
                       onClick={() => table.previousPage()}
@@ -320,11 +328,9 @@ const ParameterizationView = () => {
                       Next →
                     </button>
                   </div>
-                  
-                  {/* Desktop pagination */}
+
                   <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-center">
                     <div className="flex items-center gap-1">
-                      {/* Previous button */}
                       <button
                         onClick={() => table.previousPage()}
                         disabled={!table.getCanPreviousPage()}
@@ -332,14 +338,13 @@ const ParameterizationView = () => {
                       >
                         ← Previous
                       </button>
-                      
-                      {/* Page numbers */}
+
                       {(() => {
-                        const currentPage = table.getState().pagination.pageIndex + 1;
+                        const currentPage =
+                          table.getState().pagination.pageIndex + 1;
                         const totalPages = table.getPageCount();
                         const pages = [];
-                        
-                        // Always show first page
+
                         if (currentPage > 3) {
                           pages.push(
                             <button
@@ -351,43 +356,49 @@ const ParameterizationView = () => {
                             </button>
                           );
                         }
-                        
-                        // Show ellipsis if there's a gap
+
                         if (currentPage > 4) {
                           pages.push(
-                            <span key="ellipsis1" className="inline-flex items-center justify-center w-10 h-10 text-sm text-gray-400">
+                            <span
+                              key="ellipsis1"
+                              className="inline-flex items-center justify-center w-10 h-10 text-sm text-gray-400"
+                            >
                               ...
                             </span>
                           );
                         }
-                        
-                        // Show pages around current page
-                        for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+
+                        for (
+                          let i = Math.max(1, currentPage - 2);
+                          i <= Math.min(totalPages, currentPage + 2);
+                          i++
+                        ) {
                           pages.push(
                             <button
                               key={i}
                               onClick={() => table.setPageIndex(i - 1)}
                               className={`inline-flex items-center justify-center w-10 h-10 text-sm font-medium rounded-md transition-colors ${
                                 i === currentPage
-                                  ? 'bg-gray-800 text-white'
-                                  : 'text-gray-600 bg-gray-100 hover:bg-gray-200'
+                                  ? "bg-gray-800 text-white"
+                                  : "text-gray-600 bg-gray-100 hover:bg-gray-200"
                               }`}
                             >
                               {i}
                             </button>
                           );
                         }
-                        
-                        // Show ellipsis if there's a gap
+
                         if (currentPage < totalPages - 3) {
                           pages.push(
-                            <span key="ellipsis2" className="inline-flex items-center justify-center w-10 h-10 text-sm text-gray-400">
+                            <span
+                              key="ellipsis2"
+                              className="inline-flex items-center justify-center w-10 h-10 text-sm text-gray-400"
+                            >
                               ...
                             </span>
                           );
                         }
-                        
-                        // Always show last page
+
                         if (currentPage < totalPages - 2) {
                           pages.push(
                             <button
@@ -399,11 +410,10 @@ const ParameterizationView = () => {
                             </button>
                           );
                         }
-                        
+
                         return pages;
                       })()}
-                      
-                      {/* Next button */}
+
                       <button
                         onClick={() => table.nextPage()}
                         disabled={!table.getCanNextPage()}
@@ -413,17 +423,16 @@ const ParameterizationView = () => {
                       </button>
                     </div>
                   </div>
-                  
-                  {/* Page size selector */}
+
                   <div className="hidden sm:block">
                     <select
                       value={table.getState().pagination.pageSize}
-                      onChange={e => {
-                        table.setPageSize(Number(e.target.value))
+                      onChange={(e) => {
+                        table.setPageSize(Number(e.target.value));
                       }}
                       className="border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
-                      {[10, 20, 30, 40, 50].map(pageSize => (
+                      {[10, 20, 30, 40, 50].map((pageSize) => (
                         <option key={pageSize} value={pageSize}>
                           {pageSize} per page
                         </option>
@@ -435,31 +444,29 @@ const ParameterizationView = () => {
             </>
           )}
         </div>
-
-        {/* MODALES DE STATUS */}
-        <ParameterStatusModal
-          isOpen={showStatusModal}
-          onClose={handleCloseAllModals}
-          category="Machinery Status"
-          onAddParameter={handleAddStatus}
-          onEditParameter={handleEditStatus}
-        />
-
-        <ParameterAddModifyStatusModal
-          isOpen={showModifyStatusModal}
-          onClose={handleCloseAllModals}
-          parameter={selectedStatus}
-          onSave={handleUpdateStatus}
-        />
-
-        <ParameterAddModifyStatusModal
-          isOpen={showAddStatusModal}
-          onClose={handleCloseAllModals}
-          onSave={handleSaveNewStatus}
-        />
       </div>
+
+      {/* StatusListModal - Modal de lista de parámetros */}
+      <StatusListModal
+        isOpen={isStatusListModalOpen}
+        onClose={handleCloseStatusListModal}
+        categoryName={selectedCategory?.categoryName || "Machinery Status"}
+        data={categoryParameters}
+        onAddParameter={handleAddParameter}
+        onEditParameter={handleEditParameter}
+      />
+
+      {/* AddModifyStatusModal - Modal para agregar/editar parámetros */}
+      <AddModifyStatusModal
+        isOpen={isAddModifyModalOpen}
+        onClose={handleCloseAddModifyModal}
+        mode={modalMode}
+        status={selectedParameter}
+        category={selectedCategory?.categoryName || "Machinery Status"}
+        onSave={handleSaveParameter}
+      />
     </div>
   );
 };
 
-export default ParameterizationView;
+export default StatusParameterizationView;
