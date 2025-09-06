@@ -289,9 +289,9 @@ const DepartmentModal = ({
                         <div>
                           <button
                             onClick={() => handleEditJob(job.id)}
-                            className="inline-flex items-center px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                            className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md transition-colors"
                           >
-                            <FiEdit3 className="w-3 h-3 mr-1" />
+                            <FiEdit3 className="w-3 h-3 mr-1.5" />
                             Edit
                           </button>
                         </div>

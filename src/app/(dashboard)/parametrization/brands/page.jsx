@@ -10,10 +10,10 @@ import {
   flexRender,
   createColumnHelper,
 } from '@tanstack/react-table';
-import NavigationMenu from '../components/ParameterNavigation';
-import CategoryModal from '../components/userParameterization/ModelListModal';
-import BrandFormModal from '../components/userParameterization/BrandFormModal';
-import ModelFormModal from '../components/userParameterization/ModelFormModal'; 
+import NavigationMenu from '../../../components/ParameterNavigation';
+import CategoryModal from '../../../components/parametrization/ModelListModal';
+import BrandFormModal from '../../../components/parametrization/BrandFormModal';
+import AddEditModelModal from '../../../components/parametrization/AddEditModelModal'; 
 
 // Componente principal
 const ParameterizationView = () => {
@@ -32,7 +32,7 @@ const ParameterizationView = () => {
   const [brandFormMode, setBrandFormMode] = useState('add'); // 'add' o 'edit'
   const [selectedBrand, setSelectedBrand] = useState(null);
 
-  // Estados para ModelFormModal (agregar/editar model)
+  // Estados para AddEditModelModal (agregar/editar model)
   const [isModelModalOpen, setIsModelModalOpen] = useState(false);
   const [modelModalMode, setModelModalMode] = useState('add');
   const [selectedModelData, setSelectedModelData] = useState(null);
@@ -174,16 +174,16 @@ const ParameterizationView = () => {
     // Opcionalmente, podrías actualizar la lista de brands en CategoryModal
   };
 
-  // ==================== HANDLERS PARA ModelFormModal ====================
+  // ==================== HANDLERS PARA AddEditModelModal ====================
   
-  // Abrir ModelFormModal en modo ADD (desde botón "Add model" del BrandFormModal)
+  // Abrir AddEditModelModal en modo ADD (desde botón "Add model" del BrandFormModal)
   const handleAddModel = () => {
     setModelModalMode('add');
     setSelectedModelData(null);
     setIsModelModalOpen(true);
   };
 
-  // Abrir ModelFormModal en modo EDIT (desde botón "Edit" de la tabla del BrandFormModal)
+  // Abrir AddEditModelModal en modo EDIT (desde botón "Edit" de la tabla del BrandFormModal)
   const handleEditModel = (modelId) => {
     // Buscar el modelo en los datos del brand seleccionado
     const model = selectedBrand?.models?.find(m => m.id === modelId);
@@ -194,7 +194,7 @@ const ParameterizationView = () => {
     }
   };
 
-  // Cerrar ModelFormModal
+  // Cerrar AddEditModelModal
   const handleModelModalClose = () => {
     setIsModelModalOpen(false);
     setSelectedModelData(null);
@@ -304,18 +304,6 @@ const ParameterizationView = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6 md:mb-10">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Parameterization</h1>
-          
-          <div className="flex items-center space-x-2 md:space-x-4">
-            <button className="p-2 hover:bg-gray-100 rounded-md">
-              <FiEdit3 className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
-            </button>
-            <button className="p-2 hover:bg-gray-100 rounded-md">
-              <FiBell className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
-            </button>
-            <div className="w-8 h-8 md:w-10 md:h-10 bg-green-100 rounded-full flex items-center justify-center">
-              <span className="text-xs md:text-sm font-semibold text-green-700">JV</span>
-            </div>
-          </div>
         </div>
 
         {/* Filter Section */}
@@ -549,8 +537,8 @@ const ParameterizationView = () => {
         onEditModel={handleEditModel} // Se ejecuta cuando se presiona "Edit" en la tabla de modelos
       />
 
-      {/* ModelFormModal - Modal para agregar/editar model */}
-      <ModelFormModal
+      {/* AddEditModelModal - Modal para agregar/editar model */}
+      <AddEditModelModal
         isOpen={isModelModalOpen}
         onClose={handleModelModalClose}
         mode={modelModalMode} // 'add' o 'edit'
