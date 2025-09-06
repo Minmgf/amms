@@ -25,17 +25,64 @@ Esta estructura está pensada para facilitar la colaboración y el mantenimiento
 
 Para preparar el entorno y trabajar con las pruebas automatizadas, sigue estos pasos:
 
-1. **Crear entorno virtual (opcional si ya existe):**
+### Requisitos previos
+- Python 3.8 o superior instalado
+- Google Chrome instalado
+- Git para clonar el repositorio
+
+### Configuración paso a paso
+
+1. **Navegar a la carpeta tests:**
+   ```powershell
+   cd "ruta\al\proyecto\amms\tests"
+   ```
+
+2. **Crear entorno virtual (si no existe):**
    ```powershell
    python -m venv .venv
+   ```
+
+3. **Activar el entorno virtual:**
+   ```powershell
    .\.venv\Scripts\Activate.ps1
    ```
-2. **Instalar dependencias:**
+   
+   > **Nota**: Si obtienes un error de política de ejecución en PowerShell, ejecuta:
+   > ```powershell
+   > Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+   > ```
+
+4. **Instalar dependencias:**
    ```powershell
    pip install -r requirements.txt
    ```
 
-Esto instalará todos los paquetes necesarios para ejecutar las pruebas (Selenium, Pytest, etc.) definidos en `requirements.txt`.
+5. **Verificar instalación:**
+   ```powershell
+   pip list
+   ```
+   
+   Deberías ver paquetes como: selenium, pytest, faker, python-dotenv
+
+### Configuración de ChromeDriver
+
+El ChromeDriver debie estar en la carpeta `chromedriver/driver.exe`. Si necesitas actualizarlo:
+
+1. Descarga la versión compatible con tu Chrome desde [ChromeDriver](https://chromedriver.chromium.org/)
+2. Reemplaza el archivo en `chromedriver/driver.exe`
+
+### Probar la configuración
+
+Ejecuta el flujo de login para verificar que todo funciona:
+
+```powershell
+python "flows\auth\login\login_flow.py"
+```
+
+Si todo está configurado correctamente, verás mensajes como:
+- "Navegando a: http://localhost:3000/sigma/login"
+- "Campo email encontrado..."
+- "Login exitoso detectado..."
 
 ## Exclusiones recomendadas en .gitignore
 
@@ -74,9 +121,91 @@ Si todo lo relacionado con Python y Selenium está dentro de la carpeta `tests`,
 /tests/.env
 /tests/.DS_Store
 /tests/Thumbs.db
-/tests/chromedriver.exe
+/tests/chromedriver/driver.exe
 /tests/.vscode/
 /tests/.idea/
 ```
 
 Esto asegura que sólo los archivos y carpetas generados dentro de `tests` sean ignorados, manteniendo limpio el repositorio principal y permitiendo la colaboración en los scripts de automatización.
+
+## Configuración de credenciales (.env)
+
+Para ejecutar flujos que requieren autenticación, crea un archivo `.env` en la carpeta `tests` con las credenciales de prueba:
+
+```bash
+EMAIL=sigma.inmero@gmail.com
+PASSWORD=Admin123456.
+HEADLESS=False
+```
+
+> **Importante**: 
+> - No incluyas comillas en los valores
+> - Este archivo está en `.gitignore` por seguridad
+> - Las credenciales son para el entorno de pruebas únicamente
+> - `HEADLESS=True` ejecuta las pruebas sin interfaz gráfica (más rápido)
+> - `HEADLESS=False` ejecuta con interfaz gráfica (para debugging)
+
+## Comandos útiles para el equipo
+
+### Activar entorno virtual
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+### Desactivar entorno virtual
+```powershell
+deactivate
+```
+
+### Ejecutar un flujo específico
+```powershell
+python "flows\auth\login\login_flow.py"
+python "flows\userManagement\user_management_flow.py"
+python "flows\roleManagement\role_management_flow.py"
+```
+
+### Ejecutar en modo headless (sin interfaz)
+```powershell
+# Cambiar HEADLESS=True en .env, luego ejecutar
+python "flows\auth\login\login_flow.py"
+```
+
+### Ejecutar tests con pytest
+```powershell
+pytest flows/ -v
+```
+
+### Actualizar dependencias
+```powershell
+pip freeze > requirements.txt
+```
+
+## Solución de problemas comunes
+
+### Error: "ModuleNotFoundError: No module named 'selenium'"
+- Asegúrate de tener el entorno virtual activado
+- Reinstala las dependencias: `pip install -r requirements.txt`
+
+### Error: "selenium.common.exceptions.WebDriverException"
+- Verifica que Chrome esté instalado
+- Asegúrate de que `chromedriver/driver.exe` existe y es compatible con tu versión de Chrome
+
+### Error: PowerShell execution policy
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+### El servidor no está corriendo (localhost:3000)
+- Asegúrate de que la aplicación web esté ejecutándose en el puerto 3000
+- Verifica con: `Test-NetConnection -ComputerName "localhost" -Port 3000`
+
+## Estructura de archivos generados (ignorados por Git)
+
+```
+tests/
+├── .venv/              # Entorno virtual (ignorado)
+├── __pycache__/        # Cache de Python (ignorado)
+├── .env               # Credenciales (ignorado)
+├── htmlcov/           # Reportes de cobertura (ignorado)
+└── *.log              # Logs de ejecución (ignorados)
+```

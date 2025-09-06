@@ -65,7 +65,7 @@ yarn.lock
 /tests/Thumbs.db
 
 # Ignorar drivers y binarios temporales en tests
-/tests/chromedriver.exe
+/tests/chromedriver/driver.exe
 
 # Ignorar carpetas de IDE en tests
 /tests/.vscode/
