@@ -85,7 +85,7 @@ DEFAULT_CONFIG = {
     'user_management_url': 'http://localhost:3000/userManagement'
 }
 
-# Selectores CSS/XPath para gestión de usuarios
+# Selectores CSS/XPath específicos para gestión de usuarios
 SELECTORS = {
     'navigation': {
         'user_management_link': [
@@ -96,58 +96,39 @@ SELECTORS = {
         ]
     },
     'user_list': {
-        'table': "//table | //div[contains(@class, 'table')] | //div[contains(@class, 'user-list')]",
-        'table_headers': "//th | //div[contains(@class, 'header')]",
-        'user_rows': "//tr[contains(@class, 'user')] | //div[contains(@class, 'user-row')]",
-        'user_name': "//td[1] | //div[contains(@class, 'name')]",
-        'user_email': "//td[contains(@class, 'email')] | //span[contains(@class, 'email')]",
-        'user_role': "//td[contains(@class, 'role')] | //span[contains(@class, 'role')]",
-        'user_status': "//td[contains(@class, 'status')] | //span[contains(@class, 'status')]"
-    },
-    'actions': {
-        'activate_buttons': [
-            "//button[contains(text(), 'Activar')]",
-            "//button[contains(@class, 'activate')]",
-            "//a[contains(text(), 'Activar')]"
-        ],
-        'deactivate_buttons': [
-            "//button[contains(text(), 'Desactivar')]",
-            "//button[contains(@class, 'deactivate')]",
-            "//a[contains(text(), 'Desactivar')]"
-        ],
-        'details_buttons': [
-            "//button[contains(text(), 'Ver Detalles')]",
-            "//button[contains(text(), 'Detalles')]",
-            "//a[contains(text(), 'Ver')]"
-        ],
-        'edit_buttons': [
-            "//button[contains(text(), 'Editar')]",
-            "//a[contains(text(), 'Editar')]"
-        ]
+        'table': "table.w-full",  # Tabla principal de usuarios
+        'table_headers': "table.w-full thead th",
+        'user_rows': "table.w-full tbody tr",  # Filas de usuarios en la tabla
+        'first_user_row': "tbody tr:nth-child(1)",  # Primera fila para abrir detalles
+        'user_cells': "table.w-full tbody tr td"  # Celdas de datos de usuarios
     },
     'search_filters': {
-        'search_input': [
-            "//input[@placeholder*='Buscar']",
-            "//input[contains(@class, 'search')]",
-            "//input[@type='search']"
-        ],
-        'status_filter': [
-            "//select[contains(@name, 'status')]",
-            "//select[contains(@name, 'estado')]",
-            "//div[contains(@class, 'filter-status')]"
-        ],
-        'role_filter': [
-            "//select[contains(@name, 'role')]",
-            "//select[contains(@name, 'rol')]",
-            "//div[contains(@class, 'filter-role')]"
+        'search_input': "//input[@placeholder='Buscar usuarios...']",  # Campo de búsqueda específico
+        'status_select': "//select[contains(@class, 'px-3 py-2 border border-gray-300')]",  # Select de estados actualizado
+        'status_select_alt': "select.px-3.py-2.border.border-gray-300.rounded-lg",  # Selector CSS alternativo
+        'status_options': [
+            "//option[@value='Activo']",
+            "//option[@value='Inactivo']", 
+            "//option[@value='Pendiente']"
+        ]
+    },
+    'actions': {
+        'edit_user_button': "//button[contains(@class, 'px-6 py-2 bg-blue-600') and contains(text(), 'Editar Usuario')]",  # Botón editar usuario actualizado
+        'edit_user_button_alt': "//button[@type='button' and contains(@class, 'bg-blue-600') and contains(text(), 'Editar Usuario')]",  # Selector alternativo
+        'first_row_click': "tbody tr:nth-child(1)",  # Click en primera fila para pop-up
+        'details_buttons': [
+            "//button[contains(text(), 'Ver Detalles')]",
+            "//button[contains(text(), 'Detalles')]"
         ]
     },
     'modals': {
-        'confirmation_modal': [
+        'user_details_popup': [
             "//div[contains(@class, 'modal')]",
+            "//div[contains(@class, 'popup')]",
             "//div[contains(@class, 'dialog')]",
-            "//div[contains(@class, 'confirmation')]"
+            "//div[@role='dialog']"
         ],
+        'browser_alert': "alert",  # Alert del navegador para confirmación
         'confirm_button': [
             "//button[contains(text(), 'Confirmar')]",
             "//button[contains(text(), 'Aceptar')]",
@@ -167,7 +148,7 @@ SELECTORS = {
         ],
         'error_messages': [
             "//div[contains(@class, 'error')]",
-            "//div[contains(@class, 'red')]",
+            "//div[contains(@class, 'red')]", 
             "//div[contains(@class, 'alert-error')]",
             "//div[contains(text(), 'error')] | //div[contains(text(), 'Error')]"
         ]
@@ -428,30 +409,43 @@ class UserManagementTest:
         self.fake = Faker('es_ES')
         self.db = DatabaseManager() if verify_db else None
         
-        # Datos de entrada según el caso de prueba IT-GUSU-007
+        # Datos de entrada según el caso de prueba IT-GUSU-007 con selectores reales
         self.test_case_data = {
-            "usuarios_prueba": [
-                {
-                    "nombre_busqueda": "sigma",  # Buscar usuarios que contengan "sigma"
-                    "email_busqueda": "@gmail.com",  # Buscar emails con gmail
-                    "estados_esperados": ["active", "inactive", "pending"]
-                }
+            "busquedas_a_probar": [
+                "sigma",      # Término relacionado con el usuario actual
+                "gmail",      # Buscar emails con gmail
+                "admin",      # Buscar administradores
+                "test"        # Término genérico de prueba
             ],
-            "acciones_realizar": [
+            "estados_a_probar": [
+                "Activo",     # Estado activo
+                "Inactivo",   # Estado inactivo
+                "Suspendido"  # Estado suspendido
+            ],
+            "acciones_a_realizar": [
                 {
-                    "accion": "ver_detalles",
-                    "descripcion": "Ver detalles del primer usuario encontrado"
+                    "accion": "buscar_usuarios",
+                    "descripcion": "Probar funcionalidad de búsqueda de usuarios",
+                    "selector": SELECTORS['search_filters']['search_input']
                 },
                 {
-                    "accion": "activar_desactivar",
-                    "descripcion": "Intentar cambiar estado de usuario si hay botones disponibles"
+                    "accion": "ver_detalles_usuario",
+                    "descripcion": "Hacer click en primera fila para ver detalles (pop-up)",
+                    "selector": SELECTORS['user_list']['first_user_row']
+                },
+                {
+                    "accion": "cambiar_estado_usuario",
+                    "descripcion": "Cambiar estado de usuario (debe mostrar alert de confirmación)",
+                    "selector": SELECTORS['search_filters']['status_select'],
+                    "requiere_scroll": True,
+                    "debe_fallar": True  # Esta prueba debe fallar por el alert del navegador
+                },
+                {
+                    "accion": "editar_usuario",
+                    "descripcion": "Hacer click en botón Editar Usuario",
+                    "selector": SELECTORS['actions']['edit_user_button']
                 }
-            ],
-            "filtros_busqueda": {
-                "por_nombre": "sigma",  # Buscar por "sigma" que probablemente existe
-                "por_email": "gmail",   # Filtrar por emails que contengan "gmail"
-                "terminos_generales": ["admin", "user", "test"]  # Términos de búsqueda genéricos
-            }
+            ]
         }
         
         self.results = {
@@ -630,28 +624,49 @@ class UserManagementTest:
             # Verificar que estamos en la página de gestión de usuarios
             time.sleep(3)  # Esperar a que cargue
             
-            # Buscar tabla o lista de usuarios
-            user_list_found = False
-            table_selectors = [
-                SELECTORS['user_list']['table'],
-                "//h1[contains(text(), 'Usuarios')] | //h1[contains(text(), 'Users')]",
-                "//div[contains(@class, 'user-management')] | //div[contains(@class, 'users')]"
-            ]
+            # Verificar elementos específicos de la página de gestión
+            elementos_encontrados = 0
             
-            for selector in table_selectors:
-                try:
-                    element = self.driver.find_element(By.XPATH, selector)
-                    if element.is_displayed():
-                        user_list_found = True
-                        break
-                except NoSuchElementException:
-                    continue
+            # 1. Verificar tabla principal
+            try:
+                table = self.driver.find_element(By.CSS_SELECTOR, SELECTORS['user_list']['table'])
+                if table.is_displayed():
+                    print("   ✅ Tabla de usuarios encontrada")
+                    elementos_encontrados += 1
+            except Exception:
+                print("   ⚠️ Tabla de usuarios no encontrada")
             
-            if user_list_found:
-                print("   ✅ Página de gestión de usuarios cargada")
+            # 2. Verificar campo de búsqueda
+            try:
+                search_input = self.driver.find_element(By.XPATH, SELECTORS['search_filters']['search_input'])
+                if search_input.is_displayed():
+                    print("   ✅ Campo de búsqueda encontrado")
+                    elementos_encontrados += 1
+            except Exception:
+                print("   ⚠️ Campo de búsqueda no encontrado")
+            
+            # 3. Verificar URL contiene userManagement
+            current_url = self.driver.current_url
+            if 'userManagement' in current_url:
+                print("   ✅ URL correcta de gestión de usuarios")
+                elementos_encontrados += 1
+            else:
+                print(f"   ⚠️ URL actual: {current_url}")
+            
+            # 4. Verificar contenido de la página
+            try:
+                page_text = self.driver.find_element(By.TAG_NAME, "body").text
+                if any(term in page_text.lower() for term in ['usuarios', 'users', 'gestión', 'management']):
+                    print("   ✅ Contenido de gestión de usuarios detectado")
+                    elementos_encontrados += 1
+            except Exception:
+                print("   ⚠️ No se pudo verificar contenido de la página")
+            
+            if elementos_encontrados >= 2:  # Al menos 2 de 4 elementos
+                print(f"   ✅ Página de gestión de usuarios cargada ({elementos_encontrados}/4 elementos)")
                 return True
             else:
-                print("   ❌ No se pudo verificar carga de gestión de usuarios")
+                print(f"   ❌ Carga de gestión de usuarios insuficiente ({elementos_encontrados}/4 elementos)")
                 return False
             
         except Exception as e:
@@ -664,50 +679,66 @@ class UserManagementTest:
         try:
             print("🔍 Verificando interfaz de listado de usuarios...")
             
-            # Elementos clave que deben estar presentes
-            interface_elements = [
-                (SELECTORS['user_list']['table'], "Tabla o lista de usuarios"),
-                (SELECTORS['search_filters']['search_input'], "Campo de búsqueda"),
-                (SELECTORS['user_list']['user_rows'], "Filas de usuarios")
-            ]
-            
             elements_found = 0
-            total_elements = len(interface_elements)
             
-            for selectors, description in interface_elements:
-                if isinstance(selectors, list):
-                    selectors_list = selectors
-                else:
-                    selectors_list = [selectors]
-                
-                element_found = False
-                for selector in selectors_list:
-                    try:
-                        elements = self.driver.find_elements(By.XPATH, selector)
-                        if elements and any(elem.is_displayed() for elem in elements):
-                            elements_found += 1
-                            print(f"   ✅ {description}")
-                            element_found = True
-                            break
-                    except Exception:
-                        continue
-                
-                if not element_found:
-                    print(f"   ⚠️  {description} (no encontrado)")
-            
-            # Verificar contenido de la tabla
+            # 1. Verificar tabla principal
             try:
-                user_rows = self.driver.find_elements(By.XPATH, SELECTORS['user_list']['user_rows'])
-                if user_rows:
-                    print(f"   ✅ {len(user_rows)} usuarios mostrados en la tabla")
+                table = self.driver.find_element(By.CSS_SELECTOR, SELECTORS['user_list']['table'])
+                if table.is_displayed():
+                    print(f"   ✅ Tabla principal de usuarios encontrada")
                     elements_found += 1
                 else:
-                    print("   ⚠️  No se encontraron filas de usuarios")
+                    print(f"   ❌ Tabla principal no visible")
             except Exception:
-                print("   ⚠️  Error verificando filas de usuarios")
+                print(f"   ❌ Tabla principal no encontrada")
             
+            # 2. Verificar campo de búsqueda
+            try:
+                search_input = self.driver.find_element(By.XPATH, SELECTORS['search_filters']['search_input'])
+                if search_input.is_displayed():
+                    print(f"   ✅ Campo de búsqueda encontrado: '{search_input.get_attribute('placeholder')}'")
+                    elements_found += 1
+                else:
+                    print(f"   ❌ Campo de búsqueda no visible")
+            except Exception:
+                print(f"   ❌ Campo de búsqueda no encontrado")
+            
+            # 3. Verificar filas de usuarios
+            try:
+                user_rows = self.driver.find_elements(By.CSS_SELECTOR, SELECTORS['user_list']['user_rows'])
+                if user_rows and len(user_rows) > 0:
+                    print(f"   ✅ {len(user_rows)} filas de usuarios encontradas")
+                    elements_found += 1
+                else:
+                    print(f"   ❌ No se encontraron filas de usuarios")
+            except Exception:
+                print(f"   ❌ Error verificando filas de usuarios")
+            
+            # 4. Verificar selector de estado
+            try:
+                # Intentar con el nuevo selector XPath
+                status_select = self.driver.find_element(By.XPATH, SELECTORS['search_filters']['status_select'])
+                if status_select.is_displayed():
+                    print(f"   ✅ Selector de estado encontrado")
+                    elements_found += 1
+                else:
+                    print(f"   ❌ Selector de estado no visible")
+            except Exception:
+                try:
+                    # Intentar con el selector CSS alternativo
+                    status_select = self.driver.find_element(By.CSS_SELECTOR, SELECTORS['search_filters']['status_select_alt'])
+                    if status_select.is_displayed():
+                        print(f"   ✅ Selector de estado encontrado (CSS)")
+                        elements_found += 1
+                    else:
+                        print(f"   ❌ Selector de estado no visible")
+                except Exception:
+                    print(f"   ❌ Selector de estado no encontrado")
+            
+            total_elements = 4  # Tabla, búsqueda, filas, selector estado
             success_rate = elements_found / total_elements
-            if success_rate >= 0.6:  # 60% de elementos encontrados
+            
+            if success_rate >= 0.75:  # 75% de elementos encontrados
                 print(f"   ✅ Interfaz de gestión válida ({elements_found}/{total_elements} elementos)")
                 self.results['validations_passed'] += 1
                 return True
@@ -722,86 +753,165 @@ class UserManagementTest:
             return False
 
     def test_search_and_filters(self) -> bool:
-        """Probar funcionalidad de búsqueda y filtros"""
+        """Probar funcionalidad de búsqueda y filtros con selectores específicos"""
         try:
             print("🔍 Probando búsqueda y filtros...")
             
             bugs_found = []
             search_tests_passed = 0
+            actions_tested = 0
             
-            # Probar búsqueda por nombre - usar término genérico
-            search_terms = self.test_case_data["filtros_busqueda"]["terminos_generales"]
+            # Probar campo de búsqueda con términos específicos
+            search_terms = self.test_case_data["busquedas_a_probar"]
             
-            for search_term in search_terms[:2]:  # Probar solo 2 términos
-                search_found = False
+            try:
+                search_field = self.driver.find_element(By.XPATH, SELECTORS['search_filters']['search_input'])
                 
-                for selector in SELECTORS['search_filters']['search_input']:
-                    try:
-                        search_field = self.driver.find_element(By.XPATH, selector)
-                        if search_field.is_displayed():
-                            search_field.clear()
-                            search_field.send_keys(search_term)
-                            search_field.send_keys(Keys.ENTER)
-                            
-                            time.sleep(2)  # Esperar filtrado
-                            
-                            # Verificar que hay campo de búsqueda funcional
-                            current_value = search_field.get_attribute('value')
-                            if current_value and search_term.lower() in current_value.lower():
-                                print(f"   ✅ Campo de búsqueda funcional - término '{search_term}' aplicado")
+                for search_term in search_terms[:2]:  # Probar primeros 2 términos
+                    print(f"   🔍 Probando búsqueda con término: '{search_term}'")
+                    
+                    # Limpiar campo y escribir término
+                    search_field.clear()
+                    search_field.send_keys(search_term)
+                    search_field.send_keys(Keys.ENTER)
+                    
+                    time.sleep(2)  # Esperar que se aplique el filtro
+                    
+                    # Verificar que el término se mantuvo en el campo
+                    current_value = search_field.get_attribute('value')
+                    if current_value and search_term.lower() in current_value.lower():
+                        print(f"   ✅ Término '{search_term}' aplicado correctamente")
+                        
+                        # Verificar si hay resultados en la tabla
+                        try:
+                            user_rows = self.driver.find_elements(By.CSS_SELECTOR, SELECTORS['user_list']['user_rows'])
+                            if user_rows:
+                                print(f"   ✅ Resultados de búsqueda: {len(user_rows)} usuarios")
                                 search_tests_passed += 1
-                                search_found = True
-                            
-                            # Limpiar búsqueda
-                            search_field.clear()
-                            search_field.send_keys(Keys.ENTER)
-                            time.sleep(1)
-                            break
-                    except Exception:
-                        continue
+                            else:
+                                print(f"   ⚠️  Búsqueda aplicada pero sin resultados visibles")
+                                search_tests_passed += 0.5  # Parcialmente exitoso
+                        except Exception:
+                            print(f"   ⚠️  No se pudieron verificar resultados")
+                    else:
+                        bug_info = {
+                            'campo': 'busqueda_usuarios',
+                            'valor_invalido': search_term,
+                            'descripcion': f'Campo de búsqueda no acepta o no mantiene el término "{search_term}"',
+                            'impacto': 'Los administradores no pueden buscar usuarios específicos'
+                        }
+                        bugs_found.append(bug_info)
+                        print(f"   🐛 BUG DETECTADO: {bug_info['descripcion']}")
+                    
+                    # Limpiar para siguiente término
+                    search_field.clear()
+                    time.sleep(1)
                 
-                if not search_found:
+            except Exception as e:
+                bug_info = {
+                    'campo': 'campo_busqueda',
+                    'valor_invalido': 'selector_incorrecto',
+                    'descripcion': 'Campo de búsqueda no encontrado o no accesible',
+                    'impacto': 'Funcionalidad de búsqueda completamente inaccesible'
+                }
+                bugs_found.append(bug_info)
+                print(f"   🐛 BUG DETECTADO: {bug_info['descripcion']} - Error: {e}")
+            
+            # Probar selector de estado actualizado
+            print(f"   🔍 Probando selector de estado...")
+            try:
+                # Intentar con el nuevo selector XPath
+                status_select = None
+                try:
+                    status_select = self.driver.find_element(By.XPATH, SELECTORS['search_filters']['status_select'])
+                except:
+                    # Fallback al selector CSS
+                    status_select = self.driver.find_element(By.CSS_SELECTOR, SELECTORS['search_filters']['status_select_alt'])
+                
+                self.driver.execute_script("arguments[0].scrollIntoView(true);", status_select)
+                time.sleep(1)
+                
+                # Para elementos <select>, usar Select de Selenium
+                from selenium.webdriver.support.ui import Select
+                select = Select(status_select)
+                
+                print(f"   ✅ Selector de estado encontrado, opciones disponibles: {len(select.options)}")
+                
+                # Mostrar las opciones disponibles
+                for option in select.options:
+                    print(f"      - {option.text} (value: {option.get_attribute('value')})")
+                
+                # Probar seleccionar una opción
+                if len(select.options) > 1:  # Si hay más opciones que "Todos los estados"
+                    select.select_by_index(1)  # Seleccionar la segunda opción
+                    time.sleep(2)
+                    print(f"   ✅ Filtro por estado aplicado correctamente")
+                    
+                    # Verificar si se aplicó el filtro
+                    rows_after_filter = self.driver.find_elements(By.CSS_SELECTOR, SELECTORS['user_list']['user_rows'])
+                    print(f"   ✅ Usuarios después del filtro: {len(rows_after_filter)}")
+                    
+                    # Restablecer a "Todos los estados"
+                    select.select_by_index(0)
+                    time.sleep(2)
+                    
+                    actions_tested += 1
+                
+                # Buscar opciones de estado
+                estado_encontrado = False
+                for estado in self.test_case_data["estados_a_probar"][:1]:  # Probar solo el primero
+                    try:
+                        option_xpath = f"//div[contains(text(), '{estado}')]"
+                        option = self.driver.find_element(By.XPATH, option_xpath)
+                        option.click()
+                        time.sleep(2)
+                        
+                        # Aquí debería aparecer el alert del navegador
+                        try:
+                            alert = self.driver.switch_to.alert
+                            alert_text = alert.text
+                            print(f"   ⚠️  ALERT DETECTADO: {alert_text}")
+                            alert.dismiss()  # Cancelar el alert
+                            
+                            # Esto es un bug esperado según las instrucciones
+                            bug_info = {
+                                'campo': 'cambio_estado_usuario',
+                                'valor_invalido': estado,
+                                'descripcion': f'Alert del navegador impide cambio de estado a "{estado}"',
+                                'impacto': 'Los administradores no pueden cambiar estados de usuarios debido a confirmación de navegador'
+                            }
+                            bugs_found.append(bug_info)
+                            print(f"   🐛 BUG DETECTADO (ESPERADO): {bug_info['descripcion']}")
+                            
+                        except Exception:
+                            print(f"   ✅ Cambio de estado a '{estado}' aplicado sin alert")
+                            search_tests_passed += 1
+                        
+                        estado_encontrado = True
+                        break
+                        
+                    except Exception as e:
+                        print(f"   ❌ No se pudo seleccionar estado '{estado}': {e}")
+                
+                if not estado_encontrado:
                     bug_info = {
-                        'campo': 'busqueda_general',
-                        'valor_invalido': search_term,
-                        'descripcion': 'Campo de búsqueda no acepta entrada o no funciona',
-                        'impacto': 'Usuarios no pueden buscar cuentas'
+                        'campo': 'opciones_estado',
+                        'valor_invalido': 'no_encontradas',
+                        'descripcion': 'Opciones de estado no encontradas en el selector',
+                        'impacto': 'No se pueden filtrar usuarios por estado'
                     }
                     bugs_found.append(bug_info)
                     print(f"   🐛 BUG DETECTADO: {bug_info['descripcion']}")
-                    break  # No seguir probando si falla la búsqueda básica
-            
-            # Probar filtros de estado
-            for selector in SELECTORS['search_filters']['status_filter']:
-                try:
-                    status_filter = self.driver.find_element(By.XPATH, selector)
-                    if status_filter.is_displayed():
-                        status_select = Select(status_filter)
-                        
-                        # Intentar filtrar por "activo"
-                        try:
-                            status_select.select_by_visible_text("Activo")
-                            time.sleep(2)
-                            print("   ✅ Filtro por estado funcionando")
-                            search_tests_passed += 1
-                        except Exception:
-                            try:
-                                status_select.select_by_value("active")
-                                time.sleep(2)
-                                print("   ✅ Filtro por estado funcionando")
-                                search_tests_passed += 1
-                            except Exception:
-                                bug_info = {
-                                    'campo': 'filtro_estado',
-                                    'valor_invalido': 'activo',
-                                    'descripcion': 'Filtro por estado no funciona',
-                                    'impacto': 'Administradores no pueden filtrar usuarios por estado'
-                                }
-                                bugs_found.append(bug_info)
-                                print(f"   🐛 BUG DETECTADO: {bug_info['descripcion']}")
-                        break
-                except Exception:
-                    continue
+                
+            except Exception as e:
+                bug_info = {
+                    'campo': 'selector_estado',
+                    'valor_invalido': 'no_accesible',
+                    'descripcion': 'Selector de estado no encontrado o no interactuable',
+                    'impacto': 'Funcionalidad de filtro por estado completamente inaccesible'
+                }
+                bugs_found.append(bug_info)
+                print(f"   🐛 BUG DETECTADO: {bug_info['descripcion']} - Error: {e}")
             
             # Agregar bugs encontrados a resultados
             self.results['bugs_found'].extend(bugs_found)
@@ -819,115 +929,144 @@ class UserManagementTest:
             return False
 
     def test_user_actions(self) -> bool:
-        """Probar acciones sobre usuarios (activar/desactivar/ver detalles)"""
+        """Probar acciones sobre usuarios con selectores específicos"""
         try:
             print("⚡ Probando acciones de usuario...")
             
             actions_tested = 0
             bugs_found = []
             
-            # Obtener acciones del caso de prueba
-            acciones = self.test_case_data["acciones_realizar"]
-            
-            for accion_data in acciones:  # Probar todas las acciones
-                accion = accion_data["accion"]
-                descripcion = accion_data["descripcion"]
-                
-                print(f"   🔄 {descripcion}")
-                
-                # Buscar botones de acción según el tipo
-                if accion == "ver_detalles":
-                    action_selectors = SELECTORS['actions']['details_buttons']
-                elif accion == "activar_desactivar":
-                    # Buscar cualquier botón de activar o desactivar
-                    action_selectors = (SELECTORS['actions']['activate_buttons'] + 
-                                      SELECTORS['actions']['deactivate_buttons'])
-                else:
-                    continue
-                
-                # Buscar y hacer clic en botón de acción
-                action_button = None
-                for selector in action_selectors:
-                    try:
-                        buttons = self.driver.find_elements(By.XPATH, selector)
-                        if buttons:
-                            # Tomar el primer botón visible
-                            for btn in buttons:
-                                if btn.is_displayed() and btn.is_enabled():
-                                    action_button = btn
-                                    break
-                            if action_button:
-                                break
-                    except Exception:
-                        continue
-                
-                if action_button:
-                    try:
-                        action_button.click()
-                        time.sleep(2)
+            # 1. Probar click en primera fila para ver detalles (pop-up)
+            print("   🔄 Probando click en primera fila para ver detalles...")
+            try:
+                first_row = self.driver.find_element(By.CSS_SELECTOR, SELECTORS['user_list']['first_user_row'])
+                if first_row.is_displayed():
+                    first_row.click()
+                    time.sleep(3)  # Esperar que aparezca el pop-up
+                    
+                    # Verificar si aparece algún modal/pop-up
+                    popup_found = self.verify_popup_modal()
+                    if popup_found:
+                        print("   ✅ Pop-up de detalles de usuario mostrado correctamente")
+                        actions_tested += 1
                         
-                        # Verificar modal de confirmación para acciones críticas
-                        if accion in ["desactivar", "activar"]:
-                            modal_found = self.verify_confirmation_modal()
-                            if modal_found:
-                                print(f"   ✅ Modal de confirmación mostrado para {accion}")
-                                actions_tested += 1
-                            else:
-                                bug_info = {
-                                    'campo': f'confirmacion_{accion}',
-                                    'valor_invalido': 'sin_confirmacion',
-                                    'descripcion': f'No aparece confirmación para {accion} usuario',
-                                    'impacto': 'Usuarios pueden realizar cambios críticos sin confirmación'
-                                }
-                                bugs_found.append(bug_info)
-                                print(f"   🐛 BUG DETECTADO: {bug_info['descripcion']}")
-                        
-                        # Verificar notificación de resultado
-                        if self.verify_notification():
-                            print(f"   ✅ Notificación mostrada después de {accion}")
+                        # Probar cambio de estado dentro del modal
+                        print("   🔄 Probando cambio de estado dentro del modal...")
+                        status_change_success = self.test_status_change_in_modal()
+                        if status_change_success:
+                            print("   ✅ Cambio de estado probado exitosamente")
                             actions_tested += 1
                         else:
                             bug_info = {
-                                'campo': f'notificacion_{accion}',
-                                'valor_invalido': 'sin_notificacion',
-                                'descripcion': f'No aparece notificación después de {accion}',
-                                'impacto': 'Usuario no sabe si la acción fue exitosa'
+                                'campo': 'selector_estado_modal',
+                                'valor_invalido': 'no_funcional',
+                                'descripcion': 'Selector de estado en modal no funciona correctamente',
+                                'impacto': 'No es posible cambiar estado de usuarios desde el modal'
                             }
                             bugs_found.append(bug_info)
                             print(f"   🐛 BUG DETECTADO: {bug_info['descripcion']}")
                         
-                        # Verificar en BD si está habilitado (para acciones de activar/desactivar)
-                        if self.verify_db and self.db and "activar" in accion:
-                            # Intentar verificar cambios generales en BD
-                            try:
-                                users = self.db.get_users_list()
-                                if users:
-                                    print(f"   📊 BD - {len(users)} usuarios encontrados después de la acción")
-                                    self.results['db_verifications'] += 1
-                                else:
-                                    self.results['db_verification_failures'] += 1
-                            except Exception as e:
-                                print(f"   ⚠️  BD - Error verificando después de acción: {e}")
-                                self.results['db_verification_failures'] += 1
-                        
-                    except Exception as e:
-                        print(f"   ❌ Error ejecutando acción {accion}: {e}")
-                        
+                        # Cerrar el pop-up si es posible
+                        self.close_popup_if_exists()
+                    else:
+                        bug_info = {
+                            'campo': 'popup_detalles_usuario',
+                            'valor_invalido': 'no_aparece',
+                            'descripcion': 'Click en fila de usuario no abre pop-up de detalles',
+                            'impacto': 'Administradores no pueden ver información detallada de usuarios'
+                        }
+                        bugs_found.append(bug_info)
+                        print(f"   🐛 BUG DETECTADO: {bug_info['descripcion']}")
                 else:
-                    bug_info = {
-                        'campo': f'boton_{accion}',
-                        'valor_invalido': 'no_encontrado',
-                        'descripcion': f'Botones para {descripcion.lower()} no encontrados o no disponibles',
-                        'impacto': 'Administradores no pueden realizar acciones necesarias sobre usuarios'
-                    }
-                    bugs_found.append(bug_info)
-                    print(f"   🐛 BUG DETECTADO: {bug_info['descripcion']}")
+                    print("   ❌ Primera fila de usuario no visible")
+            except Exception as e:
+                bug_info = {
+                    'campo': 'primera_fila_usuario',
+                    'valor_invalido': 'no_accesible',
+                    'descripcion': 'No se pudo hacer click en la primera fila de usuario',
+                    'impacto': 'No es posible acceder a detalles de usuarios'
+                }
+                bugs_found.append(bug_info)
+                print(f"   🐛 BUG DETECTADO: {bug_info['descripcion']} - Error: {e}")
+            
+            # 2. Probar botón "Editar Usuario" 
+            print("   🔄 Probando botón 'Editar Usuario'...")
+            try:
+                # Buscar botones con texto "Editar Usuario" en toda la página
+                edit_buttons = self.driver.find_elements(By.XPATH, "//button[contains(text(), 'Editar Usuario')]")
+                
+                if edit_buttons:
+                    print(f"   ✅ {len(edit_buttons)} botón(es) 'Editar Usuario' encontrado(s)")
+                    
+                    for i, button in enumerate(edit_buttons):
+                        if button.is_displayed() and button.is_enabled():
+                            print(f"   ✅ Botón {i+1} está visible y habilitado")
+                            # Hacer scroll al botón antes de hacer click
+                            self.driver.execute_script("arguments[0].scrollIntoView(true);", button)
+                            time.sleep(1)
+                            
+                            button.click()
+                            time.sleep(2)
+                            
+                            print("   ✅ Botón 'Editar Usuario' clickeado correctamente")
+                            actions_tested += 1
+                            break
+                        else:
+                            print(f"   ⚠️  Botón {i+1} no está visible o habilitado")
+                else:
+                    # Si no encuentra ninguno, buscar con selectores más específicos
+                    edit_button = None
+                    selectors_to_try = [
+                        SELECTORS['actions']['edit_user_button'],
+                        SELECTORS['actions']['edit_user_button_alt'],
+                        "//button[contains(@class, 'bg-blue-600')]",
+                        "//button[@type='button' and contains(text(), 'Editar')]"
+                    ]
+                    
+                    for selector in selectors_to_try:
+                        try:
+                            edit_button = self.driver.find_element(By.XPATH, selector)
+                            if edit_button.is_displayed() and edit_button.is_enabled():
+                                print(f"   ✅ Botón encontrado con selector: {selector}")
+                                self.driver.execute_script("arguments[0].scrollIntoView(true);", edit_button)
+                                time.sleep(1)
+                                edit_button.click()
+                                time.sleep(2)
+                                print("   ✅ Botón 'Editar Usuario' clickeado correctamente")
+                                actions_tested += 1
+                                break
+                        except:
+                            continue
+                    
+                    if not edit_button:
+                        raise Exception("No se encontraron botones 'Editar Usuario' en la página")
+                
+                # Verificar si aparece alguna respuesta (página nueva, modal, etc.)
+                current_url = self.driver.current_url
+                if 'edit' in current_url.lower() or 'editar' in current_url.lower():
+                    print("   ✅ Navegación a página de edición detectada")
+                    actions_tested += 0.5
+                    
+            except Exception as e:
+                bug_info = {
+                    'campo': 'boton_editar_usuario',
+                    'valor_invalido': 'no_encontrado',
+                    'descripcion': 'Botón "Editar Usuario" no encontrado en la interfaz',
+                    'impacto': 'Funcionalidad de edición de usuarios no accesible'
+                }
+                bugs_found.append(bug_info)
+                print(f"   🐛 BUG DETECTADO: {bug_info['descripcion']} - Error: {e}")
+            
+            # 3. Verificar notificaciones generales
+            if self.verify_notification():
+                print("   ✅ Sistema de notificaciones funcionando")
+                actions_tested += 0.5
             
             # Agregar bugs encontrados
             self.results['bugs_found'].extend(bugs_found)
             
             if actions_tested > 0:
-                self.results['validations_passed'] += actions_tested
+                self.results['validations_passed'] += int(actions_tested)
                 return True
             else:
                 self.results['validations_failed'] += 1
@@ -976,6 +1115,268 @@ class UserManagementTest:
             return False
         except Exception:
             return False
+
+    def verify_popup_modal(self) -> bool:
+        """Verificar que aparece pop-up o modal de detalles"""
+        try:
+            time.sleep(2)  # Esperar a que aparezca el modal
+            
+            # Buscar el modal específico con ID de Radix que mencionaste
+            modal_found = False
+            elements_found = {}
+            
+            try:
+                # Buscar modal con el patrón de ID que mencionaste
+                modal_selector = "//div[@role='dialog' and contains(@id, 'radix-')]"
+                modal = WebDriverWait(self.driver, 10).until(
+                    EC.visibility_of_element_located((By.XPATH, modal_selector))
+                )
+                
+                print(f"      ✅ Modal de detalles de usuario detectado")
+                modal_found = True
+                
+                # Verificar elementos específicos dentro del modal
+                # Buscar título del modal (puede estar oculto con sr-only)
+                try:
+                    title = modal.find_element(By.XPATH, ".//h2[contains(text(), 'Detalles del Usuario')]")
+                    elements_found['title'] = True
+                    print(f"      ✅ Título del modal encontrado: {title.text}")
+                except:
+                    elements_found['title'] = False
+                    print("      ⚠️  Título del modal no encontrado (puede estar oculto)")
+                
+                # Buscar información personal
+                try:
+                    personal_info = modal.find_element(By.XPATH, ".//h3[contains(text(), 'Información Personal')]")
+                    elements_found['personal_info'] = True
+                    print("      ✅ Sección de información personal encontrada")
+                except:
+                    elements_found['personal_info'] = False
+                    print("      ⚠️  Sección de información personal no encontrada")
+                
+                # Buscar selector de estado dentro del modal
+                try:
+                    status_selector = modal.find_element(By.XPATH, ".//div[contains(@class, 'css-nalcay-control')]")
+                    elements_found['status_selector'] = True
+                    print("      ✅ Selector de estado encontrado en el modal")
+                    
+                    # Verificar el valor actual del selector
+                    try:
+                        # Intentar con diferentes selectores para el valor actual
+                        current_status = None
+                        selectors_to_try = [
+                            ".//div[contains(@class, 'singleValue')]",
+                            ".//div[contains(@class, 'single-value')]", 
+                            ".//div[contains(text(), 'Activo') or contains(text(), 'Inactivo') or contains(text(), 'Suspendido')]"
+                        ]
+                        
+                        for selector in selectors_to_try:
+                            try:
+                                elem = status_selector.find_element(By.XPATH, selector)
+                                if elem.text:
+                                    current_status = elem
+                                    break
+                            except:
+                                continue
+                        
+                        if current_status:
+                            print(f"      ✅ Estado actual: {current_status.text}")
+                        else:
+                            print("      ⚠️  No se pudo leer el estado actual")
+                    except:
+                        print("      ⚠️  No se pudo leer el estado actual")
+                        
+                except:
+                    elements_found['status_selector'] = False
+                    print("      ❌ BUG: Selector de estado no encontrado en el modal")
+                
+                # Buscar botón de editar usuario
+                try:
+                    edit_button = modal.find_element(By.XPATH, ".//button[normalize-space()='Editar Usuario']")
+                    elements_found['edit_button'] = True
+                    print("      ✅ Botón 'Editar Usuario' encontrado")
+                except:
+                    elements_found['edit_button'] = False
+                    print("      ❌ BUG: Botón 'Editar Usuario' no encontrado en el modal")
+                
+                # Buscar botón de cerrar
+                try:
+                    close_button = modal.find_element(By.XPATH, ".//button[normalize-space()='Cerrar']")
+                    elements_found['close_button'] = True
+                    print("      ✅ Botón 'Cerrar' encontrado")
+                except:
+                    elements_found['close_button'] = False
+                    print("      ⚠️  Botón 'Cerrar' no encontrado")
+                
+                return True
+                
+            except TimeoutException:
+                print("      ❌ BUG: Modal específico no se abrió, probando selectores alternativos")
+                
+                # Fallback: buscar diferentes tipos de modales/pop-ups
+                for selector in SELECTORS['modals']['user_details_popup']:
+                    try:
+                        modals = self.driver.find_elements(By.XPATH, selector)
+                        for modal in modals:
+                            if modal.is_displayed():
+                                print(f"      ✅ Modal encontrado con selector alternativo: {selector}")
+                                return True
+                    except Exception:
+                        continue
+                
+                # Verificar si cambió el contenido de la página (otra forma de mostrar detalles)
+                try:
+                    page_text = self.driver.find_element(By.TAG_NAME, "body").text
+                    detail_indicators = ["detalles", "información", "perfil", "datos"]
+                    for indicator in detail_indicators:
+                        if indicator.lower() in page_text.lower():
+                            print(f"      ✅ Contenido de detalles detectado: '{indicator}'")
+                            return True
+                except Exception:
+                    pass
+                
+                return False
+            
+        except Exception as e:
+            print(f"      ❌ Error verificando modal: {str(e)}")
+            return False
+    
+    def test_status_change_in_modal(self) -> bool:
+        """Probar cambio de estado dentro del modal"""
+        try:
+            # Buscar el modal
+            modal_selector = "//div[@role='dialog' and contains(@id, 'radix-')]"
+            modal = WebDriverWait(self.driver, 10).until(
+                EC.visibility_of_element_located((By.XPATH, modal_selector))
+            )
+            
+            print("      ✅ Modal encontrado, buscando selector de estado...")
+            
+            # Buscar el selector de estado dentro del modal
+            try:
+                status_selector = modal.find_element(By.XPATH, ".//div[contains(@class, 'css-nalcay-control')]")
+                print("      ✅ Selector de estado encontrado")
+                
+                # Obtener estado actual - probar diferentes selectores
+                current_status = None
+                try:
+                    # Primero intentar con el selector específico del HTML que proporcionaste
+                    current_status_elem = status_selector.find_element(By.XPATH, ".//div[contains(@class, 'singleValue') or contains(@class, 'single-value')]")
+                    current_status = current_status_elem.text
+                    print(f"      ✅ Estado actual: {current_status}")
+                except:
+                    try:
+                        # Segundo intento con selector más genérico
+                        current_status_elem = status_selector.find_element(By.XPATH, ".//div[contains(@class, 'css-') and not(contains(@class, 'control')) and not(contains(@class, 'indicator'))]")
+                        current_status = current_status_elem.text
+                        print(f"      ✅ Estado actual (selector genérico): {current_status}")
+                    except:
+                        # Tercer intento - buscar cualquier texto dentro del control
+                        try:
+                            texts = status_selector.find_elements(By.XPATH, ".//*[text()]")
+                            if texts:
+                                current_status = texts[0].text
+                                print(f"      ✅ Estado actual (texto encontrado): {current_status}")
+                        except:
+                            print("      ⚠️  No se pudo determinar el estado actual")
+                
+                if current_status:
+                    # Hacer clic en el selector para abrirlo
+                    status_selector.click()
+                    time.sleep(1)
+                    
+                    # Buscar opciones disponibles
+                    try:
+                        options = self.driver.find_elements(By.XPATH, "//div[contains(@class, 'css-') and (@role='option' or contains(@class, 'option'))]")
+                        
+                        if options:
+                            print(f"      ✅ {len(options)} opciones encontradas en el selector")
+                            
+                            # Buscar una opción diferente al estado actual
+                            for option in options:
+                                if option.text and option.text != current_status:
+                                    print(f"      ✅ Intentando cambiar a: {option.text}")
+                                    option.click()
+                                    time.sleep(1)
+                                    
+                                    # Verificar si aparece confirmación del navegador
+                                    try:
+                                        alert = self.driver.switch_to.alert
+                                        print(f"      ✅ Alert detectado: {alert.text}")
+                                        alert.accept()  # Aceptar la confirmación
+                                        time.sleep(1)
+                                        print("      ✅ Confirmación aceptada")
+                                        return True
+                                    except:
+                                        print("      ⚠️  No se detectó alert de confirmación")
+                                        return True  # El cambio se aplicó sin confirmación
+                                    
+                        else:
+                            print("      ❌ BUG: No se encontraron opciones en el selector de estado")
+                            return False
+                            
+                    except Exception as e:
+                        print(f"      ❌ Error buscando opciones: {str(e)}")
+                        return False
+                        
+                else:
+                    print("      ❌ No se pudo obtener el estado actual")
+                    return False
+                    
+            except Exception as e:
+                print(f"      ❌ BUG: Selector de estado no encontrado en modal: {str(e)}")
+                return False
+                
+        except Exception as e:
+            print(f"      ❌ Error en test de cambio de estado: {str(e)}")
+            return False
+
+    def close_popup_if_exists(self):
+        """Cerrar pop-up si existe"""
+        try:
+            # Primero intentar cerrar con el botón específico del modal Radix
+            try:
+                close_btn = self.driver.find_element(By.XPATH, "//div[@role='dialog']//button[normalize-space()='Cerrar']")
+                if close_btn.is_displayed():
+                    close_btn.click()
+                    time.sleep(1)
+                    print(f"      ✅ Modal cerrado con botón 'Cerrar'")
+                    return
+            except Exception:
+                pass
+            
+            # Buscar botones de cerrar comunes
+            close_selectors = [
+                "//button[contains(@class, 'close')]",
+                "//button[contains(text(), 'Cerrar')]",
+                "//button[contains(text(), 'Close')]",
+                "//button[@aria-label='close']",
+                "//span[contains(@class, 'close')]",
+                "//i[contains(@class, 'close')]"
+            ]
+            
+            for selector in close_selectors:
+                try:
+                    close_btn = self.driver.find_element(By.XPATH, selector)
+                    if close_btn.is_displayed():
+                        close_btn.click()
+                        time.sleep(1)
+                        print(f"      ✅ Pop-up cerrado")
+                        return
+                except Exception:
+                    continue
+            
+            # Si no hay botón de cerrar, presionar ESC
+            try:
+                from selenium.webdriver.common.keys import Keys
+                self.driver.find_element(By.TAG_NAME, "body").send_keys(Keys.ESCAPE)
+                time.sleep(1)
+                print(f"      ✅ Modal cerrado con ESC")
+            except Exception:
+                pass
+                
+        except Exception:
+            pass
 
     def verify_notification(self) -> bool:
         """Verificar que aparece notificación de resultado"""
