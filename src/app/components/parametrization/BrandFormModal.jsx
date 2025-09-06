@@ -1,47 +1,51 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { FiX } from 'react-icons/fi';
+import { FiX, FiEdit3 } from 'react-icons/fi';
 
-const UnitFormModal = ({ 
+const BrandFormModal = ({ 
   isOpen, 
   onClose, 
   mode = 'add', // 'add' or 'edit'
-  categoryName = 'Weight',
-  unitData = null, // Para modo edit
+  categoryName = '',
+  brandData = null, // Para modo edit
   onSave,
-  onUpdate
+  onUpdate,
+  onAddModel, // Nueva prop para agregar modelo
+  onEditModel // Nueva prop para editar modelo
 }) => {
   const [formData, setFormData] = useState({
-    typeName: '',
-    symbol: '',
-    value: '',
+    brandName: '',
+    description: '',
     isActive: true
   });
 
+  const [models, setModels] = useState([]);
+
   const [errors, setErrors] = useState({});
-  const [typeNameExists, setTypeNameExists] = useState(false);
+  const [brandNameExists, setBrandNameExists] = useState(false);
 
   // Reset form cuando se abre/cierra el modal o cambia el modo
   useEffect(() => {
     if (isOpen) {
-      if (mode === 'edit' && unitData) {
+      if (mode === 'edit' && brandData) {
         setFormData({
-          typeName: unitData.unitName || unitData.typeName || '',
-          symbol: unitData.symbol || '',
-          value: unitData.value || '',
-          isActive: unitData.status === 'Active'
+          brandName: brandData.brandName || '',
+          description: brandData.description || '',
+          isActive: brandData.status === 'Active'
         });
+        // En modo edit, cargar los modelos existentes del brand
+        setModels(brandData.models || []);
       } else {
         // Modo add - resetear form
         setFormData({
-          typeName: '',
-          symbol: '',
-          value: '',
+          brandName: '',
+          description: '',
           isActive: true
         });
+        setModels([]);
       }
       setErrors({});
-      setTypeNameExists(false);
+      setBrandNameExists(false);
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
@@ -50,16 +54,23 @@ const UnitFormModal = ({
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen, mode, unitData]);
+  }, [isOpen, mode, brandData]);
+
+  // Actualizar lista de modelos cuando brandData cambie (para reflejar cambios desde ModelFormModal)
+  useEffect(() => {
+    if (brandData && brandData.models) {
+      setModels(brandData.models);
+    }
+  }, [brandData]);
 
   // Simular validación de nombre existente
   useEffect(() => {
-    if (formData.typeName && formData.typeName.toLowerCase() === 'ton') {
-      setTypeNameExists(true);
+    if (formData.brandName && formData.brandName.toLowerCase() === 'carterpillar') {
+      setBrandNameExists(true);
     } else {
-      setTypeNameExists(false);
+      setBrandNameExists(false);
     }
-  }, [formData.typeName]);
+  }, [formData.brandName]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -86,16 +97,8 @@ const UnitFormModal = ({
   const validateForm = () => {
     const newErrors = {};
     
-    if (!formData.typeName.trim()) {
-      newErrors.typeName = 'Please enter a type name';
-    }
-
-    if (!formData.symbol.trim()) {
-      newErrors.symbol = 'Please enter a symbol';
-    }
-
-    if (!formData.value.trim()) {
-      newErrors.value = 'Please enter a value';
+    if (!formData.brandName.trim()) {
+      newErrors.brandName = 'Please enter a name for the new role';
     }
     
     setErrors(newErrors);
@@ -108,12 +111,8 @@ const UnitFormModal = ({
     }
 
     const submitData = {
-      id: unitData?.id || Date.now(), // Generar ID si es nuevo
-      unitName: formData.typeName,
-      typeName: formData.typeName,
-      symbol: formData.symbol,
-      value: formData.value,
-      status: formData.isActive ? 'Active' : 'Inactive',
+      ...formData,
+      models: models,
       category: categoryName
     };
 
@@ -125,6 +124,18 @@ const UnitFormModal = ({
 
     // Cerrar modal después de enviar
     onClose();
+  };
+
+  const handleAddModel = () => {
+    if (onAddModel) {
+      onAddModel();
+    }
+  };
+
+  const handleEditModel = (modelId) => {
+    if (onEditModel) {
+      onEditModel(modelId);
+    }
   };
 
   const handleBackdropClick = (e) => {
@@ -156,13 +167,13 @@ const UnitFormModal = ({
       onClick={handleBackdropClick}
     >
       <div 
-        className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden"
+        className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">
-            {mode === 'edit' ? 'Modify Unit' : 'Add Unit'}
+            {mode === 'edit' ? 'Modify brand' : 'Add brand'}
           </h2>
           <button
             onClick={onClose}
@@ -190,86 +201,52 @@ const UnitFormModal = ({
               />
             </div>
 
-            {/* Type Name */}
+            {/* Brand Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                <span className="text-red-500">*</span> Type name
+                <span className="text-red-500">*</span> Brand name
               </label>
               <input
                 type="text"
-                value={formData.typeName}
-                onChange={(e) => handleInputChange('typeName', e.target.value)}
+                value={formData.brandName}
+                onChange={(e) => handleInputChange('brandName', e.target.value)}
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.typeName || (typeNameExists && mode === 'add')
+                  errors.brandName || brandNameExists 
                     ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
                     : 'border-gray-300 focus:border-blue-500'
                 }`}
-                placeholder="Enter type name"
+                placeholder="Enter brand name"
               />
-              {errors.typeName && (
+              {errors.brandName && (
                 <p className="mt-1 text-sm text-red-600 flex items-center">
                   <span className="text-red-500 mr-1">⚠</span>
-                  {errors.typeName}
+                  {errors.brandName}
                 </p>
               )}
-              {typeNameExists && mode === 'add' && (
+              {brandNameExists && mode === 'add' && (
                 <p className="mt-1 text-sm text-red-600 flex items-center">
                   <span className="text-red-500 mr-1">⚠</span>
-                  This type name already exists for this category
+                  This brand name already exist for this category
                 </p>
               )}
             </div>
 
-            {/* Symbol */}
+            {/* Description */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                <span className="text-red-500">*</span> Symbol
+                Description
               </label>
               <input
                 type="text"
-                value={formData.symbol}
-                onChange={(e) => handleInputChange('symbol', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.symbol
-                    ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
-                    : 'border-gray-300 focus:border-blue-500'
-                }`}
-                placeholder="Enter symbol"
+                value={formData.description}
+                onChange={(e) => handleInputChange('description', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter description"
               />
-              {errors.symbol && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <span className="text-red-500 mr-1">⚠</span>
-                  {errors.symbol}
-                </p>
-              )}
-            </div>
-
-            {/* Value */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <span className="text-red-500">*</span> Value
-              </label>
-              <input
-                type="text"
-                value={formData.value}
-                onChange={(e) => handleInputChange('value', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.value
-                    ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
-                    : 'border-gray-300 focus:border-blue-500'
-                }`}
-                placeholder="Enter value"
-              />
-              {errors.value && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <span className="text-red-500 mr-1">⚠</span>
-                  {errors.value}
-                </p>
-              )}
             </div>
 
             {/* Activate/Deactivate Toggle */}
-            <div className="flex items-center justify-between md:col-span-2">
+            <div className="flex items-center justify-between">
               <label className="block text-sm font-medium text-gray-700">
                 Activate/Deactivate
               </label>
@@ -291,11 +268,72 @@ const UnitFormModal = ({
             </div>
           </div>
 
-          {/* Action Button */}
-          <div className="flex justify-center">
+          {/* Model List Section */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Model list</h3>
+            
+            {/* Model Table */}
+            <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden mb-4">
+              {models.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-100 border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
+                          Model
+                        </th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
+                          Description
+                        </th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {models.map((model) => (
+                        <tr key={model.id} className="hover:bg-gray-50 group">
+                          <td className="px-4 py-3 text-sm text-gray-900 border-r border-gray-200">
+                            {model.model || model.modelName}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600 border-r border-gray-200">
+                            {model.description}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            <button
+                              onClick={() => handleEditModel(model.id)}
+                              className="invisible group-hover:visible inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md transition-colors"
+                            >
+                              <FiEdit3 className="w-3 h-3 mr-1.5" />
+                              Edit
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="p-8 text-center text-gray-500">
+                  No models added yet
+                </div>
+              )}
+            </div>
+
+            {/* Add Model Button */}
+            <button
+                onClick={handleAddModel}
+                className="px-6 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
+              >
+                Add model
+              </button>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end">
             <button
               onClick={handleSubmit}
-              disabled={!formData.typeName.trim() || !formData.symbol.trim() || !formData.value.trim() || (typeNameExists && mode === 'add')}
+              disabled={!formData.brandName.trim() || brandNameExists}
               className="px-8 py-3 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {mode === 'edit' ? 'Update' : 'Save'}
@@ -306,5 +344,4 @@ const UnitFormModal = ({
     </div>
   );
 };
-
-export default UnitFormModal;
+export default BrandFormModal;
