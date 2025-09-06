@@ -13,8 +13,8 @@ import {
 import NavigationMenu from '../../../components/ParameterNavigation';
 
 // IMPORTAR LOS MODALES DE STATUS
-import ParameterStatusModal from '../../../components/userParameterization/StatusModal';
-import ParameterAddModifyStatusModal from '../../../components/userParameterization/AddModifyStatusModal';
+import ParameterStatusModal from '../../../components/parametrization/StatusModal';
+import ParameterAddModifyStatusModal from '../../../components/parametrization/AddModifyStatusModal';
 
 // Componente principal
 const ParameterizationView = () => {

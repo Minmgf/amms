@@ -11,8 +11,8 @@ import {
   createColumnHelper,
 } from "@tanstack/react-table";
 import NavigationMenu from "../../../components/ParameterNavigation";
-import UnitListModal from "../../../components/userParameterization/UnitListModal";
-import AddModifyUnitModal from "../../../components/userParameterization/AddModifyUnitModal";
+import UnitListModal from "../../../components/parametrization/UnitListModal";
+import AddModifyUnitModal from "../../../components/parametrization/AddModifyUnitModal";
 
 // Componente principal
 const ParameterizationView = () => {

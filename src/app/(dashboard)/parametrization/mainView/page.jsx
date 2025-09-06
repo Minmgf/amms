@@ -12,8 +12,8 @@ import {
 } from '@tanstack/react-table';
 import NavigationMenu from '../../../components/ParameterNavigation';
 // MODALES CORREGIDOS - usando los nombres correctos de los componentes
-import ParameterTypesModal from '../../../components/userParameterization/TypesModal';
-import ParameterAddModifyTypesModal from '../../../components/userParameterization/AddModifyTypesModal';
+import ParameterTypesModal from '../../../components/parametrization/TypesModal';
+import ParameterAddModifyTypesModal from '../../../components/parametrization/AddModifyTypesModal';
 
 // Componente principal
 const MainView = () => {

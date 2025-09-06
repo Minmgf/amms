@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { FiEdit3, FiBell, FiPlus, FiX } from 'react-icons/fi';
 import NavigationMenu from '../../../components/ParameterNavigation';
-import ColorPickerModal from '../../../components/userParameterization/ColorPickerModal';
-import NewThemeModal from '../../../components/userParameterization/NewThemeModal';
+import ColorPickerModal from '../../../components/parametrization/ColorPickerModal';
+import NewThemeModal from '../../../components/parametrization/NewThemeModal';
 
 // Enhanced Color Picker Component with Modal
 const ColorPicker = ({ color, onChange, label, onOpenColorPicker }) => (
