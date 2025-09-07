@@ -128,9 +128,13 @@ const Page = () => {
       if (mode === "create") {
         reset();
         resetPermissions();
+        router.back();
+      } else {
+        setModalMessage("Unexpected response from server");
+        setErrorOpen(true);
       }
     } catch (error) {
-      setModalMessage(error.response?.data?.detail || "Unexpected error");
+      setModalMessage(error.response?.data?.detail?.data || "Unexpected error");
       setErrorOpen(true);
     } finally {
       setLoading(false);
