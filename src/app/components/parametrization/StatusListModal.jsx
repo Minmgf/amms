@@ -29,12 +29,6 @@ const ParameterStatusModal = ({
     onEditParameter(status);
   };
 
-  const handleDelete = (statusId) => {
-    if (window.confirm('Are you sure you want to delete this status?')) {
-      setStatusList(statusList.filter(status => status.id !== statusId));
-    }
-  };
-
   if (!isOpen) return null;
 
   return (

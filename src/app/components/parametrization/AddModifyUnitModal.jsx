@@ -2,11 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { FiX } from 'react-icons/fi';
 
-const ParameterAddModifyTypesModal = ({ isOpen, onClose, mode = 'add', unit = null, category = 'Maintenance Types', onSave }) => {
+const AddModifyUnitModal = ({ isOpen, onClose, mode = 'add', unit = null, category = 'Weight', onSave }) => {
   const [formData, setFormData] = useState({
     category: category,
     typeName: '',
-    description: '',
+    symbol: '',
+    value: '',
     isActive: true
   });
 
@@ -15,14 +16,16 @@ const ParameterAddModifyTypesModal = ({ isOpen, onClose, mode = 'add', unit = nu
       setFormData({
         category: category,
         typeName: unit.unitName || unit.typeName || '',
-        description: unit.description || '',
+        symbol: unit.symbol || '',
+        value: unit.value || '',
         isActive: unit.status === 'Active' || unit.isActive === true
       });
     } else {
       setFormData({
         category: category,
         typeName: '',
-        description: '',
+        symbol: '',
+        value: '',
         isActive: true
       });
     }
@@ -51,7 +54,8 @@ const ParameterAddModifyTypesModal = ({ isOpen, onClose, mode = 'add', unit = nu
         ...unit,
         unitName: formData.typeName,
         typeName: formData.typeName,
-        description: formData.description,
+        symbol: formData.symbol,
+        value: formData.value,
         status: formData.isActive ? 'Active' : 'Inactive',
         isActive: formData.isActive
       };
@@ -64,7 +68,8 @@ const ParameterAddModifyTypesModal = ({ isOpen, onClose, mode = 'add', unit = nu
     } else {
       const newUnit = {
         typeName: formData.typeName,
-        description: formData.description,
+        symbol: formData.symbol,
+        value: formData.value,
         status: formData.isActive ? 'Active' : 'Inactive',
         isActive: formData.isActive,
         category: formData.category
@@ -88,7 +93,7 @@ const ParameterAddModifyTypesModal = ({ isOpen, onClose, mode = 'add', unit = nu
         {/* Header */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg sm:text-xl font-medium text-gray-900">
-            {mode === 'modify' ? 'Modify parameter' : 'Add parameter'}
+            {mode === 'modify' ? 'Modify Unit' : 'Add Unit'}
           </h2>
           <button
             onClick={onClose}
@@ -131,42 +136,56 @@ const ParameterAddModifyTypesModal = ({ isOpen, onClose, mode = 'add', unit = nu
             </div>
           </div>
 
-          {/* Row 2: Description */}
+          {/* Row 2: Symbol and Value */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description
+                Symbol
               </label>
               <input
                 type="text"
-                name="description"
-                value={formData.description}
+                name="symbol"
+                value={formData.symbol}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder=""
               />
             </div>
-
-            {/* Toggle */}
-            <div className='justify-center flex items-center space-x-4 mt-6 md:mt-0'>
-              <span className="text-sm font-medium text-gray-700">
-                Activate/Deactivate
-              </span>
-              <button
-                type="button"
-                onClick={handleToggleChange}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
-                  formData.isActive ? 'bg-red-500' : 'bg-gray-300'
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    formData.isActive ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Value
+              </label>
+              <input
+                type="text"
+                name="value"
+                value={formData.value}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder=""
+              />
             </div>
           </div>
+
+          {/* Row 3: Toggle */}
+          <div className='flex justify-center items-center space-x-4 mb-6'>
+            <span className="text-sm font-medium text-gray-700">
+              Activate/Deactivate
+            </span>
+            <button
+              type="button"
+              onClick={handleToggleChange}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
+                formData.isActive ? 'bg-red-500' : 'bg-gray-300'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  formData.isActive ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+
           {/* Action Button */}
           <div className="flex justify-center">
             <button
@@ -182,4 +201,4 @@ const ParameterAddModifyTypesModal = ({ isOpen, onClose, mode = 'add', unit = nu
   );
 };
 
-export default ParameterAddModifyTypesModal ;
+export default AddModifyUnitModal;

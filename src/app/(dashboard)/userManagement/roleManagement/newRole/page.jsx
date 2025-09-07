@@ -1,8 +1,9 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { getPermissions, createRole } from "@/services/roleService";
+import { getPermissions, createRole, updateRole, getDetailsRole } from "@/services/roleService";
 import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
+import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 
 const Page = () => {
@@ -16,6 +17,9 @@ const Page = () => {
   const [modalMessage, setModalMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const roleId = searchParams.get("id");
+  const mode = searchParams.get("mode") || "create";
 
   const {
     register,
@@ -30,6 +34,29 @@ const Page = () => {
   });
 
   useEffect(() => {
+    if (mode !== "create" && roleId) {
+      const fetchRole = async () => {
+        try {
+          const response = await getDetailsRole(roleId);
+          if (response.success) {
+            const role = response.data[0];
+            reset({
+              name: role.name,
+              description: role.description,
+            });
+            setSelectedPermissions(
+              new Set(role.permissions.map((p) => p.id))
+            );
+          }
+        } catch (error) {
+          console.error("Error fetching role details:", error);
+        }
+      };
+      fetchRole();
+    }
+  }, [mode, roleId, reset]);
+
+  useEffect(() => {
     const fetchPermissions = async () => {
       try {
         const data = await getPermissions();
@@ -40,7 +67,7 @@ const Page = () => {
           setSelectedCategory(uniqueCategories[0]);
         }
       } catch (err) {
-        
+
       }
     };
     fetchPermissions();
@@ -89,13 +116,17 @@ const Page = () => {
       permissions: Array.from(selectedPermissions),
     };
     setLoading(true);
+    let response = null;
     try {
-      const response = await createRole(roleData);
-
-      if (response && response.id) {
-        setModalMessage("Role created successfully");
-        setSuccessOpen(true);
-        reset(); 
+      if (mode === "create") {
+        response = await createRole(roleData);
+      } else if (mode === "edit") {
+        response = await updateRole(roleId, roleData);
+      }
+      setModalMessage(response.message || "Usuario creado exitosamente");
+      setSuccessOpen(true);
+      if (mode === "create") {
+        reset();
         resetPermissions();
         router.back();
       } else {
@@ -108,7 +139,6 @@ const Page = () => {
     } finally {
       setLoading(false);
     }
-
   };
 
   return (
@@ -118,8 +148,12 @@ const Page = () => {
           <div className="w-full max-w-6xl bg-[#ffffff] rounded-2xl shadow p-8 border border-blue-400">
             {/* Header */}
             <div className="flex items-center gap-3 mb-8">
-              <button className="text-neutral-600 hover:text-black text-xl">←</button>
-              <h1 className="text-2xl font-bold text-black">Create New Role</h1>
+              <button onClick={() => router.back()} className="text-neutral-600 hover:text-black text-xl">←</button>
+              <h1 className="text-2xl font-bold text-black">
+                {mode === "create" && "Create New Role"}
+                {mode === "edit" && "Edit Role"}
+                {mode === "view" && "Role Details"}
+              </h1>
             </div>
 
             {/* Form */}
@@ -134,6 +168,7 @@ const Page = () => {
                     <input
                       type="text"
                       placeholder="Enter role name"
+                      disabled={mode === "view"}
                       className="border text-[#282828] rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring-2 placeholder-[#999999]"
                       {...register("name", { required: "Role name is required" })}
                     />
@@ -171,6 +206,7 @@ const Page = () => {
                   </label>
                   <textarea
                     maxLength={200}
+                    disabled={mode === "view"}
                     className="border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 h-28"
                     {...register("description", {
                       required: "Role description is required",
@@ -199,14 +235,14 @@ const Page = () => {
                     {filteredPermissions.map((perm) => (
                       <div
                         key={perm.id}
-                        className={`grid grid-cols-[1fr_auto] items-center px-4 py-2 border-b last:border-b-0 ${
-                          selectedPermissions.has(perm.id) ? "bg-blue-50" : ""
-                        }`}
+                        className={`grid grid-cols-[1fr_auto] items-center px-4 py-2 border-b last:border-b-0 ${selectedPermissions.has(perm.id) ? "bg-blue-50" : ""
+                          }`}
                       >
                         <span>{perm.description}</span>
                         <input
                           type="checkbox"
                           className="h-4 w-4"
+                          disabled={mode === "view"}
                           checked={selectedPermissions.has(perm.id)}
                           onChange={() => handleCheckboxChange(perm.id)}
                         />
@@ -227,15 +263,18 @@ const Page = () => {
                   </div>
 
                   {/* Buttons */}
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      onClick={resetPermissions}
-                      className="px-6 py-2 rounded-lg border border-neutral-300 text-neutral-700 hover:bg-neutral-100"
-                    >
-                      Reset All
-                    </button>
-                  </div>
+                  {mode !== "view" && (
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        disabled={mode === "view"}
+                        onClick={resetPermissions}
+                        className="px-6 py-2 rounded-lg border border-neutral-300 text-neutral-700 hover:bg-neutral-100"
+                      >
+                        Reset All
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Right side: categories summary */}
@@ -258,27 +297,30 @@ const Page = () => {
               </div>
 
               {/* Footer buttons */}
-              <div className="flex justify-end mt-6 gap-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    reset();
-                    resetPermissions();
-                  }}
-                  className="px-8 py-2 font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700"
-                >
-                  Clear
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className={`px-8 py-2 font-semibold rounded-lg text-white transition 
+              {mode !== "view" && (
+                <div className="flex justify-end mt-6 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      reset();
+                      resetPermissions();
+                    }}
+                    className="px-8 py-2 font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className={`px-8 py-2 font-semibold rounded-lg text-white transition 
                     ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-black hover:bg-neutral-800"}`}
-                >
-                  {loading ? "Creating..." : "Create Role"}
-                </button>
-
-              </div>
+                  >
+                    {mode === "create"
+                      ? (loading ? "Creating..." : "Create Role")
+                      : (loading ? "Updating..." : "Update Role")}
+                  </button>
+                </div>
+              )}
             </form>
           </div>
         </main>

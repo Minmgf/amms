@@ -123,7 +123,7 @@ const page = () => {
             setStatusFilter={setStatusFilter}
           />
           <button 
-            onClick={() => router.push("/userManagement/roleManagement/newRole")}
+            onClick={() => router.push("/userManagement/roleManagement/newRole?mode=create")}
             className="flex bg-white items-center justify-center gap-2 border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-100 transition">
             <FiPlus /> Add role
           </button>
@@ -173,6 +173,7 @@ const page = () => {
                     <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                       <button
                         type="button"
+                        onClick={() => router.push(`/userManagement/roleManagement/newRole?id=${item.id}&mode=view`)}
                         className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-100"
                       >
                         <FiEye className="text-gray-600" />
@@ -180,6 +181,7 @@ const page = () => {
                       </button>
                       <button
                         type="button"
+                        onClick={() => router.push(`/userManagement/roleManagement/newRole?id=${item.id}&mode=edit`)}
                         className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-100"
                       >
                         <FiEdit2 className="text-gray-600" />
