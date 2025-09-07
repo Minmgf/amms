@@ -13,7 +13,7 @@ import {
 import NavigationMenu from '../../../components/ParameterNavigation';
 import TypesModal from '../../../components/parametrization/TypesModal';
 import AddModifyTypesModal from '../../../components/parametrization/AddModifyTypesModal';
-import { getType } from "@/services/parametrizationService";
+import { getTypesCategories } from "@/services/typeCategoriesService";
 
 // Componente principal
 const ParameterizationView = () => {
@@ -42,32 +42,55 @@ const ParameterizationView = () => {
     setLoading(true);
     setError(null);
     
+    console.log('🔄 MainView: Iniciando carga de datos...');
+    console.log('🎯 MainView: Menu seleccionado:', menuItem);
+    
     try {
-      const response = await getType();
+      console.log('📞 MainView: Llamando a getTypesCategories...');
+      const response = await getTypesCategories();
+      
+      console.log('✅ MainView: Respuesta recibida del servicio:');
+      console.log('📊 MainView: Datos completos:', response);
+      console.log('📈 MainView: Cantidad de registros:', Array.isArray(response) ? response.length : 'No es array');
+      console.log('🔍 MainView: Primer elemento:', response?.[0]);
       
       // Mapear los datos del backend al formato esperado por la vista
-      const mappedData = response.map(item => ({
-        id: item.id_types_categories,
-        name: item.name,
-        description: item.description,
-        details: '' // Este campo se mantiene vacío como en el mock original
-      }));
+      const mappedData = response.map((item, index) => {
+        console.log(`🔄 MainView: Mapeando item ${index + 1}:`, item);
+        return {
+          id: item.id || item.id_types_categories,
+          name: item.name,
+          description: item.description,
+          details: '' // Este campo se mantiene vacío como en el mock original
+        };
+      });
+      
+      console.log('🎨 MainView: Datos mapeados para la vista:');
+      console.log('📋 MainView: mappedData:', mappedData);
       
       setData(mappedData);
+      console.log('✅ MainView: Datos establecidos en el estado exitosamente');
+      
     } catch (err) {
-      console.error('Error fetching data:', err);
+      console.error('❌ MainView: Error completo:', err);
+      console.error('📨 MainView: Error response:', err.response);
+      console.error('⚠️ MainView: Error message:', err.message);
+      
       setError(err.message || 'Error al cargar los datos');
       setData([]);
     } finally {
       setLoading(false);
+      console.log('🏁 MainView: Proceso de carga finalizado');
     }
   };
 
   useEffect(() => {
+    console.log('🎬 MainView: useEffect ejecutado - activeMenuItem changed:', activeMenuItem);
     fetchData(activeMenuItem);
   }, [activeMenuItem]);
 
   const handleMenuItemChange = (item) => {
+    console.log('🔄 MainView: Cambiando menu item de', activeMenuItem, 'a', item);
     setActiveMenuItem(item);
   };
 
