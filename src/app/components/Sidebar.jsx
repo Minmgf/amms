@@ -35,6 +35,7 @@ import {
   ErrorModal,
   ConfirmModal,
 } from "./shared/SuccessErrorModal";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function Sidebar({ isOpen, setIsOpen }) {
   const [openMenus, setOpenMenus] = useState({});
@@ -47,6 +48,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
   const [loading, setLoading] = useState(false);
   const [showNotis, setShowNotis] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  
+  // Theme Context
+  const { currentTheme } = useTheme();
 
   const handleLogout = async () => {
     try {
@@ -189,7 +193,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     <>
       {!isOpen && (
         <button
-          className="p-2 fixed top-2 left-2 z-50 bg-gray-500/50 rounded-lg"
+          className="p-2 fixed top-2 left-2 z-50 bg-surface/80 rounded-theme-lg backdrop-blur-sm hover:bg-hover text-primary transition-colors"
           onClick={() => setIsOpen(true)}
         >
           <FiMenu size={18} />
@@ -197,11 +201,11 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       )}
 
       <aside
-        className={`fixed top-0 left-0 h-screen overflow-y-auto bg-white shadow-md flex flex-col transform transition-transform duration-300 z-40
+        className={`fixed top-0 left-0 h-screen overflow-y-auto sidebar-theme flex flex-col transform transition-transform duration-300 z-40
         ${isOpen ? "translate-x-0 w-64" : "-translate-x-full w-64"}`}
       >
         <button
-          className="absolute top-2 right-2 p-2 rounded-lg hover:bg-gray-100 lg:block"
+          className="absolute top-2 right-2 p-2 rounded-theme-lg hover:bg-hover lg:block text-secondary transition-colors"
           onClick={() => setIsOpen(false)}
         >
           <FiX size={18} />
@@ -226,10 +230,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                   {!item.sub ? (
                     <Link
                       href={item.path}
-                      className={`flex justify-between items-center w-full p-2 rounded-lg transition 
+                      className={`flex justify-between items-center w-full p-2 rounded-theme-lg transition-colors
                                                 ${isActiveParent
-                          ? "bg-yellow-200 font-medium text-black"
-                          : "hover:bg-gray-100 text-gray-700"
+                          ? "nav-item-active"
+                          : "nav-item-theme"
                         }`}
                     >
                       <span className="flex items-center gap-3">
@@ -243,10 +247,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                         onClick={() => {
                           toggleMenu(item.name);
                         }}
-                        className={`flex justify-between items-center w-full p-2 rounded-lg transition 
+                        className={`flex justify-between items-center w-full p-2 rounded-theme-lg transition-colors
                                                             ${isActiveParent
-                            ? "bg-yellow-200 font-medium text-black"
-                            : "hover:bg-gray-100 text-gray-700"
+                            ? "nav-item-active"
+                            : "nav-item-theme"
                           }`}
                       >
                         <span className="flex items-center gap-3">
@@ -260,17 +264,17 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                       </Link>
 
                       {openMenus[item.name] && (
-                        <div className="ml-8 flex flex-col gap-1 text-sm text-gray-600">
+                        <div className="ml-8 flex flex-col gap-1 text-sm">
                           {item.sub.map((sub) => {
                             const isActiveSub = pathname === sub.path;
                             return (
                               <Link
                                 key={sub.name}
                                 href={sub.path}
-                                className={`p-1 hover:text-black hover:font-medium rounded-lg text-left flex items-center gap-3 
+                                className={`p-1 rounded-theme-lg text-left flex items-center gap-3 transition-colors
                                                                         ${isActiveSub
-                                    ? "bg-gray-200 font-medium"
-                                    : ""
+                                    ? "nav-sub-item-active"
+                                    : "nav-sub-item-theme"
                                   }`}
                               >
                                 {sub.icon} {sub.name}
@@ -288,11 +292,11 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         </div>
 
         {/* BOTÓN LOGOUT */}
-        <div className="p-4 border-t border-gray-100 mt-auto flex justify-center">
+        <div className="p-4 border-t border-primary mt-auto flex justify-center">
           <button
             onClick={() => setConfirmOpen(true)}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 text-red-500 text-sm hover:text-red-600 transition"
+            className="flex items-center gap-2 px-4 py-2 text-error text-sm hover:text-error/80 transition-colors rounded-theme-md hover:bg-hover"
           >
             <FiLogOut /> Log Out
           </button>

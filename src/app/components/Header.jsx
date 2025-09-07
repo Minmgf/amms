@@ -1,4 +1,3 @@
-"use client";
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { FiBell, FiUser, FiX } from "react-icons/fi";
@@ -6,6 +5,7 @@ import { MdPalette } from "react-icons/md";
 import { getUserData } from "@/services/profileService";
 import { getNotifications, markAllNotAsRead, markOneNotAsRead } from "@/services/notificationService";
 import { SuccessModal, ErrorModal } from "./shared/SuccessErrorModal";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function Header() {
   const [userId, setUserId] = useState("");
@@ -22,6 +22,14 @@ export default function Header() {
   const [errorOpen, setErrorOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Hook del tema global
+  const { 
+    currentTheme, 
+    getAllThemes, 
+    getThemeNames, 
+    changeTheme 
+  } = useTheme();
 
   useEffect(() => {
     const storedUser = localStorage.getItem("userData");
@@ -184,29 +192,49 @@ export default function Header() {
 
   return (
     <>
-      <header className="w-full flex items-center justify-end px-6 bg-gray-100 py-4 relative">
+      <header className="header-theme w-full flex items-center justify-end px-6 py-4 relative">
         <div className="flex items-center gap-4">
           {/* Botón Tema */}
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setThemeMenuOpen(!themeMenuOpen)}
-              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="p-2 rounded-theme-md hover:bg-hover text-primary transition-colors"
             >
-              <MdPalette className="text-gray-600 dark:text-gray-300" size={20} />
+              <MdPalette size={20} />
             </button>
 
             {themeMenuOpen && (
-              <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
-                <button
-                  className="block w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  Claro
-                </button>
-                <button
-                  className="block w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  Oscuro
-                </button>
+              <div className="absolute right-0 mt-2 w-48 bg-surface border border-primary rounded-theme-lg shadow-lg z-50">
+                <div className="p-2">
+                  <div className="text-xs text-secondary mb-2 px-2">Seleccionar Tema:</div>
+                  {getThemeNames().map(themeKey => {
+                    const theme = getAllThemes()[themeKey];
+                    return (
+                      <button
+                        key={themeKey}
+                        onClick={() => {
+                          changeTheme(themeKey);
+                          setThemeMenuOpen(false);
+                        }}
+                        className={`block w-full px-3 py-2 text-left text-sm rounded-theme-sm mb-1 transition-colors ${
+                          currentTheme === themeKey 
+                            ? 'bg-accent text-white' 
+                            : 'text-primary hover:bg-hover'
+                        }`}
+                      >
+                        {theme.name}
+                      </button>
+                    );
+                  })}
+                  <hr className="border-primary my-2" />
+                  <Link 
+                    href="/parametrization/styles"
+                    className="block w-full px-3 py-2 text-left text-sm text-accent hover:bg-hover rounded-theme-sm transition-colors"
+                    onClick={() => setThemeMenuOpen(false)}
+                  >
+                    🎨 Personalizar Temas
+                  </Link>
+                </div>
               </div>
             )}
           </div>
@@ -215,7 +243,7 @@ export default function Header() {
           <button
             type="button"
             onClick={() => setShowNotis((s) => !s)}
-            className="relative inline-flex items-center justify-center rounded-md p-2 hover:bg-gray-100 text-gray-700 cursor-pointer"
+            className="relative inline-flex items-center justify-center rounded-theme-md p-2 hover:bg-hover text-primary cursor-pointer transition-colors"
             aria-haspopup="dialog"
             aria-expanded={showNotis}
             aria-controls="notifications-panel"
@@ -223,13 +251,13 @@ export default function Header() {
           >
             <FiBell className="text-xl" />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-red-500 text-white text-[10px] leading-4 text-center">
+              <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-error text-white text-[10px] leading-4 text-center">
                 {unreadCount}
               </span>
             )}
           </button>
 
-          {/* Panel Notificaciones ⬅️ */}
+          {/* Panel Notificaciones */}
           {showNotis && (
             <div
               className="fixed inset-0 z-50"
@@ -240,12 +268,12 @@ export default function Header() {
               <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px]" />
               <div
                 ref={panelRef}
-                className="absolute right-4 top-4 w-[380px] max-w-[92vw] rounded-2xl bg-white shadow-2xl border border-gray-200 overflow-hidden"
+                className="absolute right-4 top-4 w-[380px] max-w-[92vw] rounded-theme-xl modal-theme overflow-hidden"
               >
-                <div className="flex items-center justify-between px-4 py-3 border-b bg-[#F9F9F9]">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-primary bg-background">
                   <div className="flex items-center gap-2">
-                    <h2 className="font-semibold text-black">Notifications</h2>
-                    <span className="text-sm text-gray-500">
+                    <h2 className="font-semibold text-primary">Notifications</h2>
+                    <span className="text-sm text-secondary">
                       {unreadCount} {unreadCount === 1 ? "unread" : "unread"}
                     </span>
                   </div>
@@ -253,30 +281,29 @@ export default function Header() {
                     <button
                       onClick={markAllAsRead}
                       disabled={loading}
-                      className="text-sm text-blue-600 cursor-pointer hover:underline"
+                      className="text-sm text-accent cursor-pointer hover:underline"
                     >
                       Mark all as read
                     </button>
                     <button
                       onClick={() => setShowNotis(false)}
-                      className="rounded-md cursor-pointer hover:bg-gray-100"
+                      className="rounded-theme-md cursor-pointer hover:bg-hover p-1 transition-colors"
                       aria-label="Close notifications"
                     >
-                      <FiX size={18} className="text-gray-400" />
+                      <FiX size={18} className="text-secondary" />
                     </button>
                   </div>
                 </div>
-                <ul className="max-h-[70vh] overflow-y-auto divide-y">
+                <ul className="max-h-[70vh] overflow-y-auto divide-y divide-border">
                   {notis.map((n) => (
                     <li
                       key={n.id}
                       className={`p-4 transition-colors ${n.status === "unread"
-                          ? "bg-[#FEF7FF] border-l-4 border-purple-500"
-                          : "bg-white opacity-70"
+                          ? "bg-surface border-l-4 border-accent"
+                          : "bg-background opacity-70"
                         }`}
                     >
                       <div className="flex items-start gap-3">
-
                         <span
                           className={`mt-1 inline-block h-[32px] w-[32px] rounded-full ${iconDot(
                             n.type
@@ -284,28 +311,28 @@ export default function Header() {
                         />
                         <div className="flex-1">
                           <p
-                            className={`font-medium ${n.status === "unread" ? "text-black" : "text-gray-500"
+                            className={`font-medium ${n.status === "unread" ? "text-primary" : "text-secondary"
                               }`}
                           >
                             {n.title}
                           </p>
                           <p
-                            className={`text-sm ${n.status === "unread" ? "text-gray-600" : "text-gray-400"
+                            className={`text-sm ${n.status === "unread" ? "text-secondary" : "text-secondary opacity-60"
                               }`}
                           >
                             {n.body}
                           </p>
                           <div className="flex justify-between mt-2">
-                            <span className="text-xs text-gray-400">{n.date}</span>
+                            <span className="text-xs text-secondary">{n.date}</span>
                             {n.status === "unread" ? (
                               <button
                                 onClick={() => markOneAsRead(n.id)}
-                                className="text-xs text-blue-600 cursor-pointer hover:underline"
+                                className="text-xs text-accent cursor-pointer hover:underline"
                               >
                                 Mark as read
                               </button>
                             ) : (
-                              <span className="text-xs text-gray-400">Read</span>
+                              <span className="text-xs text-secondary">Read</span>
                             )}
                           </div>
                         </div>
@@ -313,7 +340,6 @@ export default function Header() {
                     </li>
                   ))}
                 </ul>
-
               </div>
             </div>
           )}
@@ -321,25 +347,25 @@ export default function Header() {
           {/* Usuario */}
           <Link
             href="/userProfile"
-            className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+            className="flex items-center gap-2 bg-surface hover:bg-hover px-3 py-1 rounded-theme-full cursor-pointer transition-colors"
           >
             {profilePhoto ? (
               <img
                 src={profilePhoto}
                 alt="Profile"
-                className="w-8 h-8 rounded-full object-cover"
+                className="w-8 h-8 rounded-full object-cover border-2 border-accent"
               />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white">
+              <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-white">
                 <FiUser size={20} />
               </div>
             )}
-            <span className="text-sm text-gray-700 dark:text-gray-200">
+            <span className="text-sm text-primary">
               Bienvenido!
               <br />
               {username}
             </span>
-            <FiUser className="text-gray-600 dark:text-gray-300" />
+            <FiUser className="text-secondary" />
           </Link>
         </div>
       </header>
