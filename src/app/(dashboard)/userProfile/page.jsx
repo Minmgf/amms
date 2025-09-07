@@ -234,7 +234,10 @@ const ProfilePage = () => {
                   {userData.date_issuance_document?.split("T")[0]}
                 </p>
               </div>
-
+              
+              <h3 className="text-xl font-bold border-b border-gray-200 pb-3 text-gray-900">
+                Residencial information
+              </h3>     
               <form
                 id="residenceForm"
                 onSubmit={handleSubmit(onSubmitResidence)}
