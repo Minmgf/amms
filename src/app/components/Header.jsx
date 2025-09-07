@@ -8,6 +8,7 @@ import { getNotifications, markAllNotAsRead, markOneNotAsRead } from "@/services
 import { SuccessModal, ErrorModal } from "./shared/SuccessErrorModal";
 
 export default function Header() {
+  const [userId, setUserId] = useState("");
   const [username, setUsername] = useState("");
   const [profilePhoto, setProfilePhoto] = useState(null);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
@@ -28,16 +29,24 @@ export default function Header() {
       try {
         const userData = JSON.parse(storedUser);
         setUsername(userData.name);
+        setUserId(userData.id);
       } catch (err) {
         console.error("Error parsing userData", err);
       }
     }
+  }, []);
+
+
+  useEffect(() => {
+    if (!userId) return;
 
     async function fetchUserPhoto() {
       try {
-        const response = await getUserData();
-        if (response.data.profile_picture) {
-          setProfilePhoto(response.data.profile_picture);
+        const response = await getUserData(userId);
+        const data = response.data[0];
+        console.log("esta es la foto del header", data.profile_picture);
+        if (data.profile_picture) {
+          setProfilePhoto(data.profile_picture);
         }
       } catch (err) {
         console.error("Error fetching user photo:", err);
@@ -45,7 +54,7 @@ export default function Header() {
     }
 
     fetchUserPhoto();
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     const photo = localStorage.getItem("userPhoto");
@@ -78,7 +87,7 @@ export default function Header() {
               type: n.type,
             }));
             setNotis(mapped);
-            setMessage(""); 
+            setMessage("");
           }
         } else {
           setMessage("Unable to fetch notifications.");
@@ -129,7 +138,7 @@ export default function Header() {
         setNotis((prev) => prev.map((n) => ({ ...n, status: "read" })));
         setModalMessage(response.message);
         setSuccessOpen(true);
-      } 
+      }
     } catch (error) {
       setModalMessage(error.response.data.detail);
       setErrorOpen(true);
@@ -141,8 +150,8 @@ export default function Header() {
   const markOneAsRead = async (id) => {
     setLoading(true);
 
-    const payload = {    
-      notification_ids: [id], 
+    const payload = {
+      notification_ids: [id],
       mark_all: false
     };
 
@@ -155,7 +164,7 @@ export default function Header() {
         );
         setModalMessage(response.message);
         setSuccessOpen(true);
-      } 
+      }
     } catch (error) {
       setModalMessage(error.response?.data?.detail || "Error marking notification as read");
       setErrorOpen(true);
@@ -243,7 +252,7 @@ export default function Header() {
                   <div className="flex items-center gap-3">
                     <button
                       onClick={markAllAsRead}
-                      disabled = {loading}
+                      disabled={loading}
                       className="text-sm text-blue-600 cursor-pointer hover:underline"
                     >
                       Mark all as read
@@ -261,14 +270,13 @@ export default function Header() {
                   {notis.map((n) => (
                     <li
                       key={n.id}
-                      className={`p-4 transition-colors ${
-                        n.status === "unread"
+                      className={`p-4 transition-colors ${n.status === "unread"
                           ? "bg-[#FEF7FF] border-l-4 border-purple-500"
                           : "bg-white opacity-70"
-                      }`}
+                        }`}
                     >
                       <div className="flex items-start gap-3">
-                      
+
                         <span
                           className={`mt-1 inline-block h-[32px] w-[32px] rounded-full ${iconDot(
                             n.type
@@ -276,16 +284,14 @@ export default function Header() {
                         />
                         <div className="flex-1">
                           <p
-                            className={`font-medium ${
-                              n.status === "unread" ? "text-black" : "text-gray-500"
-                            }`}
+                            className={`font-medium ${n.status === "unread" ? "text-black" : "text-gray-500"
+                              }`}
                           >
                             {n.title}
                           </p>
                           <p
-                            className={`text-sm ${
-                              n.status === "unread" ? "text-gray-600" : "text-gray-400"
-                            }`}
+                            className={`text-sm ${n.status === "unread" ? "text-gray-600" : "text-gray-400"
+                              }`}
                           >
                             {n.body}
                           </p>
@@ -338,11 +344,11 @@ export default function Header() {
         </div>
       </header>
       <SuccessModal
-          isOpen={successOpen}
-          onClose={() => setSuccessOpen(false)}
-          title="Login Successful"
-          message={modalMessage}
-        />
+        isOpen={successOpen}
+        onClose={() => setSuccessOpen(false)}
+        title="Login Successful"
+        message={modalMessage}
+      />
       <ErrorModal
         isOpen={errorOpen}
         onClose={() => setErrorOpen(false)}
