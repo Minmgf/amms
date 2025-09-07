@@ -45,6 +45,10 @@ const page = () => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, search]);
+
   const handleStatus = async (roleId, currentStatus) => {
     const newStatusId = currentStatus === "Activo" ? 2 : 1;
 
