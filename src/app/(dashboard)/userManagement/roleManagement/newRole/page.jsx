@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { getPermissions, createRole } from "@/services/roleService";
 import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
+import { useRouter } from "next/navigation";
 
 const Page = () => {
   const [permissions, setPermissions] = useState([]);
@@ -14,6 +15,7 @@ const Page = () => {
   const [errorOpen, setErrorOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const {
     register,
@@ -95,12 +97,13 @@ const Page = () => {
         setSuccessOpen(true);
         reset(); 
         resetPermissions();
+        router.back();
       } else {
         setModalMessage("Unexpected response from server");
         setErrorOpen(true);
       }
     } catch (error) {
-      setModalMessage(error.response?.data?.detail || "Unexpected error");
+      setModalMessage(error.response?.data?.detail?.data || "Unexpected error");
       setErrorOpen(true);
     } finally {
       setLoading(false);

@@ -18,6 +18,7 @@ const page = () => {
   const [modalMessage, setModalMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const [statusFilter, setStatusFilter] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -76,9 +77,14 @@ const page = () => {
     }
   };
 
-  const filteredData = data.filter((item) =>
+  const filteredData = data
+  .filter((item) =>
     item.roleName.toLowerCase().includes(search.toLowerCase())
+  )
+  .filter((item) =>
+    statusFilter === "" ? true : item.status === statusFilter
   );
+
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -113,6 +119,8 @@ const page = () => {
           <RoleManagementFilter
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
           />
           <button 
             onClick={() => router.push("/userManagement/roleManagement/newRole")}
