@@ -316,7 +316,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         onConfirm={handleLogout}
         title="Confirm Logout"
         message="Are you sure you want to log out?"
-        confirmText="<Confirm"
+        confirmText="Confirm"
         cancelText="Cancel"
         confirmColor="bg-red-600 hover:bg-red-500 active:bg-red-700"
         cancelColor="bg-gray-600 hover:bg-gray-500"
