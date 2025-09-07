@@ -5,7 +5,7 @@ export default function RoleManagementFilter({ isOpen, onClose, statusFilter, se
   if (!isOpen) return null;
 
   const handleApply = () => {
-    onClose(); 
+    onClose();
   };
 
   const handleClean = () => {

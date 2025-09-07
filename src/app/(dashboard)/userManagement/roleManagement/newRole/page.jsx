@@ -123,12 +123,14 @@ const Page = () => {
       } else if (mode === "edit") {
         response = await updateRole(roleId, roleData);
       }
-      setModalMessage(response.message || "Usuario creado exitosamente");
+      setModalMessage(response.message || "The role has been created successfully");
       setSuccessOpen(true);
       if (mode === "create") {
         reset();
         resetPermissions();
-        router.back();
+        setTimeout(() => {
+          router.back();
+        }, 2000);
       } else {
         setModalMessage("Unexpected response from server");
         setErrorOpen(true);
@@ -169,8 +171,14 @@ const Page = () => {
                       type="text"
                       placeholder="Enter role name"
                       disabled={mode === "view"}
+                      maxLength={20}
                       className="border text-[#282828] rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring-2 placeholder-[#999999]"
-                      {...register("name", { required: "Role name is required" })}
+                      {...register("name", { required: "Role name is required",
+                        maxLength: {
+                        value: 20,
+                        message: "Role name must be at most 20 characters"
+                      }
+                      })}
                     />
                     {errors.name && (
                       <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>
