@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import { FaCheck } from "react-icons/fa";
+import { FaCheck, FaEye, FaEyeSlash } from "react-icons/fa";
 import { useParams, useRouter } from "next/navigation";
 import { recoverPassword } from "@/services/authService";
 import {
@@ -25,7 +25,8 @@ const Page = () => {
 
   const password = watch("password", "");
   const confirmPassword = watch("confirmPassword", "");
-
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const validations = {
     upper: /[A-Z]/.test(password),
     lower: /[a-z]/.test(password),
@@ -74,11 +75,18 @@ const Page = () => {
             </label>
             <input
               id="new-password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               {...register("password", { required: true })}
               className="py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
               placeholder="Sigma1999"
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-10 top-12 text-gray-600 hover:text-gray-800"
+            >
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </button>
             {Object.values(validations).every(Boolean) && (
               <FaCheck className="absolute right-5 top-12 text-green-500" />
             )}
@@ -92,7 +100,7 @@ const Page = () => {
             </label>
             <input
               id="confirm-password"
-              type="password"
+              type={showConfirmPassword ? "text" : "password"}
               {...register("confirmPassword", {
                 required: true,
                 validate: (value) => value === password
@@ -100,6 +108,13 @@ const Page = () => {
               className="py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
               placeholder="Sigma1999"
             />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-10 top-12 text-gray-600 hover:text-gray-800"
+            >
+              {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+            </button>
             {passwordsMatch && (
               <FaCheck className="absolute right-5 top-12 text-green-500" />
             )}
