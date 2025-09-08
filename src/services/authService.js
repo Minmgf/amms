@@ -1,6 +1,19 @@
 import Cookies from "js-cookie";
 import { apiUsers } from "@/lib/axios";
 
+// Función helper para obtener el token desde localStorage o sessionStorage
+const getAuthToken = () => {
+    // Primero intentar localStorage
+    let token = localStorage.getItem('token');
+    
+    // Si no está en localStorage, intentar sessionStorage
+    if (!token) {
+        token = sessionStorage.getItem('token');
+    }
+    
+    return token;
+};
+
 export const login = async (payload) => {
     const { data } = await apiUsers.post("/auth/login/", payload);
     // guardar token en cookie (expira en 1 hora por ejemplo)
@@ -8,7 +21,7 @@ export const login = async (payload) => {
 
     // opcional: también en localStorage
     localStorage.setItem("token", data.access_token);
-    console.log(localStorage.getItem("token"));
+    console.log(getAuthToken());
     console.log(Cookies.get("token"));
     return data;
 };
@@ -17,6 +30,7 @@ export const logout = async () => {
     const { data } = await apiUsers.post("/auth/logout");
     Cookies.remove("token");
     localStorage.removeItem("token");
+    sessionStorage.removeItem("token"); // También limpiar sessionStorage
     return data;
 };
 
@@ -118,7 +132,7 @@ const validateToken = async () => {
 export const createUser = async (userData) => {
     try {
         // Verificar token antes de hacer la petición
-        const token = localStorage.getItem("token");
+        const token = getAuthToken();
         if (!token) {
             throw new Error("No hay token disponible");
         }
@@ -161,7 +175,7 @@ export const createUser = async (userData) => {
 export const editUser = async (userId, userData) => {
     try {
         // Verificar token antes de hacer la petición
-        const token = localStorage.getItem("token");
+        const token = getAuthToken();
         if (!token) {
             throw new Error("No hay token disponible");
         }
@@ -200,7 +214,7 @@ export const editUser = async (userId, userData) => {
 export const changeUserStatus = async (userId, newStatus) => {
     try {
         // Verificar token antes de hacer la petición
-        const token = localStorage.getItem("token");
+        const token = getAuthToken();
         if (!token) {
             throw new Error("No hay token disponible");
         }

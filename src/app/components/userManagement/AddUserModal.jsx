@@ -4,6 +4,20 @@ import { FaArrowLeft, FaUserPlus, FaPlus, FaExclamationTriangle, FaCheckCircle }
 import * as Dialog from '@radix-ui/react-dialog';
 import Select from 'react-select';
 import { getDocumentTypes, getGenderTypes, getRoleTypes, createUser } from '../../../services/authService';
+import { SuccessModal, ErrorModal } from '../shared/SuccessErrorModal';
+
+// Función helper para obtener el token desde localStorage o sessionStorage
+const getAuthToken = () => {
+  // Primero intentar localStorage
+  let token = localStorage.getItem('token');
+  
+  // Si no está en localStorage, intentar sessionStorage
+  if (!token) {
+    token = sessionStorage.getItem('token');
+  }
+  
+  return token;
+};
 
 export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
   const [documentTypes, setDocumentTypes] = useState([]);
@@ -13,6 +27,14 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  
+  // Estados para los modales
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+  
+  // Estado para controlar si ya se intentó enviar el formulario
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
   // Estado del formulario
   const [formData, setFormData] = useState({
@@ -46,9 +68,13 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
           setRoleTypes(roleTypesResponse.data);
         } else {
           setError('Error al cargar los datos de configuración');
+          setModalMessage('Error al cargar los datos de configuración');
+          setShowErrorModal(true);
         }
       } catch (err) {
         setError('Error al cargar los datos: ' + err.message);
+        setModalMessage('Error al cargar los datos: ' + err.message);
+        setShowErrorModal(true);
       } finally {
         setLoading(false);
       }
@@ -75,11 +101,18 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
       });
       setError(null);
       setSuccess(false);
+      setShowSuccessModal(false);
+      setShowErrorModal(false);
+      setModalMessage('');
+      setHasSubmitted(false); // Resetear el estado de envío
     }
   }, [isOpen]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Marcar que se intentó enviar el formulario
+    setHasSubmitted(true);
     
     if (!isFormValid) return;
 
@@ -101,38 +134,43 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
       };
 
       console.log('Datos a enviar:', userData);
-      console.log('Token actual:', localStorage.getItem('token'));
+      console.log('Token actual:', getAuthToken());
 
       const response = await createUser(userData);
       
       if (response.success) {
         setSuccess(true);
-        setTimeout(() => {
-          onClose();
-          if (onUserCreated) {
-            onUserCreated();
-          }
-        }, 2000);
+        setModalMessage('Usuario creado exitosamente');
+        setShowSuccessModal(true);
+        // El modal de éxito se cerrará automáticamente y llamará onSuccessClose
       } else {
         setError(response.message || 'Error al crear el usuario');
+        setModalMessage(response.message || 'Error al crear el usuario');
+        setShowErrorModal(true);
       }
     } catch (err) {
       console.error('Error completo:', err);
+      let errorMessage = 'Error al crear el usuario';
+      
       if (err.message === 'No hay token disponible') {
-        setError('Error de autenticación: No hay token disponible. Por favor, inicie sesión nuevamente.');
+        errorMessage = 'Error de autenticación: No hay token disponible. Por favor, inicie sesión nuevamente.';
       } else if (err.message === 'Token expirado') {
-        setError('Error de autenticación: Token expirado. Por favor, inicie sesión nuevamente.');
+        errorMessage = 'Error de autenticación: Token expirado. Por favor, inicie sesión nuevamente.';
       } else if (err.message === 'Token no válido') {
-        setError('Error de autenticación: Token no válido. Por favor, inicie sesión nuevamente.');
+        errorMessage = 'Error de autenticación: Token no válido. Por favor, inicie sesión nuevamente.';
       } else if (err.response?.status === 401) {
-        setError('Error de autenticación: Credenciales inválidas. Por favor, inicie sesión nuevamente.');
+        errorMessage = 'Error de autenticación: Credenciales inválidas. Por favor, inicie sesión nuevamente.';
       } else if (err.response?.data?.message) {
-        setError('Error al crear el usuario: ' + err.response.data.message);
+        errorMessage = 'Error al crear el usuario: ' + err.response.data.message;
       } else if (err.response?.data?.detail) {
-        setError('Error al crear el usuario: ' + err.response.data.detail);
+        errorMessage = 'Error al crear el usuario: ' + err.response.data.detail;
       } else {
-        setError('Error al crear el usuario: ' + err.message);
+        errorMessage = 'Error al crear el usuario: ' + err.message;
       }
+      
+      setError(errorMessage);
+      setModalMessage(errorMessage);
+      setShowErrorModal(true);
     } finally {
       setSubmitLoading(false);
     }
@@ -155,6 +193,20 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
     }));
   };
 
+  // Función para manejar el cierre del modal de éxito
+  const handleSuccessClose = () => {
+    setShowSuccessModal(false);
+    onClose();
+    if (onUserCreated) {
+      onUserCreated();
+    }
+  };
+
+  // Función para manejar el cierre del modal de error
+  const handleErrorClose = () => {
+    setShowErrorModal(false);
+  };
+
   const isFormValid = formData.name && 
     formData.first_last_name && 
     formData.document_number && 
@@ -166,7 +218,7 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
   return (
     <Dialog.Root open={isOpen} onOpenChange={onClose}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
+        <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-20" />
         <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl z-50 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
           {/* DialogTitle para accesibilidad */}
           <Dialog.Title className="sr-only">
@@ -201,26 +253,6 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
               </div>
             )}
 
-            {/* Error */}
-            {error && (
-              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <div className="flex items-center gap-2 text-red-800">
-                  <FaExclamationTriangle />
-                  <p>{error}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Success */}
-            {success && (
-              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center gap-2 text-green-800">
-                  <FaCheckCircle />
-                  <p>Usuario creado exitosamente</p>
-                </div>
-              </div>
-            )}
-
             {/* Formulario */}
             {!loading && (
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -235,7 +267,7 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
                       value={formData.name}
                       onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                       className={`w-full px-3 py-2 border text-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                        !formData.name ? 'border-red-500' : 'border-gray-300'
+                        hasSubmitted && !formData.name ? 'border-red-500' : 'border-gray-300'
                       }`}
                       placeholder="Ingrese nombre"
                     />
@@ -251,7 +283,7 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
                       value={formData.first_last_name}
                       onChange={(e) => setFormData(prev => ({ ...prev, first_last_name: e.target.value }))}
                       className={`w-full px-3 py-2 border text-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                        !formData.first_last_name ? 'border-red-500' : 'border-gray-300'
+                        hasSubmitted && !formData.first_last_name ? 'border-red-500' : 'border-gray-300'
                       }`}
                       placeholder="Ingrese primer apellido"
                     />
@@ -281,7 +313,7 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
                       onChange={(option) => setFormData(prev => ({ ...prev, type_document_id: option }))}
                       options={documentTypes.map(doc => ({ value: doc.id, label: doc.name }))}
                       placeholder="Seleccionar tipo de documento"
-                      className={`${!formData.type_document_id ? 'border-red-500 text-gray-600' : 'text-gray-600'}`}
+                      className={`${hasSubmitted && !formData.type_document_id ? 'border-red-500 text-gray-600' : 'text-gray-600'}`}
                       isSearchable
                       isClearable
                     />
@@ -297,7 +329,7 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
                       value={formData.document_number}
                       onChange={(e) => setFormData(prev => ({ ...prev, document_number: e.target.value }))}
                       className={`w-full px-3 py-2 border text-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                        !formData.document_number ? 'border-red-500' : 'border-gray-300'
+                        hasSubmitted && !formData.document_number ? 'border-red-500' : 'border-gray-300'
                       }`}
                       placeholder="Ingrese número de documento"
                     />
@@ -313,7 +345,7 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
                       onChange={(option) => setFormData(prev => ({ ...prev, gender_id: option }))}
                       options={genderTypes.map(gender => ({ value: gender.id, label: gender.name }))}
                       placeholder="Seleccionar género"
-                      className={`${!formData.gender_id ? 'border-red-500 text-gray-600' : 'text-gray-600'}`}
+                      className={`${hasSubmitted && !formData.gender_id ? 'border-red-500 text-gray-600' : 'text-gray-600'}`}
                       isSearchable
                       isClearable
                     />
@@ -418,7 +450,7 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
                 </div>
 
                 {/* Mensaje de validación */}
-                {!isFormValid && (
+                {hasSubmitted && !isFormValid && (
                   <div className="flex items-center gap-2 text-red-600 text-sm">
                     <FaExclamationTriangle />
                     Por favor complete todos los campos requeridos antes de enviar el formulario.
@@ -457,6 +489,21 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
           </div>
         </Dialog.Content>
       </Dialog.Portal>
+      
+      {/* Modales de Success y Error */}
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={handleSuccessClose}
+        title="Usuario Creado"
+        message="El usuario ha sido creado exitosamente en el sistema."
+      />
+      
+      <ErrorModal
+        isOpen={showErrorModal}
+        onClose={handleErrorClose}
+        title="Error al Crear Usuario"
+        message={modalMessage}
+      />
     </Dialog.Root>
   );
 }

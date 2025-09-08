@@ -4,6 +4,19 @@ import axios from "axios";
 // * Servicio para Types Categories
 // * Usando el patrón similar a authService
 
+// Función helper para obtener el token desde localStorage o sessionStorage
+const getAuthToken = () => {
+    // Primero intentar localStorage
+    let token = localStorage.getItem('token');
+    
+    // Si no está en localStorage, intentar sessionStorage
+    if (!token) {
+        token = sessionStorage.getItem('token');
+    }
+    
+    return token;
+};
+
 // Instancia de axios para rutas internas (sin baseURL externo)
 const apiInternal = axios.create({
     timeout: 10000,
@@ -15,7 +28,7 @@ const apiInternal = axios.create({
 // Agregar interceptor para el token
 apiInternal.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem("token");
+        const token = getAuthToken();
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
