@@ -9,19 +9,19 @@ const HomePage = ({ activeMenu = "Home" }) => {
     // Componentes para cada sección del menú
     const HomeContent = () => (
         <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-gray-800">Bienvenido al Dashboard</h1>
+            <h1 className="text-3xl font-bold text-primary">Bienvenido al Dashboard</h1>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                    <h3 className="text-lg font-semibold mb-2">Resumen General</h3>
-                    <p className="text-gray-600">Vista general de las métricas principales del sistema.</p>
+                <div className="card-theme">
+                    <h3 className="text-lg font-semibold mb-2 text-primary">Resumen General</h3>
+                    <p className="text-secondary">Vista general de las métricas principales del sistema.</p>
                 </div>
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                    <h3 className="text-lg font-semibold mb-2">Actividad Reciente</h3>
-                    <p className="text-gray-600">Últimas actividades y notificaciones del sistema.</p>
+                <div className="card-theme">
+                    <h3 className="text-lg font-semibold mb-2 text-primary">Actividad Reciente</h3>
+                    <p className="text-secondary">Últimas actividades y notificaciones del sistema.</p>
                 </div>
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                    <h3 className="text-lg font-semibold mb-2">Accesos Rápidos</h3>
-                    <p className="text-gray-600">Enlaces directos a las funciones más utilizadas.</p>
+                <div className="card-theme">
+                    <h3 className="text-lg font-semibold mb-2 text-primary">Accesos Rápidos</h3>
+                    <p className="text-secondary">Enlaces directos a las funciones más utilizadas.</p>
                 </div>
             </div>
         </div>
@@ -29,17 +29,17 @@ const HomePage = ({ activeMenu = "Home" }) => {
 
     const MachineryContent = () => (
         <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-gray-800">Gestión de Maquinaria</h1>
-            <div className="bg-white p-6 rounded-lg shadow-md">
-                <h3 className="text-lg font-semibold mb-4">Inventario de Equipos</h3>
+            <h1 className="text-3xl font-bold text-primary">Gestión de Maquinaria</h1>
+            <div className="card-theme">
+                <h3 className="text-lg font-semibold mb-4 text-primary">Inventario de Equipos</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="border p-4 rounded-lg">
-                        <h4 className="font-medium">Equipos Activos</h4>
-                        <p className="text-2xl font-bold text-green-600">24</p>
+                    <div className="border border-primary p-4 rounded-theme-lg bg-surface">
+                        <h4 className="font-medium text-primary">Equipos Activos</h4>
+                        <p className="text-2xl font-bold text-success">24</p>
                     </div>
-                    <div className="border p-4 rounded-lg">
-                        <h4 className="font-medium">En Mantenimiento</h4>
-                        <p className="text-2xl font-bold text-yellow-600">3</p>
+                    <div className="border border-primary p-4 rounded-theme-lg bg-surface">
+                        <h4 className="font-medium text-primary">En Mantenimiento</h4>
+                        <p className="text-2xl font-bold text-warning">3</p>
                     </div>
                 </div>
             </div>
@@ -48,19 +48,19 @@ const HomePage = ({ activeMenu = "Home" }) => {
 
     const MaintenanceContent = () => (
         <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-gray-800">Mantenimiento</h1>
+            <h1 className="text-3xl font-bold text-primary">Mantenimiento</h1>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                    <h3 className="text-lg font-semibold mb-4">Programación de Mantenimiento</h3>
-                    <p className="text-gray-600 mb-4">Gestiona el calendario de mantenimiento preventivo.</p>
-                    <button className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                <div className="card-theme">
+                    <h3 className="text-lg font-semibold mb-4 text-primary">Programación de Mantenimiento</h3>
+                    <p className="text-secondary mb-4">Gestiona el calendario de mantenimiento preventivo.</p>
+                    <button className="btn-theme btn-primary">
                         Ver Calendario
                     </button>
                 </div>
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                    <h3 className="text-lg font-semibold mb-4">Solicitudes de Mantenimiento</h3>
-                    <p className="text-gray-600 mb-4">Revisa y gestiona las solicitudes pendientes.</p>
-                    <button className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                <div className="card-theme">
+                    <h3 className="text-lg font-semibold mb-4 text-primary">Solicitudes de Mantenimiento</h3>
+                    <p className="text-secondary mb-4">Revisa y gestiona las solicitudes pendientes.</p>
+                    <button className="btn-theme btn-success">
                         Ver Solicitudes
                     </button>
                 </div>
@@ -70,26 +70,26 @@ const HomePage = ({ activeMenu = "Home" }) => {
 
     const PayrollContent = () => (
         <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-gray-800">Nómina</h1>
+            <h1 className="text-3xl font-bold text-primary">Nómina</h1>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                    <h3 className="text-lg font-semibold mb-2">Reportes</h3>
-                    <p className="text-gray-600 mb-4">Genera reportes de nómina y análisis.</p>
-                    <button className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600">
+                <div className="card-theme">
+                    <h3 className="text-lg font-semibold mb-2 text-primary">Reportes</h3>
+                    <p className="text-secondary mb-4">Genera reportes de nómina y análisis.</p>
+                    <button className="btn-theme btn-warning">
                         Generar Reporte
                     </button>
                 </div>
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                    <h3 className="text-lg font-semibold mb-2">Novedades</h3>
-                    <p className="text-gray-600 mb-4">Gestiona novedades y ajustes de nómina.</p>
-                    <button className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600">
+                <div className="card-theme">
+                    <h3 className="text-lg font-semibold mb-2 text-primary">Novedades</h3>
+                    <p className="text-secondary mb-4">Gestiona novedades y ajustes de nómina.</p>
+                    <button className="btn-theme btn-warning">
                         Gestionar
                     </button>
                 </div>
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                    <h3 className="text-lg font-semibold mb-2">Nóminas</h3>
-                    <p className="text-gray-600 mb-4">Accede al historial de nóminas procesadas.</p>
-                    <button className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                <div className="card-theme">
+                    <h3 className="text-lg font-semibold mb-2 text-primary">Nóminas</h3>
+                    <p className="text-secondary mb-4">Accede al historial de nóminas procesadas.</p>
+                    <button className="btn-theme btn-primary">
                         Ver Historial
                     </button>
                 </div>
@@ -99,19 +99,19 @@ const HomePage = ({ activeMenu = "Home" }) => {
 
     const RequestsContent = () => (
         <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-gray-800">Solicitudes</h1>
+            <h1 className="text-3xl font-bold text-primary">Solicitudes</h1>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                    <h3 className="text-lg font-semibold mb-4">Gestión de Clientes</h3>
-                    <p className="text-gray-600 mb-4">Administra la información de clientes y sus solicitudes.</p>
-                    <button className="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600">
+                <div className="card-theme">
+                    <h3 className="text-lg font-semibold mb-4 text-primary">Gestión de Clientes</h3>
+                    <p className="text-secondary mb-4">Administra la información de clientes y sus solicitudes.</p>
+                    <button className="btn-theme btn-secondary">
                         Gestionar Clientes
                     </button>
                 </div>
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                    <h3 className="text-lg font-semibold mb-4">Gestión de Servicios</h3>
-                    <p className="text-gray-600 mb-4">Controla los servicios y solicitudes de mantenimiento.</p>
-                    <button className="bg-teal-500 text-white px-4 py-2 rounded-lg hover:bg-teal-600">
+                <div className="card-theme">
+                    <h3 className="text-lg font-semibold mb-4 text-primary">Gestión de Servicios</h3>
+                    <p className="text-secondary mb-4">Controla los servicios y solicitudes de mantenimiento.</p>
+                    <button className="btn-theme btn-secondary">
                         Gestionar Servicios
                     </button>
                 </div>
@@ -125,19 +125,19 @@ const HomePage = ({ activeMenu = "Home" }) => {
 
     const MonitoringContent = () => (
         <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-gray-800">Monitoreo</h1>
+            <h1 className="text-3xl font-bold text-primary">Monitoreo</h1>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                    <h3 className="text-lg font-semibold mb-4">Gestión de Dispositivos</h3>
-                    <p className="text-gray-600 mb-4">Monitorea y gestiona dispositivos conectados.</p>
-                    <button className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                <div className="card-theme">
+                    <h3 className="text-lg font-semibold mb-4 text-primary">Gestión de Dispositivos</h3>
+                    <p className="text-secondary mb-4">Monitorea y gestiona dispositivos conectados.</p>
+                    <button className="btn-theme btn-success">
                         Ver Dispositivos
                     </button>
                 </div>
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                    <h3 className="text-lg font-semibold mb-4">Configuración de Umbrales</h3>
-                    <p className="text-gray-600 mb-4">Define alertas y umbrales de monitoreo.</p>
-                    <button className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                <div className="card-theme">
+                    <h3 className="text-lg font-semibold mb-4 text-primary">Configuración de Umbrales</h3>
+                    <p className="text-secondary mb-4">Define alertas y umbrales de monitoreo.</p>
+                    <button className="btn-theme btn-primary">
                         Configurar Alertas
                     </button>
                 </div>
@@ -147,15 +147,15 @@ const HomePage = ({ activeMenu = "Home" }) => {
 
     const ParameterizationContent = () => (
         <div className="space-y-6">
-            <h1 className="text-3xl font-bold text-gray-800">Parametrización</h1>
-            <div className="bg-white p-6 rounded-lg shadow-md">
-                <h3 className="text-lg font-semibold mb-4">Configuración del Sistema</h3>
-                <p className="text-gray-600 mb-4">Gestiona los parámetros y configuraciones generales del sistema.</p>
+            <h1 className="text-3xl font-bold text-primary">Parametrización</h1>
+            <div className="card-theme">
+                <h3 className="text-lg font-semibold mb-4 text-primary">Configuración del Sistema</h3>
+                <p className="text-secondary mb-4">Gestiona los parámetros y configuraciones generales del sistema.</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <button className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600">
+                    <button className="btn-theme btn-warning">
                         Configuración General
                     </button>
-                    <button className="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600">
+                    <button className="btn-theme btn-secondary">
                         Parámetros Avanzados
                     </button>
                 </div>

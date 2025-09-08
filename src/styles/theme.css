@@ -5,6 +5,7 @@
   --color-primary: #000000;
   --color-secondary: #1f2937;
   --color-accent: #3b82f6;
+  --color-accent-hover: #2563eb;
   --color-background: #111827;
   --color-surface: #1f2937;
   --color-text: #ffffff;
@@ -12,7 +13,11 @@
   --color-border: #374151;
   --color-hover: #374151;
   --color-error: #ef4444;
+  --color-error-hover: #dc2626;
   --color-success: #10b981;
+  --color-success-hover: #059669;
+  --color-warning: #f59e0b;
+  --color-warning-hover: #d97706;
   /* Variables adicionales derivadas */
   --color-card: var(--color-surface);
   --color-input-bg: var(--color-background);
@@ -176,6 +181,39 @@
   color: white;
 }
 
+.btn-success {
+  background-color: var(--color-success);
+  color: white;
+  border-color: var(--color-success);
+}
+
+.btn-success:hover {
+  background-color: var(--color-success-hover);
+  border-color: var(--color-success-hover);
+}
+
+.btn-warning {
+  background-color: var(--color-warning);
+  color: white;
+  border-color: var(--color-warning);
+}
+
+.btn-warning:hover {
+  background-color: var(--color-warning-hover);
+  border-color: var(--color-warning-hover);
+}
+
+.btn-error {
+  background-color: var(--color-error);
+  color: white;
+  border-color: var(--color-error);
+}
+
+.btn-error:hover {
+  background-color: var(--color-error-hover);
+  border-color: var(--color-error-hover);
+}
+
 /* Cards */
 .card-theme {
   background-color: var(--color-surface);
@@ -230,6 +268,7 @@
   background-color: var(--color-surface);
   border-right: 1px solid var(--color-border);
   color: var(--color-text);
+  box-shadow: var(--shadow-md);
 }
 
 .nav-item-theme {
@@ -245,9 +284,26 @@
   color: var(--color-text);
 }
 
-.nav-item-theme.active {
+.nav-item-active {
   background-color: var(--color-accent);
   color: white;
+  font-weight: var(--font-weight-medium);
+}
+
+.nav-sub-item-theme {
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.nav-sub-item-theme:hover {
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
+}
+
+.nav-sub-item-active {
+  background-color: var(--color-surface-variant);
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
 }
 
 /* Header */
