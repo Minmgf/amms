@@ -13,18 +13,20 @@ const page = () => {
 
   useEffect(() => {
     if (!token) return; // token aún no está disponible
-    console.log("Token recibido:", token);
-
+    const controller = new AbortController();
+    
     const activate = async () => {
       try {
-        const data = await activateAccount(token);
-        console.log("Activación exitosa:", data);
-        setStatus("success");
-        setMessage(data.message || "Cuenta activada correctamente");
+        const data = await activateAccount(token, { signal: controller.signal });
+        if (!controller.signal.aborted) {
+          setStatus("success");
+          setMessage(data.message || "Cuenta activada correctamente");
+        }
       } catch (error) {
-        console.error("Error activando cuenta:", error);
-        setStatus("error");
-        setMessage(error.response.data.detail || "Error al activar la cuenta");
+        if (!controller.signal.aborted) {
+          setStatus("error");
+          setMessage(error.response.data.detail || "Error al activar la cuenta");
+        }
       }
     };
 
