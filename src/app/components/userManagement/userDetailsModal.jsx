@@ -116,7 +116,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
-    
+    console.log('Fecha formateada:', `${year}-${month}-${day}`);
     return `${year}-${month}-${day}`;
   }, []);
 
@@ -233,7 +233,9 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
   // Función para formatear fechas
   const formatDate = React.useCallback((dateString) => {
     if (!dateString) return 'No disponible';
-    const date = new Date(dateString);
+
+    const date = new Date(dateString + 'T00:00:00');
+
     return date.toLocaleDateString('es-ES', {
       year: 'numeric',
       month: 'long',
