@@ -13,7 +13,12 @@ import {
 import NavigationMenu from '../../../components/ParameterNavigation';
 import TypesModal from '../../../components/parametrization/TypesModal';
 import AddModifyTypesModal from '../../../components/parametrization/AddModifyTypesModal';
-import { getTypesCategories } from "@/services/typeCategoriesService";
+import { 
+  getTypesCategories, 
+  getTypesByCategory, 
+  createTypeItem, 
+  updateTypeItem 
+} from "@/services/parametrizationService";
 
 // Componente principal
 const ParameterizationView = () => {
@@ -23,21 +28,18 @@ const ParameterizationView = () => {
   const [data, setData] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
   
-  // Estados para TypesModal (lista de brands)
+  // Estados para TypesModal (lista de types por categoría)
   const [isTypesModalOpen, setIsTypesModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [typesData, setTypesData] = useState([]);
+  const [loadingTypes, setLoadingTypes] = useState(false);
   
-  // Estados para AddModifyTypesModal (agregar/editar brand)
+  // Estados para AddModifyTypesModal (agregar/editar type)
   const [isAddModifyTypesModalOpen, setIsAddModifyTypesModalOpen] = useState(false);
-  const [brandFormMode, setBrandFormMode] = useState('add'); // 'add' o 'edit'
-  const [selectedBrand, setSelectedBrand] = useState(null);
+  const [typeFormMode, setTypeFormMode] = useState('add');
+  const [selectedType, setSelectedType] = useState(null);
 
-  // Estados para AddModifyTypesModal (agregar/editar model)
-  const [isModelModalOpen, setIsModelModalOpen] = useState(false);
-  const [modelModalMode, setModelModalMode] = useState('add');
-  const [selectedModelData, setSelectedModelData] = useState(null);
-
-  // Función para obtener datos del backend
+  // Función para obtener categorías del backend
   const fetchData = async (menuItem = 'Types') => {
     setLoading(true);
     setError(null);
@@ -61,7 +63,7 @@ const ParameterizationView = () => {
           id: item.id || item.id_types_categories,
           name: item.name,
           description: item.description,
-          details: '' // Este campo se mantiene vacío como en el mock original
+          details: ''
         };
       });
       
@@ -84,6 +86,35 @@ const ParameterizationView = () => {
     }
   };
 
+  // Función para obtener types por categoría
+  const fetchTypesByCategory = async (categoryId) => {
+    setLoadingTypes(true);
+    try {
+      console.log('📞 MainView: Obteniendo types para categoría:', categoryId);
+      const response = await getTypesByCategory(categoryId);
+      
+      console.log('✅ MainView: Types obtenidos:', response);
+      
+      // Mapear los datos al formato esperado por el TypesModal
+      const mappedTypes = response.map(item => ({
+        id: item.id || item.id_types,
+        typeName: item.name,
+        description: item.description,
+        status: item.isActive ? 'Active' : 'Inactive',
+        isActive: item.isActive
+      }));
+      
+      setTypesData(mappedTypes);
+      console.log('🎨 MainView: Types mapeados:', mappedTypes);
+      
+    } catch (err) {
+      console.error('❌ MainView: Error al obtener types:', err);
+      setTypesData([]);
+    } finally {
+      setLoadingTypes(false);
+    }
+  };
+
   useEffect(() => {
     console.log('🎬 MainView: useEffect ejecutado - activeMenuItem changed:', activeMenuItem);
     fetchData(activeMenuItem);
@@ -97,11 +128,14 @@ const ParameterizationView = () => {
   // ==================== HANDLERS PARA TypesModal ====================
   
   // Abrir TypesModal (cuando se hace click en el ojo de la tabla principal)
-  const handleViewDetails = (categoryId) => {
+  const handleViewDetails = async (categoryId) => {
     const category = data.find(item => item.id === categoryId);
     if (category) {
       setSelectedCategory(category);
       setIsTypesModalOpen(true);
+      
+      // Cargar los types de esta categoría
+      await fetchTypesByCategory(categoryId);
     }
   };
 
@@ -109,136 +143,100 @@ const ParameterizationView = () => {
   const handleCloseTypesModal = () => {
     setIsTypesModalOpen(false);
     setSelectedCategory(null);
+    setTypesData([]);
   };
 
   // ==================== HANDLERS PARA AddModifyTypesModal ====================
   
-  // Abrir AddModifyTypesModal en modo ADD (desde botón "Add Brand" del TypesModal)
-  const handleAddBrand = () => {
-    setBrandFormMode('add');
-    setSelectedBrand(null);
+  // Abrir AddModifyTypesModal en modo ADD
+  const handleAddType = () => {
+    setTypeFormMode('add');
+    setSelectedType(null);
     setIsAddModifyTypesModalOpen(true);
   };
 
-  // Abrir AddModifyTypesModal en modo EDIT (desde botón "Edit" de la tabla del TypesModal)
-  const handleEditBrand = (brandId) => {
-    // Aquí normalmente harías una llamada a la API para obtener los datos del brand
-    // Por ahora uso datos mock basados en el brandId
-    const mockBrandData = {
-      id: brandId,
-      brandName: 'Carterpillar',
-      description: 'Example',
-      status: 'Active',
-      models: [
-        { id: 1, model: 'CAT1000', description: 'Example' },
-        { id: 2, model: 'CAT1000', description: 'Example' },
-        { id: 3, model: 'CAT1000', description: 'Example' }
-      ]
-    };
-    
-    setBrandFormMode('edit');
-    setSelectedBrand(mockBrandData);
-    setIsAddModifyTypesModalOpen(true);
+  // Abrir AddModifyTypesModal en modo EDIT
+  const handleEditType = (typeId) => {
+    const typeToEdit = typesData.find(type => type.id === typeId);
+    if (typeToEdit) {
+      setTypeFormMode('modify');
+      setSelectedType(typeToEdit);
+      setIsAddModifyTypesModalOpen(true);
+    }
   };
 
   // Cerrar AddModifyTypesModal
   const handleCloseAddModifyTypesModal = () => {
     setIsAddModifyTypesModalOpen(false);
-    setSelectedBrand(null);
-    setBrandFormMode('add');
+    setSelectedType(null);
+    setTypeFormMode('add');
   };
 
-  // Guardar nuevo brand
-  const handleSaveBrand = (brandData) => {
-    console.log('Saving new brand:', brandData);
-    // Aquí harías la llamada a tu API para guardar el nuevo brand
-    // Por ejemplo: await api.brands.create(brandData);
-    
-    // Cerrar el modal después de guardar exitosamente
-    handleCloseAddModifyTypesModal();
-    
-    // Opcionalmente, podrías actualizar la lista de brands en TypesModal
-    // o recargar los datos
-  };
-
-  // Actualizar brand existente
-  const handleUpdateBrand = (brandData) => {
-    console.log('Updating brand:', brandData);
-    // Aquí harías la llamada a tu API para actualizar el brand
-    // Por ejemplo: await api.brands.update(brandData.id, brandData);
-    
-    // Cerrar el modal después de actualizar exitosamente
-    handleCloseAddModifyTypesModal();
-    
-    // Opcionalmente, podrías actualizar la lista de brands en TypesModal
-  };
-
-  // ==================== HANDLERS PARA AddModifyTypesModal ====================
-  
-  // Abrir AddModifyTypesModal en modo ADD (desde botón "Add model" del AddModifyTypesModal)
-  const handleAddModel = () => {
-    setModelModalMode('add');
-    setSelectedModelData(null);
-    setIsModelModalOpen(true);
-  };
-
-  // Abrir AddModifyTypesModal en modo EDIT (desde botón "Edit" de la tabla del AddModifyTypesModal)
-  const handleEditModel = (modelId) => {
-    // Buscar el modelo en los datos del brand seleccionado
-    const model = selectedBrand?.models?.find(m => m.id === modelId);
-    if (model) {
-      setModelModalMode('edit');
-      setSelectedModelData(model);
-      setIsModelModalOpen(true);
+  // Guardar/Actualizar type
+  const handleSaveType = async (typeData) => {
+    try {
+      console.log('💾 MainView: Guardando type data:', typeData);
+      
+      if (typeFormMode === 'add') {
+        // Crear nuevo type
+        const payload = {
+          name: typeData.typeName,
+          description: typeData.description,
+          isActive: typeData.isActive,
+          id_types_categories: selectedCategory.id
+        };
+        
+        console.log('📤 MainView: Creando type con payload:', payload);
+        const newType = await createTypeItem(payload);
+        console.log('✅ MainView: Type creado exitosamente:', newType);
+        
+        // Actualizar la lista local
+        const mappedNewType = {
+          id: newType.id,
+          typeName: newType.name,
+          description: newType.description,
+          status: newType.isActive ? 'Active' : 'Inactive',
+          isActive: newType.isActive
+        };
+        
+        setTypesData(prev => [...prev, mappedNewType]);
+        
+      } else {
+        // Actualizar type existente
+        const payload = {
+          name: typeData.typeName,
+          description: typeData.description,
+          isActive: typeData.isActive
+        };
+        
+        console.log('📤 MainView: Actualizando type ID:', selectedType.id, 'con payload:', payload);
+        const updatedType = await updateTypeItem(selectedType.id, payload);
+        console.log('✅ MainView: Type actualizado exitosamente:', updatedType);
+        
+        // Actualizar la lista local
+        const mappedUpdatedType = {
+          id: updatedType.id,
+          typeName: updatedType.name,
+          description: updatedType.description,
+          status: updatedType.isActive ? 'Active' : 'Inactive',
+          isActive: updatedType.isActive
+        };
+        
+        setTypesData(prev => 
+          prev.map(type => 
+            type.id === selectedType.id ? mappedUpdatedType : type
+          )
+        );
+      }
+      
+      // Cerrar el modal
+      handleCloseAddModifyTypesModal();
+      
+    } catch (err) {
+      console.error('❌ MainView: Error al guardar type:', err);
+      // Aquí podrías mostrar un mensaje de error al usuario
+      setError(`Error al ${typeFormMode === 'add' ? 'crear' : 'actualizar'} el tipo: ${err.message}`);
     }
-  };
-
-  // Cerrar AddModifyTypesModal
-  const handleModelModalClose = () => {
-    setIsModelModalOpen(false);
-    setSelectedModelData(null);
-    setModelModalMode('add');
-  };
-
-  // Guardar nuevo model
-  const handleModelSave = (modelData) => {
-    console.log('Saving new model:', modelData);
-    // Aquí harías la llamada a tu API para guardar el nuevo model
-    // Por ejemplo: await api.models.create(modelData);
-    
-    // Actualizar la lista de modelos en el brand actual
-    if (selectedBrand) {
-      const updatedBrand = {
-        ...selectedBrand,
-        models: [...(selectedBrand.models || []), modelData]
-      };
-      setSelectedBrand(updatedBrand);
-    }
-    
-    // Cerrar el modal después de guardar exitosamente
-    handleModelModalClose();
-  };
-
-  // Actualizar model existente
-  const handleModelUpdate = (modelData) => {
-    console.log('Updating model:', modelData);
-    // Aquí harías la llamada a tu API para actualizar el model
-    // Por ejemplo: await api.models.update(modelData.id, modelData);
-    
-    // Actualizar la lista de modelos en el brand actual
-    if (selectedBrand) {
-      const updatedModels = selectedBrand.models.map(model => 
-        model.id === modelData.id ? modelData : model
-      );
-      const updatedBrand = {
-        ...selectedBrand,
-        models: updatedModels
-      };
-      setSelectedBrand(updatedBrand);
-    }
-    
-    // Cerrar el modal después de actualizar exitosamente
-    handleModelModalClose();
   };
 
   // ==================== TABLA PRINCIPAL ====================
@@ -276,7 +274,7 @@ const ParameterizationView = () => {
         ),
       }),
     ],
-    [handleViewDetails]
+    [data] // Cambiado la dependencia para evitar recrear innecesariamente
   );
 
   const table = useReactTable({
@@ -321,15 +319,24 @@ const ParameterizationView = () => {
           />
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-red-600 text-sm">{error}</p>
+            <button 
+              onClick={() => setError(null)}
+              className="mt-2 text-red-600 hover:text-red-700 text-sm underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {/* Table */}
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-6 md:mb-8">
           {loading ? (
             <div className="p-8 text-center text-gray-500">
               Loading...
-            </div>
-          ) : error ? (
-            <div className="p-8 text-center text-red-500">
-              Error: {error}
             </div>
           ) : (
             <>
@@ -513,36 +520,25 @@ const ParameterizationView = () => {
         </div>
       </div>
       
-      {/* TypesModal - Modal de lista de brands */}
+      {/* TypesModal - Modal de lista de types por categoría */}
       <TypesModal
         isOpen={isTypesModalOpen}
         onClose={handleCloseTypesModal}
         categoryName={selectedCategory?.name || ''}
-        data={[]} // Aquí pasarías la lista de brands de la categoría seleccionada
-        onAddItem={handleAddBrand} // Se ejecuta cuando se presiona "Add Brand"
-        onEditItem={handleEditBrand} // Se ejecuta cuando se presiona "Edit" en la tabla
+        data={typesData}
+        loading={loadingTypes}
+        onAddItem={handleAddType}
+        onEditItem={handleEditType}
       />
 
+      {/* AddModifyTypesModal - Modal para agregar/editar types */}
       <AddModifyTypesModal
         isOpen={isAddModifyTypesModalOpen}
         onClose={handleCloseAddModifyTypesModal}
-        mode={brandFormMode} // 'add' o 'edit'
-        categoryName={selectedCategory?.name || ''}
-        brandData={selectedBrand} // Datos del brand en modo edición
-        onSave={handleSaveBrand} // Se ejecuta al guardar nuevo brand
-        onUpdate={handleUpdateBrand} // Se ejecuta al actualizar brand existente
-        onAddModel={handleAddModel} // Se ejecuta cuando se presiona "Add model"
-        onEditModel={handleEditModel} // Se ejecuta cuando se presiona "Edit" en la tabla de modelos
-      />
-
-      <AddModifyTypesModal
-        isOpen={isModelModalOpen}
-        onClose={handleModelModalClose}
-        mode={modelModalMode} // 'add' o 'edit'
-        brandName={selectedBrand?.brandName || ''}
-        modelData={selectedModelData} // Datos del model en modo edición
-        onSave={handleModelSave} // Se ejecuta al guardar nuevo model
-        onUpdate={handleModelUpdate} // Se ejecuta al actualizar model existente
+        mode={typeFormMode}
+        status={selectedType}
+        category={selectedCategory?.name || ''}
+        onSave={handleSaveType}
       />
     </div>
   );

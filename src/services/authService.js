@@ -1,28 +1,31 @@
 import Cookies from "js-cookie";
 import { apiUsers } from "@/lib/axios";
 
-// Función helper para obtener el token desde localStorage o sessionStorage
+// Helper para obtener el token desde localStorage o sessionStorage
 const getAuthToken = () => {
-    // Primero intentar localStorage
-    let token = localStorage.getItem('token');
-    
-    // Si no está en localStorage, intentar sessionStorage
+    let token = localStorage.getItem("token");
     if (!token) {
-        token = sessionStorage.getItem('token');
+        token = sessionStorage.getItem("token");
     }
-    
     return token;
 };
 
-export const login = async (payload) => {
+export const login = async (payload, rememberMe = false) => {
     const { data } = await apiUsers.post("/auth/login/", payload);
-    // guardar token en cookie (expira en 1 hora por ejemplo)
-    Cookies.set("token", data.access_token, { expires: 12 / 24 });
 
-    // opcional: también en localStorage
-    localStorage.setItem("token", data.access_token);
-    console.log(getAuthToken());
-    console.log(Cookies.get("token"));
+    // Guardar siempre en cookie (ejemplo: expira en 1 hora)
+    Cookies.set("token", data.access_token, { expires: 1 / 24 });
+
+    if (rememberMe) {
+        localStorage.setItem("token", data.access_token);
+    } else {
+        sessionStorage.setItem("token", data.access_token);
+    }
+
+    console.log("Token desde helper:", getAuthToken());
+    console.log("Token desde cookie:", Cookies.get("token"));
+};
+
     return data;
 };
 
