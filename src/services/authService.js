@@ -26,9 +26,6 @@ export const login = async (payload, rememberMe = false) => {
     console.log("Token desde cookie:", Cookies.get("token"));
 };
 
-    return data;
-};
-
 export const logout = async () => {
     const { data } = await apiUsers.post("/auth/logout");
     Cookies.remove("token");
