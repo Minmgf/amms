@@ -12,7 +12,8 @@ import {
 } from '@tanstack/react-table';
 import NavigationMenu from '../../../components/ParameterNavigation';
 import TypesModal from '../../../components/parametrization/TypesModal';
-import AddModifyTypesModal from '../../../components/parametrization/AddModifyTypesModal'; 
+import AddModifyTypesModal from '../../../components/parametrization/AddModifyTypesModal';
+import { getTypesCategories } from "@/services/typeCategoriesService";
 
 // Componente principal
 const ParameterizationView = () => {
@@ -36,51 +37,60 @@ const ParameterizationView = () => {
   const [modelModalMode, setModelModalMode] = useState('add');
   const [selectedModelData, setSelectedModelData] = useState(null);
 
-  // Datos de ejemplo ajustados al mockup
-  const mockData = [
-    { id: 1, name: 'Tipos de mantenimiento', description: 'Módulo de maquinaria', details: '' },
-    { id: 2, name: 'Tipos de mantenimiento', description: 'Módulo de maquinaria', details: '' },
-    { id: 3, name: 'Tipos de mantenimiento', description: 'Módulo de maquinaria', details: '' },
-    { id: 4, name: 'Preventive Maintenance', description: 'Mantenimiento preventivo programado', details: '' },
-    { id: 5, name: 'Corrective Maintenance', description: 'Mantenimiento correctivo de emergencia', details: '' },
-    { id: 6, name: 'Predictive Maintenance', description: 'Mantenimiento basado en condición', details: '' },
-    { id: 7, name: 'Routine Inspection', description: 'Inspección rutinaria diaria', details: '' },
-    { id: 8, name: 'Overhaul', description: 'Revisión general completa', details: '' },
-    { id: 9, name: 'Calibration', description: 'Calibración de instrumentos', details: '' },
-    { id: 10, name: 'Lubrication', description: 'Servicio de lubricación', details: '' },
-    { id: 11, name: 'Cleaning', description: 'Limpieza y mantenimiento básico', details: '' },
-    { id: 12, name: 'Replacement', description: 'Reemplazo de componentes', details: '' },
-    { id: 13, name: 'Adjustment', description: 'Ajustes y configuración', details: '' },
-    { id: 14, name: 'Testing', description: 'Pruebas de funcionamiento', details: '' },
-    { id: 15, name: 'Emergency Repair', description: 'Reparación de emergencia', details: '' },
-    { id: 16, name: 'Seasonal Maintenance', description: 'Mantenimiento estacional', details: '' },
-    { id: 17, name: 'Safety Check', description: 'Verificación de seguridad', details: '' },
-    { id: 18, name: 'Performance Check', description: 'Verificación de rendimiento', details: '' },
-    { id: 19, name: 'Parts Inventory', description: 'Inventario de repuestos', details: '' },
-    { id: 20, name: 'Documentation', description: 'Documentación y registros', details: '' }
-  ];
-
   // Función para obtener datos del backend
   const fetchData = async (menuItem = 'Types') => {
     setLoading(true);
     setError(null);
     
+    console.log('🔄 MainView: Iniciando carga de datos...');
+    console.log('🎯 MainView: Menu seleccionado:', menuItem);
+    
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setData(mockData);
+      console.log('📞 MainView: Llamando a getTypesCategories...');
+      const response = await getTypesCategories();
+      
+      console.log('✅ MainView: Respuesta recibida del servicio:');
+      console.log('📊 MainView: Datos completos:', response);
+      console.log('📈 MainView: Cantidad de registros:', Array.isArray(response) ? response.length : 'No es array');
+      console.log('🔍 MainView: Primer elemento:', response?.[0]);
+      
+      // Mapear los datos del backend al formato esperado por la vista
+      const mappedData = response.map((item, index) => {
+        console.log(`🔄 MainView: Mapeando item ${index + 1}:`, item);
+        return {
+          id: item.id || item.id_types_categories,
+          name: item.name,
+          description: item.description,
+          details: '' // Este campo se mantiene vacío como en el mock original
+        };
+      });
+      
+      console.log('🎨 MainView: Datos mapeados para la vista:');
+      console.log('📋 MainView: mappedData:', mappedData);
+      
+      setData(mappedData);
+      console.log('✅ MainView: Datos establecidos en el estado exitosamente');
+      
     } catch (err) {
-      setError(err.message);
+      console.error('❌ MainView: Error completo:', err);
+      console.error('📨 MainView: Error response:', err.response);
+      console.error('⚠️ MainView: Error message:', err.message);
+      
+      setError(err.message || 'Error al cargar los datos');
       setData([]);
     } finally {
       setLoading(false);
+      console.log('🏁 MainView: Proceso de carga finalizado');
     }
   };
 
   useEffect(() => {
+    console.log('🎬 MainView: useEffect ejecutado - activeMenuItem changed:', activeMenuItem);
     fetchData(activeMenuItem);
   }, [activeMenuItem]);
 
   const handleMenuItemChange = (item) => {
+    console.log('🔄 MainView: Cambiando menu item de', activeMenuItem, 'a', item);
     setActiveMenuItem(item);
   };
 
@@ -513,7 +523,6 @@ const ParameterizationView = () => {
         onEditItem={handleEditBrand} // Se ejecuta cuando se presiona "Edit" en la tabla
       />
 
-      {/* AddModifyTypesModal - Modal para agregar/editar brand */}
       <AddModifyTypesModal
         isOpen={isAddModifyTypesModalOpen}
         onClose={handleCloseAddModifyTypesModal}
@@ -526,7 +535,6 @@ const ParameterizationView = () => {
         onEditModel={handleEditModel} // Se ejecuta cuando se presiona "Edit" en la tabla de modelos
       />
 
-      {/* AddModifyTypesModal - Modal para agregar/editar model */}
       <AddModifyTypesModal
         isOpen={isModelModalOpen}
         onClose={handleModelModalClose}

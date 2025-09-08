@@ -1,0 +1,353 @@
+/* CSS Variables para el Sistema de Temas Global */
+
+:root {
+  /* Colores por defecto (serán sobrescritos por el ThemeProvider) */
+  --color-primary: #000000;
+  --color-secondary: #1f2937;
+  --color-accent: #3b82f6;
+  --color-background: #111827;
+  --color-surface: #1f2937;
+  --color-text: #ffffff;
+  --color-text-secondary: #d1d5db;
+  --color-border: #374151;
+  --color-hover: #374151;
+  --color-error: #ef4444;
+  --color-success: #10b981;
+  /* Variables adicionales derivadas */
+  --color-card: var(--color-surface);
+  --color-input-bg: var(--color-background);
+  --color-modal-bg: var(--color-surface);
+
+  /* Tipografía */
+  --font-family: 'Inter, system-ui, -apple-system, sans-serif';
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Espaciado */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+
+  /* Border Radius */
+  --border-radius-sm: 0.25rem;
+  --border-radius-md: 0.5rem;
+  --border-radius-lg: 0.75rem;
+  --border-radius-xl: 1rem;
+
+  /* Transiciones */
+  --transition-fast: 0.15s ease-in-out;
+  --transition-normal: 0.3s ease-in-out;
+  --transition-slow: 0.5s ease-in-out;
+
+  /* Sombras */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+/* Clases utilitarias que usan las variables CSS */
+
+/* Colores de fondo */
+.bg-primary { background-color: var(--color-primary); }
+.bg-secondary { background-color: var(--color-secondary); }
+.bg-accent { background-color: var(--color-accent); }
+.bg-background { background-color: var(--color-background); }
+.bg-surface { background-color: var(--color-surface); }
+.bg-hover { background-color: var(--color-hover); }
+.bg-error { background-color: var(--color-error); }
+.bg-success { background-color: var(--color-success); }
+.bg-warning { background-color: var(--color-warning); }
+
+/* Colores de texto */
+.text-primary { color: var(--color-text); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-accent { color: var(--color-accent); }
+.text-error { color: var(--color-error); }
+.text-success { color: var(--color-success); }
+.text-warning { color: var(--color-warning); }
+
+/* Bordes */
+.border-primary { border-color: var(--color-border); }
+.border-accent { border-color: var(--color-accent); }
+.border-error { border-color: var(--color-error); }
+.border-success { border-color: var(--color-success); }
+.border-warning { border-color: var(--color-warning); }
+
+/* Border Radius */
+.rounded-theme-sm { border-radius: var(--border-radius-sm); }
+.rounded-theme-md { border-radius: var(--border-radius-md); }
+.rounded-theme-lg { border-radius: var(--border-radius-lg); }
+.rounded-theme-xl { border-radius: var(--border-radius-xl); }
+
+/* Tipografía */
+.font-theme { font-family: var(--font-family); }
+.text-theme-xs { font-size: var(--font-size-xs); }
+.text-theme-sm { font-size: var(--font-size-sm); }
+.text-theme-base { font-size: var(--font-size-base); }
+.text-theme-lg { font-size: var(--font-size-lg); }
+.text-theme-xl { font-size: var(--font-size-xl); }
+.text-theme-2xl { font-size: var(--font-size-2xl); }
+.text-theme-3xl { font-size: var(--font-size-3xl); }
+
+.font-theme-normal { font-weight: var(--font-weight-normal); }
+.font-theme-medium { font-weight: var(--font-weight-medium); }
+.font-theme-semibold { font-weight: var(--font-weight-semibold); }
+.font-theme-bold { font-weight: var(--font-weight-bold); }
+
+/* Espaciado */
+.p-theme-xs { padding: var(--spacing-xs); }
+.p-theme-sm { padding: var(--spacing-sm); }
+.p-theme-md { padding: var(--spacing-md); }
+.p-theme-lg { padding: var(--spacing-lg); }
+.p-theme-xl { padding: var(--spacing-xl); }
+.p-theme-2xl { padding: var(--spacing-2xl); }
+
+.m-theme-xs { margin: var(--spacing-xs); }
+.m-theme-sm { margin: var(--spacing-sm); }
+.m-theme-md { margin: var(--spacing-md); }
+.m-theme-lg { margin: var(--spacing-lg); }
+.m-theme-xl { margin: var(--spacing-xl); }
+.m-theme-2xl { margin: var(--spacing-2xl); }
+
+/* Componentes base */
+.btn-theme {
+  font-family: var(--font-family);
+  font-weight: var(--font-weight-medium);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  transition: all var(--transition-fast);
+  border: 1px solid transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.btn-theme:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-theme:active {
+  transform: translateY(0);
+}
+
+.btn-primary {
+  background-color: var(--color-accent);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary);
+}
+
+.btn-secondary {
+  background-color: var(--color-secondary);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-hover);
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.btn-outline:hover {
+  background-color: var(--color-accent);
+  color: white;
+}
+
+/* Cards */
+.card-theme {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-lg);
+  transition: all var(--transition-normal);
+}
+
+.card-theme:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* Cards secundarias */
+.card-secondary {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-lg);
+  transition: all var(--transition-normal);
+}
+
+/* Inputs */
+.input-theme {
+  font-family: var(--font-family);
+  background-color: var(--color-background);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  transition: all var(--transition-fast);
+  width: 100%;
+}
+
+.input-theme:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
+}
+
+.input-theme::placeholder {
+  color: var(--color-text-secondary);
+}
+
+/* Sidebar y Navigation */
+.sidebar-theme {
+  background-color: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.nav-item-theme {
+  color: var(--color-text-secondary);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.nav-item-theme:hover {
+  background-color: var(--color-hover);
+  color: var(--color-text);
+}
+
+.nav-item-theme.active {
+  background-color: var(--color-accent);
+  color: white;
+}
+
+/* Header */
+.header-theme {
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+/* Tables */
+.table-theme {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+}
+
+.table-theme th {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--spacing-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.table-theme td {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.table-theme tr:hover {
+  background-color: var(--color-hover);
+}
+
+/* Modals */
+.modal-theme {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--shadow-xl);
+}
+
+/* Estados */
+.success-theme {
+  background-color: var(--color-success);
+  color: white;
+}
+
+.error-theme {
+  background-color: var(--color-error);
+  color: white;
+}
+
+.warning-theme {
+  background-color: var(--color-warning);
+  color: white;
+}
+
+/* Transiciones globales */
+* {
+  transition: background-color var(--transition-fast), 
+              color var(--transition-fast), 
+              border-color var(--transition-fast);
+}
+
+/* Scrollbars temáticos */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--border-radius-md);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
+}
+
+/* Selección de texto */
+::selection {
+  background-color: var(--color-accent);
+  color: white;
+}
+
+/* Responsive helpers */
+@media (max-width: 768px) {
+  .card-theme {
+    padding: var(--spacing-md);
+  }
+  
+  .btn-theme {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-sm);
+  }
+}

@@ -10,6 +10,7 @@ import {
   SuccessModal,
   ErrorModal,
 } from "@/app/components/shared/SuccessErrorModal";
+import { useRouter } from "next/navigation";
 
 const Page = () => {
   const {
@@ -26,7 +27,7 @@ const Page = () => {
   const [errorOpen, setErrorOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const [loading, setLoading] = useState(false);
-
+  const router = useRouter();
   const validations = {
     upper: /[A-Z]/.test(password),
     lower: /[a-z]/.test(password),
@@ -54,6 +55,10 @@ const Page = () => {
       setSuccessOpen(true);
       localStorage.removeItem("validationToken");
       reset();
+      setTimeout(() => {
+        setSuccessOpen(false);
+        router.push("/login");
+      }, 2000);
     } catch (error) {
       const message =
         error.response?.data?.detail ||
