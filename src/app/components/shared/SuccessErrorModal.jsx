@@ -82,9 +82,22 @@ const SuccessModal = ({ isOpen, onClose, title = "Success", message = "Lorem ips
               console.log('Success button clicked'); // Debug
               onClose();
             }}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
             className="btn-theme btn-primary w-full relative"
             type="button"
-            style={{ zIndex: 10001, position: 'relative' }}
+            style={{ 
+              zIndex: 10001, 
+              position: 'relative',
+              pointerEvents: 'auto',
+              cursor: 'pointer'
+            }}
           >
             Continue
           </button>
@@ -96,6 +109,29 @@ const SuccessModal = ({ isOpen, onClose, title = "Success", message = "Lorem ips
 
 // Modal de Error
 const ErrorModal = ({ isOpen, onClose, title = "Error", message = "Lorem ipsum dolor sit amet, consectetur adipiscing elit." }) => {
+  
+  useEffect(() => {
+    if (isOpen) {
+      // Prevenir scroll del body
+      document.body.style.overflow = 'hidden';
+      document.body.style.pointerEvents = 'none';
+      
+      // Permitir pointer events solo en el modal
+      const modalElement = document.querySelector('[data-modal="error"]');
+      if (modalElement) {
+        modalElement.style.pointerEvents = 'auto';
+      }
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.pointerEvents = '';
+    }
+    
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.pointerEvents = '';
+    };
+  }, [isOpen]);
+  
   if (!isOpen) return null;
 
   const handleOverlayClick = (e) => {
@@ -115,12 +151,20 @@ const ErrorModal = ({ isOpen, onClose, title = "Error", message = "Lorem ipsum d
     <div 
       className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4"
       onClick={handleOverlayClick}
-      style={{ zIndex: 9999 }}
+      data-modal="error"
+      style={{ 
+        zIndex: 9999,
+        pointerEvents: 'auto',
+        userSelect: 'none'
+      }}
     >
       <div 
         className="modal-theme w-full max-w-sm" 
         onClick={handleModalClick}
-        style={{ zIndex: 10000 }}
+        style={{ 
+          zIndex: 10000,
+          pointerEvents: 'auto'
+        }}
       >
         <div className="p-6 text-center">
           {/* Icono de error */}
@@ -144,9 +188,22 @@ const ErrorModal = ({ isOpen, onClose, title = "Error", message = "Lorem ipsum d
               console.log('Error button clicked'); // Debug
               onClose();
             }}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
             className="btn-theme btn-error w-full relative"
             type="button"
-            style={{ zIndex: 10001, position: 'relative' }}
+            style={{ 
+              zIndex: 10001, 
+              position: 'relative',
+              pointerEvents: 'auto',
+              cursor: 'pointer'
+            }}
           >
             Try again
           </button>
@@ -200,9 +257,18 @@ const ConfirmModal = ({
             console.log('Close button clicked'); // Debug
             onClose();
           }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
           className="absolute top-3 right-3 text-secondary hover:text-primary"
           type="button"
-          style={{ zIndex: 10001, position: 'relative' }}
+          style={{ 
+            zIndex: 10001, 
+            position: 'absolute',
+            pointerEvents: 'auto',
+            cursor: 'pointer'
+          }}
         >
           <AiOutlineClose className="w-5 h-5" />
         </button>
@@ -220,9 +286,18 @@ const ConfirmModal = ({
                 console.log('Cancel button clicked'); // Debug
                 onClose();
               }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
               className={`btn-theme ${cancelColor} w-1/2 relative`}
               type="button"
-              style={{ zIndex: 10001, position: 'relative' }}
+              style={{ 
+                zIndex: 10001, 
+                position: 'relative',
+                pointerEvents: 'auto',
+                cursor: 'pointer'
+              }}
             >
               {cancelText}
             </button>
@@ -233,9 +308,18 @@ const ConfirmModal = ({
                 console.log('Confirm button clicked'); // Debug
                 onConfirm();
               }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
               className={`btn-theme ${confirmColor} w-1/2 relative`}
               type="button"
-              style={{ zIndex: 10001, position: 'relative' }}
+              style={{ 
+                zIndex: 10001, 
+                position: 'relative',
+                pointerEvents: 'auto',
+                cursor: 'pointer'
+              }}
             >
               {confirmText}
             </button>

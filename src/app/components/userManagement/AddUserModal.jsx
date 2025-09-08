@@ -144,8 +144,8 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
         setShowSuccessModal(true);
         // El modal de éxito se cerrará automáticamente y llamará onSuccessClose
       } else {
-        setError(response.message || 'Error al crear el usuario');
-        setModalMessage(response.message || 'Error al crear el usuario');
+        setError(response.message || ' ');
+        setModalMessage(response.message || ' ');
         setShowErrorModal(true);
       }
     } catch (err) {
@@ -160,12 +160,28 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
         errorMessage = 'Error de autenticación: Token no válido. Por favor, inicie sesión nuevamente.';
       } else if (err.response?.status === 401) {
         errorMessage = 'Error de autenticación: Credenciales inválidas. Por favor, inicie sesión nuevamente.';
-      } else if (err.response?.data?.message) {
-        errorMessage = 'Error al crear el usuario: ' + err.response.data.message;
       } else if (err.response?.data?.detail) {
-        errorMessage = 'Error al crear el usuario: ' + err.response.data.detail;
+        // Extraer solo el mensaje específico del detail
+        const detail = err.response.data.detail;
+        if (typeof detail === 'string') {
+          // Si el detail contiene información sobre documento duplicado
+          if (detail.includes('ya está registrado')) {
+            const match = detail.match(/documento '(\d+)' ya está registrado/);
+            if (match) {
+              errorMessage = `El número de documento ${match[1]} ya está registrado por otro usuario.`;
+            } else {
+              errorMessage = detail;
+            }
+          } else {
+            errorMessage = detail;
+          }
+        } else {
+          errorMessage = 'Error al crear el usuario';
+        }
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
       } else {
-        errorMessage = 'Error al crear el usuario: ' + err.message;
+        errorMessage = err.message || 'Error al crear el usuario';
       }
       
       setError(errorMessage);
@@ -218,8 +234,8 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
   return (
     <Dialog.Root open={isOpen} onOpenChange={onClose}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-20" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl z-50 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[40]" />
+        <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl z-[50] w-full max-w-2xl max-h-[90vh] overflow-y-auto">
           {/* DialogTitle para accesibilidad */}
           <Dialog.Title className="sr-only">
             Crear Nuevo Usuario
