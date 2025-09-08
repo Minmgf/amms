@@ -7,43 +7,15 @@ const TypesModal = ({
   onClose, 
   categoryName, 
   data = [], 
+  loading = false,
   onAddItem, 
   onEditItem 
 }) => {
   const [modalData, setModalData] = useState([]);
 
-  // Mock data actualizado para el ejemplo basado en el mockup
-  const mockTypesData = [
-    { 
-      id: 1, 
-      typeName: 'Corrective', 
-      description: 'Example', 
-      status: 'Active' 
-    },
-    { 
-      id: 2, 
-      typeName: 'Corrective', 
-      description: 'Example', 
-      status: 'Inactive' 
-    },
-    { 
-      id: 3, 
-      typeName: 'Preventive', 
-      description: 'Example', 
-      status: 'Active' 
-    },
-    { 
-      id: 4, 
-      typeName: 'Predictive', 
-      description: 'Example', 
-      status: 'Active' 
-    }
-  ];
-
   useEffect(() => {
     if (isOpen) {
-      // Si se pasan datos, usar esos, sino usar mock data
-      setModalData(data.length > 0 ? data : mockTypesData);
+      setModalData(data);
       // Bloquear scroll del body
       document.body.style.overflow = 'hidden';
     } else {
@@ -139,36 +111,50 @@ const TypesModal = ({
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {modalData.map((item, index) => (
-                    <tr key={item.id || index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm text-gray-900 border-r border-gray-200">
-                        {item.typeName || item.name}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 border-r border-gray-200">
-                        {item.description}
-                      </td>
-                      <td className="px-6 py-4 text-sm border-r border-gray-200">
-                        <span 
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                            item.status === 'Active' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-pink-100 text-pink-800'
-                          }`}
-                        >
-                          {item.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <button
-                          onClick={() => handleEdit(item.id)}
-                          className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-md transition-colors"
-                        >
-                          <FiEdit3 className="w-3 h-3 mr-1.5" />
-                          Edit
-                        </button>
+                  {loading ? (
+                    <tr>
+                      <td colSpan="4" className="px-6 py-8 text-center text-gray-500">
+                        Loading...
                       </td>
                     </tr>
-                  ))}
+                  ) : modalData.length === 0 ? (
+                    <tr>
+                      <td colSpan="4" className="px-6 py-8 text-center text-gray-500">
+                        No data available
+                      </td>
+                    </tr>
+                  ) : (
+                    modalData.map((item, index) => (
+                      <tr key={item.id || index} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 text-sm text-gray-900 border-r border-gray-200">
+                          {item.typeName || item.name}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600 border-r border-gray-200">
+                          {item.description}
+                        </td>
+                        <td className="px-6 py-4 text-sm border-r border-gray-200">
+                          <span 
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                              item.status === 'Active' 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-pink-100 text-pink-800'
+                            }`}
+                          >
+                            {item.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                                                    <button
+                            onClick={() => handleEdit(item.id)}
+                            className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-md transition-colors"
+                          >
+                            <FiEdit3 className="w-3 h-3 mr-1.5" />
+                            Edit
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
