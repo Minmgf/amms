@@ -1,8 +1,12 @@
 # Dockerfile para Next.js 15.5.0 - Optimizado para Dockploy
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
 # Instalar dependencias del sistema necesarias para lightningcss
-RUN apk add --no-cache libc6-compat python3 make g++
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -26,13 +30,13 @@ ENV NODE_ENV=production
 RUN npm run build
 
 # Imagen de producción
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 
 WORKDIR /app
 
 # Crear usuario no-root
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+RUN groupadd --gid 1001 nodejs && \
+    useradd --uid 1001 --gid nodejs --shell /bin/bash --create-home nextjs
 
 # Copiar archivos necesarios desde builder
 COPY --from=builder /app/public ./public
