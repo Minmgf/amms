@@ -53,7 +53,7 @@ const Page = () => {
       }, 3000);
 
     } catch (error) {
-      setModalMessage(error.response.data.detail);
+      setModalMessage(error.response.data.detail || "Error al validar documento");
       setErrorOpen(true);
     }
   };
