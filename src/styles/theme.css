@@ -2,16 +2,16 @@
 
 :root {
   /* Colores por defecto (serán sobrescritos por el ThemeProvider) */
-  --color-primary: #000000;
-  --color-secondary: #1f2937;
+  --color-primary: #ffffff;
+  --color-secondary: #f8fafc;
   --color-accent: #3b82f6;
   --color-accent-hover: #2563eb;
-  --color-background: #111827;
-  --color-surface: #1f2937;
-  --color-text: #ffffff;
-  --color-text-secondary: #d1d5db;
-  --color-border: #374151;
-  --color-hover: #374151;
+  --color-background: #ffffff;
+  --color-surface: #f8fafc;
+  --color-text: #1f2937;
+  --color-text-secondary: #e9ece5; /*Colores de texto del sidebar */
+  --color-border: #e5e7eb;
+  --color-hover: #f3f4f6;
   --color-error: #ef4444;
   --color-error-hover: #dc2626;
   --color-success: #10b981;

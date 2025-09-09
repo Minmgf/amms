@@ -42,36 +42,19 @@ export const useTheming = () => {
     return styles;
   };
 
-  // Verificar si es un tema oscuro
+  // Verificar si es un tema oscuro (siempre false ahora que solo tenemos tema claro)
   const isDarkTheme = () => {
-    const theme = getCurrentTheme();
-    // Considerar oscuro si el fondo es más oscuro que el texto
-    const bg = theme?.colors?.background || '#ffffff';
-    const text = theme?.colors?.text || '#000000';
-    
-    // Convertir hex a RGB y calcular luminancia
-    const getLuminance = (hex) => {
-      const rgb = parseInt(hex.slice(1), 16);
-      const r = (rgb >> 16) & 0xff;
-      const g = (rgb >> 8) & 0xff;
-      const b = (rgb >> 0) & 0xff;
-      return 0.299 * r + 0.587 * g + 0.114 * b;
-    };
-    
-    return getLuminance(bg) < getLuminance(text);
+    return false;
   };
 
   // Obtener color contrastante
   const getContrastColor = (backgroundColor) => {
     const theme = getCurrentTheme();
-    const isDark = isDarkTheme();
     
-    // Si el fondo es claro, devolver color oscuro y viceversa
+    // Si el fondo es claro, devolver color oscuro
     return backgroundColor === theme?.colors?.background 
       ? theme?.colors?.text 
-      : isDark 
-        ? '#ffffff' 
-        : '#000000';
+      : '#000000';
   };
 
   // Aplicar tema a un elemento específico

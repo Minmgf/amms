@@ -4,7 +4,7 @@ import { FaArrowLeft, FaUser, FaIdCard, FaEnvelope, FaPhone, FaMapMarkerAlt, FaC
 import * as Dialog from '@radix-ui/react-dialog';
 import Select from 'react-select';
 import { getDocumentTypes, getGenderTypes, getRoleTypes, editUser, changeUserStatus } from '../../../services/authService';
-import { SuccessModal, ErrorModal, ConfirmModal } from '../shared/SuccessErrorModal';
+import { SuccessModal, ErrorModal } from '../shared/SuccessErrorModal';
 
 // Función helper para obtener el token desde localStorage o sessionStorage
 const getAuthToken = () => {
@@ -33,6 +33,12 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const [pendingStatusChange, setPendingStatusChange] = useState(null);
+  
+  // Estados para el modal interno de cambio de estado
+  const [showStatusChangeModal, setShowStatusChangeModal] = useState(false);
+  const [statusChangeMessage, setStatusChangeMessage] = useState('');
+  const [statusChangeSuccess, setStatusChangeSuccess] = useState(false);
+  const [statusChangeError, setStatusChangeError] = useState(false);
 
   // Estados para los datos de configuración
   const [documentTypes, setDocumentTypes] = useState([]);
@@ -155,32 +161,43 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
 
   // Función para manejar el cambio de estado del usuario
   const handleStatusChange = React.useCallback(async (newStatus) => {
-    // Mostrar modal de confirmación
+    // Mostrar modal de confirmación interno
     setPendingStatusChange(newStatus);
-    setModalMessage(`¿Está seguro que desea cambiar el estado del usuario?`);
-    setShowConfirmModal(true);
+    setStatusChangeMessage(`¿Está seguro que desea cambiar el estado del usuario?`);
+    setShowStatusChangeModal(true);
   }, []);
 
   // Función para confirmar el cambio de estado
-  const confirmStatusChange = async () => {
-    if (!pendingStatusChange) return;
+  const confirmStatusChange = React.useCallback(async () => {
+    console.log('confirmStatusChange ejecutándose...');
+    console.log('pendingStatusChange:', pendingStatusChange);
+    console.log('userData.id:', userData?.id);
+    
+    if (!pendingStatusChange) {
+      console.log('No hay pendingStatusChange, saliendo...');
+      return;
+    }
     
     try {
       setStatusChangeLoading(true);
-      setError(null);
-      setShowConfirmModal(false);
+      setShowStatusChangeModal(false);
 
+      console.log('Llamando a changeUserStatus...');
       const response = await changeUserStatus(userData.id, pendingStatusChange);
+      console.log('Respuesta de changeUserStatus:', response);
 
       if (response.success) {
-        setSuccess(true);
-        setModalMessage('Estado del usuario cambiado exitosamente');
-        setShowSuccessModal(true);
+        setStatusChangeSuccess(true);
+        setStatusChangeMessage('Estado del usuario cambiado exitosamente');
         setPendingStatusChange(null);
+        // Cerrar el modal principal y actualizar la lista
+        if (onUserUpdated) {
+          onUserUpdated();
+        }
+        onClose();
       } else {
-        setError(response.message || 'Error al cambiar el estado del usuario');
-        setModalMessage(response.message || 'Error al cambiar el estado del usuario');
-        setShowErrorModal(true);
+        setStatusChangeError(true);
+        setStatusChangeMessage(response.message || 'Error al cambiar el estado del usuario');
       }
     } catch (err) {
       console.error('Error al cambiar estado:', err);
@@ -202,14 +219,13 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
         errorMessage = 'Error al cambiar estado: ' + err.message;
       }
       
-      setError(errorMessage);
-      setModalMessage(errorMessage);
-      setShowErrorModal(true);
+      setStatusChangeError(true);
+      setStatusChangeMessage(errorMessage);
     } finally {
       setStatusChangeLoading(false);
       setPendingStatusChange(null);
     }
-  };
+  }, [pendingStatusChange, userData?.id, onUserUpdated, onClose]);
 
   // Funciones para manejar los modales
   const handleSuccessClose = () => {
@@ -228,6 +244,22 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
   const handleConfirmClose = () => {
     setShowConfirmModal(false);
     setPendingStatusChange(null);
+  };
+
+  // Funciones para manejar los modales internos de cambio de estado
+  const handleStatusChangeModalClose = () => {
+    setShowStatusChangeModal(false);
+    setPendingStatusChange(null);
+  };
+
+  const handleStatusChangeSuccessClose = () => {
+    setStatusChangeSuccess(false);
+    setStatusChangeMessage('');
+  };
+
+  const handleStatusChangeErrorClose = () => {
+    setStatusChangeError(false);
+    setStatusChangeMessage('');
   };
 
   // Función para formatear fechas
@@ -348,6 +380,10 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
       setShowConfirmModal(false);
       setModalMessage('');
       setPendingStatusChange(null);
+      setShowStatusChangeModal(false);
+      setStatusChangeMessage('');
+      setStatusChangeSuccess(false);
+      setStatusChangeError(false);
     }
   }, [isOpen]);
 
@@ -475,11 +511,116 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
     return userStatuses.filter(status => status.value !== currentStatus);
   };
 
+  // Modal de confirmación interno para cambio de estado usando Dialog de Radix
+  const StatusChangeConfirmModal = ({ isOpen, onClose, onConfirm, message, isLoading }) => {
+    return (
+      <Dialog.Root open={isOpen} onOpenChange={onClose}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl z-[70] w-full max-w-md">
+            <div className="p-6">
+              <div className="text-center">
+                <div className="mx-auto w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
+                  <FaExclamationTriangle className="w-8 h-8 text-yellow-600" />
+                </div>
+                
+                <Dialog.Title className="text-lg font-semibold text-gray-900 mb-2">
+                  Confirmar Cambio de Estado
+                </Dialog.Title>
+                
+                <Dialog.Description className="text-gray-600 text-sm mb-6">
+                  {message}
+                </Dialog.Description>
+                
+                <div className="flex gap-3">
+                  <Dialog.Close asChild>
+                    <button
+                      disabled={isLoading}
+                      className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+                    >
+                      Cancelar
+                    </button>
+                  </Dialog.Close>
+                  <button
+                    onClick={onConfirm}
+                    disabled={isLoading}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Procesando...
+                      </>
+                    ) : (
+                      'Confirmar'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+    );
+  };
+
   return (
-    <Dialog.Root open={isOpen} onOpenChange={onClose}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[40]" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-50 rounded-lg shadow-xl z-[50] w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+    <>
+      {/* Modal de confirmación interno para cambio de estado - FUERA del Dialog.Root */}
+      <StatusChangeConfirmModal
+        isOpen={showStatusChangeModal}
+        onClose={handleStatusChangeModalClose}
+        onConfirm={confirmStatusChange}
+        message={statusChangeMessage}
+        isLoading={statusChangeLoading}
+      />
+      
+      {/* Modal de éxito para cambio de estado */}
+      <Dialog.Root open={statusChangeSuccess} onOpenChange={handleStatusChangeSuccessClose}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl z-[70] w-full max-w-md">
+            <div className="p-6 text-center">
+              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                <FaCheckCircle className="w-8 h-8 text-green-600" />
+              </div>
+              <Dialog.Title className="text-lg font-semibold text-gray-900 mb-2">¡Éxito!</Dialog.Title>
+              <Dialog.Description className="text-gray-600 text-sm mb-6">{statusChangeMessage}</Dialog.Description>
+              <Dialog.Close asChild>
+                <button className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                  Continuar
+                </button>
+              </Dialog.Close>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+      
+      {/* Modal de error para cambio de estado */}
+      <Dialog.Root open={statusChangeError} onOpenChange={handleStatusChangeErrorClose}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl z-[70] w-full max-w-md">
+            <div className="p-6 text-center">
+              <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                <FaTimesCircle className="w-8 h-8 text-red-600" />
+              </div>
+              <Dialog.Title className="text-lg font-semibold text-gray-900 mb-2">Error</Dialog.Title>
+              <Dialog.Description className="text-gray-600 text-sm mb-6">{statusChangeMessage}</Dialog.Description>
+              <Dialog.Close asChild>
+                <button className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                  Cerrar
+                </button>
+              </Dialog.Close>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
+      <Dialog.Root open={isOpen} onOpenChange={onClose}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-10" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-50 rounded-lg shadow-xl z-10 w-full max-w-5xl max-h-[90vh] overflow-y-auto">
           <Dialog.Title className="sr-only">
             {isEditing ? 'Editar Usuario' : 'Detalles del Usuario'} - {getFullName()}
           </Dialog.Title>
@@ -913,17 +1054,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
         message={modalMessage}
       />
       
-      <ConfirmModal
-        isOpen={showConfirmModal}
-        onClose={handleConfirmClose}
-        onConfirm={confirmStatusChange}
-        title="Confirmar Cambio de Estado"
-        message={modalMessage}
-        confirmText="Confirmar"
-        cancelText="Cancelar"
-        confirmColor="btn-primary"
-        cancelColor="btn-secondary"
-      />
     </Dialog.Root>
+    </>
   );
 }

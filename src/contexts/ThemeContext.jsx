@@ -3,55 +3,6 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 // Temas predefinidos
 const PREDEFINED_THEMES = {
-  oscuro: {
-    name: 'Oscuro',
-    colors: {
-      primary: '#000000',
-      secondary: '#1f2937',
-      accent: '#3b82f6',
-      background: '#111827',
-      surface: '#1f2937',
-      text: '#ffffff',
-      textSecondary: '#d1d5db',
-      border: '#374151',
-      hover: '#374151',
-      error: '#ef4444',
-      success: '#10b981',
-      warning: '#f59e0b',
-    },
-    typography: {
-      fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-      fontSize: {
-        xs: '0.75rem',
-        sm: '0.875rem',
-        base: '1rem',
-        lg: '1.125rem',
-        xl: '1.25rem',
-        '2xl': '1.5rem',
-        '3xl': '1.875rem',
-      },
-      fontWeight: {
-        normal: '400',
-        medium: '500',
-        semibold: '600',
-        bold: '700',
-      }
-    },
-    spacing: {
-      xs: '0.25rem',
-      sm: '0.5rem',
-      md: '1rem',
-      lg: '1.5rem',
-      xl: '2rem',
-      '2xl': '3rem',
-    },
-    borderRadius: {
-      sm: '0.25rem',
-      md: '0.5rem',
-      lg: '0.75rem',
-      xl: '1rem',
-    }
-  },
   claro: {
     name: 'Claro',
     colors: {
@@ -166,7 +117,7 @@ export const useTheme = () => {
 
 // Provider del tema
 export const ThemeProvider = ({ children }) => {
-  const [currentTheme, setCurrentTheme] = useState('oscuro');
+  const [currentTheme, setCurrentTheme] = useState('claro');
   const [customThemes, setCustomThemes] = useState({});
   const [isLoading, setIsLoading] = useState(true);
 
@@ -184,8 +135,8 @@ export const ThemeProvider = ({ children }) => {
       console.log('✅ Aplicando tema guardado:', savedTheme);
       setCurrentTheme(savedTheme);
     } else if (savedTheme) {
-      console.log('⚠️ Tema guardado no válido, usando oscuro por defecto');
-      setCurrentTheme('oscuro');
+      console.log('⚠️ Tema guardado no válido, usando claro por defecto');
+      setCurrentTheme('claro');
     }
     
     if (savedCustomThemes) {
@@ -204,20 +155,20 @@ export const ThemeProvider = ({ children }) => {
 
   // Función para asegurar que un tema tenga la estructura completa
   const normalizeTheme = (theme) => {
-    if (!theme) return PREDEFINED_THEMES.oscuro;
+    if (!theme) return PREDEFINED_THEMES.claro;
     
     return {
       name: theme.name || 'Tema sin nombre',
       colors: {
-        primary: '#000000',
-        secondary: '#1f2937',
+        primary: '#ffffff',
+        secondary: '#f8fafc',
         accent: '#3b82f6',
-        background: '#111827',
-        surface: '#1f2937',
-        text: '#ffffff',
-        textSecondary: '#d1d5db',
-        border: '#374151',
-        hover: '#374151',
+        background: '#ffffff',
+        surface: '#f8fafc',
+        text: '#1f2937',
+        textSecondary: '#6b7280',
+        border: '#e5e7eb',
+        hover: '#f3f4f6',
         error: '#ef4444',
         success: '#10b981',
         warning: '#f59e0b',
@@ -275,9 +226,9 @@ export const ThemeProvider = ({ children }) => {
       localStorage.setItem('app-theme', currentTheme);
     } else {
       console.warn('🚨 Tema no encontrado:', currentTheme, 'Aplicando tema por defecto');
-      const defaultTheme = normalizeTheme(PREDEFINED_THEMES.oscuro);
+      const defaultTheme = normalizeTheme(PREDEFINED_THEMES.claro);
       applyThemeToDOM(defaultTheme);
-      setCurrentTheme('oscuro');
+      setCurrentTheme('claro');
     }
   }, [currentTheme, customThemes, isLoading]);
 
@@ -436,7 +387,7 @@ export const ThemeProvider = ({ children }) => {
     
     // Si el tema actual es el que se está eliminando, cambiar al tema por defecto
     if (currentTheme === themeKey) {
-      setCurrentTheme('oscuro');
+      setCurrentTheme('claro');
     }
   };
 
@@ -470,10 +421,10 @@ export const ThemeProvider = ({ children }) => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
+      <div className="flex items-center justify-center min-h-screen bg-white text-gray-800">
         <div className="text-center">
           <div className="text-lg mb-2">🎨 Inicializando sistema de temas...</div>
-          <div className="text-sm text-gray-400">Cargando configuración</div>
+          <div className="text-sm text-gray-600">Cargando configuración</div>
         </div>
       </div>
     );
