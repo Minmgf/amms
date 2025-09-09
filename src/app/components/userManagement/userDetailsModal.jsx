@@ -518,7 +518,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
       <Dialog.Root open={isOpen} onOpenChange={onClose}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]" />
-          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl z-[70] w-full max-w-md">
+          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-xl z-[70] w-full max-w-md">
             <div className="p-6 card-theme text-center">
               <div className="mx-auto w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
                 <FaExclamationTriangle className="w-8 h-8 text-warning" />
@@ -578,7 +578,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
       <Dialog.Root open={statusChangeSuccess} onOpenChange={handleStatusChangeSuccessClose}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]" />
-          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl z-[70] w-full max-w-md">
+          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-xl z-[70] w-full max-w-md">
             <div className="p-6 text-center card-theme">
               <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
                 <FaCheckCircle className="w-8 h-8 text-success" />
@@ -599,7 +599,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
       <Dialog.Root open={statusChangeError} onOpenChange={handleStatusChangeErrorClose}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]" />
-          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl z-[70] w-full max-w-md">
+          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-xl z-[70] w-full max-w-md">
             <div className="p-6 text-center card-theme">
               <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
                 <FaTimesCircle className="w-8 h-8 text-error" />
@@ -619,12 +619,12 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
       <Dialog.Root open={isOpen} onOpenChange={onClose}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-10" />
-          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-50 rounded-lg shadow-xl z-10 w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-xl z-10 w-full max-w-5xl max-h-[90vh] overflow-y-auto">
           <Dialog.Title className="sr-only">
             {isEditing ? 'Editar Usuario' : 'Detalles del Usuario'} - {getFullName()}
           </Dialog.Title>
 
-          <div className="p-6">
+          <div className="p-6 card-theme">
             {/* Header */}
             <div className="flex items-center justify-between mb-6 card-secondary p-4">
               <div className="flex items-center gap-3">
@@ -941,7 +941,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
 
                 {/* Sección de Cambio de Estado */}
                 {!isEditing && userData && getAvailableStatuses().length > 0 && (
-                  <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+                  <div className="card-secondary rounded-lg p-6 shadow-sm border border-primary">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                       <FaShieldAlt className="text-blue-600" />
                       Cambiar Estado del Usuario
@@ -982,13 +982,13 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                 )}
 
                 {/* Botones de Acción */}
-                <div className="flex justify-end gap-3 pt-6 mt-6 bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                <div className="flex justify-end gap-3 pt-6 mt-6 card-secondary rounded-lg p-4 shadow-sm border border-primary">
                   {isEditing ? (
                     <>
                       <button
                         type="button"
                         onClick={handleCancel}
-                        className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition flex items-center gap-2"
+                        className="btn-theme btn-secondary px-6 py-2 flex items-center gap-2"
                       >
                         <FaArrowLeft />
                         Cancelar
@@ -996,7 +996,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                       <button
                         type="submit"
                         disabled={!isFormValid || submitLoading}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="btn-theme btn-primary px-6 py-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                       >
                         {submitLoading ? (
                           <>
@@ -1016,7 +1016,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                       <button
                         type="button"
                         onClick={onClose}
-                        className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition flex items-center gap-2"
+                        className="btn-theme btn-secondary px-6 py-2 flex items-center gap-2"
                       >
                         <FaArrowLeft />
                         Cerrar
@@ -1024,7 +1024,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                       <button
                         type="button"
                         onClick={handleEdit}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
+                        className="btn-theme btn-primary px-6 py-2 flex items-center gap-2"
                       >
                         <FaEdit />
                         Editar Usuario
