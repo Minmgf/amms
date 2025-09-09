@@ -1,15 +1,25 @@
 "use client";
+import { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
 
-export default function RoleManagementFilter({ isOpen, onClose, statusFilter, setStatusFilter }) {
+export default function RoleManagementFilter({ isOpen, onClose, statusFilter, onApply }) {
   if (!isOpen) return null;
+  const [localStatus, setLocalStatus] = useState(statusFilter || "");
+
+  useEffect(() => {
+    if (isOpen) {
+      setLocalStatus(statusFilter || "");
+    }
+  }, [isOpen]);
 
   const handleApply = () => {
+    onApply(localStatus);
     onClose();
   };
 
   const handleClean = () => {
-    setStatusFilter("");
+    onApply("");
+    setLocalStatus("");
     onClose();
   };
 
@@ -30,8 +40,8 @@ export default function RoleManagementFilter({ isOpen, onClose, statusFilter, se
         <div>
           <label className="block text-sm font-medium mb-1">Status</label>
           <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            value={localStatus}
+            onChange={(e) => setLocalStatus(e.target.value)}
             className="w-full border border-gray-300 rounded-md p-2 outline-none shadow focus:ring-2 focus:ring-red-500"
           >
             <option value="">All</option>
