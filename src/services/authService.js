@@ -24,7 +24,6 @@ export const login = async (payload, rememberMe = false) => {
 
     console.log("Token desde helper:", getAuthToken());
     console.log("Token desde cookie:", Cookies.get("token"));
-    
     return data;
 };
 

@@ -116,7 +116,7 @@ const page = () => {
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
             statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
+            onApply={setStatusFilter}
           />
           <button onClick={() => router.push("/userManagement/roleManagement/newRole?mode=create")} className="parametrization-action-button">
             <FiPlus /> Add role

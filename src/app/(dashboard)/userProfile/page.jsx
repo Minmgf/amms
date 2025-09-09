@@ -239,7 +239,7 @@ const ProfilePage = () => {
               
               <h3 className="text-xl font-bold border-b pb-3 text-primary">
                 Residencial information
-              </h3>     
+              </h3>
               <form
                 id="residenceForm"
                 onSubmit={handleSubmit(onSubmitResidence)}
@@ -345,8 +345,9 @@ const ProfilePage = () => {
                       {...register("phoneNumber", {
                         required: "Phone number is required",
                         pattern: {
-                          value: /^[0-9]{10}$/,
-                          message: "Must be 10 digits",
+                          // permite dígitos, espacios, paréntesis, guiones y un + inicial
+                          value: /^[0-9+\-() ]{7,15}$/,
+                          message: "Invalid phone number format",
                         },
                       })}
                       className={`w-full border rounded-lg px-3 py-2 ${errors.phoneNumber
