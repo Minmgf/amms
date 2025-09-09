@@ -1,8 +1,8 @@
 # Dockerfile para Next.js 15.5.0 - Optimizado para Dockploy
 FROM node:20-alpine AS builder
 
-# Instalar dependencias del sistema
-RUN apk add --no-cache libc6-compat
+# Instalar dependencias del sistema necesarias para lightningcss
+RUN apk add --no-cache libc6-compat python3 make g++
 
 WORKDIR /app
 
@@ -11,6 +11,9 @@ COPY package*.json ./
 
 # Instalar todas las dependencias (incluyendo devDependencies para el build)
 RUN npm ci
+
+# Reconstruir paquetes nativos para Alpine Linux (soluciona lightningcss)
+RUN npm rebuild
 
 # Copiar código fuente
 COPY . .
