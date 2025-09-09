@@ -13,12 +13,104 @@ import {
 import NavigationMenu from '../../../components/ParameterNavigation';
 import TypesModal from '../../../components/parametrization/TypesModal';
 import AddModifyTypesModal from '../../../components/parametrization/AddModifyTypesModal';
+import UnitListModal from '../../../components/parametrization/UnitListModal';
+import AddModifyUnitModal from '../../../components/parametrization/AddModifyUnitModal';
 import { 
   getTypesCategories, 
   getTypesByCategory, 
   createTypeItem, 
   updateTypeItem 
 } from "@/services/parametrizationService";
+
+// Función para obtener categorías de unidades
+const getUnitsCategories = async () => {
+  try {
+    const response = await fetch('http://localhost:8000/units_categories/', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result.data;
+  } catch (error) {
+    console.error('Error fetching units categories:', error);
+    throw error;
+  }
+};
+
+// Función para crear nueva categoría de unidades
+const createUnitCategory = async (categoryData) => {
+  try {
+    const response = await fetch('http://localhost:8000/units_categories/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(categoryData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error creating unit category:', error);
+    throw error;
+  }
+};
+
+// Función para actualizar categoría de unidades
+const updateUnitCategory = async (categoryId, categoryData) => {
+  try {
+    const response = await fetch(`http://localhost:8000/units_categories/${categoryId}/`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(categoryData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error updating unit category:', error);
+    throw error;
+  }
+};
+
+// Función para obtener categoría de unidades por ID
+const getUnitCategoryById = async (categoryId) => {
+  try {
+    const response = await fetch(`http://localhost:8000/units_categories/${categoryId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result.data;
+  } catch (error) {
+    console.error('Error fetching unit category by ID:', error);
+    throw error;
+  }
+};
 
 // Componente principal
 const ParameterizationView = () => {
@@ -39,6 +131,15 @@ const ParameterizationView = () => {
   const [typeFormMode, setTypeFormMode] = useState('add');
   const [selectedType, setSelectedType] = useState(null);
 
+  // Estados para UnitListModal
+  const [isUnitListModalOpen, setIsUnitListModalOpen] = useState(false);
+  const [categoryParameters, setCategoryParameters] = useState([]);
+
+  // Estados para AddModifyUnitModal
+  const [isAddModifyUnitModalOpen, setIsAddModifyUnitModalOpen] = useState(false);
+  const [unitModalMode, setUnitModalMode] = useState("add");
+  const [selectedParameter, setSelectedParameter] = useState(null);
+
   // Función para obtener categorías del backend
   const fetchData = async (menuItem = 'Types') => {
     setLoading(true);
@@ -48,29 +149,61 @@ const ParameterizationView = () => {
     console.log('🎯 MainView: Menu seleccionado:', menuItem);
     
     try {
-      console.log('📞 MainView: Llamando a getTypesCategories...');
-      const response = await getTypesCategories();
+      let response;
       
-      console.log('✅ MainView: Respuesta recibida del servicio:');
-      console.log('📊 MainView: Datos completos:', response);
-      console.log('📈 MainView: Cantidad de registros:', Array.isArray(response) ? response.length : 'No es array');
-      console.log('🔍 MainView: Primer elemento:', response?.[0]);
+      if (menuItem === 'Units') {
+        console.log('📞 MainView: Llamando a getUnitsCategories...');
+        response = await getUnitsCategories();
+        
+        console.log('✅ MainView: Respuesta recibida del servicio de unidades:');
+        console.log('📊 MainView: Datos completos:', response);
+        console.log('📈 MainView: Cantidad de registros:', Array.isArray(response) ? response.length : 'No es array');
+        console.log('🔍 MainView: Primer elemento:', response?.[0]);
+        
+        // Mapear los datos del backend al formato esperado por la vista
+        const mappedData = response.map((item, index) => {
+          console.log(`🔄 MainView: Mapeando item ${index + 1}:`, item);
+          return {
+            id: item.id_units_categories,
+            name: item.name,
+            description: item.description,
+            details: "",
+            parameters: [] // Inicializar como array vacío, se cargará cuando se abra el modal
+          };
+        });
+        
+        console.log('🎨 MainView: Datos mapeados para la vista:');
+        console.log('📋 MainView: mappedData:', mappedData);
+        
+        setData(mappedData);
+        
+      } else {
+        // Para otros menu items como Types, usar el servicio existente
+        console.log('📞 MainView: Llamando a getTypesCategories...');
+        response = await getTypesCategories();
+        
+        console.log('✅ MainView: Respuesta recibida del servicio:');
+        console.log('📊 MainView: Datos completos:', response);
+        console.log('📈 MainView: Cantidad de registros:', Array.isArray(response) ? response.length : 'No es array');
+        console.log('🔍 MainView: Primer elemento:', response?.[0]);
+        
+        // Mapear los datos del backend al formato esperado por la vista
+        const mappedData = response.map((item, index) => {
+          console.log(`🔄 MainView: Mapeando item ${index + 1}:`, item);
+          return {
+            id: item.id || item.id_types_categories,
+            name: item.name,
+            description: item.description,
+            details: ''
+          };
+        });
+        
+        console.log('🎨 MainView: Datos mapeados para la vista:');
+        console.log('📋 MainView: mappedData:', mappedData);
+        
+        setData(mappedData);
+      }
       
-      // Mapear los datos del backend al formato esperado por la vista
-      const mappedData = response.map((item, index) => {
-        console.log(`🔄 MainView: Mapeando item ${index + 1}:`, item);
-        return {
-          id: item.id || item.id_types_categories,
-          name: item.name,
-          description: item.description,
-          details: ''
-        };
-      });
-      
-      console.log('🎨 MainView: Datos mapeados para la vista:');
-      console.log('📋 MainView: mappedData:', mappedData);
-      
-      setData(mappedData);
       console.log('✅ MainView: Datos establecidos en el estado exitosamente');
       
     } catch (err) {
@@ -132,10 +265,16 @@ const ParameterizationView = () => {
     const category = data.find(item => item.id === categoryId);
     if (category) {
       setSelectedCategory(category);
-      setIsTypesModalOpen(true);
       
-      // Cargar los types de esta categoría
-      await fetchTypesByCategory(categoryId);
+      if (activeMenuItem === 'Units') {
+        // Para Units, abrir UnitListModal
+        setCategoryParameters(category.parameters || []);
+        setIsUnitListModalOpen(true);
+      } else {
+        // Para Types, abrir TypesModal
+        setIsTypesModalOpen(true);
+        await fetchTypesByCategory(categoryId);
+      }
     }
   };
 
@@ -144,6 +283,15 @@ const ParameterizationView = () => {
     setIsTypesModalOpen(false);
     setSelectedCategory(null);
     setTypesData([]);
+  };
+
+  // ==================== HANDLERS PARA UnitListModal ====================
+
+  // Cerrar UnitListModal
+  const handleCloseUnitListModal = () => {
+    setIsUnitListModalOpen(false);
+    setSelectedCategory(null);
+    setCategoryParameters([]);
   };
 
   // ==================== HANDLERS PARA AddModifyTypesModal ====================
@@ -237,6 +385,74 @@ const ParameterizationView = () => {
       // Aquí podrías mostrar un mensaje de error al usuario
       setError(`Error al ${typeFormMode === 'add' ? 'crear' : 'actualizar'} el tipo: ${err.message}`);
     }
+  };
+
+  // ==================== HANDLERS PARA AddModifyUnitModal ====================
+
+  // Abrir AddModifyUnitModal en modo ADD
+  const handleAddParameter = () => {
+    setUnitModalMode("add");
+    setSelectedParameter(null);
+    setIsAddModifyUnitModalOpen(true);
+  };
+
+  // Abrir AddModifyUnitModal en modo EDIT
+  const handleEditParameter = (parameterId) => {
+    const parameter = categoryParameters.find((p) => p.id === parameterId);
+    if (parameter) {
+      setUnitModalMode("modify");
+      setSelectedParameter(parameter);
+      setIsAddModifyUnitModalOpen(true);
+    }
+  };
+
+  // Cerrar AddModifyUnitModal
+  const handleCloseAddModifyUnitModal = () => {
+    setIsAddModifyUnitModalOpen(false);
+    setSelectedParameter(null);
+    setUnitModalMode("add");
+  };
+
+  // Guardar/actualizar parameter
+  const handleSaveParameter = (parameterData) => {
+    console.log("Saving/updating parameter:", parameterData);
+    
+    if (unitModalMode === "add") {
+      // Agregar nuevo parámetro
+      const newParameter = {
+        ...parameterData,
+        id: Date.now(), // ID temporal
+      };
+      
+      const updatedParameters = [...categoryParameters, newParameter];
+      setCategoryParameters(updatedParameters);
+      
+      // Actualizar también en los datos principales
+      const updatedData = data.map(item => 
+        item.id === selectedCategory.id 
+          ? { ...item, parameters: updatedParameters }
+          : item
+      );
+      setData(updatedData);
+      
+    } else if (unitModalMode === "modify") {
+      // Actualizar parámetro existente
+      const updatedParameters = categoryParameters.map(param =>
+        param.id === selectedParameter.id ? { ...param, ...parameterData } : param
+      );
+      setCategoryParameters(updatedParameters);
+      
+      // Actualizar también en los datos principales
+      const updatedData = data.map(item => 
+        item.id === selectedCategory.id 
+          ? { ...item, parameters: updatedParameters }
+          : item
+      );
+      setData(updatedData);
+    }
+
+    // Cerrar el modal
+    handleCloseAddModifyUnitModal();
   };
 
   // ==================== TABLA PRINCIPAL ====================
@@ -539,6 +755,26 @@ const ParameterizationView = () => {
         status={selectedType}
         category={selectedCategory?.name || ''}
         onSave={handleSaveType}
+      />
+
+      {/* UnitListModal - Modal de lista de parámetros */}
+      <UnitListModal
+        isOpen={isUnitListModalOpen}
+        onClose={handleCloseUnitListModal}
+        categoryName={selectedCategory?.name || ""}
+        data={categoryParameters}
+        onAddParameter={handleAddParameter}
+        onEditParameter={handleEditParameter}
+      />
+
+      {/* AddModifyUnitModal - Modal para agregar/editar parámetros */}
+      <AddModifyUnitModal
+        isOpen={isAddModifyUnitModalOpen}
+        onClose={handleCloseAddModifyUnitModal}
+        mode={unitModalMode}
+        unit={selectedParameter}
+        category={selectedCategory?.name || ""}
+        onSave={handleSaveParameter}
       />
     </div>
   );
