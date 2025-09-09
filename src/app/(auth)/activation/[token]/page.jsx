@@ -12,9 +12,9 @@ const page = () => {
   const [message, setMessage] = useState("");
   const hasCalled = useRef(false);
 
-useEffect(() => {
+  useEffect(() => {
     if (!token || hasCalled.current) return;
-    
+
     const controller = new AbortController();
     hasCalled.current = true;
 
