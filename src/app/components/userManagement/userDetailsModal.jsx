@@ -4,6 +4,20 @@ import { FaArrowLeft, FaUser, FaIdCard, FaEnvelope, FaPhone, FaMapMarkerAlt, FaC
 import * as Dialog from '@radix-ui/react-dialog';
 import Select from 'react-select';
 import { getDocumentTypes, getGenderTypes, getRoleTypes, editUser, changeUserStatus } from '../../../services/authService';
+import { SuccessModal, ErrorModal, ConfirmModal } from '../shared/SuccessErrorModal';
+
+// Función helper para obtener el token desde localStorage o sessionStorage
+const getAuthToken = () => {
+  // Primero intentar localStorage
+  let token = localStorage.getItem('token');
+  
+  // Si no está en localStorage, intentar sessionStorage
+  if (!token) {
+    token = sessionStorage.getItem('token');
+  }
+  
+  return token;
+};
 
 export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpdated }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -12,6 +26,13 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [statusChangeLoading, setStatusChangeLoading] = useState(false);
+
+  // Estados para los modales
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+  const [pendingStatusChange, setPendingStatusChange] = useState(null);
 
   // Estados para los datos de configuración
   const [documentTypes, setDocumentTypes] = useState([]);
@@ -95,7 +116,6 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
-    
     return `${year}-${month}-${day}`;
   }, []);
 
@@ -134,49 +154,87 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
 
   // Función para manejar el cambio de estado del usuario
   const handleStatusChange = React.useCallback(async (newStatus) => {
+    // Mostrar modal de confirmación
+    setPendingStatusChange(newStatus);
+    setModalMessage(`¿Está seguro que desea cambiar el estado del usuario?`);
+    setShowConfirmModal(true);
+  }, []);
+
+  // Función para confirmar el cambio de estado
+  const confirmStatusChange = async () => {
+    if (!pendingStatusChange) return;
+    
     try {
       setStatusChangeLoading(true);
       setError(null);
+      setShowConfirmModal(false);
 
-      const response = await changeUserStatus(userData.id, newStatus);
+      const response = await changeUserStatus(userData.id, pendingStatusChange);
 
       if (response.success) {
         setSuccess(true);
-        setTimeout(() => {
-          setSuccess(false);
-          if (onUserUpdated) {
-            onUserUpdated();
-          }
-        }, 2000);
+        setModalMessage('Estado del usuario cambiado exitosamente');
+        setShowSuccessModal(true);
+        setPendingStatusChange(null);
       } else {
         setError(response.message || 'Error al cambiar el estado del usuario');
+        setModalMessage(response.message || 'Error al cambiar el estado del usuario');
+        setShowErrorModal(true);
       }
     } catch (err) {
       console.error('Error al cambiar estado:', err);
+      let errorMessage = 'Error al cambiar estado del usuario';
+      
       if (err.message === 'No hay token disponible') {
-        setError('Error de autenticación: No hay token disponible. Por favor, inicie sesión nuevamente.');
+        errorMessage = 'Error de autenticación: No hay token disponible. Por favor, inicie sesión nuevamente.';
       } else if (err.message === 'Token expirado') {
-        setError('Error de autenticación: Token expirado. Por favor, inicie sesión nuevamente.');
+        errorMessage = 'Error de autenticación: Token expirado. Por favor, inicie sesión nuevamente.';
       } else if (err.message === 'Token no válido') {
-        setError('Error de autenticación: Token no válido. Por favor, inicie sesión nuevamente.');
+        errorMessage = 'Error de autenticación: Token no válido. Por favor, inicie sesión nuevamente.';
       } else if (err.response?.status === 401) {
-        setError('Error de autenticación: Credenciales inválidas. Por favor, inicie sesión nuevamente.');
+        errorMessage = 'Error de autenticación: Credenciales inválidas. Por favor, inicie sesión nuevamente.';
       } else if (err.response?.data?.message) {
-        setError('Error al cambiar estado: ' + err.response.data.message);
+        errorMessage = 'Error al cambiar estado: ' + err.response.data.message;
       } else if (err.response?.data?.detail) {
-        setError('Error al cambiar estado: ' + err.response.data.detail);
+        errorMessage = 'Error al cambiar estado: ' + err.response.data.detail;
       } else {
-        setError('Error al cambiar estado: ' + err.message);
+        errorMessage = 'Error al cambiar estado: ' + err.message;
       }
+      
+      setError(errorMessage);
+      setModalMessage(errorMessage);
+      setShowErrorModal(true);
     } finally {
       setStatusChangeLoading(false);
+      setPendingStatusChange(null);
     }
-  }, [userData?.id, onUserUpdated]);
+  };
+
+  // Funciones para manejar los modales
+  const handleSuccessClose = () => {
+    setShowSuccessModal(false);
+    setIsEditing(false);
+    onClose(); // Cerrar el modal principal cuando se cierra el de éxito
+    if (onUserUpdated) {
+      onUserUpdated();
+    }
+  };
+
+  const handleErrorClose = () => {
+    setShowErrorModal(false);
+  };
+
+  const handleConfirmClose = () => {
+    setShowConfirmModal(false);
+    setPendingStatusChange(null);
+  };
 
   // Función para formatear fechas
   const formatDate = React.useCallback((dateString) => {
     if (!dateString) return 'No disponible';
-    const date = new Date(dateString);
+
+    const date = new Date(dateString + 'T00:00:00');
+
     return date.toLocaleDateString('es-ES', {
       year: 'numeric',
       month: 'long',
@@ -286,6 +344,11 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
       setIsEditing(false);
       setError(null);
       setSuccess(false);
+      setShowSuccessModal(false);
+      setShowErrorModal(false);
+      setShowConfirmModal(false);
+      setModalMessage('');
+      setPendingStatusChange(null);
     }
   }, [isOpen]);
 
@@ -312,38 +375,43 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
       };
 
       console.log('Datos a enviar:', userDataToSend);
-      console.log('Token actual:', localStorage.getItem('token'));
+      console.log('Token actual:', getAuthToken());
 
       const response = await editUser(userData.id, userDataToSend);
 
       if (response.success) {
         setSuccess(true);
-        setTimeout(() => {
-          setIsEditing(false);
-          if (onUserUpdated) {
-            onUserUpdated();
-          }
-        }, 2000);
+        setModalMessage('Usuario actualizado exitosamente');
+        setShowSuccessModal(true);
+        // El modal se encargará de cerrar la edición
       } else {
         setError(response.message || 'Error al actualizar el usuario');
+        setModalMessage(response.message || 'Error al actualizar el usuario');
+        setShowErrorModal(true);
       }
     } catch (err) {
       console.error('Error completo:', err);
+      let errorMessage = 'Error al actualizar el usuario';
+      
       if (err.message === 'No hay token disponible') {
-        setError('Error de autenticación: No hay token disponible. Por favor, inicie sesión nuevamente.');
+        errorMessage = 'Error de autenticación: No hay token disponible. Por favor, inicie sesión nuevamente.';
       } else if (err.message === 'Token expirado') {
-        setError('Error de autenticación: Token expirado. Por favor, inicie sesión nuevamente.');
+        errorMessage = 'Error de autenticación: Token expirado. Por favor, inicie sesión nuevamente.';
       } else if (err.message === 'Token no válido') {
-        setError('Error de autenticación: Token no válido. Por favor, inicie sesión nuevamente.');
+        errorMessage = 'Error de autenticación: Token no válido. Por favor, inicie sesión nuevamente.';
       } else if (err.response?.status === 401) {
-        setError('Error de autenticación: Credenciales inválidas. Por favor, inicie sesión nuevamente.');
+        errorMessage = 'Error de autenticación: Credenciales inválidas. Por favor, inicie sesión nuevamente.';
       } else if (err.response?.data?.message) {
-        setError('Error al actualizar el usuario: ' + err.response.data.message);
+        errorMessage = 'Error al actualizar el usuario: ' + err.response.data.message;
       } else if (err.response?.data?.detail) {
-        setError('Error al actualizar el usuario: ' + err.response.data.detail);
+        errorMessage = 'Error al actualizar el usuario: ' + err.response.data.detail;
       } else {
-        setError('Error al actualizar el usuario: ' + err.message);
+        errorMessage = 'Error al actualizar el usuario: ' + err.message;
       }
+      
+      setError(errorMessage);
+      setModalMessage(errorMessage);
+      setShowErrorModal(true);
     } finally {
       setSubmitLoading(false);
     }
@@ -411,8 +479,8 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
   return (
     <Dialog.Root open={isOpen} onOpenChange={onClose}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-50 rounded-lg shadow-xl z-50 w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+        <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[40]" />
+        <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-50 rounded-lg shadow-xl z-[50] w-full max-w-5xl max-h-[90vh] overflow-y-auto">
           <Dialog.Title className="sr-only">
             {isEditing ? 'Editar Usuario' : 'Detalles del Usuario'} - {getFullName()}
           </Dialog.Title>
@@ -460,24 +528,10 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
             )}
 
             {/* Error */}
-            {error && (
-              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <div className="flex items-center gap-2 text-red-800">
-                  <FaExclamationTriangle />
-                  <p>{error}</p>
-                </div>
-              </div>
-            )}
+            {/* Remover error visual ya que usamos ErrorModal */}
 
             {/* Success */}
-            {success && (
-              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center gap-2 text-green-800">
-                  <FaCheckCircle />
-                  <p>Usuario actualizado exitosamente</p>
-                </div>
-              </div>
-            )}
+            {/* Remover success visual ya que usamos SuccessModal */}
 
             {/* Formulario */}
             {!loading && (
@@ -767,9 +821,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                           options={getAvailableStatuses()}
                           onChange={(selectedOption) => {
                             if (selectedOption && !statusChangeLoading) {
-                              if (window.confirm(`¿Está seguro de cambiar el estado del usuario a "${selectedOption.label}"?`)) {
-                                handleStatusChange(selectedOption.value);
-                              }
+                              handleStatusChange(selectedOption.value);
                             }
                           }}
                           isDisabled={statusChangeLoading}
@@ -846,6 +898,33 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
           </div>
         </Dialog.Content>
       </Dialog.Portal>
+      
+      {/* Modales de Success, Error y Confirmación */}
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={handleSuccessClose}
+        title="Operación Exitosa"
+        message={modalMessage}
+      />
+      
+      <ErrorModal
+        isOpen={showErrorModal}
+        onClose={handleErrorClose}
+        title="Error"
+        message={modalMessage}
+      />
+      
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        onClose={handleConfirmClose}
+        onConfirm={confirmStatusChange}
+        title="Confirmar Cambio de Estado"
+        message={modalMessage}
+        confirmText="Confirmar"
+        cancelText="Cancelar"
+        confirmColor="btn-primary"
+        cancelColor="btn-secondary"
+      />
     </Dialog.Root>
   );
 }

@@ -1,15 +1,29 @@
 import Cookies from "js-cookie";
 import { apiUsers } from "@/lib/axios";
 
-export const login = async (payload, rememberMe) => {
+// Helper para obtener el token desde localStorage o sessionStorage
+const getAuthToken = () => {
+    let token = localStorage.getItem("token");
+    if (!token) {
+        token = sessionStorage.getItem("token");
+    }
+    return token;
+};
+
+export const login = async (payload, rememberMe = false) => {
     const { data } = await apiUsers.post("/auth/login/", payload);
+
+    // Guardar siempre en cookie (ejemplo: expira en 1 hora)
+    Cookies.set("token", data.access_token, { expires: 1 / 24 });
+
     if (rememberMe) {
-        Cookies.set("token", data.access_token, { expires: 1 });
         localStorage.setItem("token", data.access_token);
     } else {
-        Cookies.set("token", data.access_token);
         sessionStorage.setItem("token", data.access_token);
     }
+
+    console.log("Token desde helper:", getAuthToken());
+    console.log("Token desde cookie:", Cookies.get("token"));
     return data;
 };
 
@@ -17,7 +31,7 @@ export const logout = async () => {
     const { data } = await apiUsers.post("/auth/logout");
     Cookies.remove("token");
     localStorage.removeItem("token");
-    sessionStorage.removeItem("token")
+    sessionStorage.removeItem("token"); // También limpiar sessionStorage
     return data;
 };
 
@@ -119,7 +133,7 @@ const validateToken = async () => {
 export const createUser = async (userData) => {
     try {
         // Verificar token antes de hacer la petición
-        const token = localStorage.getItem("token");
+        const token = getAuthToken();
         if (!token) {
             throw new Error("No hay token disponible");
         }
@@ -162,7 +176,7 @@ export const createUser = async (userData) => {
 export const editUser = async (userId, userData) => {
     try {
         // Verificar token antes de hacer la petición
-        const token = localStorage.getItem("token");
+        const token = getAuthToken();
         if (!token) {
             throw new Error("No hay token disponible");
         }
@@ -201,7 +215,7 @@ export const editUser = async (userId, userData) => {
 export const changeUserStatus = async (userId, newStatus) => {
     try {
         // Verificar token antes de hacer la petición
-        const token = localStorage.getItem("token");
+        const token = getAuthToken();
         if (!token) {
             throw new Error("No hay token disponible");
         }
