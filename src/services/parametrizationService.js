@@ -1,5 +1,9 @@
 import { apiMain } from "@/lib/axios";
 
+// =============================================================================
+// VISTA PRINCIPAL - PESTAÑA ESTADOS (HU-PAR-001 / HU-PAR-002)
+// =============================================================================
+
 // ===== CATEGORÍAS DE ESTADOS =====
 
 // Crear categoría de estado
@@ -8,8 +12,8 @@ export const createStatuesCategory = async (payload) => {
     return data;
 };
 
-// Listar categorías de estados
-export const getStatues = async () => {
+// Listar categorías de estados - VISTA: Pestaña Estados
+export const getStatuesCategories = async () => {
     const { data } = await apiMain.get(`statues_categories/list/`);
     return data;
 };
@@ -20,67 +24,97 @@ export const updateStatuesCategory = async (idStatusCategory, payload) => {
     return data;
 };
 
+// =============================================================================
+// VISTA PRINCIPAL - PESTAÑA TIPOS (HU-PAR-001 / HU-PAR-002)
+// =============================================================================
+
 // ===== CATEGORÍAS DE TIPOS =====
 
 // Crear categoría de tipo
-export const createType = async (payload) => {
+export const createTypesCategory = async (payload) => {
     const { data } = await apiMain.post("types_categories/", payload);
     return data;
 };
 
-// Listar categorías de tipos
-export const getType = async () => {
+// Listar categorías de tipos - VISTA: Pestaña Tipos
+export const getTypesCategories = async () => {
     const { data } = await apiMain.get(`types_categories/list/`);
     return data;
 };
 
 // Actualizar categoría de tipo
-export const updateType = async (idType, payload) => {
-    const { data } = await apiMain.put(`types_categories/${idType}/`, payload);
+export const updateTypesCategory = async (idTypeCategory, payload) => {
+    const { data } = await apiMain.put(`types_categories/${idTypeCategory}/`, payload);
     return data;
 };
 
-// ===== GESTIÓN DE ESTADOS =====
+// =============================================================================
+// MODAL DETALLE DE CATEGORÍA - ESTADOS (HU-PAR-003)
+// =============================================================================
 
-// Listar estados por categoría
+// ===== GESTIÓN DE ESTADOS INDIVIDUALES =====
+
+// Listar estados por categoría - VISTA: Modal "Detalles" de categoría de estados
 export const getStatuesByCategory = async (idStatuesCategories) => {
     const { data } = await apiMain.get(`statues/list/${idStatuesCategories}/`);
     return data;
 };
 
-// Actualizar estado
+// Crear estado individual - VISTA: Modal "Agregar Parámetro" dentro de categoría de estados
+export const createStatueItem = async (payload) => {
+    const { data } = await apiMain.post("statues/", payload);
+    return data;
+};
+
+// Actualizar estado individual - VISTA: Modal "Editar" estado
 export const updateStatue = async (idStatues, payload) => {
     const { data } = await apiMain.put(`statues/${idStatues}/`, payload);
     return data;
 };
 
-// ===== GESTIÓN DE TIPOS =====
-
-// Crear tipo
-export const createTypeItem = async (payload) => {
-    const { data } = await apiMain.post("types/", payload);
+// Listar estados activos por categoría - VISTA: Formularios que usan estados como dropdown
+export const getActiveStatuesByCategory = async (idStatuesCategories) => {
+    const { data } = await apiMain.get(`statues/list/active/${idStatuesCategories}/`);
     return data;
 };
 
-// Listar tipos por categoría
+// Activar/desactivar estado - VISTA: Switch en modal de detalles de estado
+export const toggleStatueStatus = async (idStatues) => {
+    const { data } = await apiMain.patch(`statues/${idStatues}/toggle-status/`);
+    return data;
+};
+
+// =============================================================================
+// MODAL DETALLE DE CATEGORÍA - TIPOS (HU-PAR-003)
+// =============================================================================
+
+// ===== GESTIÓN DE TIPOS INDIVIDUALES =====
+
+// Listar tipos por categoría - VISTA: Modal "Detalles" de categoría de tipos
 export const getTypesByCategory = async (idTypesCategories) => {
     const { data } = await apiMain.get(`types/list/${idTypesCategories}/`);
     return data;
 };
 
-// Actualizar tipo
+// Crear tipo individual - VISTA: Modal "Agregar Parámetro" dentro de categoría de tipos
+export const createTypeItem = async (payload) => {
+    const { data } = await apiMain.post("types/", payload);
+    return data;
+};
+
+// Actualizar tipo individual - VISTA: Modal "Editar" tipo
 export const updateTypeItem = async (idType, payload) => {
     const { data } = await apiMain.put(`types/${idType}/`, payload);
     return data;
 };
 
-// Listar tipos activos por categoría
+// Listar tipos activos por categoría - VISTA: Formularios que usan tipos como dropdown
 export const getActiveTypesByCategory = async (idTypesCategories) => {
     const { data } = await apiMain.get(`types/list/active/${idTypesCategories}/`);
     return data;
 };
 
-// Activar/desactivar tipo
+// Activar/desactivar tipo - VISTA: Switch en modal de detalles de tipo
 export const toggleTypeStatus = async (idType) => {
     const { data } = await apiMain.patch(`types/${idType}/toggle-status/`);
     return data;

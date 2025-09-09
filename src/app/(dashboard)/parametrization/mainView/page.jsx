@@ -14,10 +14,18 @@ import NavigationMenu from '../../../components/ParameterNavigation';
 import TypesModal from '../../../components/parametrization/TypesModal';
 import AddModifyTypesModal from '../../../components/parametrization/AddModifyTypesModal';
 import { 
-  getType, // Cambiado de getTypesCategories a getType
+  // Servicios para Types
+  getTypesCategories,
   getTypesByCategory, 
   createTypeItem, 
-  updateTypeItem 
+  updateTypeItem,
+  toggleTypeStatus,
+  // Servicios para States
+  getStatuesCategories,
+  getStatuesByCategory,
+  createStatueItem,
+  updateStatue,
+  toggleStatueStatus
 } from "@/services/parametrizationService";
 
 // Componente principal
@@ -28,96 +36,123 @@ const ParameterizationView = () => {
   const [data, setData] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
   
-  // Estados para TypesModal (lista de types por categoría)
-  const [isTypesModalOpen, setIsTypesModalOpen] = useState(false);
+  // Estados para Modal de detalles (lista de parámetros por categoría)
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [typesData, setTypesData] = useState([]);
-  const [loadingTypes, setLoadingTypes] = useState(false);
+  const [parametersData, setParametersData] = useState([]);
+  const [loadingParameters, setLoadingParameters] = useState(false);
   
-  // Estados para AddModifyTypesModal (agregar/editar type)
-  const [isAddModifyTypesModalOpen, setIsAddModifyTypesModalOpen] = useState(false);
-  const [typeFormMode, setTypeFormMode] = useState('add');
-  const [selectedType, setSelectedType] = useState(null);
+  // Estados para Modal de agregar/editar parámetros
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [formMode, setFormMode] = useState('add');
+  const [selectedParameter, setSelectedParameter] = useState(null);
 
-  // Función para obtener categorías del backend
-  const fetchData = async (menuItem = 'Types') => {
+  // Función para obtener categorías según el tipo de parámetro
+  const fetchCategoriesData = async (parameterType) => {
     setLoading(true);
     setError(null);
     
-    console.log('🔄 MainView: Iniciando carga de datos...');
-    console.log('🎯 MainView: Menu seleccionado:', menuItem);
+    console.log('🔄 MainView: Cargando categorías para:', parameterType);
     
     try {
-      console.log('📞 MainView: Llamando a getType...');
-      const response = await getType(); // Cambiado de getTypesCategories a getType
+      let response = [];
       
-      console.log('✅ MainView: Respuesta recibida del servicio:');
-      console.log('📊 MainView: Datos completos:', response);
-      console.log('📈 MainView: Cantidad de registros:', Array.isArray(response) ? response.length : 'No es array');
-      console.log('🔍 MainView: Primer elemento:', response?.[0]);
+      switch (parameterType) {
+        case 'Types':
+          response = await getTypesCategories();
+          break;
+        case 'States':
+          response = await getStatuesCategories();
+          break;
+        case 'Brands':
+        case 'Units':
+        case 'Styles':
+        case 'Positions':
+          // Pendiente implementación de otros endpoints
+          console.warn(`⚠️ Endpoint para ${parameterType} no implementado aún`);
+          response = [];
+          break;
+        default:
+          response = await getTypesCategories();
+      }
+      
+      console.log('✅ MainView: Categorías obtenidas:', response);
       
       // Mapear los datos del backend al formato esperado por la vista
-      const mappedData = response.map((item, index) => {
-        console.log(`🔄 MainView: Mapeando item ${index + 1}:`, item);
-        return {
-          id: item.id || item.id_types_categories,
-          name: item.name,
-          description: item.description,
-          details: ''
-        };
-      });
-      
-      console.log('🎨 MainView: Datos mapeados para la vista:');
-      console.log('📋 MainView: mappedData:', mappedData);
+      const mappedData = response.map((item, index) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        type: parameterType
+      }));
       
       setData(mappedData);
-      console.log('✅ MainView: Datos establecidos en el estado exitosamente');
+      console.log('🎨 MainView: Datos mapeados:', mappedData);
       
     } catch (err) {
-      console.error('❌ MainView: Error completo:', err);
-      console.error('📨 MainView: Error response:', err.response);
-      console.error('⚠️ MainView: Error message:', err.message);
-      
-      setError(err.message || 'Error al cargar los datos');
+      console.error('❌ MainView: Error al cargar categorías:', err);
+      setError(`Error al cargar categorías de ${parameterType}: ${err.message}`);
       setData([]);
     } finally {
       setLoading(false);
-      console.log('🏁 MainView: Proceso de carga finalizado');
     }
   };
 
-  // Función para obtener types por categoría
-  const fetchTypesByCategory = async (categoryId) => {
-    setLoadingTypes(true);
+  // Función para obtener parámetros por categoría según el tipo
+  const fetchParametersByCategory = async (categoryId, parameterType) => {
+    setLoadingParameters(true);
     try {
-      console.log('📞 MainView: Obteniendo types para categoría:', categoryId);
-      const response = await getTypesByCategory(categoryId);
+      console.log('📞 MainView: Obteniendo parámetros para categoría:', categoryId, 'tipo:', parameterType);
       
-      console.log('✅ MainView: Types obtenidos:', response);
+      let response = [];
       
-      // Mapear los datos al formato esperado por el TypesModal
-      const mappedTypes = response.map(item => ({
-        id: item.id || item.id_types,
-        typeName: item.name,
+      switch (parameterType) {
+        case 'Types':
+          response = await getTypesByCategory(categoryId);
+          break;
+        case 'States':
+          response = await getStatuesByCategory(categoryId);
+          break;
+        case 'Brands':
+        case 'Units':
+        case 'Styles':
+        case 'Positions':
+          // Pendiente implementación de otros endpoints
+          console.warn(`⚠️ Endpoint para obtener ${parameterType} por categoría no implementado aún`);
+          response = [];
+          break;
+        default:
+          response = await getTypesByCategory(categoryId);
+      }
+      
+      console.log('✅ MainView: Parámetros obtenidos:', response);
+      
+      // Mapear los datos al formato esperado por el modal
+      const mappedParameters = response.map(item => ({
+        id: item.id,
+        typeName: item.name, // Mantener compatibilidad con el modal
+        name: item.name,
         description: item.description,
         status: item.isActive ? 'Active' : 'Inactive',
         isActive: item.isActive
       }));
       
-      setTypesData(mappedTypes);
-      console.log('🎨 MainView: Types mapeados:', mappedTypes);
+      setParametersData(mappedParameters);
+      console.log('🎨 MainView: Parámetros mapeados:', mappedParameters);
       
     } catch (err) {
-      console.error('❌ MainView: Error al obtener types:', err);
-      setTypesData([]);
+      console.error('❌ MainView: Error al obtener parámetros:', err);
+      setError(`Error al obtener parámetros: ${err.message}`);
+      setParametersData([]);
     } finally {
-      setLoadingTypes(false);
+      setLoadingParameters(false);
     }
   };
 
+  // Efecto para cargar datos cuando cambia el tipo de parámetro
   useEffect(() => {
-    console.log('🎬 MainView: useEffect ejecutado - activeMenuItem changed:', activeMenuItem);
-    fetchData(activeMenuItem);
+    console.log('🎬 MainView: Cambiando tipo de parámetro a:', activeMenuItem);
+    fetchCategoriesData(activeMenuItem);
   }, [activeMenuItem]);
 
   const handleMenuItemChange = (item) => {
@@ -125,117 +160,159 @@ const ParameterizationView = () => {
     setActiveMenuItem(item);
   };
 
-  // ==================== HANDLERS PARA TypesModal ====================
+  // ==================== HANDLERS PARA MODAL DE DETALLES ====================
   
-  // Abrir TypesModal (cuando se hace click en el ojo de la tabla principal)
+  // Abrir modal de detalles (cuando se hace click en el ojo de la tabla principal)
   const handleViewDetails = async (categoryId) => {
     const category = data.find(item => item.id === categoryId);
     if (category) {
       setSelectedCategory(category);
-      setIsTypesModalOpen(true);
+      setIsDetailsModalOpen(true);
       
-      // Cargar los types de esta categoría
-      await fetchTypesByCategory(categoryId);
+      // Cargar los parámetros de esta categoría
+      await fetchParametersByCategory(categoryId, category.type);
     }
   };
 
-  // Cerrar TypesModal
-  const handleCloseTypesModal = () => {
-    setIsTypesModalOpen(false);
+  // Cerrar modal de detalles
+  const handleCloseDetailsModal = () => {
+    setIsDetailsModalOpen(false);
     setSelectedCategory(null);
-    setTypesData([]);
-  };
-
-  // ==================== HANDLERS PARA AddModifyTypesModal ====================
-  
-  // Abrir AddModifyTypesModal en modo ADD
-  const handleAddType = () => {
-    setTypeFormMode('add');
-    setSelectedType(null);
-    setIsAddModifyTypesModalOpen(true);
-  };
-
-  // Abrir AddModifyTypesModal en modo EDIT
-  const handleEditType = (typeId) => {
-    const typeToEdit = typesData.find(type => type.id === typeId);
-    if (typeToEdit) {
-      setTypeFormMode('modify');
-      setSelectedType(typeToEdit);
-      setIsAddModifyTypesModalOpen(true);
+    setParametersData([]);
+    // Limpiar errores relacionados con parámetros
+    if (error && error.includes('parámetros')) {
+      setError(null);
     }
   };
 
-  // Cerrar AddModifyTypesModal
-  const handleCloseAddModifyTypesModal = () => {
-    setIsAddModifyTypesModalOpen(false);
-    setSelectedType(null);
-    setTypeFormMode('add');
+  // ==================== HANDLERS PARA MODAL DE FORMULARIO ====================
+  
+  // Abrir modal de formulario en modo ADD
+  const handleAddParameter = () => {
+    setFormMode('add');
+    setSelectedParameter(null);
+    setIsFormModalOpen(true);
   };
 
-  // Guardar/Actualizar type
-  const handleSaveType = async (typeData) => {
+  // Abrir modal de formulario en modo EDIT
+  const handleEditParameter = (parameterId) => {
+    const parameterToEdit = parametersData.find(param => param.id === parameterId);
+    if (parameterToEdit) {
+      setFormMode('modify');
+      setSelectedParameter(parameterToEdit);
+      setIsFormModalOpen(true);
+    }
+  };
+
+  // Cerrar modal de formulario
+  const handleCloseFormModal = () => {
+    setIsFormModalOpen(false);
+    setSelectedParameter(null);
+    setFormMode('add');
+  };
+
+  // Guardar/Actualizar parámetro
+  const handleSaveParameter = async (parameterData) => {
     try {
-      console.log('💾 MainView: Guardando type data:', typeData);
+      console.log('💾 MainView: Guardando parámetro:', parameterData);
       
-      if (typeFormMode === 'add') {
-        // Crear nuevo type
-        const payload = {
-          name: typeData.typeName,
-          description: typeData.description,
-          isActive: typeData.isActive,
-          id_types_categories: selectedCategory.id
+      const parameterType = selectedCategory?.type || activeMenuItem;
+      
+      if (formMode === 'add') {
+        // Crear nuevo parámetro
+        const basePayload = {
+          name: parameterData.typeName,
+          description: parameterData.description,
+          isActive: parameterData.isActive
         };
         
-        console.log('📤 MainView: Creando type con payload:', payload);
-        const newType = await createTypeItem(payload);
-        console.log('✅ MainView: Type creado exitosamente:', newType);
+        let payload = {};
+        let createdItem = {};
+        
+        switch (parameterType) {
+          case 'Types':
+            payload = {
+              ...basePayload,
+              id_types_categories: selectedCategory.id
+            };
+            createdItem = await createTypeItem(payload);
+            break;
+            
+          case 'States':
+            payload = {
+              ...basePayload,
+              id_statues_categories: selectedCategory.id
+            };
+            createdItem = await createStatueItem(payload);
+            break;
+            
+          default:
+            throw new Error(`Creación de ${parameterType} no implementada aún`);
+        }
+        
+        console.log('✅ MainView: Parámetro creado exitosamente:', createdItem);
         
         // Actualizar la lista local
-        const mappedNewType = {
-          id: newType.id,
-          typeName: newType.name,
-          description: newType.description,
-          status: newType.isActive ? 'Active' : 'Inactive',
-          isActive: newType.isActive
+        const mappedNewParameter = {
+          id: createdItem.id,
+          typeName: createdItem.name,
+          name: createdItem.name,
+          description: createdItem.description,
+          status: createdItem.isActive ? 'Active' : 'Inactive',
+          isActive: createdItem.isActive
         };
         
-        setTypesData(prev => [...prev, mappedNewType]);
+        setParametersData(prev => [...prev, mappedNewParameter]);
         
       } else {
-        // Actualizar type existente
-        const payload = {
-          name: typeData.typeName,
-          description: typeData.description,
-          isActive: typeData.isActive
+        // Actualizar parámetro existente
+        const updatePayload = {
+          name: parameterData.typeName,
+          description: parameterData.description,
+          isActive: parameterData.isActive
         };
         
-        console.log('📤 MainView: Actualizando type ID:', selectedType.id, 'con payload:', payload);
-        const updatedType = await updateTypeItem(selectedType.id, payload);
-        console.log('✅ MainView: Type actualizado exitosamente:', updatedType);
+        let updatedItem = {};
+        
+        switch (parameterType) {
+          case 'Types':
+            updatedItem = await updateTypeItem(selectedParameter.id, updatePayload);
+            break;
+            
+          case 'States':
+            updatedItem = await updateStatue(selectedParameter.id, updatePayload);
+            break;
+            
+          default:
+            throw new Error(`Actualización de ${parameterType} no implementada aún`);
+        }
+        
+        console.log('✅ MainView: Parámetro actualizado exitosamente:', updatedItem);
         
         // Actualizar la lista local
-        const mappedUpdatedType = {
-          id: updatedType.id,
-          typeName: updatedType.name,
-          description: updatedType.description,
-          status: updatedType.isActive ? 'Active' : 'Inactive',
-          isActive: updatedType.isActive
+        const mappedUpdatedParameter = {
+          id: updatedItem.id,
+          typeName: updatedItem.name,
+          name: updatedItem.name,
+          description: updatedItem.description,
+          status: updatedItem.isActive ? 'Active' : 'Inactive',
+          isActive: updatedItem.isActive
         };
         
-        setTypesData(prev => 
-          prev.map(type => 
-            type.id === selectedType.id ? mappedUpdatedType : type
+        setParametersData(prev => 
+          prev.map(param => 
+            param.id === selectedParameter.id ? mappedUpdatedParameter : param
           )
         );
       }
       
       // Cerrar el modal
-      handleCloseAddModifyTypesModal();
+      handleCloseFormModal();
       
     } catch (err) {
-      console.error('❌ MainView: Error al guardar type:', err);
-      // Aquí podrías mostrar un mensaje de error al usuario
-      setError(`Error al ${typeFormMode === 'add' ? 'crear' : 'actualizar'} el tipo: ${err.message}`);
+      console.error('❌ MainView: Error al guardar parámetro:', err);
+      // Re-lanzar el error para que lo maneje el modal
+      throw new Error(`Error al ${formMode === 'add' ? 'crear' : 'actualizar'} el parámetro: ${err.message}`);
     }
   };
 
@@ -274,7 +351,7 @@ const ParameterizationView = () => {
         ),
       }),
     ],
-    [data] // Cambiado la dependencia para evitar recrear innecesariamente
+    [data]
   );
 
   const table = useReactTable({
@@ -311,7 +388,7 @@ const ParameterizationView = () => {
           </button>
         </div>
 
-        {/* Navigation Menu */}
+        {/* Navigation Menu - Tabs para Types, States, Brands, etc. */}
         <div className="mb-6 md:mb-8">
           <NavigationMenu
             activeItem={activeMenuItem}
@@ -332,11 +409,11 @@ const ParameterizationView = () => {
           </div>
         )}
 
-        {/* Table */}
+        {/* Table - Muestra categorías del tipo seleccionado */}
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-6 md:mb-8">
           {loading ? (
             <div className="p-8 text-center text-gray-500">
-              Loading...
+              Loading {activeMenuItem.toLowerCase()} categories...
             </div>
           ) : (
             <>
@@ -375,21 +452,32 @@ const ParameterizationView = () => {
                     ))}
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {table.getRowModel().rows.map(row => (
-                      <tr key={row.id} className="hover:bg-gray-50 group">
-                        {row.getVisibleCells().map(cell => (
-                          <td
-                            key={cell.id}
-                            className="px-4 md:px-6 py-3 md:py-4 text-sm border-r border-gray-200 last:border-r-0"
-                          >
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )}
-                          </td>
-                        ))}
+                    {table.getRowModel().rows.length === 0 ? (
+                      <tr>
+                        <td colSpan="3" className="px-6 py-8 text-center text-gray-500">
+                          {activeMenuItem === 'Brands' || activeMenuItem === 'Units' || 
+                           activeMenuItem === 'Styles' || activeMenuItem === 'Positions' 
+                            ? `${activeMenuItem} categories not implemented yet`
+                            : `No ${activeMenuItem.toLowerCase()} categories available`}
+                        </td>
                       </tr>
-                    ))}
+                    ) : (
+                      table.getRowModel().rows.map(row => (
+                        <tr key={row.id} className="hover:bg-gray-50 group">
+                          {row.getVisibleCells().map(cell => (
+                            <td
+                              key={cell.id}
+                              className="px-4 md:px-6 py-3 md:py-4 text-sm border-r border-gray-200 last:border-r-0"
+                            >
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext()
+                              )}
+                            </td>
+                          ))}
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -520,25 +608,25 @@ const ParameterizationView = () => {
         </div>
       </div>
       
-      {/* TypesModal - Modal de lista de types por categoría */}
+      {/* Modal de Detalles - Lista de parámetros por categoría */}
       <TypesModal
-        isOpen={isTypesModalOpen}
-        onClose={handleCloseTypesModal}
+        isOpen={isDetailsModalOpen}
+        onClose={handleCloseDetailsModal}
         categoryName={selectedCategory?.name || ''}
-        data={typesData}
-        loading={loadingTypes}
-        onAddItem={handleAddType}
-        onEditItem={handleEditType}
+        data={parametersData}
+        loading={loadingParameters}
+        onAddItem={handleAddParameter}
+        onEditItem={handleEditParameter}
       />
 
-      {/* AddModifyTypesModal - Modal para agregar/editar types */}
+      {/* Modal de Formulario - Agregar/editar parámetros */}
       <AddModifyTypesModal
-        isOpen={isAddModifyTypesModalOpen}
-        onClose={handleCloseAddModifyTypesModal}
-        mode={typeFormMode}
-        status={selectedType}
+        isOpen={isFormModalOpen}
+        onClose={handleCloseFormModal}
+        mode={formMode}
+        status={selectedParameter}
         category={selectedCategory?.name || ''}
-        onSave={handleSaveType}
+        onSave={handleSaveParameter}
       />
     </div>
   );
