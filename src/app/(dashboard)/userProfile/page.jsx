@@ -234,10 +234,10 @@ const ProfilePage = () => {
                   {userData.date_issuance_document?.split("T")[0]}
                 </p>
               </div>
-              
+
               <h3 className="text-xl font-bold border-b border-gray-200 pb-3 text-gray-900">
                 Residencial information
-              </h3>     
+              </h3>
               <form
                 id="residenceForm"
                 onSubmit={handleSubmit(onSubmitResidence)}
@@ -343,8 +343,9 @@ const ProfilePage = () => {
                       {...register("phoneNumber", {
                         required: "Phone number is required",
                         pattern: {
-                          value: /^[0-9]{10}$/,
-                          message: "Must be 10 digits",
+                          // permite dígitos, espacios, paréntesis, guiones y un + inicial
+                          value: /^[0-9+\-() ]{7,15}$/,
+                          message: "Invalid phone number format",
                         },
                       })}
                       className={`w-full border rounded-lg px-3 py-2 ${errors.phoneNumber
