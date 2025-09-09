@@ -14,7 +14,7 @@ import NavigationMenu from '../../../components/ParameterNavigation';
 import TypesModal from '../../../components/parametrization/TypesModal';
 import AddModifyTypesModal from '../../../components/parametrization/AddModifyTypesModal';
 import { 
-  getTypesCategories, 
+  getType, // Cambiado de getTypesCategories a getType
   getTypesByCategory, 
   createTypeItem, 
   updateTypeItem 
@@ -48,8 +48,8 @@ const ParameterizationView = () => {
     console.log('🎯 MainView: Menu seleccionado:', menuItem);
     
     try {
-      console.log('📞 MainView: Llamando a getTypesCategories...');
-      const response = await getTypesCategories();
+      console.log('📞 MainView: Llamando a getType...');
+      const response = await getType(); // Cambiado de getTypesCategories a getType
       
       console.log('✅ MainView: Respuesta recibida del servicio:');
       console.log('📊 MainView: Datos completos:', response);

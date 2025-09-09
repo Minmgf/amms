@@ -13,7 +13,7 @@ import {
 import NavigationMenu from '../../../components/ParameterNavigation';
 import CategoryModal from '../../../components/parametrization/ModelListModal';
 import BrandFormModal from '../../../components/parametrization/BrandFormModal';
-import AddEditModelModal from '../../../components/parametrization/AddEditModelModal'; 
+import AddEditModelModal from '../../../components/parametrization/AddModifyModelModal'; 
 
 // Componente principal
 const ParameterizationView = () => {
