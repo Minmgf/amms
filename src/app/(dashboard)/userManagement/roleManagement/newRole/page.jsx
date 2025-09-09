@@ -131,9 +131,6 @@ const Page = () => {
         setTimeout(() => {
           router.back();
         }, 2000);
-      } else {
-        setModalMessage("Unexpected response from server");
-        setErrorOpen(true);
       }
     } catch (error) {
       setModalMessage(error.response?.data?.detail?.data || "Unexpected error");
