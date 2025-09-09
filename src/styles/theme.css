@@ -9,7 +9,7 @@
   --color-background: #ffffff;
   --color-surface: #f8fafc;
   --color-text: #1f2937;
-  --color-text-secondary: #e9ece5; /*Colores de texto del sidebar */
+  --color-text-secondary: #6b7280; /* Color corregido para mejor legibilidad */
   --color-border: #e5e7eb;
   --color-hover: #f3f4f6;
   --color-error: #ef4444;
@@ -65,24 +65,24 @@
 
 /* Clases utilitarias que usan las variables CSS */
 
-/* Colores de fondo */
-.bg-primary { background-color: var(--color-primary); }
-.bg-secondary { background-color: var(--color-secondary); }
-.bg-accent { background-color: var(--color-accent); }
-.bg-background { background-color: var(--color-background); }
-.bg-surface { background-color: var(--color-surface); }
-.bg-hover { background-color: var(--color-hover); }
-.bg-error { background-color: var(--color-error); }
-.bg-success { background-color: var(--color-success); }
-.bg-warning { background-color: var(--color-warning); }
+/* Colores de fondo (forceados con !important para prioridad sobre utilidades externas) */
+.bg-primary { background-color: var(--color-primary) !important; }
+.bg-secondary { background-color: var(--color-secondary) !important; }
+.bg-accent { background-color: var(--color-accent) !important; }
+.bg-background { background-color: var(--color-background) !important; }
+.bg-surface { background-color: var(--color-surface) !important; }
+.bg-hover { background-color: var(--color-hover) !important; }
+.bg-error { background-color: var(--color-error) !important; }
+.bg-success { background-color: var(--color-success) !important; }
+.bg-warning { background-color: var(--color-warning) !important; }
 
-/* Colores de texto */
-.text-primary { color: var(--color-text); }
-.text-secondary { color: var(--color-text-secondary); }
-.text-accent { color: var(--color-accent); }
-.text-error { color: var(--color-error); }
-.text-success { color: var(--color-success); }
-.text-warning { color: var(--color-warning); }
+/* Colores de texto (forceados con !important para prioridad sobre utilidades externas) */
+.text-primary { color: var(--color-text) !important; }
+.text-secondary { color: var(--color-text-secondary) !important; }
+.text-accent { color: var(--color-accent) !important; }
+.text-error { color: var(--color-error) !important; }
+.text-success { color: var(--color-success) !important; }
+.text-warning { color: var(--color-warning) !important; }
 
 /* Bordes */
 .border-primary { border-color: var(--color-border); }
@@ -265,9 +265,9 @@
 
 /* Sidebar y Navigation */
 .sidebar-theme {
-  background-color: var(--color-surface);
-  border-right: 1px solid var(--color-border);
-  color: var(--color-text);
+  background-color: var(--color-surface) !important;
+  border-right: 1px solid var(--color-border) !important;
+  color: var(--color-text) !important;
   box-shadow: var(--shadow-md);
 }
 
@@ -286,31 +286,49 @@
 
 .nav-item-active {
   background-color: var(--color-accent);
-  color: white;
+  color: white !important; /* Forzar color blanco en activo */
   font-weight: var(--font-weight-medium);
 }
 
 .nav-sub-item-theme {
   color: var(--color-text-secondary);
   transition: all var(--transition-fast);
+  padding: var(--spacing-xs) var(--spacing-md);
+  margin-left: var(--spacing-md);
 }
 
 .nav-sub-item-theme:hover {
   color: var(--color-text);
+  background-color: var(--color-hover);
+  border-radius: var(--border-radius-sm);
   font-weight: var(--font-weight-medium);
 }
 
 .nav-sub-item-active {
-  background-color: var(--color-surface-variant);
-  color: var(--color-text);
+  background-color: var(--color-accent);
+  color: white !important; /* Forzar color blanco en activo */
   font-weight: var(--font-weight-medium);
+  border-radius: var(--border-radius-sm);
+}
+
+/* Clases específicas para textos del sidebar */
+.sidebar-text-primary {
+  color: var(--color-text) !important;
+}
+
+.sidebar-text-secondary {
+  color: var(--color-text-secondary) !important;
+}
+
+.sidebar-text-active {
+  color: white !important;
 }
 
 /* Header */
 .header-theme {
-  background-color: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  color: var(--color-text);
+  background-color: var(--color-surface) !important;
+  border-bottom: 1px solid var(--color-border) !important;
+  color: var(--color-text) !important;
 }
 
 /* Tables */
@@ -394,6 +412,142 @@
 ::selection {
   background-color: var(--color-accent);
   color: white;
+}
+
+/* Parametrization Page */
+.parametrization-page {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  min-height: 100vh;
+}
+
+.parametrization-header {
+  color: var(--color-text);
+}
+
+.parametrization-filter-button {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  transition: background-color var(--transition-fast);
+}
+
+.parametrization-filter-button:hover {
+  background-color: var(--color-hover);
+}
+
+.parametrization-filter-button .filter-icon {
+  color: var(--color-text-secondary);
+}
+
+.parametrization-error {
+  background-color: var(--color-error);
+  color: white;
+  border: 1px solid var(--color-error);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+}
+
+.parametrization-loading {
+  color: var(--color-text-secondary);
+  background-color: var(--color-surface);
+}
+
+/* Table específica para parametrización */
+.parametrization-table {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+}
+
+.parametrization-table-header {
+  background-color: var(--color-background);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.parametrization-table-header th {
+  color: var(--color-text);
+  border-right: 1px solid var(--color-border);
+}
+
+.parametrization-table-row {
+  transition: background-color var(--transition-fast);
+}
+
+.parametrization-table-row:hover {
+  background-color: var(--color-hover);
+}
+
+.parametrization-table-cell {
+  border-right: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.parametrization-table-cell.secondary {
+  color: var(--color-text-secondary);
+}
+
+/* Botones de acción en la tabla */
+.parametrization-action-button {
+  background-color: transparent;
+  border: none;
+  border-radius: var(--border-radius-md);
+  transition: all var(--transition-fast);
+  color: var(--color-text-secondary);
+}
+
+.parametrization-action-button:hover {
+  background-color: var(--color-hover);
+  color: var(--color-text);
+}
+
+/* Paginación */
+.parametrization-pagination {
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.parametrization-pagination-button {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  transition: all var(--transition-fast);
+}
+
+.parametrization-pagination-button:hover:not(:disabled) {
+  background-color: var(--color-hover);
+}
+
+.parametrization-pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.parametrization-pagination-button.active {
+  background-color: var(--color-accent);
+  color: white;
+  border-color: var(--color-accent);
+}
+
+.parametrization-pagination-ellipsis {
+  color: var(--color-text-secondary);
+}
+
+.parametrization-pagination-select {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+}
+
+.parametrization-pagination-select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 /* Responsive helpers */

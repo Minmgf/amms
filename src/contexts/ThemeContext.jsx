@@ -12,7 +12,7 @@ const PREDEFINED_THEMES = {
       background: '#ffffff',
       surface: '#f8fafc',
       text: '#1f2937',
-      textSecondary: '#6b7280',
+      textSecondary: '#6b7280', // Cambiado para mejor legibilidad
       border: '#e5e7eb',
       hover: '#f3f4f6',
       error: '#ef4444',
@@ -78,6 +78,8 @@ const PREDEFINED_THEMES = {
         xl: '1.25rem',
         '2xl': '1.5rem',
         '3xl': '1.875rem',
+        paragraph: 'xl', // Nueva propiedad dinámica
+        title: 'xl',     // Nueva propiedad dinámica
       },
       fontWeight: {
         normal: '400',
@@ -239,6 +241,9 @@ export const ThemeProvider = ({ children }) => {
       return;
     }
 
+    // Helper para convertir camelCase a kebab-case
+    const toKebabCase = (str) => str.replace(/([A-Z])/g, '-$1').toLowerCase();
+
     const root = document.documentElement;
     
     // Aplicar colores con validación
@@ -247,8 +252,10 @@ export const ThemeProvider = ({ children }) => {
       
       Object.entries(theme.colors).forEach(([key, value]) => {
         if (value) {
-          root.style.setProperty(`--color-${key}`, value);
-          console.log(`   --color-${key}: ${value}`);
+          // Convertir camelCase a kebab-case
+          const kebabKey = toKebabCase(key);
+          root.style.setProperty(`--color-${kebabKey}`, value);
+          console.log(`   --color-${kebabKey}: ${value}`);
         }
       });
       
@@ -278,7 +285,8 @@ export const ThemeProvider = ({ children }) => {
       if (theme.typography.fontSize && typeof theme.typography.fontSize === 'object') {
         Object.entries(theme.typography.fontSize).forEach(([key, value]) => {
           if (value) {
-            root.style.setProperty(`--font-size-${key}`, value);
+            const kebabKey = toKebabCase(key);
+            root.style.setProperty(`--font-size-${kebabKey}`, value);
           }
         });
       }
@@ -286,7 +294,8 @@ export const ThemeProvider = ({ children }) => {
       if (theme.typography.fontWeight && typeof theme.typography.fontWeight === 'object') {
         Object.entries(theme.typography.fontWeight).forEach(([key, value]) => {
           if (value) {
-            root.style.setProperty(`--font-weight-${key}`, value);
+            const kebabKey = toKebabCase(key);
+            root.style.setProperty(`--font-weight-${kebabKey}`, value);
           }
         });
       }
@@ -298,7 +307,8 @@ export const ThemeProvider = ({ children }) => {
     if (theme.spacing && typeof theme.spacing === 'object') {
       Object.entries(theme.spacing).forEach(([key, value]) => {
         if (value) {
-          root.style.setProperty(`--spacing-${key}`, value);
+          const kebabKey = toKebabCase(key);
+          root.style.setProperty(`--spacing-${kebabKey}`, value);
         }
       });
     } else {
@@ -309,7 +319,8 @@ export const ThemeProvider = ({ children }) => {
     if (theme.borderRadius && typeof theme.borderRadius === 'object') {
       Object.entries(theme.borderRadius).forEach(([key, value]) => {
         if (value) {
-          root.style.setProperty(`--border-radius-${key}`, value);
+          const kebabKey = toKebabCase(key);
+          root.style.setProperty(`--border-radius-${kebabKey}`, value);
         }
       });
     } else {
@@ -402,6 +413,96 @@ export const ThemeProvider = ({ children }) => {
     return Object.keys(getAllThemes());
   };
 
+  // Funciones para manejar temas dinámicos desde API
+  const loadThemesFromAPI = async () => {
+    try {
+      console.log('🌐 Cargando temas desde API...');
+      // Aquí podrás hacer el fetch a tu API
+      // const response = await fetch('/api/themes');
+      // const apiThemes = await response.json();
+      
+      // Por ahora simulamos una respuesta de API
+      const apiThemes = {
+        dinamico1: {
+          name: 'Dinámico 1',
+          colors: {
+            primary: '#7c3aed',
+            secondary: '#a855f7',
+            accent: '#06b6d4',
+            background: '#0f172a',
+            surface: '#1e293b',
+            text: '#f1f5f9',
+            textSecondary: '#cbd5e1',
+            border: '#334155',
+            hover: '#475569',
+            error: '#f87171',
+            success: '#34d399',
+            warning: '#fbbf24',
+          },
+          typography: {
+            fontFamily: 'Poppins, system-ui, sans-serif',
+            fontSize: {
+              paragraph: 'xl',
+              title: 'xl',
+            },
+          }
+        }
+      };
+      
+      setCustomThemes(prevThemes => ({...prevThemes, ...apiThemes}));
+      console.log('✅ Temas cargados desde API:', Object.keys(apiThemes));
+      
+      return apiThemes;
+    } catch (error) {
+      console.error('❌ Error cargando temas desde API:', error);
+      return {};
+    }
+  };
+
+  // Enviar tema a API
+  const saveThemeToAPI = async (themeKey, themeData) => {
+    try {
+      console.log('📤 Enviando tema a API:', themeKey, themeData);
+      
+      // Aquí podrás hacer el POST a tu API
+      // const response = await fetch('/api/themes', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ key: themeKey, ...themeData })
+      // });
+      
+      // Por ahora solo lo guardamos localmente
+      createCustomTheme(themeKey, themeData);
+      
+      console.log('✅ Tema enviado exitosamente a API');
+      return true;
+    } catch (error) {
+      console.error('❌ Error enviando tema a API:', error);
+      return false;
+    }
+  };
+
+  // Eliminar tema de API
+  const deleteThemeFromAPI = async (themeKey) => {
+    try {
+      console.log('🗑️ Eliminando tema de API:', themeKey);
+      
+      // Aquí podrás hacer el DELETE a tu API
+      // const response = await fetch(`/api/themes/${themeKey}`, {
+      //   method: 'DELETE'
+      // });
+      
+      // Por ahora solo lo eliminamos localmente
+      deleteCustomTheme(themeKey);
+      
+      console.log('✅ Tema eliminado exitosamente de API');
+      return true;
+    } catch (error) {
+      console.error('❌ Error eliminando tema de API:', error);
+      return false;
+    }
+  };
+
   const value = {
     // Estado
     currentTheme,
@@ -412,11 +513,16 @@ export const ThemeProvider = ({ children }) => {
     getCurrentTheme,
     getThemeNames,
     
-    // Acciones
+    // Acciones locales
     changeTheme,
     createCustomTheme,
     updateTheme,
     deleteCustomTheme,
+    
+    // Acciones API (para uso futuro)
+    loadThemesFromAPI,
+    saveThemeToAPI,
+    deleteThemeFromAPI,
   };
 
   if (isLoading) {
