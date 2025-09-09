@@ -1,8 +1,10 @@
 "use client";
 import { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function RoleManagementFilter({ isOpen, onClose, statusFilter, onApply }) {
+  useTheme();
   if (!isOpen) return null;
   const [localStatus, setLocalStatus] = useState(statusFilter || "");
 
@@ -24,25 +26,21 @@ export default function RoleManagementFilter({ isOpen, onClose, statusFilter, on
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg w-96 p-6 relative">
-       
-        <button
-          onClick={onClose}
-          className="absolute top-2 right-2 text-gray-500 hover:text-black"
-        >
+    <div className="modal-overlay">
+      <div className="parametrization-modal card-theme w-96 p-6 relative">
+
+        <button onClick={onClose} className="absolute top-2 right-2 text-secondary hover:text-primary">
           <FiX size={18} />
         </button>
 
-        <h2 className="text-lg font-semibold mb-4">Filters</h2>
+        <h2 className="text-lg font-semibold mb-4 text-primary">Filters</h2>
 
-     
         <div>
-          <label className="block text-sm font-medium mb-1">Status</label>
+          <label className="block text-sm font-medium mb-1 text-secondary">Status</label>
           <select
-            value={localStatus}
+            value={statusFilter}
             onChange={(e) => setLocalStatus(e.target.value)}
-            className="w-full border border-gray-300 rounded-md p-2 outline-none shadow focus:ring-2 focus:ring-red-500"
+            className="w-full parametrization-input"
           >
             <option value="">All</option>
             <option value="Activo">Active</option>
@@ -50,18 +48,11 @@ export default function RoleManagementFilter({ isOpen, onClose, statusFilter, on
           </select>
         </div>
 
- 
         <div className="flex gap-4 mt-6">
-          <button
-            onClick={handleClean}
-            className="flex-1 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-500"
-          >
+          <button onClick={handleClean} className="flex-1 parametrization-button parametrization-button-danger">
             Clean
           </button>
-          <button
-            onClick={handleApply}
-            className="flex-1 bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800"
-          >
+          <button onClick={handleApply} className="flex-1 parametrization-button">
             Apply
           </button>
         </div>

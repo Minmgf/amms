@@ -306,7 +306,12 @@ const ConfirmModal = ({
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('Confirm button clicked'); // Debug
-                onConfirm();
+                console.log('onConfirm function:', onConfirm);
+                if (onConfirm) {
+                  onConfirm();
+                } else {
+                  console.error('onConfirm function is not defined!');
+                }
               }}
               onMouseDown={(e) => {
                 e.preventDefault();

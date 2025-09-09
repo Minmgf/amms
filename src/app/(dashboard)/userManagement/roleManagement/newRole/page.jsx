@@ -145,13 +145,13 @@ const Page = () => {
 
   return (
     <>
-      <div className="flex gap-3 bg-white">
-        <main className="w-full flex justify-center items-start py-10 px-4 bg-[#F1F1F1]">
-          <div className="w-full max-w-6xl bg-[#ffffff] rounded-2xl shadow p-8 border border-blue-400">
+      <div className="parametrization-page">
+        <main className="w-full flex justify-center items-start py-10 px-4 bg-background">
+          <div className="w-full max-w-6xl card-theme">
             {/* Header */}
             <div className="flex items-center gap-3 mb-8">
-              <button onClick={() => router.back()} className="text-neutral-600 hover:text-black text-xl">←</button>
-              <h1 className="text-2xl font-bold text-black">
+              <button onClick={() => router.back()} className="text-secondary hover:text-primary text-xl">←</button>
+              <h1 className="text-2xl font-bold text-primary">
                 {mode === "create" && "Create New Role"}
                 {mode === "edit" && "Edit Role"}
                 {mode === "view" && "Role Details"}
@@ -164,7 +164,7 @@ const Page = () => {
                 <div className="flex flex-col gap-6">
                   {/* Role Name */}
                   <div className="flex flex-col">
-                    <label className="font-bold text-sm text-neutral-700">
+                    <label className="font-bold text-sm text-secondary">
                       Role Name
                     </label>
                     <input
@@ -172,7 +172,7 @@ const Page = () => {
                       placeholder="Enter role name"
                       disabled={mode === "view"}
                       maxLength={20}
-                      className="border text-[#282828] rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring-2 placeholder-[#999999]"
+                      className="input-theme mt-1"
                       {...register("name", { required: "Role name is required",
                         maxLength: {
                         value: 20,
@@ -187,11 +187,11 @@ const Page = () => {
 
                   {/* Permissions categories */}
                   <div className="flex flex-col">
-                    <label className="font-semibold text-sm text-neutral-700">
+                    <label className="font-semibold text-sm text-secondary">
                       Permissions categories
                     </label>
                     <select
-                      className="border rounded-md px-3 py-2 mt-2 w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="input-theme mt-2 w-64"
                       value={selectedCategory}
                       onChange={(e) => setSelectedCategory(e.target.value)}
                     >
@@ -208,14 +208,14 @@ const Page = () => {
                 </div>
 
                 {/* Role Description */}
-                <div className="flex flex-col">
-                  <label className="font-semibold text-sm text-neutral-700">
+                  <div className="flex flex-col">
+                  <label className="font-semibold text-sm text-secondary">
                     Role Description
                   </label>
                   <textarea
                     maxLength={200}
                     disabled={mode === "view"}
-                    className="border rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 h-28"
+                    className="input-theme mt-1 h-28"
                     {...register("description", {
                       required: "Role description is required",
                     })}
@@ -235,18 +235,17 @@ const Page = () => {
               <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
                 {/* Left side: permissions table */}
                 <div className="flex flex-col gap-4">
-                  <div className="border rounded-lg overflow-hidden">
-                    <div className="grid grid-cols-[1fr_auto] items-center px-4 py-2 font-semibold bg-[#F8F8F8] text-neutral-700 border-b">
+                  <div className="table-theme overflow-hidden">
+                    <div className="grid grid-cols-[1fr_auto] items-center px-4 py-2 font-semibold bg-background text-secondary border-b">
                       <span>Permission Name</span>
                       <span></span>
                     </div>
                     {filteredPermissions.map((perm) => (
                       <div
                         key={perm.id}
-                        className={`grid grid-cols-[1fr_auto] items-center px-4 py-2 border-b last:border-b-0 ${selectedPermissions.has(perm.id) ? "bg-blue-50" : ""
-                          }`}
+                        className={`grid grid-cols-[1fr_auto] items-center px-4 py-2 border-b last:border-b-0 ${selectedPermissions.has(perm.id) ? 'bg-hover' : ''}`}
                       >
-                        <span>{perm.description}</span>
+                        <span className="text-primary">{perm.description}</span>
                         <input
                           type="checkbox"
                           className="h-4 w-4"
@@ -259,25 +258,25 @@ const Page = () => {
                   </div>
 
                   {/* Footer info */}
-                  <div className="flex items-center gap-2 text-sm text-neutral-600">
-                    <span className="h-2 w-2 rounded-full bg-blue-500 inline-block"></span>
+                  <div className="flex items-center gap-2 text-sm text-secondary">
+                    <span className="h-2 w-2 rounded-full bg-accent inline-block"></span>
                     Currently configuring:
-                    <span className="font-medium text-blue-600">{selectedCategory}</span>
+                    <span className="font-medium text-accent">{selectedCategory}</span>
                     <span className="ml-2">
-                      Active permissions:{" "}
-                      <b>{countSelectedInCategory(selectedCategory)}</b> of{" "}
+                      Active permissions: {" "}
+                      <b>{countSelectedInCategory(selectedCategory)}</b> of {" "}
                       <b>{filteredPermissions.length}</b>
                     </span>
                   </div>
 
                   {/* Buttons */}
                   {mode !== "view" && (
-                    <div className="flex gap-3">
+                      <div className="flex gap-3">
                       <button
                         type="button"
                         disabled={mode === "view"}
                         onClick={resetPermissions}
-                        className="px-6 py-2 rounded-lg border border-neutral-300 text-neutral-700 hover:bg-neutral-100"
+                        className="btn-theme btn-secondary px-6 py-2 rounded-lg"
                       >
                         Reset All
                       </button>
@@ -290,11 +289,11 @@ const Page = () => {
                   {categories.map((cat) => (
                     <div
                       key={cat}
-                      className="shadow-sm rounded-lg p-3 text-sm text-neutral-700 bg-neutral-50 border"
+                      className="card-secondary p-3 text-sm"
                     >
                       <div className="flex flex-col items-center justify-between">
-                        <span>{cat}</span>
-                        <span className="text-xs text-neutral-500">
+                        <span className="text-primary">{cat}</span>
+                        <span className="text-xs text-secondary">
                           {countSelectedInCategory(cat)}/
                           {permissions.filter((p) => p.category === cat).length} active
                         </span>
@@ -305,7 +304,7 @@ const Page = () => {
               </div>
 
               {/* Footer buttons */}
-              {mode !== "view" && (
+                  {mode !== "view" && (
                 <div className="flex justify-end mt-6 gap-4">
                   <button
                     type="button"
@@ -313,15 +312,14 @@ const Page = () => {
                       reset();
                       resetPermissions();
                     }}
-                    className="px-8 py-2 font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700"
+                    className="btn-error btn-theme px-8 py-2 font-semibold rounded-lg"
                   >
                     Clear
                   </button>
                   <button
                     type="submit"
                     disabled={loading}
-                    className={`px-8 py-2 font-semibold rounded-lg text-white transition 
-                    ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-black hover:bg-neutral-800"}`}
+                    className={`btn-theme px-8 py-2 font-semibold rounded-lg text-white ${loading ? 'btn-secondary cursor-not-allowed' : 'btn-primary'}`}
                   >
                     {mode === "create"
                       ? (loading ? "Creating..." : "Create Role")

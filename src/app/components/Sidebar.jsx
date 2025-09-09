@@ -193,7 +193,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     <>
       {!isOpen && (
         <button
-          className="p-2 fixed top-2 left-2 z-50 bg-surface/80 rounded-theme-lg backdrop-blur-sm hover:bg-hover text-primary transition-colors"
+          className="p-2 fixed top-2 left-2 z-50 bg-surface text-primary border-primary rounded-theme-lg backdrop-blur-sm hover:bg-hover transition-colors"
           onClick={() => setIsOpen(true)}
         >
           <FiMenu size={18} />
@@ -201,7 +201,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       )}
 
       <aside
-        className={`fixed top-0 left-0 h-screen overflow-y-auto sidebar-theme flex flex-col transform transition-transform duration-300 z-40
+        className={`sidebar-theme fixed top-0 left-0 h-screen overflow-y-auto flex flex-col transform transition-transform duration-300 z-40
         ${isOpen ? "translate-x-0 w-64" : "-translate-x-full w-64"}`}
       >
         <button
@@ -230,11 +230,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                   {!item.sub ? (
                     <Link
                       href={item.path}
-                      className={`flex justify-between items-center w-full p-2 rounded-theme-lg transition-colors
-                                                ${isActiveParent
-                          ? "nav-item-active"
-                          : "nav-item-theme"
-                        }`}
+                      className={`nav-item-theme flex justify-between items-center w-full p-2 rounded-theme-lg transition-colors ${
+                        isActiveParent ? "nav-item-active" : ""
+                      }`}
                     >
                       <span className="flex items-center gap-3">
                         {item.icon} {item.name}
@@ -247,11 +245,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                         onClick={() => {
                           toggleMenu(item.name);
                         }}
-                        className={`flex justify-between items-center w-full p-2 rounded-theme-lg transition-colors
-                                                            ${isActiveParent
-                            ? "nav-item-active"
-                            : "nav-item-theme"
-                          }`}
+                        className={`nav-item-theme flex justify-between items-center w-full p-2 rounded-theme-lg transition-colors ${
+                          isActiveParent ? "nav-item-active" : ""
+                        }`}
                       >
                         <span className="flex items-center gap-3">
                           {item.icon} {item.name}
@@ -271,11 +267,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                               <Link
                                 key={sub.name}
                                 href={sub.path}
-                                className={`p-1 rounded-theme-lg text-left flex items-center gap-3 transition-colors
-                                                                        ${isActiveSub
-                                    ? "nav-sub-item-active"
-                                    : "nav-sub-item-theme"
-                                  }`}
+                                className={`nav-sub-item-theme p-1 rounded-theme-lg text-left flex items-center gap-3 transition-colors ${
+                                  isActiveSub ? "nav-sub-item-active" : ""
+                                }`}
                               >
                                 {sub.icon} {sub.name}
                               </Link>
@@ -292,7 +286,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         </div>
 
         {/* BOTÓN LOGOUT */}
-        <div className="p-4 border-t border-primary mt-auto flex justify-center">
+        <div className="p-4 border-primary mt-auto flex justify-center">
           <button
             onClick={() => setConfirmOpen(true)}
             disabled={loading}
