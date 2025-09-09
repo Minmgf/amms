@@ -6,8 +6,10 @@ import { getRoleTypes } from "@/services/authService";
 import { changeRoleStatus } from "@/services/roleService";
 import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
 import { useRouter } from "next/navigation";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const page = () => {
+  useTheme();
   const [search, setSearch] = useState("");
   const [data, setData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -24,8 +26,6 @@ const page = () => {
     const fetchData = async () => {
       try {
         const response = await getRoleTypes();
-        console.log(response);
-
         if (response.success && Array.isArray(response.data)) {
           const formatted = response.data.map((item) => ({
             id: item.role_id,
@@ -74,7 +74,7 @@ const page = () => {
         );
       }
     } catch (error) {
-      setModalMessage(error.response.data.detail);
+      setModalMessage(error?.response?.data?.detail ?? "Error");
       setErrorOpen(true);
     } finally {
       setLoading(false);
@@ -82,13 +82,8 @@ const page = () => {
   };
 
   const filteredData = data
-  .filter((item) =>
-    item.roleName.toLowerCase().includes(search.toLowerCase())
-  )
-  .filter((item) =>
-    statusFilter === "" ? true : item.status === statusFilter
-  );
-
+    .filter((item) => item.roleName.toLowerCase().includes(search.toLowerCase()))
+    .filter((item) => (statusFilter === "" ? true : item.status === statusFilter));
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -100,24 +95,21 @@ const page = () => {
 
   return (
     <>
-      <div className="p-6 w-full bg-gray-100 min-h-screen">
-        <h1 className="text-2xl font-bold mb-6">Role Management</h1>
+      <div className="p-6 w-full bg-surface min-h-screen parametrization-page">
+        <h1 className="text-2xl font-bold mb-6 text-primary">Role Management</h1>
 
         <div className="flex items-center gap-3 mb-6">
           <div className="relative flex-1 min-w-0 sm:flex-none sm:w-72">
-            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2" />
+            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary" />
             <input
               type="text"
               placeholder="Introduce a role name..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-white pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full parametrization-input pl-10 pr-4 py-2"
             />
           </div>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex bg-white items-center justify-center gap-2 border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-100 transition"
-          >
+          <button onClick={() => setIsModalOpen(true)} className="parametrization-filter-button">
             <FiFilter /> Filter by
           </button>
           <RoleManagementFilter
@@ -126,16 +118,14 @@ const page = () => {
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
           />
-          <button 
-            onClick={() => router.push("/userManagement/roleManagement/newRole?mode=create")}
-            className="flex bg-white items-center justify-center gap-2 border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-100 transition">
+          <button onClick={() => router.push("/userManagement/roleManagement/newRole?mode=create")} className="parametrization-action-button">
             <FiPlus /> Add role
           </button>
         </div>
 
-        <div className="overflow-x-auto bg-white shadow rounded-xl">
+        <div className="overflow-x-auto bg-card shadow rounded-xl parametrization-table">
           <table className="w-full text-left">
-            <thead className="bg-gray-50 text-gray-900 text-sm">
+            <thead className="parametrization-table-header text-sm">
               <tr>
                 <th className="px-6 py-3">Role name</th>
                 <th className="px-6 py-3">Description</th>
@@ -145,17 +135,13 @@ const page = () => {
                 <th className="px-6 py-3">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white text-gray-600 text-sm">
+            <tbody className="parametrization-table-body text-sm">
               {currentData.map((item, index) => (
-                <tr key={index} className="group border-t border-gray-300">
-                  <td className="px-6 py-3 whitespace-nowrap">
-                    {item.roleName}
-                  </td>
-                  <td className="px-6 py-3">{item.description}</td>
-                  <td className="px-6 py-3 text-center">
-                    {item.quantityUsers}
-                  </td>
-                  <td className="py-3 ">
+                <tr key={index} className="group parametrization-table-row">
+                  <td className="px-6 py-3 whitespace-nowrap text-primary">{item.roleName}</td>
+                  <td className="px-6 py-3 text-secondary">{item.description}</td>
+                  <td className="px-6 py-3 text-center text-secondary">{item.quantityUsers}</td>
+                  <td className="py-3 text-secondary">
                     <ul className="list-disc list-inside">
                       {item.permissions.map((perm) => (
                         <li key={perm.id}>{perm.description}</li>
@@ -164,10 +150,8 @@ const page = () => {
                   </td>
                   <td className="px-6 py-3">
                     <span
-                      className={`px-3 text-white py-1 rounded-full text-xs font-medium ${
-                        item.status === "Activo"
-                          ? "bg-green-500"
-                          : "bg-rose-500"
+                      className={`px-3 text-white py-1 rounded-full text-xs font-medium parametrization-badge ${
+                        item.status === "Activo" ? "parametrization-badge-1" : "parametrization-badge-6"
                       }`}
                     >
                       {item.status}
@@ -178,32 +162,28 @@ const page = () => {
                       <button
                         type="button"
                         onClick={() => router.push(`/userManagement/roleManagement/newRole?id=${item.id}&mode=view`)}
-                        className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-100"
+                        className="parametrization-action-button-sm"
                       >
-                        <FiEye className="text-gray-600" />
+                        <FiEye className="text-secondary" />
                         <span>View</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => router.push(`/userManagement/roleManagement/newRole?id=${item.id}&mode=edit`)}
-                        className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-100"
+                        className="parametrization-action-button-sm"
                       >
-                        <FiEdit2 className="text-gray-600" />
+                        <FiEdit2 className="text-secondary" />
                         <span>Edit</span>
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => handleStatus(item.id, item.status)}
-                        className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-100"
-                      >
+                      <button type="button" onClick={() => handleStatus(item.id, item.status)} className="parametrization-action-button-sm">
                         {item.status === "Activo" ? (
                           <>
-                            <FiLock className="text-rose-500" />
+                            <FiLock className="text-danger" />
                             <span>Deactivate</span>
                           </>
                         ) : (
                           <>
-                            <FiUnlock className="text-green-500" />
+                            <FiUnlock className="text-success" />
                             <span>Activate</span>
                           </>
                         )}
@@ -215,7 +195,7 @@ const page = () => {
 
               {currentData.length === 0 && (
                 <tr>
-                  <td colSpan="4" className="text-center text-gray-500 py-6">
+                  <td colSpan="6" className="text-center text-secondary py-6 parametrization-empty">
                     No results found
                   </td>
                 </tr>
@@ -224,12 +204,8 @@ const page = () => {
           </table>
         </div>
 
-        <div className="flex items-center justify-between mt-6 text-sm text-gray-700">
-          <button
-            onClick={() => goToPage(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="flex items-center gap-1 px-3 py-1 border rounded-lg hover:bg-gray-100 disabled:opacity-50"
-          >
+        <div className="flex items-center justify-between mt-6 text-sm text-secondary">
+          <button onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1} className="parametrization-pagination-button">
             ← Previous
           </button>
 
@@ -240,11 +216,7 @@ const page = () => {
                 <button
                   key={pageNum}
                   onClick={() => goToPage(pageNum)}
-                  className={`px-3 py-1 rounded-lg ${
-                    currentPage === pageNum
-                      ? "bg-gray-900 text-white"
-                      : "border hover:bg-gray-100"
-                  }`}
+                  className={`px-3 py-1 rounded-lg ${currentPage === pageNum ? "parametrization-pagination-button active" : "border hover:bg-gray-100"}`}
                 >
                   {pageNum}
                 </button>
@@ -253,27 +225,14 @@ const page = () => {
             {totalPages > 5 && <span>...</span>}
           </div>
 
-          <button
-            onClick={() => goToPage(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="flex items-center gap-1 px-3 py-1 border rounded-lg hover:bg-gray-100 disabled:opacity-50"
-          >
+          <button onClick={() => goToPage(currentPage + 1)} disabled={currentPage === totalPages} className="parametrization-pagination-button">
             Next →
           </button>
         </div>
       </div>
-      <SuccessModal
-        isOpen={successOpen}
-        onClose={() => setSuccessOpen(false)}
-        title="Successfull"
-        message={modalMessage}
-      />
-      <ErrorModal
-        isOpen={errorOpen}
-        onClose={() => setErrorOpen(false)}
-        title="Failed"
-        message={modalMessage}
-      />
+
+      <SuccessModal isOpen={successOpen} onClose={() => setSuccessOpen(false)} title="Successfull" message={modalMessage} />
+      <ErrorModal isOpen={errorOpen} onClose={() => setErrorOpen(false)} title="Failed" message={modalMessage} />
     </>
   );
 };
