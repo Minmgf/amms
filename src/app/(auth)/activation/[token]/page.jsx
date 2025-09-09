@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import Logo from "../../../components/auth/Logo";
 import { useParams } from "next/navigation";
 import { activateAccount } from "@/services/authService";
@@ -10,11 +10,14 @@ const page = () => {
   const { token } = useParams();
   const [status, setStatus] = useState("loading"); // loading, success, error
   const [message, setMessage] = useState("");
+  const hasCalled = useRef(false);
 
   useEffect(() => {
-    if (!token) return; // token aún no está disponible
+    if (!token || hasCalled.current) return;
+
     const controller = new AbortController();
-    
+    hasCalled.current = true;
+
     const activate = async () => {
       try {
         const data = await activateAccount(token, { signal: controller.signal });
@@ -25,12 +28,15 @@ const page = () => {
       } catch (error) {
         if (!controller.signal.aborted) {
           setStatus("error");
-          setMessage(error.response.data.detail || "Error al activar la cuenta");
+          setMessage(error?.response?.data?.detail || "Error al activar la cuenta");
         }
       }
     };
 
     activate();
+
+    // Para este caso específico, NO hacer cleanup porque es una operación crítica
+    // que debe completarse una sola vez
   }, [token]);
 
   return (
