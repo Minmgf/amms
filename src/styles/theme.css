@@ -366,6 +366,93 @@
   box-shadow: var(--shadow-xl);
 }
 
+/* Modal overlay and parametrized modal used by components */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+}
+
+.parametrization-modal {
+  width: 28rem; /* similar to w-96 */
+  background: var(--color-modal-bg);
+  color: var(--color-text);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-xl);
+  position: relative;
+}
+
+/* Inputs and form controls for theme */
+.parametrization-input {
+  width: 100%;
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  padding: 0.5rem 0.75rem;
+}
+
+/* Buttons used across parametrization views */
+.parametrization-filter-button {
+  background: var(--color-background);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  padding: 0.5rem 0.75rem;
+}
+
+.parametrization-action-button {
+  background: var(--color-accent);
+  color: white;
+  border-radius: var(--border-radius-md);
+  padding: 0.25rem 0.5rem;
+}
+
+.parametrization-button {
+  background: var(--color-background);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.parametrization-button-danger {
+  background: var(--color-error);
+  color: white;
+}
+
+/* Badges used in audit log and lists */
+.parametrization-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-medium);
+}
+.parametrization-badge-1 { background: #ef4444; color: white; }
+.parametrization-badge-2 { background: #db2777; color: white; }
+.parametrization-badge-3 { background: #f97316; color: white; }
+.parametrization-badge-4 { background: #f59e0b; color: black; }
+.parametrization-badge-5 { background: #10b981; color: white; }
+.parametrization-badge-6 { background: #059669; color: white; }
+.parametrization-badge-7 { background: #0ea5a4; color: white; }
+.parametrization-badge-8 { background: #3b82f6; color: white; }
+.parametrization-badge-9 { background: #6366f1; color: white; }
+.parametrization-badge-10 { background: #8b5cf6; color: white; }
+
+/* Table parametrization defaults */
+.parametrization-table { background: var(--color-surface); border-radius: var(--border-radius-lg); overflow: hidden; }
+.parametrization-table-header { background: var(--color-background); color: var(--color-text); }
+.parametrization-table-row:hover { background: var(--color-hover); }
+.parametrization-table-cell { padding: 0.75rem; }
+.parametrization-empty { color: var(--color-text-secondary); }
+.parametrization-pagination-button { background: var(--color-background); color: var(--color-text); border: 1px solid var(--color-border); border-radius: var(--border-radius-md); padding: 0.25rem 0.5rem; }
+
 /* Estados */
 .success-theme {
   background-color: var(--color-success);
