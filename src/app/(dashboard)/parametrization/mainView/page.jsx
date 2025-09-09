@@ -79,8 +79,10 @@ const ParameterizationView = () => {
       console.log('✅ MainView: Categorías obtenidas:', response);
       
       // Mapear los datos del backend al formato esperado por la vista
-      const mappedData = response.map((item, index) => ({
-        id: item.id,
+      const mappedData = response.map((item) => ({
+        // Para Types: usar id_types_categories
+        // Para States: usar id_statues_categories
+        id: item.id_types_categories || item.id_statues_categories || item.id,
         name: item.name,
         description: item.description,
         type: parameterType
@@ -129,12 +131,15 @@ const ParameterizationView = () => {
       
       // Mapear los datos al formato esperado por el modal
       const mappedParameters = response.map(item => ({
-        id: item.id,
-        typeName: item.name, // Mantener compatibilidad con el modal
+        // Para Types: usar id_types
+        // Para States: usar id_statues
+        id: item.id_types || item.id_statues || item.id,
+        typeName: item.name,
         name: item.name,
         description: item.description,
-        status: item.isActive ? 'Active' : 'Inactive',
-        isActive: item.isActive
+        // El backend devuelve "estado" con valores "Activo"/"Inactivo"
+        status: item.estado === 'Activo' ? 'Active' : 'Inactive',
+        isActive: item.estado === 'Activo'
       }));
       
       setParametersData(mappedParameters);
@@ -147,6 +152,15 @@ const ParameterizationView = () => {
     } finally {
       setLoadingParameters(false);
     }
+  };
+
+  // Función para validar nombres duplicados
+  const validateDuplicateName = (name, excludeId = null) => {
+    const normalizedName = name.trim().toLowerCase();
+    return parametersData.some(param => 
+      param.typeName.toLowerCase() === normalizedName && 
+      param.id !== excludeId
+    );
   };
 
   // Efecto para cargar datos cuando cambia el tipo de parámetro
@@ -218,92 +232,131 @@ const ParameterizationView = () => {
       
       const parameterType = selectedCategory?.type || activeMenuItem;
       
+      // Validar nombres duplicados
+      if (formMode === 'add') {
+        if (validateDuplicateName(parameterData.typeName)) {
+          throw new Error(`A parameter with the name "${parameterData.typeName}" already exists in this category`);
+        }
+      } else {
+        if (validateDuplicateName(parameterData.typeName, selectedParameter.id)) {
+          throw new Error(`A parameter with the name "${parameterData.typeName}" already exists in this category`);
+        }
+      }
+      
       if (formMode === 'add') {
         // Crear nuevo parámetro
         const basePayload = {
           name: parameterData.typeName,
           description: parameterData.description,
-          isActive: parameterData.isActive
+          responsible_user: 1 // TODO: Obtener del contexto de usuario
         };
         
         let payload = {};
-        let createdItem = {};
+        let createdResponse = {};
         
         switch (parameterType) {
           case 'Types':
             payload = {
               ...basePayload,
-              id_types_categories: selectedCategory.id
+              types_category: selectedCategory.id
             };
-            createdItem = await createTypeItem(payload);
+            createdResponse = await createTypeItem(payload);
             break;
             
           case 'States':
             payload = {
               ...basePayload,
-              id_statues_categories: selectedCategory.id
+              statues_category: selectedCategory.id
             };
-            createdItem = await createStatueItem(payload);
+            createdResponse = await createStatueItem(payload);
             break;
             
           default:
             throw new Error(`Creación de ${parameterType} no implementada aún`);
         }
         
-        console.log('✅ MainView: Parámetro creado exitosamente:', createdItem);
+        console.log('✅ MainView: Parámetro creado exitosamente:', createdResponse);
         
-        // Actualizar la lista local
-        const mappedNewParameter = {
-          id: createdItem.id,
-          typeName: createdItem.name,
-          name: createdItem.name,
-          description: createdItem.description,
-          status: createdItem.isActive ? 'Active' : 'Inactive',
-          isActive: createdItem.isActive
-        };
+        // Si se crea como inactivo, hacer toggle después de crear
+        if (!parameterData.isActive) {
+          try {
+            console.log('🔄 MainView: Desactivando parámetro recién creado');
+            
+            // Primero recargar la lista para obtener el ID del nuevo elemento
+            await fetchParametersByCategory(selectedCategory.id, parameterType);
+            
+            // Encontrar el elemento recién creado (será el último con el nombre correspondiente)
+            const updatedParameters = await (parameterType === 'Types' 
+              ? getTypesByCategory(selectedCategory.id)
+              : getStatuesByCategory(selectedCategory.id));
+            
+            const newParameter = updatedParameters.find(p => p.name === parameterData.typeName);
+            
+            if (newParameter) {
+              const newParameterId = newParameter.id_types || newParameter.id_statues || newParameter.id;
+              
+              switch (parameterType) {
+                case 'Types':
+                  await toggleTypeStatus(newParameterId);
+                  break;
+                case 'States':
+                  await toggleStatueStatus(newParameterId);
+                  break;
+              }
+            }
+          } catch (toggleError) {
+            console.warn('⚠️ MainView: Error al desactivar parámetro recién creado:', toggleError);
+          }
+        }
         
-        setParametersData(prev => [...prev, mappedNewParameter]);
+        // Recargar la lista de parámetros después de crear
+        await fetchParametersByCategory(selectedCategory.id, parameterType);
         
       } else {
         // Actualizar parámetro existente
         const updatePayload = {
           name: parameterData.typeName,
           description: parameterData.description,
-          isActive: parameterData.isActive
+          responsible_user: 1 // TODO: Obtener del contexto de usuario
         };
         
-        let updatedItem = {};
+        let updatedResponse = {};
         
         switch (parameterType) {
           case 'Types':
-            updatedItem = await updateTypeItem(selectedParameter.id, updatePayload);
+            updatedResponse = await updateTypeItem(selectedParameter.id, updatePayload);
             break;
             
           case 'States':
-            updatedItem = await updateStatue(selectedParameter.id, updatePayload);
+            updatedResponse = await updateStatue(selectedParameter.id, updatePayload);
             break;
             
           default:
             throw new Error(`Actualización de ${parameterType} no implementada aún`);
         }
         
-        console.log('✅ MainView: Parámetro actualizado exitosamente:', updatedItem);
+        console.log('✅ MainView: Parámetro actualizado exitosamente:', updatedResponse);
         
-        // Actualizar la lista local
-        const mappedUpdatedParameter = {
-          id: updatedItem.id,
-          typeName: updatedItem.name,
-          name: updatedItem.name,
-          description: updatedItem.description,
-          status: updatedItem.isActive ? 'Active' : 'Inactive',
-          isActive: updatedItem.isActive
-        };
+        // Si el estado cambió, hacer toggle
+        if (parameterData.isActive !== selectedParameter.isActive) {
+          try {
+            console.log('🔄 MainView: Cambiando estado del parámetro editado');
+            
+            switch (parameterType) {
+              case 'Types':
+                await toggleTypeStatus(selectedParameter.id);
+                break;
+              case 'States':
+                await toggleStatueStatus(selectedParameter.id);
+                break;
+            }
+          } catch (toggleError) {
+            console.warn('⚠️ MainView: Error al cambiar estado:', toggleError);
+          }
+        }
         
-        setParametersData(prev => 
-          prev.map(param => 
-            param.id === selectedParameter.id ? mappedUpdatedParameter : param
-          )
-        );
+        // Recargar la lista de parámetros después de actualizar
+        await fetchParametersByCategory(selectedCategory.id, parameterType);
       }
       
       // Cerrar el modal

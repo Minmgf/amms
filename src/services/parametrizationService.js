@@ -14,7 +14,7 @@ export const createStatuesCategory = async (payload) => {
 
 // Listar categorías de estados - VISTA: Pestaña Estados
 export const getStatuesCategories = async () => {
-    const { data } = await apiMain.get(`statues_categories/list/`);
+    const { data } = await apiMain.get("statues_categories/list/");
     return data;
 };
 
@@ -38,7 +38,7 @@ export const createTypesCategory = async (payload) => {
 
 // Listar categorías de tipos - VISTA: Pestaña Tipos
 export const getTypesCategories = async () => {
-    const { data } = await apiMain.get(`types_categories/list/`);
+    const { data } = await apiMain.get("types_categories/list/");
     return data;
 };
 
@@ -49,7 +49,7 @@ export const updateTypesCategory = async (idTypeCategory, payload) => {
 };
 
 // =============================================================================
-// MODAL DETALLE DE CATEGORÍA - ESTADOS (HU-PAR-003)
+// MODAL DETALLE DE CATEGORÍA - ESTADOS (HU-PAR-003 / HU-PAR-004)
 // =============================================================================
 
 // ===== GESTIÓN DE ESTADOS INDIVIDUALES =====
@@ -85,7 +85,7 @@ export const toggleStatueStatus = async (idStatues) => {
 };
 
 // =============================================================================
-// MODAL DETALLE DE CATEGORÍA - TIPOS (HU-PAR-003)
+// MODAL DETALLE DE CATEGORÍA - TIPOS (HU-PAR-003 / HU-PAR-004)
 // =============================================================================
 
 // ===== GESTIÓN DE TIPOS INDIVIDUALES =====

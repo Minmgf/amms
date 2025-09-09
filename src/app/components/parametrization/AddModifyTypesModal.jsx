@@ -92,7 +92,8 @@ const AddModifyTypesModal = ({
       onClose();
     } catch (err) {
       console.error("Error saving type:", err);
-      setError(`Error ${mode === "add" ? "creating" : "updating"} type: ${err.message}`);
+      // Mostrar el error tal como viene del componente padre (incluye validaciones de duplicados)
+      setError(err.message);
     } finally {
       setSaving(false);
     }
