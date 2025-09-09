@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useMemo, useEffect } from 'react';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   useReactTable,
   getCoreRowModel,
@@ -73,6 +74,7 @@ const columns = [
 ];
 
 export default function UserTable() {
+  useTheme();
   const [globalFilter, setGlobalFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
@@ -193,19 +195,19 @@ export default function UserTable() {
 
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-800">User Management</h1>
+    <div className="space-y-6 parametrization-page">
+      <h1 className="text-3xl font-bold text-primary">User Management</h1>
       
       {/* Controles superiores */}
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div className="relative flex-1 max-w-md">
-          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary" />
           <input
             type="text"
             placeholder="Buscar usuarios..."
             value={globalFilter ?? ''}
             onChange={e => setGlobalFilter(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full parametrization-input pl-10 pr-4 py-2"
           />
         </div>
         
@@ -213,7 +215,7 @@ export default function UserTable() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="parametrization-input px-3 py-2"
           >
             <option value="">Todos los estados</option>
             <option value="Activo">Activo</option>
@@ -224,7 +226,7 @@ export default function UserTable() {
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="parametrization-input px-3 py-2"
           >
             <option value="">Todos los roles</option>
             <option value="administrador">Administrador</option>
@@ -237,16 +239,13 @@ export default function UserTable() {
               setStatusFilter('');
               setRoleFilter('');
             }}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+            className="parametrization-button flex items-center gap-2 px-4 py-2"
           >
             <FaFilter />
             Limpiar filtros
           </button>
-          
-          <button 
-            onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-          >
+
+          <button onClick={() => setIsCreateModalOpen(true)} className="parametrization-action-button flex items-center gap-2 px-4 py-2">
             <FaUserPlus />
             Add user
           </button>
@@ -267,24 +266,24 @@ export default function UserTable() {
 
       {/* Loading y Error States */}
       {loading && (
-        <div className="bg-white rounded-lg shadow p-8 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Cargando usuarios...</p>
+        <div className="card-theme rounded-lg shadow p-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-secondary">Cargando usuarios...</p>
         </div>
       )}
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800">{error}</p>
+        <div className="card-theme rounded-lg p-4 border border-danger/20">
+          <p className="text-danger">{error}</p>
         </div>
       )}
 
       {/* Tabla */}
       {!loading && !error && (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="card-theme rounded-lg shadow overflow-hidden parametrization-table-wrapper">
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+            <table className="w-full parametrization-table">
+              <thead className="parametrization-table-header">
                 {table.getHeaderGroups().map(headerGroup => (
                   <tr key={headerGroup.id}>
                     {headerGroup.headers.map(header => (
@@ -316,15 +315,15 @@ export default function UserTable() {
                   </tr>
                 ))}
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="parametrization-table-body">
                 {table.getRowModel().rows.map(row => (
-                  <tr 
-                    key={row.id} 
-                    className="hover:bg-gray-50 cursor-pointer transition-colors"
+                  <tr
+                    key={row.id}
+                    className="hover:bg-surface-variant cursor-pointer transition-colors"
                     onClick={() => handleUserClick(row.original)}
                   >
                     {row.getVisibleCells().map(cell => (
-                      <td key={cell.id} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td key={cell.id} className="px-6 py-4 whitespace-nowrap text-sm text-primary">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     ))}
