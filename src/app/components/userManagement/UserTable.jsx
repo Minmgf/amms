@@ -201,7 +201,7 @@ export default function UserTable() {
       {/* Controles superiores */}
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div className="relative flex-1 max-w-md">
-          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary" />
+          {/* <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary" /> */}
           <input
             type="text"
             placeholder="Buscar usuarios..."
@@ -245,7 +245,7 @@ export default function UserTable() {
             Limpiar filtros
           </button>
 
-          <button onClick={() => setIsCreateModalOpen(true)} className="parametrization-action-button flex items-center gap-2 px-4 py-2">
+          <button onClick={() => setIsCreateModalOpen(true)} className="parametrization-button flex items-center gap-2 px-4 py-2">
             <FaUserPlus />
             Add user
           </button>
