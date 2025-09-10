@@ -10,7 +10,7 @@ import {
   flexRender,
   createColumnHelper,
 } from '@tanstack/react-table';
-import NavigationMenu from '../../../components/ParameterNavigation';
+import NavigationMenu from '../../../components/parametrization/ParameterNavigation';
 import TypesModal from '../../../components/parametrization/TypesModal';
 import AddModifyTypesModal from '../../../components/parametrization/AddModifyTypesModal';
 import { SuccessModal, ErrorModal } from '../../../components/shared/SuccessErrorModal';
@@ -30,6 +30,7 @@ const ParameterizationView = () => {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
   
   // Estados para Modal de detalles (lista de parámetros por categoría)
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -336,10 +337,39 @@ const ParameterizationView = () => {
 
         {/* Filter Section */}
         <div className="mb-4 md:mb-6 flex flex-col sm:flex-row gap-4 justify-between">
-          <button className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit">
-            <FiFilter className="filter-icon w-4 h-4" />
-            <span className="text-sm">Filter by</span>
-          </button>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+            <button 
+              onClick={() => setShowFilters(!showFilters)}
+              className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit"
+            >
+              <FiFilter className="filter-icon w-4 h-4" />
+              <span className="text-sm">Filter by</span>
+            </button>
+            
+            {/* Expandable Filter Input */}
+            {showFilters && (
+              <div className="relative w-full sm:w-auto">
+                <input
+                  type="text"
+                  value={globalFilter}
+                  onChange={(e) => setGlobalFilter(e.target.value)}
+                  placeholder="Search categories..."
+                  className="parametrization-filter-input px-3 py-2 pr-10 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:min-w-[200px]"
+                />
+                {globalFilter && (
+                  <button
+                    onClick={() => setGlobalFilter('')}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1"
+                    title="Clear filter"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Navigation Menu - Tabs para Types, States, Brands, etc. */}
@@ -354,7 +384,7 @@ const ParameterizationView = () => {
         <div className="parametrization-table mb-6 md:mb-8">
           {loading ? (
             <div className="parametrization-loading p-8 text-center">
-              Loading types categories...
+              Loading...
             </div>
           ) : (
             <>
