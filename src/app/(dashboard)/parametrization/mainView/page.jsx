@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
-import { FiFilter, FiEdit3, FiBell, FiEye, FiPlus } from 'react-icons/fi';
+import { FiFilter, FiEye } from 'react-icons/fi';
 import {
   useReactTable,
   getCoreRowModel,
@@ -13,11 +13,13 @@ import {
 import NavigationMenu from '../../../components/ParameterNavigation';
 import TypesModal from '../../../components/parametrization/TypesModal';
 import AddModifyTypesModal from '../../../components/parametrization/AddModifyTypesModal';
+import { SuccessModal, ErrorModal } from '../../../components/shared/SuccessErrorModal';
 import { 
-  getTypesCategories, 
+  getTypesCategories,
   getTypesByCategory, 
   createTypeItem, 
-  updateTypeItem 
+  updateTypeItem,
+  toggleTypeStatus
 } from "@/services/parametrizationService";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -26,218 +28,245 @@ const ParameterizationView = () => {
   const { currentTheme } = useTheme();
   const [activeMenuItem, setActiveMenuItem] = useState('Types');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [data, setData] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
   
-  // Estados para TypesModal (lista de types por categoría)
-  const [isTypesModalOpen, setIsTypesModalOpen] = useState(false);
+  // Estados para Modal de detalles (lista de parámetros por categoría)
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [typesData, setTypesData] = useState([]);
-  const [loadingTypes, setLoadingTypes] = useState(false);
+  const [parametersData, setParametersData] = useState([]);
+  const [loadingParameters, setLoadingParameters] = useState(false);
   
-  // Estados para AddModifyTypesModal (agregar/editar type)
-  const [isAddModifyTypesModalOpen, setIsAddModifyTypesModalOpen] = useState(false);
-  const [typeFormMode, setTypeFormMode] = useState('add');
-  const [selectedType, setSelectedType] = useState(null);
+  // Estados para Modal de agregar/editar parámetros
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [formMode, setFormMode] = useState('add');
+  const [selectedParameter, setSelectedParameter] = useState(null);
 
-  // Función para obtener categorías del backend
-  const fetchData = async (menuItem = 'Types') => {
+  // Estados para los modales de success/error
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // Función para mostrar modal de éxito
+  const showSuccessModal = (message) => {
+    setSuccessMessage(message);
+    setIsSuccessModalOpen(true);
+  };
+
+  // Función para mostrar modal de error
+  const showErrorModal = (message) => {
+    setErrorMessage(message);
+    setIsErrorModalOpen(true);
+  };
+
+  // Función para obtener categorías de Types
+  const fetchCategoriesData = async () => {
     setLoading(true);
-    setError(null);
-    
-    console.log('🔄 MainView: Iniciando carga de datos...');
-    console.log('🎯 MainView: Menu seleccionado:', menuItem);
-    
+
     try {
-      console.log('📞 MainView: Llamando a getTypesCategories...');
       const response = await getTypesCategories();
       
-      console.log('✅ MainView: Respuesta recibida del servicio:');
-      console.log('📊 MainView: Datos completos:', response);
-      console.log('📈 MainView: Cantidad de registros:', Array.isArray(response) ? response.length : 'No es array');
-      console.log('🔍 MainView: Primer elemento:', response?.[0]);
-      
       // Mapear los datos del backend al formato esperado por la vista
-      const mappedData = response.map((item, index) => {
-        console.log(`🔄 MainView: Mapeando item ${index + 1}:`, item);
-        return {
-          id: item.id || item.id_types_categories,
-          name: item.name,
-          description: item.description,
-          details: ''
-        };
-      });
-      
-      console.log('🎨 MainView: Datos mapeados para la vista:');
-      console.log('📋 MainView: mappedData:', mappedData);
+      const mappedData = response.map((item) => ({
+        id: item.id_types_categories,
+        name: item.name,
+        description: item.description,
+        type: 'Types'
+      }));
       
       setData(mappedData);
-      console.log('✅ MainView: Datos establecidos en el estado exitosamente');
       
     } catch (err) {
-      console.error('❌ MainView: Error completo:', err);
-      console.error('📨 MainView: Error response:', err.response);
-      console.error('⚠️ MainView: Error message:', err.message);
-      
-      setError(err.message || 'Error al cargar los datos');
+      console.error('❌ MainView: Error al cargar categorías:', err);
+      const errorMsg = `Error loading Types categories: ${err.message}`;
+      showErrorModal(errorMsg);
       setData([]);
     } finally {
       setLoading(false);
-      console.log('🏁 MainView: Proceso de carga finalizado');
     }
   };
 
-  // Función para obtener types por categoría
-  const fetchTypesByCategory = async (categoryId) => {
-    setLoadingTypes(true);
+  // Función para obtener parámetros por categoría
+  const fetchParametersByCategory = async (categoryId) => {
+    setLoadingParameters(true);
     try {
-      console.log('📞 MainView: Obteniendo types para categoría:', categoryId);
+      
       const response = await getTypesByCategory(categoryId);
       
-      console.log('✅ MainView: Types obtenidos:', response);
-      
-      // Mapear los datos al formato esperado por el TypesModal
-      const mappedTypes = response.map(item => ({
-        id: item.id || item.id_types,
+      // Mapear los datos al formato esperado por el modal
+      const mappedParameters = response.map(item => ({
+        id: item.id_types,
         typeName: item.name,
+        name: item.name,
         description: item.description,
-        status: item.isActive ? 'Active' : 'Inactive',
-        isActive: item.isActive
+        status: item.estado === 'Activo' ? 'Active' : 'Inactive',
+        isActive: item.estado === 'Activo'
       }));
       
-      setTypesData(mappedTypes);
-      console.log('🎨 MainView: Types mapeados:', mappedTypes);
+      setParametersData(mappedParameters);
       
     } catch (err) {
-      console.error('❌ MainView: Error al obtener types:', err);
-      setTypesData([]);
+      const errorMsg = `Error loading parameters: ${err.message}`;
+      showErrorModal(errorMsg);
+      setParametersData([]);
     } finally {
-      setLoadingTypes(false);
+      setLoadingParameters(false);
     }
   };
 
+  // Función para validar nombres duplicados
+  const validateDuplicateName = (name, excludeId = null) => {
+    const normalizedName = name.trim().toLowerCase();
+    return parametersData.some(param => 
+      param.typeName.toLowerCase() === normalizedName && 
+      param.id !== excludeId
+    );
+  };
+
+  // Efecto para cargar datos
   useEffect(() => {
-    console.log('🎬 MainView: useEffect ejecutado - activeMenuItem changed:', activeMenuItem);
-    fetchData(activeMenuItem);
-  }, [activeMenuItem]);
+    fetchCategoriesData();
+  }, []);
 
   const handleMenuItemChange = (item) => {
-    console.log('🔄 MainView: Cambiando menu item de', activeMenuItem, 'a', item);
     setActiveMenuItem(item);
   };
 
-  // ==================== HANDLERS PARA TypesModal ====================
+  // ==================== HANDLERS PARA MODAL DE DETALLES ====================
   
-  // Abrir TypesModal (cuando se hace click en el ojo de la tabla principal)
+  // Abrir modal de detalles (cuando se hace click en el ojo de la tabla principal)
   const handleViewDetails = async (categoryId) => {
     const category = data.find(item => item.id === categoryId);
     if (category) {
       setSelectedCategory(category);
-      setIsTypesModalOpen(true);
+      setIsDetailsModalOpen(true);
       
-      // Cargar los types de esta categoría
-      await fetchTypesByCategory(categoryId);
+      // Cargar los parámetros de esta categoría
+      await fetchParametersByCategory(categoryId);
     }
   };
 
-  // Cerrar TypesModal
-  const handleCloseTypesModal = () => {
-    setIsTypesModalOpen(false);
+  // Cerrar modal de detalles
+  const handleCloseDetailsModal = () => {
+    setIsDetailsModalOpen(false);
     setSelectedCategory(null);
-    setTypesData([]);
+    setParametersData([]);
   };
 
-  // ==================== HANDLERS PARA AddModifyTypesModal ====================
+  // ==================== HANDLERS PARA MODAL DE FORMULARIO ====================
   
-  // Abrir AddModifyTypesModal en modo ADD
-  const handleAddType = () => {
-    setTypeFormMode('add');
-    setSelectedType(null);
-    setIsAddModifyTypesModalOpen(true);
+  // Abrir modal de formulario en modo ADD
+  const handleAddParameter = () => {
+    setFormMode('add');
+    setSelectedParameter(null);
+    setIsFormModalOpen(true);
   };
 
-  // Abrir AddModifyTypesModal en modo EDIT
-  const handleEditType = (typeId) => {
-    const typeToEdit = typesData.find(type => type.id === typeId);
-    if (typeToEdit) {
-      setTypeFormMode('modify');
-      setSelectedType(typeToEdit);
-      setIsAddModifyTypesModalOpen(true);
+  // Abrir modal de formulario en modo EDIT
+  const handleEditParameter = (parameterId) => {
+    const parameterToEdit = parametersData.find(param => param.id === parameterId);
+    if (parameterToEdit) {
+      setFormMode('modify');
+      setSelectedParameter(parameterToEdit);
+      setIsFormModalOpen(true);
     }
   };
 
-  // Cerrar AddModifyTypesModal
-  const handleCloseAddModifyTypesModal = () => {
-    setIsAddModifyTypesModalOpen(false);
-    setSelectedType(null);
-    setTypeFormMode('add');
+  // Cerrar modal de formulario
+  const handleCloseFormModal = () => {
+    setIsFormModalOpen(false);
+    setSelectedParameter(null);
+    setFormMode('add');
   };
 
-  // Guardar/Actualizar type
-  const handleSaveType = async (typeData) => {
+  // Guardar/Actualizar parámetro
+  const handleSaveParameter = async (parameterData) => {
     try {
-      console.log('💾 MainView: Guardando type data:', typeData);
+      // Validar nombres duplicados
+      if (formMode === 'add') {
+        if (validateDuplicateName(parameterData.typeName)) {
+          throw new Error(`A parameter with the name "${parameterData.typeName}" already exists in this category`);
+        }
+      } else {
+        if (validateDuplicateName(parameterData.typeName, selectedParameter.id)) {
+          throw new Error(`A parameter with the name "${parameterData.typeName}" already exists in this category`);
+        }
+      }
       
-      if (typeFormMode === 'add') {
-        // Crear nuevo type
+      if (formMode === 'add') {
+        // Crear nuevo parámetro
         const payload = {
-          name: typeData.typeName,
-          description: typeData.description,
-          isActive: typeData.isActive,
-          id_types_categories: selectedCategory.id
+          name: parameterData.typeName,
+          description: parameterData.description,
+          types_category: selectedCategory.id,
+          responsible_user: 1 // TODO: Obtener del contexto de usuario
         };
         
-        console.log('📤 MainView: Creando type con payload:', payload);
-        const newType = await createTypeItem(payload);
-        console.log('✅ MainView: Type creado exitosamente:', newType);
+        const createdResponse = await createTypeItem(payload);   
+        // Si se crea como inactivo, hacer toggle después de crear
+        if (!parameterData.isActive) {
+          try {
+            // Primero recargar la lista para obtener el ID del nuevo elemento
+            await fetchParametersByCategory(selectedCategory.id);
+            
+            // Encontrar el elemento recién creado (será el último con el nombre correspondiente)
+            const updatedParameters = await getTypesByCategory(selectedCategory.id);
+            const newParameter = updatedParameters.find(p => p.name === parameterData.typeName);
+            
+            if (newParameter) {
+              const newParameterId = newParameter.id_types;
+              await toggleTypeStatus(newParameterId);
+            }
+          } catch (toggleError) {
+            console.warn('⚠️ MainView: Error al desactivar parámetro recién creado:', toggleError);
+          }
+        }
         
-        // Actualizar la lista local
-        const mappedNewType = {
-          id: newType.id,
-          typeName: newType.name,
-          description: newType.description,
-          status: newType.isActive ? 'Active' : 'Inactive',
-          isActive: newType.isActive
-        };
+        // Recargar la lista de parámetros después de crear
+        await fetchParametersByCategory(selectedCategory.id);
         
-        setTypesData(prev => [...prev, mappedNewType]);
+        // Mostrar mensaje de éxito
+        showSuccessModal(`Parameter "${parameterData.typeName}" has been created successfully.`);
         
       } else {
-        // Actualizar type existente
-        const payload = {
-          name: typeData.typeName,
-          description: typeData.description,
-          isActive: typeData.isActive
+        // Actualizar parámetro existente
+        const updatePayload = {
+          name: parameterData.typeName,
+          description: parameterData.description,
+          responsible_user: 1 // TODO: Obtener del contexto de usuario
         };
         
-        console.log('📤 MainView: Actualizando type ID:', selectedType.id, 'con payload:', payload);
-        const updatedType = await updateTypeItem(selectedType.id, payload);
-        console.log('✅ MainView: Type actualizado exitosamente:', updatedType);
+        const updatedResponse = await updateTypeItem(selectedParameter.id, updatePayload);
         
-        // Actualizar la lista local
-        const mappedUpdatedType = {
-          id: updatedType.id,
-          typeName: updatedType.name,
-          description: updatedType.description,
-          status: updatedType.isActive ? 'Active' : 'Inactive',
-          isActive: updatedType.isActive
-        };
+        // Si el estado cambió, hacer toggle
+        if (parameterData.isActive !== selectedParameter.isActive) {
+          try {
+            await toggleTypeStatus(selectedParameter.id);
+          } catch (toggleError) {
+            console.warn('⚠️ MainView: Error al cambiar estado:', toggleError);
+          }
+        }
         
-        setTypesData(prev => 
-          prev.map(type => 
-            type.id === selectedType.id ? mappedUpdatedType : type
-          )
-        );
+        // Recargar la lista de parámetros después de actualizar
+        await fetchParametersByCategory(selectedCategory.id);
+        
+        // Mostrar mensaje de éxito
+        showSuccessModal(`Parameter "${parameterData.typeName}" has been updated successfully.`);
       }
       
       // Cerrar el modal
-      handleCloseAddModifyTypesModal();
+      handleCloseFormModal();
       
     } catch (err) {
-      console.error('❌ MainView: Error al guardar type:', err);
-      // Aquí podrías mostrar un mensaje de error al usuario
-      setError(`Error al ${typeFormMode === 'add' ? 'crear' : 'actualizar'} el tipo: ${err.message}`);
+      console.error('❌ MainView: Error al guardar parámetro:', err);
+      const errorMsg = `Error ${formMode === 'add' ? 'creating' : 'updating'} parameter: ${err.message}`;
+      
+      // Mostrar modal de error
+      showErrorModal(errorMsg);
+      
+      // Re-lanzar el error para que lo maneje el modal
+      throw new Error(errorMsg);
     }
   };
 
@@ -250,7 +279,7 @@ const ParameterizationView = () => {
       columnHelper.accessor('name', {
         header: 'Category name',
         cell: info => (
-          <div className="font-medium parametrization-table-cell">
+          <div className="font-medium">
             {info.getValue()}
           </div>
         ),
@@ -258,7 +287,7 @@ const ParameterizationView = () => {
       columnHelper.accessor('description', {
         header: 'Description',
         cell: info => (
-          <div className="parametrization-table-cell secondary">
+          <div className="secondary">
             {info.getValue()}
           </div>
         ),
@@ -276,7 +305,7 @@ const ParameterizationView = () => {
         ),
       }),
     ],
-    [data] // Cambiado la dependencia para evitar recrear innecesariamente
+    [data]
   );
 
   const table = useReactTable({
@@ -313,7 +342,7 @@ const ParameterizationView = () => {
           </button>
         </div>
 
-        {/* Navigation Menu */}
+        {/* Navigation Menu - Tabs para Types, States, Brands, etc. */}
         <div className="mb-6 md:mb-8">
           <NavigationMenu
             activeItem={activeMenuItem}
@@ -321,24 +350,11 @@ const ParameterizationView = () => {
           />
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="parametrization-error mb-4">
-            <p className="text-sm">{error}</p>
-            <button 
-              onClick={() => setError(null)}
-              className="mt-2 hover:underline text-sm underline"
-            >
-              Dismiss
-            </button>
-          </div>
-        )}
-
         {/* Table */}
         <div className="parametrization-table mb-6 md:mb-8">
           {loading ? (
             <div className="parametrization-loading p-8 text-center">
-              Loading...
+              Loading types categories...
             </div>
           ) : (
             <>
@@ -376,7 +392,7 @@ const ParameterizationView = () => {
                       </tr>
                     ))}
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody>
                     {table.getRowModel().rows.map(row => (
                       <tr key={row.id} className="parametrization-table-row group">
                         {row.getVisibleCells().map(cell => (
@@ -520,25 +536,41 @@ const ParameterizationView = () => {
         </div>
       </div>
       
-      {/* TypesModal - Modal de lista de types por categoría */}
+      {/* Modal de Detalles - Lista de parámetros por categoría */}
       <TypesModal
-        isOpen={isTypesModalOpen}
-        onClose={handleCloseTypesModal}
+        isOpen={isDetailsModalOpen}
+        onClose={handleCloseDetailsModal}
         categoryName={selectedCategory?.name || ''}
-        data={typesData}
-        loading={loadingTypes}
-        onAddItem={handleAddType}
-        onEditItem={handleEditType}
+        data={parametersData}
+        loading={loadingParameters}
+        onAddItem={handleAddParameter}
+        onEditItem={handleEditParameter}
       />
 
-      {/* AddModifyTypesModal - Modal para agregar/editar types */}
+      {/* Modal de Formulario - Agregar/editar parámetros */}
       <AddModifyTypesModal
-        isOpen={isAddModifyTypesModalOpen}
-        onClose={handleCloseAddModifyTypesModal}
-        mode={typeFormMode}
-        status={selectedType}
+        isOpen={isFormModalOpen}
+        onClose={handleCloseFormModal}
+        mode={formMode}
+        status={selectedParameter}
         category={selectedCategory?.name || ''}
-        onSave={handleSaveType}
+        onSave={handleSaveParameter}
+      />
+
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={isSuccessModalOpen}
+        onClose={() => setIsSuccessModalOpen(false)}
+        title="Success"
+        message={successMessage}
+      />
+
+      {/* Error Modal */}
+      <ErrorModal
+        isOpen={isErrorModalOpen}
+        onClose={() => setIsErrorModalOpen(false)}
+        title="Error"
+        message={errorMessage}
       />
     </div>
   );
