@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
-import { FiFilter, FiEdit3, FiBell, FiEye, FiPlus } from 'react-icons/fi';
+import { FiFilter, FiEye } from 'react-icons/fi';
 import {
   useReactTable,
   getCoreRowModel,
@@ -13,19 +13,13 @@ import {
 import NavigationMenu from '../../../components/ParameterNavigation';
 import TypesModal from '../../../components/parametrization/TypesModal';
 import AddModifyTypesModal from '../../../components/parametrization/AddModifyTypesModal';
+import { SuccessModal, ErrorModal } from '../../../components/shared/SuccessErrorModal';
 import { 
-  // Servicios para Types
   getTypesCategories,
   getTypesByCategory, 
   createTypeItem, 
   updateTypeItem,
-  toggleTypeStatus,
-  // Servicios para States
-  getStatuesCategories,
-  getStatuesByCategory,
-  createStatueItem,
-  updateStatue,
-  toggleStatueStatus
+  toggleTypeStatus
 } from "@/services/parametrizationService";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -34,7 +28,6 @@ const ParameterizationView = () => {
   const { currentTheme } = useTheme();
   const [activeMenuItem, setActiveMenuItem] = useState('Types');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [data, setData] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
   
@@ -49,107 +42,73 @@ const ParameterizationView = () => {
   const [formMode, setFormMode] = useState('add');
   const [selectedParameter, setSelectedParameter] = useState(null);
 
-  // Función para obtener categorías según el tipo de parámetro
-  const fetchCategoriesData = async (parameterType) => {
+  // Estados para los modales de success/error
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // Función para mostrar modal de éxito
+  const showSuccessModal = (message) => {
+    setSuccessMessage(message);
+    setIsSuccessModalOpen(true);
+  };
+
+  // Función para mostrar modal de error
+  const showErrorModal = (message) => {
+    setErrorMessage(message);
+    setIsErrorModalOpen(true);
+  };
+
+  // Función para obtener categorías de Types
+  const fetchCategoriesData = async () => {
     setLoading(true);
-    setError(null);
-    
-    console.log('🔄 MainView: Cargando categorías para:', parameterType);
-    
+
     try {
-      let response = [];
-      
-      switch (parameterType) {
-        case 'Types':
-          response = await getTypesCategories();
-          break;
-        case 'States':
-          response = await getStatuesCategories();
-          break;
-        case 'Brands':
-        case 'Units':
-        case 'Styles':
-        case 'Positions':
-          // Pendiente implementación de otros endpoints
-          console.warn(`⚠️ Endpoint para ${parameterType} no implementado aún`);
-          response = [];
-          break;
-        default:
-          response = await getTypesCategories();
-      }
-      
-      console.log('✅ MainView: Categorías obtenidas:', response);
+      const response = await getTypesCategories();
       
       // Mapear los datos del backend al formato esperado por la vista
       const mappedData = response.map((item) => ({
-        // Para Types: usar id_types_categories
-        // Para States: usar id_statues_categories
-        id: item.id_types_categories || item.id_statues_categories || item.id,
+        id: item.id_types_categories,
         name: item.name,
         description: item.description,
-        type: parameterType
+        type: 'Types'
       }));
       
       setData(mappedData);
-      console.log('🎨 MainView: Datos mapeados:', mappedData);
       
     } catch (err) {
       console.error('❌ MainView: Error al cargar categorías:', err);
-      setError(`Error al cargar categorías de ${parameterType}: ${err.message}`);
+      const errorMsg = `Error loading Types categories: ${err.message}`;
+      showErrorModal(errorMsg);
       setData([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Función para obtener parámetros por categoría según el tipo
-  const fetchParametersByCategory = async (categoryId, parameterType) => {
+  // Función para obtener parámetros por categoría
+  const fetchParametersByCategory = async (categoryId) => {
     setLoadingParameters(true);
     try {
-      console.log('📞 MainView: Obteniendo parámetros para categoría:', categoryId, 'tipo:', parameterType);
       
-      let response = [];
-      
-      switch (parameterType) {
-        case 'Types':
-          response = await getTypesByCategory(categoryId);
-          break;
-        case 'States':
-          response = await getStatuesByCategory(categoryId);
-          break;
-        case 'Brands':
-        case 'Units':
-        case 'Styles':
-        case 'Positions':
-          // Pendiente implementación de otros endpoints
-          console.warn(`⚠️ Endpoint para obtener ${parameterType} por categoría no implementado aún`);
-          response = [];
-          break;
-        default:
-          response = await getTypesByCategory(categoryId);
-      }
-      
-      console.log('✅ MainView: Parámetros obtenidos:', response);
+      const response = await getTypesByCategory(categoryId);
       
       // Mapear los datos al formato esperado por el modal
       const mappedParameters = response.map(item => ({
-        // Para Types: usar id_types
-        // Para States: usar id_statues
-        id: item.id_types || item.id_statues || item.id,
+        id: item.id_types,
         typeName: item.name,
         name: item.name,
         description: item.description,
-        // El backend devuelve "estado" con valores "Activo"/"Inactivo"
         status: item.estado === 'Activo' ? 'Active' : 'Inactive',
         isActive: item.estado === 'Activo'
       }));
       
       setParametersData(mappedParameters);
-      console.log('🎨 MainView: Parámetros mapeados:', mappedParameters);
       
     } catch (err) {
-      console.error('❌ MainView: Error al obtener parámetros:', err);
-      setError(`Error al obtener parámetros: ${err.message}`);
+      const errorMsg = `Error loading parameters: ${err.message}`;
+      showErrorModal(errorMsg);
       setParametersData([]);
     } finally {
       setLoadingParameters(false);
@@ -165,14 +124,12 @@ const ParameterizationView = () => {
     );
   };
 
-  // Efecto para cargar datos cuando cambia el tipo de parámetro
+  // Efecto para cargar datos
   useEffect(() => {
-    console.log('🎬 MainView: Cambiando tipo de parámetro a:', activeMenuItem);
-    fetchCategoriesData(activeMenuItem);
-  }, [activeMenuItem]);
+    fetchCategoriesData();
+  }, []);
 
   const handleMenuItemChange = (item) => {
-    console.log('🔄 MainView: Cambiando menu item de', activeMenuItem, 'a', item);
     setActiveMenuItem(item);
   };
 
@@ -186,7 +143,7 @@ const ParameterizationView = () => {
       setIsDetailsModalOpen(true);
       
       // Cargar los parámetros de esta categoría
-      await fetchParametersByCategory(categoryId, category.type);
+      await fetchParametersByCategory(categoryId);
     }
   };
 
@@ -195,10 +152,6 @@ const ParameterizationView = () => {
     setIsDetailsModalOpen(false);
     setSelectedCategory(null);
     setParametersData([]);
-    // Limpiar errores relacionados con parámetros
-    if (error && error.includes('parámetros')) {
-      setError(null);
-    }
   };
 
   // ==================== HANDLERS PARA MODAL DE FORMULARIO ====================
@@ -230,10 +183,6 @@ const ParameterizationView = () => {
   // Guardar/Actualizar parámetro
   const handleSaveParameter = async (parameterData) => {
     try {
-      console.log('💾 MainView: Guardando parámetro:', parameterData);
-      
-      const parameterType = selectedCategory?.type || activeMenuItem;
-      
       // Validar nombres duplicados
       if (formMode === 'add') {
         if (validateDuplicateName(parameterData.typeName)) {
@@ -247,64 +196,27 @@ const ParameterizationView = () => {
       
       if (formMode === 'add') {
         // Crear nuevo parámetro
-        const basePayload = {
+        const payload = {
           name: parameterData.typeName,
           description: parameterData.description,
+          types_category: selectedCategory.id,
           responsible_user: 1 // TODO: Obtener del contexto de usuario
         };
         
-        let payload = {};
-        let createdResponse = {};
-        
-        switch (parameterType) {
-          case 'Types':
-            payload = {
-              ...basePayload,
-              types_category: selectedCategory.id
-            };
-            createdResponse = await createTypeItem(payload);
-            break;
-            
-          case 'States':
-            payload = {
-              ...basePayload,
-              statues_category: selectedCategory.id
-            };
-            createdResponse = await createStatueItem(payload);
-            break;
-            
-          default:
-            throw new Error(`Creación de ${parameterType} no implementada aún`);
-        }
-        
-        console.log('✅ MainView: Parámetro creado exitosamente:', createdResponse);
-        
+        const createdResponse = await createTypeItem(payload);   
         // Si se crea como inactivo, hacer toggle después de crear
         if (!parameterData.isActive) {
           try {
-            console.log('🔄 MainView: Desactivando parámetro recién creado');
-            
             // Primero recargar la lista para obtener el ID del nuevo elemento
-            await fetchParametersByCategory(selectedCategory.id, parameterType);
+            await fetchParametersByCategory(selectedCategory.id);
             
             // Encontrar el elemento recién creado (será el último con el nombre correspondiente)
-            const updatedParameters = await (parameterType === 'Types' 
-              ? getTypesByCategory(selectedCategory.id)
-              : getStatuesByCategory(selectedCategory.id));
-            
+            const updatedParameters = await getTypesByCategory(selectedCategory.id);
             const newParameter = updatedParameters.find(p => p.name === parameterData.typeName);
             
             if (newParameter) {
-              const newParameterId = newParameter.id_types || newParameter.id_statues || newParameter.id;
-              
-              switch (parameterType) {
-                case 'Types':
-                  await toggleTypeStatus(newParameterId);
-                  break;
-                case 'States':
-                  await toggleStatueStatus(newParameterId);
-                  break;
-              }
+              const newParameterId = newParameter.id_types;
+              await toggleTypeStatus(newParameterId);
             }
           } catch (toggleError) {
             console.warn('⚠️ MainView: Error al desactivar parámetro recién creado:', toggleError);
@@ -312,7 +224,10 @@ const ParameterizationView = () => {
         }
         
         // Recargar la lista de parámetros después de crear
-        await fetchParametersByCategory(selectedCategory.id, parameterType);
+        await fetchParametersByCategory(selectedCategory.id);
+        
+        // Mostrar mensaje de éxito
+        showSuccessModal(`Parameter "${parameterData.typeName}" has been created successfully.`);
         
       } else {
         // Actualizar parámetro existente
@@ -322,43 +237,22 @@ const ParameterizationView = () => {
           responsible_user: 1 // TODO: Obtener del contexto de usuario
         };
         
-        let updatedResponse = {};
-        
-        switch (parameterType) {
-          case 'Types':
-            updatedResponse = await updateTypeItem(selectedParameter.id, updatePayload);
-            break;
-            
-          case 'States':
-            updatedResponse = await updateStatue(selectedParameter.id, updatePayload);
-            break;
-            
-          default:
-            throw new Error(`Actualización de ${parameterType} no implementada aún`);
-        }
-        
-        console.log('✅ MainView: Parámetro actualizado exitosamente:', updatedResponse);
+        const updatedResponse = await updateTypeItem(selectedParameter.id, updatePayload);
         
         // Si el estado cambió, hacer toggle
         if (parameterData.isActive !== selectedParameter.isActive) {
           try {
-            console.log('🔄 MainView: Cambiando estado del parámetro editado');
-            
-            switch (parameterType) {
-              case 'Types':
-                await toggleTypeStatus(selectedParameter.id);
-                break;
-              case 'States':
-                await toggleStatueStatus(selectedParameter.id);
-                break;
-            }
+            await toggleTypeStatus(selectedParameter.id);
           } catch (toggleError) {
             console.warn('⚠️ MainView: Error al cambiar estado:', toggleError);
           }
         }
         
         // Recargar la lista de parámetros después de actualizar
-        await fetchParametersByCategory(selectedCategory.id, parameterType);
+        await fetchParametersByCategory(selectedCategory.id);
+        
+        // Mostrar mensaje de éxito
+        showSuccessModal(`Parameter "${parameterData.typeName}" has been updated successfully.`);
       }
       
       // Cerrar el modal
@@ -366,8 +260,13 @@ const ParameterizationView = () => {
       
     } catch (err) {
       console.error('❌ MainView: Error al guardar parámetro:', err);
+      const errorMsg = `Error ${formMode === 'add' ? 'creating' : 'updating'} parameter: ${err.message}`;
+      
+      // Mostrar modal de error
+      showErrorModal(errorMsg);
+      
       // Re-lanzar el error para que lo maneje el modal
-      throw new Error(`Error al ${formMode === 'add' ? 'crear' : 'actualizar'} el parámetro: ${err.message}`);
+      throw new Error(errorMsg);
     }
   };
 
@@ -380,7 +279,7 @@ const ParameterizationView = () => {
       columnHelper.accessor('name', {
         header: 'Category name',
         cell: info => (
-          <div className="font-medium parametrization-table-cell">
+          <div className="font-medium">
             {info.getValue()}
           </div>
         ),
@@ -388,7 +287,7 @@ const ParameterizationView = () => {
       columnHelper.accessor('description', {
         header: 'Description',
         cell: info => (
-          <div className="parametrization-table-cell secondary">
+          <div className="secondary">
             {info.getValue()}
           </div>
         ),
@@ -451,24 +350,11 @@ const ParameterizationView = () => {
           />
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="parametrization-error mb-4">
-            <p className="text-sm">{error}</p>
-            <button 
-              onClick={() => setError(null)}
-              className="mt-2 hover:underline text-sm underline"
-            >
-              Dismiss
-            </button>
-          </div>
-        )}
-
         {/* Table */}
         <div className="parametrization-table mb-6 md:mb-8">
           {loading ? (
             <div className="parametrization-loading p-8 text-center">
-              Loading {activeMenuItem.toLowerCase()} categories...
+              Loading types categories...
             </div>
           ) : (
             <>
@@ -506,7 +392,7 @@ const ParameterizationView = () => {
                       </tr>
                     ))}
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody>
                     {table.getRowModel().rows.map(row => (
                       <tr key={row.id} className="parametrization-table-row group">
                         {row.getVisibleCells().map(cell => (
@@ -669,6 +555,22 @@ const ParameterizationView = () => {
         status={selectedParameter}
         category={selectedCategory?.name || ''}
         onSave={handleSaveParameter}
+      />
+
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={isSuccessModalOpen}
+        onClose={() => setIsSuccessModalOpen(false)}
+        title="Success"
+        message={successMessage}
+      />
+
+      {/* Error Modal */}
+      <ErrorModal
+        isOpen={isErrorModalOpen}
+        onClose={() => setIsErrorModalOpen(false)}
+        title="Error"
+        message={errorMessage}
       />
     </div>
   );
