@@ -18,7 +18,6 @@ const AddModifyTypesModal = ({
   });
   
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (mode === "modify" && status) {
@@ -36,8 +35,6 @@ const AddModifyTypesModal = ({
         isActive: true,
       });
     }
-    // Limpiar errores cuando se abre el modal
-    setError(null);
   }, [status, mode, category, isOpen]);
 
   const handleInputChange = (field, value) => {
@@ -45,19 +42,15 @@ const AddModifyTypesModal = ({
       ...prev,
       [field]: value,
     }));
-    // Limpiar error cuando el usuario hace cambios
-    if (error) setError(null);
   };
 
   const handleSave = async () => {
     // Validación básica
     if (!formData.typeName.trim()) {
-      setError("Type name is required");
       return;
     }
 
     setSaving(true);
-    setError(null);
 
     try {
       if (mode === "modify") {
@@ -67,8 +60,6 @@ const AddModifyTypesModal = ({
           description: formData.description.trim(),
           isActive: formData.isActive,
         };
-
-        console.log("Updating status parameter:", updatedData);
 
         if (onSave) {
           await onSave(updatedData);
@@ -81,8 +72,6 @@ const AddModifyTypesModal = ({
           isActive: formData.isActive,
         };
 
-        console.log("Adding status parameter:", newData);
-
         if (onSave) {
           await onSave(newData);
         }
@@ -92,8 +81,8 @@ const AddModifyTypesModal = ({
       onClose();
     } catch (err) {
       console.error("Error saving type:", err);
-      // Mostrar el error tal como viene del componente padre (incluye validaciones de duplicados)
-      setError(err.message);
+      // El manejo de errores se hace en el componente padre
+      throw err;
     } finally {
       setSaving(false);
     }
@@ -122,13 +111,6 @@ const AddModifyTypesModal = ({
 
         {/* Content */}
         <div className="px-4 sm:px-6 py-4 sm:py-6">
-          {/* Error Message */}
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-red-600 text-sm">{error}</p>
-            </div>
-          )}
-
           {/* Form Fields */}
           <div className="space-y-4 sm:space-y-6">
             {/* First Row - Category and Type name */}
@@ -143,7 +125,7 @@ const AddModifyTypesModal = ({
                   onChange={(e) =>
                     handleInputChange("category", e.target.value)
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600 focus:outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-black focus:outline-none"
                   readOnly
                 />
               </div>
@@ -159,7 +141,7 @@ const AddModifyTypesModal = ({
                     handleInputChange("typeName", e.target.value)
                   }
                   disabled={saving}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   placeholder="Enter type name"
                 />
               </div>
@@ -178,7 +160,7 @@ const AddModifyTypesModal = ({
                     handleInputChange("description", e.target.value)
                   }
                   disabled={saving}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   placeholder="Enter description"
                 />
               </div>

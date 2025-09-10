@@ -3,55 +3,6 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 // Temas predefinidos
 const PREDEFINED_THEMES = {
-  oscuro: {
-    name: 'Oscuro',
-    colors: {
-      primary: '#000000',
-      secondary: '#1f2937',
-      accent: '#3b82f6',
-      background: '#111827',
-      surface: '#1f2937',
-      text: '#ffffff',
-      textSecondary: '#d1d5db',
-      border: '#374151',
-      hover: '#374151',
-      error: '#ef4444',
-      success: '#10b981',
-      warning: '#f59e0b',
-    },
-    typography: {
-      fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-      fontSize: {
-        xs: '0.75rem',
-        sm: '0.875rem',
-        base: '1rem',
-        lg: '1.125rem',
-        xl: '1.25rem',
-        '2xl': '1.5rem',
-        '3xl': '1.875rem',
-      },
-      fontWeight: {
-        normal: '400',
-        medium: '500',
-        semibold: '600',
-        bold: '700',
-      }
-    },
-    spacing: {
-      xs: '0.25rem',
-      sm: '0.5rem',
-      md: '1rem',
-      lg: '1.5rem',
-      xl: '2rem',
-      '2xl': '3rem',
-    },
-    borderRadius: {
-      sm: '0.25rem',
-      md: '0.5rem',
-      lg: '0.75rem',
-      xl: '1rem',
-    }
-  },
   claro: {
     name: 'Claro',
     colors: {
@@ -61,7 +12,7 @@ const PREDEFINED_THEMES = {
       background: '#ffffff',
       surface: '#f8fafc',
       text: '#1f2937',
-      textSecondary: '#6b7280',
+      textSecondary: '#6b7280', // Cambiado para mejor legibilidad
       border: '#e5e7eb',
       hover: '#f3f4f6',
       error: '#ef4444',
@@ -127,6 +78,8 @@ const PREDEFINED_THEMES = {
         xl: '1.25rem',
         '2xl': '1.5rem',
         '3xl': '1.875rem',
+        paragraph: 'xl', // Nueva propiedad dinámica
+        title: 'xl',     // Nueva propiedad dinámica
       },
       fontWeight: {
         normal: '400',
@@ -166,7 +119,7 @@ export const useTheme = () => {
 
 // Provider del tema
 export const ThemeProvider = ({ children }) => {
-  const [currentTheme, setCurrentTheme] = useState('oscuro');
+  const [currentTheme, setCurrentTheme] = useState('claro');
   const [customThemes, setCustomThemes] = useState({});
   const [isLoading, setIsLoading] = useState(true);
 
@@ -184,8 +137,8 @@ export const ThemeProvider = ({ children }) => {
       console.log('✅ Aplicando tema guardado:', savedTheme);
       setCurrentTheme(savedTheme);
     } else if (savedTheme) {
-      console.log('⚠️ Tema guardado no válido, usando oscuro por defecto');
-      setCurrentTheme('oscuro');
+      console.log('⚠️ Tema guardado no válido, usando claro por defecto');
+      setCurrentTheme('claro');
     }
     
     if (savedCustomThemes) {
@@ -204,20 +157,20 @@ export const ThemeProvider = ({ children }) => {
 
   // Función para asegurar que un tema tenga la estructura completa
   const normalizeTheme = (theme) => {
-    if (!theme) return PREDEFINED_THEMES.oscuro;
+    if (!theme) return PREDEFINED_THEMES.claro;
     
     return {
       name: theme.name || 'Tema sin nombre',
       colors: {
-        primary: '#000000',
-        secondary: '#1f2937',
+        primary: '#ffffff',
+        secondary: '#f8fafc',
         accent: '#3b82f6',
-        background: '#111827',
-        surface: '#1f2937',
-        text: '#ffffff',
-        textSecondary: '#d1d5db',
-        border: '#374151',
-        hover: '#374151',
+        background: '#ffffff',
+        surface: '#f8fafc',
+        text: '#1f2937',
+        textSecondary: '#6b7280',
+        border: '#e5e7eb',
+        hover: '#f3f4f6',
         error: '#ef4444',
         success: '#10b981',
         warning: '#f59e0b',
@@ -275,9 +228,9 @@ export const ThemeProvider = ({ children }) => {
       localStorage.setItem('app-theme', currentTheme);
     } else {
       console.warn('🚨 Tema no encontrado:', currentTheme, 'Aplicando tema por defecto');
-      const defaultTheme = normalizeTheme(PREDEFINED_THEMES.oscuro);
+      const defaultTheme = normalizeTheme(PREDEFINED_THEMES.claro);
       applyThemeToDOM(defaultTheme);
-      setCurrentTheme('oscuro');
+      setCurrentTheme('claro');
     }
   }, [currentTheme, customThemes, isLoading]);
 
@@ -288,6 +241,9 @@ export const ThemeProvider = ({ children }) => {
       return;
     }
 
+    // Helper para convertir camelCase a kebab-case
+    const toKebabCase = (str) => str.replace(/([A-Z])/g, '-$1').toLowerCase();
+
     const root = document.documentElement;
     
     // Aplicar colores con validación
@@ -296,8 +252,10 @@ export const ThemeProvider = ({ children }) => {
       
       Object.entries(theme.colors).forEach(([key, value]) => {
         if (value) {
-          root.style.setProperty(`--color-${key}`, value);
-          console.log(`   --color-${key}: ${value}`);
+          // Convertir camelCase a kebab-case
+          const kebabKey = toKebabCase(key);
+          root.style.setProperty(`--color-${kebabKey}`, value);
+          console.log(`   --color-${kebabKey}: ${value}`);
         }
       });
       
@@ -327,7 +285,8 @@ export const ThemeProvider = ({ children }) => {
       if (theme.typography.fontSize && typeof theme.typography.fontSize === 'object') {
         Object.entries(theme.typography.fontSize).forEach(([key, value]) => {
           if (value) {
-            root.style.setProperty(`--font-size-${key}`, value);
+            const kebabKey = toKebabCase(key);
+            root.style.setProperty(`--font-size-${kebabKey}`, value);
           }
         });
       }
@@ -335,7 +294,8 @@ export const ThemeProvider = ({ children }) => {
       if (theme.typography.fontWeight && typeof theme.typography.fontWeight === 'object') {
         Object.entries(theme.typography.fontWeight).forEach(([key, value]) => {
           if (value) {
-            root.style.setProperty(`--font-weight-${key}`, value);
+            const kebabKey = toKebabCase(key);
+            root.style.setProperty(`--font-weight-${kebabKey}`, value);
           }
         });
       }
@@ -347,7 +307,8 @@ export const ThemeProvider = ({ children }) => {
     if (theme.spacing && typeof theme.spacing === 'object') {
       Object.entries(theme.spacing).forEach(([key, value]) => {
         if (value) {
-          root.style.setProperty(`--spacing-${key}`, value);
+          const kebabKey = toKebabCase(key);
+          root.style.setProperty(`--spacing-${kebabKey}`, value);
         }
       });
     } else {
@@ -358,7 +319,8 @@ export const ThemeProvider = ({ children }) => {
     if (theme.borderRadius && typeof theme.borderRadius === 'object') {
       Object.entries(theme.borderRadius).forEach(([key, value]) => {
         if (value) {
-          root.style.setProperty(`--border-radius-${key}`, value);
+          const kebabKey = toKebabCase(key);
+          root.style.setProperty(`--border-radius-${kebabKey}`, value);
         }
       });
     } else {
@@ -436,7 +398,7 @@ export const ThemeProvider = ({ children }) => {
     
     // Si el tema actual es el que se está eliminando, cambiar al tema por defecto
     if (currentTheme === themeKey) {
-      setCurrentTheme('oscuro');
+      setCurrentTheme('claro');
     }
   };
 
@@ -451,6 +413,96 @@ export const ThemeProvider = ({ children }) => {
     return Object.keys(getAllThemes());
   };
 
+  // Funciones para manejar temas dinámicos desde API
+  const loadThemesFromAPI = async () => {
+    try {
+      console.log('🌐 Cargando temas desde API...');
+      // Aquí podrás hacer el fetch a tu API
+      // const response = await fetch('/api/themes');
+      // const apiThemes = await response.json();
+      
+      // Por ahora simulamos una respuesta de API
+      const apiThemes = {
+        dinamico1: {
+          name: 'Dinámico 1',
+          colors: {
+            primary: '#7c3aed',
+            secondary: '#a855f7',
+            accent: '#06b6d4',
+            background: '#0f172a',
+            surface: '#1e293b',
+            text: '#f1f5f9',
+            textSecondary: '#cbd5e1',
+            border: '#334155',
+            hover: '#475569',
+            error: '#f87171',
+            success: '#34d399',
+            warning: '#fbbf24',
+          },
+          typography: {
+            fontFamily: 'Poppins, system-ui, sans-serif',
+            fontSize: {
+              paragraph: 'xl',
+              title: 'xl',
+            },
+          }
+        }
+      };
+      
+      setCustomThemes(prevThemes => ({...prevThemes, ...apiThemes}));
+      console.log('✅ Temas cargados desde API:', Object.keys(apiThemes));
+      
+      return apiThemes;
+    } catch (error) {
+      console.error('❌ Error cargando temas desde API:', error);
+      return {};
+    }
+  };
+
+  // Enviar tema a API
+  const saveThemeToAPI = async (themeKey, themeData) => {
+    try {
+      console.log('📤 Enviando tema a API:', themeKey, themeData);
+      
+      // Aquí podrás hacer el POST a tu API
+      // const response = await fetch('/api/themes', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ key: themeKey, ...themeData })
+      // });
+      
+      // Por ahora solo lo guardamos localmente
+      createCustomTheme(themeKey, themeData);
+      
+      console.log('✅ Tema enviado exitosamente a API');
+      return true;
+    } catch (error) {
+      console.error('❌ Error enviando tema a API:', error);
+      return false;
+    }
+  };
+
+  // Eliminar tema de API
+  const deleteThemeFromAPI = async (themeKey) => {
+    try {
+      console.log('🗑️ Eliminando tema de API:', themeKey);
+      
+      // Aquí podrás hacer el DELETE a tu API
+      // const response = await fetch(`/api/themes/${themeKey}`, {
+      //   method: 'DELETE'
+      // });
+      
+      // Por ahora solo lo eliminamos localmente
+      deleteCustomTheme(themeKey);
+      
+      console.log('✅ Tema eliminado exitosamente de API');
+      return true;
+    } catch (error) {
+      console.error('❌ Error eliminando tema de API:', error);
+      return false;
+    }
+  };
+
   const value = {
     // Estado
     currentTheme,
@@ -461,19 +513,24 @@ export const ThemeProvider = ({ children }) => {
     getCurrentTheme,
     getThemeNames,
     
-    // Acciones
+    // Acciones locales
     changeTheme,
     createCustomTheme,
     updateTheme,
     deleteCustomTheme,
+    
+    // Acciones API (para uso futuro)
+    loadThemesFromAPI,
+    saveThemeToAPI,
+    deleteThemeFromAPI,
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
+      <div className="flex items-center justify-center min-h-screen bg-white text-gray-800">
         <div className="text-center">
           <div className="text-lg mb-2">🎨 Inicializando sistema de temas...</div>
-          <div className="text-sm text-gray-400">Cargando configuración</div>
+          <div className="text-sm text-gray-600">Cargando configuración</div>
         </div>
       </div>
     );

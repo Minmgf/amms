@@ -1,10 +1,11 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { useTheme } from '@/contexts/ThemeContext';
 import { FaArrowLeft, FaUser, FaIdCard, FaEnvelope, FaPhone, FaMapMarkerAlt, FaCalendarAlt, FaVenusMars, FaShieldAlt, FaCheckCircle, FaClock, FaTimesCircle, FaEdit, FaEye, FaSave, FaUserPlus, FaExclamationTriangle } from 'react-icons/fa';
 import * as Dialog from '@radix-ui/react-dialog';
 import Select from 'react-select';
 import { getDocumentTypes, getGenderTypes, getRoleTypes, editUser, changeUserStatus } from '../../../services/authService';
-import { SuccessModal, ErrorModal, ConfirmModal } from '../shared/SuccessErrorModal';
+import { SuccessModal, ErrorModal } from '../shared/SuccessErrorModal';
 
 // Función helper para obtener el token desde localStorage o sessionStorage
 const getAuthToken = () => {
@@ -20,6 +21,7 @@ const getAuthToken = () => {
 };
 
 export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpdated }) {
+  useTheme();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -33,6 +35,12 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const [pendingStatusChange, setPendingStatusChange] = useState(null);
+  
+  // Estados para el modal interno de cambio de estado
+  const [showStatusChangeModal, setShowStatusChangeModal] = useState(false);
+  const [statusChangeMessage, setStatusChangeMessage] = useState('');
+  const [statusChangeSuccess, setStatusChangeSuccess] = useState(false);
+  const [statusChangeError, setStatusChangeError] = useState(false);
 
   // Estados para los datos de configuración
   const [documentTypes, setDocumentTypes] = useState([]);
@@ -154,32 +162,43 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
 
   // Función para manejar el cambio de estado del usuario
   const handleStatusChange = React.useCallback(async (newStatus) => {
-    // Mostrar modal de confirmación
+    // Mostrar modal de confirmación interno
     setPendingStatusChange(newStatus);
-    setModalMessage(`¿Está seguro que desea cambiar el estado del usuario?`);
-    setShowConfirmModal(true);
+    setStatusChangeMessage(`¿Está seguro que desea cambiar el estado del usuario?`);
+    setShowStatusChangeModal(true);
   }, []);
 
   // Función para confirmar el cambio de estado
-  const confirmStatusChange = async () => {
-    if (!pendingStatusChange) return;
+  const confirmStatusChange = React.useCallback(async () => {
+    console.log('confirmStatusChange ejecutándose...');
+    console.log('pendingStatusChange:', pendingStatusChange);
+    console.log('userData.id:', userData?.id);
+    
+    if (!pendingStatusChange) {
+      console.log('No hay pendingStatusChange, saliendo...');
+      return;
+    }
     
     try {
       setStatusChangeLoading(true);
-      setError(null);
-      setShowConfirmModal(false);
+      setShowStatusChangeModal(false);
 
+      console.log('Llamando a changeUserStatus...');
       const response = await changeUserStatus(userData.id, pendingStatusChange);
+      console.log('Respuesta de changeUserStatus:', response);
 
       if (response.success) {
-        setSuccess(true);
-        setModalMessage('Estado del usuario cambiado exitosamente');
-        setShowSuccessModal(true);
+        setStatusChangeSuccess(true);
+        setStatusChangeMessage('Estado del usuario cambiado exitosamente');
         setPendingStatusChange(null);
+        // Cerrar el modal principal y actualizar la lista
+        if (onUserUpdated) {
+          onUserUpdated();
+        }
+        onClose();
       } else {
-        setError(response.message || 'Error al cambiar el estado del usuario');
-        setModalMessage(response.message || 'Error al cambiar el estado del usuario');
-        setShowErrorModal(true);
+        setStatusChangeError(true);
+        setStatusChangeMessage(response.message || 'Error al cambiar el estado del usuario');
       }
     } catch (err) {
       console.error('Error al cambiar estado:', err);
@@ -201,14 +220,13 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
         errorMessage = 'Error al cambiar estado: ' + err.message;
       }
       
-      setError(errorMessage);
-      setModalMessage(errorMessage);
-      setShowErrorModal(true);
+      setStatusChangeError(true);
+      setStatusChangeMessage(errorMessage);
     } finally {
       setStatusChangeLoading(false);
       setPendingStatusChange(null);
     }
-  };
+  }, [pendingStatusChange, userData?.id, onUserUpdated, onClose]);
 
   // Funciones para manejar los modales
   const handleSuccessClose = () => {
@@ -229,6 +247,22 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
     setPendingStatusChange(null);
   };
 
+  // Funciones para manejar los modales internos de cambio de estado
+  const handleStatusChangeModalClose = () => {
+    setShowStatusChangeModal(false);
+    setPendingStatusChange(null);
+  };
+
+  const handleStatusChangeSuccessClose = () => {
+    setStatusChangeSuccess(false);
+    setStatusChangeMessage('');
+  };
+
+  const handleStatusChangeErrorClose = () => {
+    setStatusChangeError(false);
+    setStatusChangeMessage('');
+  };
+
   // Función para formatear fechas
   const formatDate = React.useCallback((dateString) => {
     if (!dateString) return 'No disponible';
@@ -245,9 +279,9 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
   // Mover FormField fuera del render para evitar recreaciones
   const FormField = React.useCallback(({ label, value, onChange, icon, type = 'text', className = '', required = false, disabled = false }) => (
     <div className={`form-field ${className}`}>
-      <label className=" text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-        {icon && <span className="text-blue-600">{icon}</span>}
-        {label} {required && <span className="text-red-500">*</span>}
+      <label className="text-sm font-semibold text-secondary mb-2 flex items-center gap-2">
+        {icon && <span className="text-accent">{icon}</span>}
+        {label} {required && <span className="text-error">*</span>}
       </label>
       <div className="relative">
         {isEditing ? (
@@ -256,12 +290,11 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
             value={value || ''}
             onChange={onChange}
             disabled={disabled}
-            className={`w-full px-4 py-3 border text-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${required && !value ? 'border-red-500' : 'border-gray-300'
-              } ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+            className={`input-theme ${required && !value ? 'border-error' : ''} ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
           />
         ) : (
-          <div className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg shadow-sm">
-            <span className="text-gray-900 font-medium">
+          <div className="w-full card-secondary">
+            <span className="text-primary font-medium">
               {type === 'date' ? formatDate(value) :
                 typeof value === 'object' && value !== null ? value.label || 'No disponible' :
                   value || 'No disponible'}
@@ -273,10 +306,10 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
   ), [isEditing, formatDate]);
 
   const FormSection = React.useCallback(({ title, icon, children, className = '' }) => (
-    <div className={`bg-white border border-gray-200 rounded-lg shadow-sm ${className}`}>
-      <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
-        <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-          {icon && <span className="text-blue-600">{icon}</span>}
+    <div className={`card-theme ${className}`}>
+      <div className="px-6 py-4 border-b border-primary bg-surface rounded-t-lg">
+        <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
+          {icon && <span className="text-accent">{icon}</span>}
           {title}
         </h3>
       </div>
@@ -349,6 +382,10 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
       setShowConfirmModal(false);
       setModalMessage('');
       setPendingStatusChange(null);
+      setShowStatusChangeModal(false);
+      setStatusChangeMessage('');
+      setStatusChangeSuccess(false);
+      setStatusChangeError(false);
     }
   }, [isOpen]);
 
@@ -428,26 +465,26 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
   const getStatusIcon = (status) => {
     switch (status) {
       case 'Activo':
-        return <FaCheckCircle className="text-green-500" />;
+        return <FaCheckCircle className="text-success" />;
       case 'Pendiente':
-        return <FaClock className="text-yellow-500" />;
+        return <FaClock className="text-warning" />;
       case 'Inactivo':
-        return <FaTimesCircle className="text-red-500" />;
+        return <FaTimesCircle className="text-danger" />;
       default:
-        return <FaClock className="text-gray-500" />;
+        return <FaClock className="text-secondary" />;
     }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'Activo':
-        return 'bg-green-100 text-green-700 border-green-200';
+        return 'parametrization-badge-1';
       case 'Pendiente':
-        return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+        return 'parametrization-badge-3';
       case 'Inactivo':
-        return 'bg-red-100 text-red-700 border-red-200';
+        return 'parametrization-badge-6';
       default:
-        return 'bg-gray-100 text-gray-700 border-gray-200';
+        return 'parametrization-badge-5';
     }
   };
 
@@ -476,34 +513,137 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
     return userStatuses.filter(status => status.value !== currentStatus);
   };
 
+  // Modal de confirmación interno para cambio de estado usando Dialog de Radix
+  const StatusChangeConfirmModal = ({ isOpen, onClose, onConfirm, message, isLoading }) => {
+    return (
+      <Dialog.Root open={isOpen} onOpenChange={onClose}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-xl z-[70] w-full max-w-md">
+            <div className="p-6 card-theme text-center">
+              <div className="mx-auto w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
+                <FaExclamationTriangle className="w-8 h-8 text-warning" />
+              </div>
+
+              <Dialog.Title className="text-lg font-semibold text-primary mb-2">
+                Confirmar Cambio de Estado
+              </Dialog.Title>
+
+              <Dialog.Description className="text-secondary text-sm mb-6">
+                {message}
+              </Dialog.Description>
+
+              <div className="flex gap-3">
+                <Dialog.Close asChild>
+                  <button
+                    disabled={isLoading}
+                    className="btn-theme btn-secondary flex-1"
+                  >
+                    Cancelar
+                  </button>
+                </Dialog.Close>
+                <button
+                  onClick={onConfirm}
+                  disabled={isLoading}
+                  className="btn-theme btn-primary flex-1 flex items-center justify-center gap-2"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Procesando...
+                    </>
+                  ) : (
+                    'Confirmar'
+                  )}
+                </button>
+              </div>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+    );
+  };
+
   return (
-    <Dialog.Root open={isOpen} onOpenChange={onClose}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[40]" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-50 rounded-lg shadow-xl z-[50] w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+    <>
+      {/* Modal de confirmación interno para cambio de estado - FUERA del Dialog.Root */}
+      <StatusChangeConfirmModal
+        isOpen={showStatusChangeModal}
+        onClose={handleStatusChangeModalClose}
+        onConfirm={confirmStatusChange}
+        message={statusChangeMessage}
+        isLoading={statusChangeLoading}
+      />
+      
+      {/* Modal de éxito para cambio de estado */}
+      <Dialog.Root open={statusChangeSuccess} onOpenChange={handleStatusChangeSuccessClose}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-xl z-[70] w-full max-w-md">
+            <div className="p-6 text-center card-theme">
+              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                <FaCheckCircle className="w-8 h-8 text-success" />
+              </div>
+              <Dialog.Title className="text-lg font-semibold text-primary mb-2">¡Éxito!</Dialog.Title>
+              <Dialog.Description className="text-secondary text-sm mb-6">{statusChangeMessage}</Dialog.Description>
+              <Dialog.Close asChild>
+                <button className="btn-theme btn-success w-full">
+                  Continuar
+                </button>
+              </Dialog.Close>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+      
+      {/* Modal de error para cambio de estado */}
+      <Dialog.Root open={statusChangeError} onOpenChange={handleStatusChangeErrorClose}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-xl z-[70] w-full max-w-md">
+            <div className="p-6 text-center card-theme">
+              <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                <FaTimesCircle className="w-8 h-8 text-error" />
+              </div>
+              <Dialog.Title className="text-lg font-semibold text-primary mb-2">Error</Dialog.Title>
+              <Dialog.Description className="text-secondary text-sm mb-6">{statusChangeMessage}</Dialog.Description>
+              <Dialog.Close asChild>
+                <button className="btn-theme btn-error w-full">
+                  Cerrar
+                </button>
+              </Dialog.Close>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
+      <Dialog.Root open={isOpen} onOpenChange={onClose}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-10" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-xl z-10 w-full max-w-5xl max-h-[90vh] overflow-y-auto">
           <Dialog.Title className="sr-only">
             {isEditing ? 'Editar Usuario' : 'Detalles del Usuario'} - {getFullName()}
           </Dialog.Title>
 
-          <div className="p-6">
+          <div className="p-6 card-theme">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6 bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+            <div className="flex items-center justify-between mb-6 card-secondary p-4">
               <div className="flex items-center gap-3">
                 <button
                   onClick={onClose}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition"
+                  className="p-2 btn-theme btn-secondary"
                 >
-                  <FaArrowLeft className="text-gray-600" />
+                  <FaArrowLeft className="text-primary" />
                 </button>
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <FaUser className="text-blue-600 text-xl" />
+                    <FaUser className="text-accent text-xl" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-gray-800">
+                    <h2 className="text-xl font-semibold text-primary">
                       {isEditing ? 'Editar Usuario' : 'Detalles del Usuario'}
                     </h2>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-secondary">
                       {isEditing ? 'Modifique la información del usuario' : 'Información completa del usuario'}
                     </p>
                   </div>
@@ -522,8 +662,8 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
             {/* Loading inicial */}
             {loading && (
               <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-4 text-gray-600">Cargando configuración...</p>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto"></div>
+                <p className="mt-4 text-secondary">Cargando configuración...</p>
               </div>
             )}
 
@@ -802,7 +942,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
 
                 {/* Sección de Cambio de Estado */}
                 {!isEditing && userData && getAvailableStatuses().length > 0 && (
-                  <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+                  <div className="card-secondary rounded-lg p-6 shadow-sm border border-primary">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                       <FaShieldAlt className="text-blue-600" />
                       Cambiar Estado del Usuario
@@ -843,13 +983,13 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                 )}
 
                 {/* Botones de Acción */}
-                <div className="flex justify-end gap-3 pt-6 mt-6 bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                <div className="flex justify-end gap-3 pt-6 mt-6 card-secondary rounded-lg p-4 shadow-sm border border-primary">
                   {isEditing ? (
                     <>
                       <button
                         type="button"
                         onClick={handleCancel}
-                        className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition flex items-center gap-2"
+                        className="btn-theme btn-secondary px-6 py-2 flex items-center gap-2"
                       >
                         <FaArrowLeft />
                         Cancelar
@@ -857,7 +997,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                       <button
                         type="submit"
                         disabled={!isFormValid || submitLoading}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="btn-theme btn-primary px-6 py-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                       >
                         {submitLoading ? (
                           <>
@@ -877,7 +1017,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                       <button
                         type="button"
                         onClick={onClose}
-                        className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition flex items-center gap-2"
+                        className="btn-theme btn-secondary px-6 py-2 flex items-center gap-2"
                       >
                         <FaArrowLeft />
                         Cerrar
@@ -885,7 +1025,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                       <button
                         type="button"
                         onClick={handleEdit}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
+                        className="btn-theme btn-primary px-6 py-2 flex items-center gap-2"
                       >
                         <FaEdit />
                         Editar Usuario
@@ -914,17 +1054,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
         message={modalMessage}
       />
       
-      <ConfirmModal
-        isOpen={showConfirmModal}
-        onClose={handleConfirmClose}
-        onConfirm={confirmStatusChange}
-        title="Confirmar Cambio de Estado"
-        message={modalMessage}
-        confirmText="Confirmar"
-        cancelText="Cancelar"
-        confirmColor="btn-primary"
-        cancelColor="btn-secondary"
-      />
     </Dialog.Root>
+    </>
   );
 }

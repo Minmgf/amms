@@ -4,11 +4,13 @@ import { useForm } from "react-hook-form";
 import { HiOutlinePencilAlt } from "react-icons/hi";
 import ChangePasswordModal from "../../components/userProfile/modals/ChangePasswordModal";
 import ChangePhotoModal from "../../components/userProfile/modals/ChangePhotoModal";
+import { useTheme } from '@/contexts/ThemeContext';
 import { getUserData, updateBasicInformation } from "@/services/profileService";
 import { getCountries, getStates, getCities } from "@/services/locationService";
 import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
 
 const ProfilePage = () => {
+  const { currentTheme } = useTheme();
   const [id, setId] = useState("");
   const [userData, setUserData] = useState({});
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] =
@@ -132,18 +134,18 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 grid place-items-center py-8 px-4">
+    <div className="parametrization-page grid place-items-center py-8 px-4">
       {/* Title outside container */}
       <div className="w-full max-w-5xl 2xl:max-w-none xl:w-8/9 2xl:w-9/10">
-        <h1 className="text-3xl font-bold mb-8 text-gray-900">My profile</h1>
+        <h1 className="parametrization-header text-3xl font-bold mb-8">My profile</h1>
 
-        <div className="bg-white rounded-2xl shadow p-6 md:p-10">
+        <div className="bg-surface rounded-2xl shadow p-6 md:p-10">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Section */}
             <div className="grid place-items-center grid-rows-[auto_auto_auto_1fr] gap-6">
               {/* Avatar */}
               <div
-                className="w-40 h-40 rounded-full bg-green-200 relative cursor-pointer group hover:bg-green-300 overflow-hidden flex items-center justify-center hadow-md border border-gray-100 hover:shadow-xl transition-all duration-300 ease-in-out"
+                className="w-40 h-40 rounded-full parametrization-avatar relative cursor-pointer overflow-hidden flex items-center justify-center hadow-md transition-all duration-300 ease-in-out"
                 onClick={() => setIsChangePhotoModalOpen(true)}
               >
                 {profilePhoto ? (
@@ -156,23 +158,23 @@ const ProfilePage = () => {
                   </>
                 ) : (
                   <>
-                    <HiOutlinePencilAlt className="text-4xl text-green-800 group-hover:text-green-900 transition-colors" />
-                    <div className="absolute -bottom-2 -right-2 bg-blue-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <HiOutlinePencilAlt className="w-4 h-4" />
+                    <HiOutlinePencilAlt className="text-4xl text-primary group-hover:text-primary-dark transition-colors" />
+                    <div className="absolute -bottom-2 -right-2 parametrization-avatar-action opacity-0 group-hover:opacity-100 transition-opacity">
+                      <HiOutlinePencilAlt className="w-4 h-4 text-white" />
                     </div>
                   </>
                 )}
               </div>
 
               {/* Name */}
-              <h2 className="text-xl font-bold text-center text-gray-900 leading-tight">
+              <h2 className="text-xl font-bold text-center text-primary leading-tight">
                 {userData.name} <br /> {userData.lastName}
               </h2>
 
               {/* Roles Section */}
               <div className="w-full">
                 <div className="mb-3 text-center">
-                  <span className="text-sm text-gray-500 font-medium">
+                  <span className="text-sm text-secondary font-medium">
                     Roles
                   </span>
                 </div>
@@ -182,7 +184,7 @@ const ProfilePage = () => {
                   {userData?.roles?.map((role) => (
                     <span
                       key={role.id}
-                      className="px-4 py-2 bg-pink-200 text-sm rounded-full text-pink-800 text-center font-medium"
+                      className="px-4 py-2 parametrization-badge text-sm rounded-full text-primary text-center font-medium"
                     >
                       {role.name}
                     </span>
@@ -195,7 +197,7 @@ const ProfilePage = () => {
             {/* Right Section */}
             <div className="md:col-span-2 grid gap-6">
               {/* Personal info */}
-              <h3 className="text-xl font-bold border-b border-gray-200 pb-3 text-gray-900">
+              <h3 className="text-xl font-bold border-b pb-3 text-primary">
                 Personal information
               </h3>
 
@@ -234,8 +236,8 @@ const ProfilePage = () => {
                   {userData.date_issuance_document?.split("T")[0]}
                 </p>
               </div>
-
-              <h3 className="text-xl font-bold border-b border-gray-200 pb-3 text-gray-900">
+              
+              <h3 className="text-xl font-bold border-b pb-3 text-primary">
                 Residencial information
               </h3>
               <form
@@ -246,12 +248,12 @@ const ProfilePage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Country */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-800 mb-2">
+                    <label className="block text-sm font-semibold text-secondary mb-2">
                       Country
                     </label>
                     <select
                       {...register("country", { required: true })}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white"
+                      className="w-full border rounded-lg px-3 py-2 bg-surface"
                     >
                       <option value="">Select...</option>
                       {countriesList.map((c) => (
@@ -267,12 +269,12 @@ const ProfilePage = () => {
 
                   {/* Region */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-800 mb-2">
+                    <label className="block text-sm font-semibold text-secondary mb-2">
                       Region
                     </label>
                     <select
                       {...register("department", { required: true })} disabled={!statesList.length}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white"
+                      className="w-full border rounded-lg px-3 py-2 bg-surface"
                     >
                       <option value="">Select...</option>
                       {statesList.map((s) => (
@@ -288,12 +290,12 @@ const ProfilePage = () => {
 
                   {/* City */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-800 mb-2">
+                    <label className="block text-sm font-semibold text-secondary mb-2">
                       City
                     </label>
                     <select
                       {...register("city", { required: true })} disabled={!citiesList.length}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white"
+                      className="w-full border rounded-lg px-3 py-2 bg-surface"
                     >
                       <option value="">Select...</option>
                       {citiesList.map((c) => (
@@ -311,7 +313,7 @@ const ProfilePage = () => {
                 {/* Address + Phone */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-800 mb-2">
+                    <label className="block text-sm font-semibold text-secondary mb-2">
                       Address
                     </label>
                     <input
@@ -324,7 +326,7 @@ const ProfilePage = () => {
                         },
                       })}
                       placeholder="Example..."
-                      className={`w-full border rounded-lg px-3 py-2 ${errors.address ? "border-red-500" : "border-gray-300"
+                      className={`w-full border rounded-lg px-3 py-2 ${errors.address ? "border-red-500" : ""
                         }`}
                     />
                     {errors.address && (
@@ -335,7 +337,7 @@ const ProfilePage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-800 mb-2">
+                    <label className="block text-sm font-semibold text-secondary mb-2">
                       Phone number
                     </label>
                     <input
@@ -350,7 +352,7 @@ const ProfilePage = () => {
                       })}
                       className={`w-full border rounded-lg px-3 py-2 ${errors.phoneNumber
                         ? "border-red-500"
-                        : "border-gray-300"
+                        : ""
                         }`}
                     />
                     {errors.phoneNumber && (
@@ -363,17 +365,17 @@ const ProfilePage = () => {
               </form>
 
               {/* Buttons */}
-              <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-center">
+                <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-center">
                 <button
                   onClick={() => setIsChangePasswordModalOpen(true)}
-                  className="bg-black text-white font-semibold px-8 py-3 rounded-lg hover:bg-gray-800 transition-colors justify-self-center md:justify-self-start"
+                  className="parametrization-action-button font-semibold px-8 py-3 rounded-lg justify-self-center md:justify-self-start"
                 >
                   Change Password
                 </button>
                 <button
                   type="submit"
                   form="residenceForm"
-                  className="bg-black text-white font-semibold px-8 py-3 rounded-lg hover:bg-gray-800 transition-colors">
+                  className="parametrization-action-button font-semibold px-8 py-3 rounded-lg">
                   Update
                 </button>
               </div>

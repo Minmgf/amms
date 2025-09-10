@@ -12,55 +12,71 @@ import {
 } from '@tanstack/react-table';
 import NavigationMenu from '../../../components/ParameterNavigation';
 import DepartmentModal from '../../../components/parametrization/DepartmentModal';
+import { useTheme } from '@/contexts/ThemeContext';
+import { getDepartments, createDepartment, updateDepartment } from '@/services/parametrizationService';
+import { SuccessModal, ErrorModal } from '@/app/components/shared/SuccessErrorModal';
+
+
 
 // Componente principal
 const ParameterizationView = () => {
+  const { currentTheme } = useTheme();
   const [activeMenuItem, setActiveMenuItem] = useState('Job Titles');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [data, setData] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+  const [userId, setUserId] = useState("");
+
   
   // Estados para el modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('add'); // 'add' or 'edit'
   const [selectedDepartment, setSelectedDepartment] = useState(null);
 
-  // Datos de ejemplo para departamentos
-  const mockData = [
-    { id: 1, department: 'Department #1', description: 'Módulo de nómina', status: 'Active' },
-    { id: 2, department: 'Department #2', description: 'Módulo de nómina', status: 'Inactive' },
-    { id: 3, department: 'Department #3', description: 'Módulo de nómina', status: 'Active' },
-    { id: 4, department: 'Human Resources', description: 'Gestión de recursos humanos', status: 'Active' },
-    { id: 5, department: 'Finance', description: 'Departamento financiero', status: 'Active' },
-    { id: 6, department: 'IT Department', description: 'Tecnología de la información', status: 'Active' },
-    { id: 7, department: 'Marketing', description: 'Departamento de marketing', status: 'Inactive' },
-    { id: 8, department: 'Sales', description: 'Departamento de ventas', status: 'Active' },
-    { id: 9, department: 'Operations', description: 'Operaciones generales', status: 'Active' },
-    { id: 10, department: 'Legal', description: 'Departamento legal', status: 'Active' },
-    { id: 11, department: 'Customer Service', description: 'Atención al cliente', status: 'Inactive' },
-    { id: 12, department: 'Research and Development', description: 'I+D', status: 'Active' },
-    { id: 13, department: 'Logistics', description: 'Logística y distribución', status: 'Active' },
-    { id: 14, department: 'Procurement', description: 'Compras y aprovisionamiento', status: 'Inactive' },
-    { id: 15, department: 'Quality Assurance', description: 'Aseguramiento de la calidad', status: 'Active' },
-    { id: 16, department: 'Public Relations', description: 'Relaciones públicas', status: 'Active' },
-    { id: 17, department: 'Administration', description: 'Administración general', status: 'Active' },
-    { id: 18, department: 'Training', description: 'Capacitación y desarrollo', status: 'Inactive' },
-    { id: 19, department: 'Security', description: 'Seguridad y vigilancia', status: 'Active' },
-    { id: 20, department: 'Maintenance', description: 'Mantenimiento de instalaciones', status: 'Active' },
-  ];
+  useEffect(() => {
+    const storedUser = localStorage.getItem("userData");
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUserId(userData.id);
+      } catch (err) {
+
+      }
+    }
+  }, []);
 
   // Función para obtener datos del backend
   const fetchData = async (menuItem = 'Job Titles') => {
     setLoading(true);
     setError(null);
-    
+
     try {
-      // Simular delay del backend
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setData(mockData);
-      
+      const response = await getDepartments();
+
+      if (Array.isArray(response)) {
+        const formatted = response.map(d => ({
+            id: d.id_employee_department,     
+            department: d.name,
+            description: d.description,
+            status: d.estado  
+        }));
+        setData(formatted);
+      } else if (response.data) {
+        const formatted = response.data.map(d => ({
+            id: d.id_employee_department,     
+            department: d.name,
+            description: d.description,
+            status: d.estado  
+        }));
+        setData(formatted);
+      } else {
+        setError("Formato inesperado en la respuesta");
+        setData([]);
+      }
     } catch (err) {
       setError(err.message);
       setData([]);
@@ -68,6 +84,8 @@ const ParameterizationView = () => {
       setLoading(false);
     }
   };
+
+
 
   // Cargar datos al montar el componente y cuando cambien las dependencias
   useEffect(() => {
@@ -80,10 +98,22 @@ const ParameterizationView = () => {
 
   const handleViewDetails = (departmentId) => {
     const department = data.find(d => d.id === departmentId);
-    setSelectedDepartment(department);
-    setModalMode('edit');
-    setIsModalOpen(true);
+    if (department) {
+      const normalized = {
+        id: department.id,
+        department: department.department,
+        description: department.description,
+        status: department.status,
+        jobTitles: department.jobTitles || []
+      };
+
+      setSelectedDepartment(normalized);
+      setModalMode("edit");
+      setIsModalOpen(true);
+    }
   };
+
+
 
   const handleAddDepartment = () => {
     setSelectedDepartment(null);
@@ -96,30 +126,47 @@ const ParameterizationView = () => {
     setSelectedDepartment(null);
   };
 
-  const handleSaveDepartment = (departmentData) => {
-    if (modalMode === 'add') {
-      // Lógica para añadir nuevo departamento
-      const newDepartment = {
-        id: data.length + 1,
-        department: departmentData.categoryName,
-        description: departmentData.description,
-        status: departmentData.isActive ? 'Active' : 'Inactive'
-      };
-      setData(prev => [...prev, newDepartment]);
-      console.log('Adding new department:', newDepartment);
-    } else {
-      // Lógica para actualizar departamento existente
-      setData(prev => prev.map(dept => 
-        dept.id === selectedDepartment.id 
-          ? {
-              ...dept,
-              department: departmentData.categoryName,
-              description: departmentData.description,
-              status: departmentData.isActive ? 'Active' : 'Inactive'
-            }
-          : dept
-      ));
-      console.log('Updating department:', departmentData);
+  const handleSaveDepartment = async (departmentData) => {
+    try {
+      if (modalMode === "add") {
+      
+        const payload = {
+          name: departmentData.categoryName,
+          description: departmentData.description,
+          responsible_user: userId, 
+          charges: departmentData.jobTitles.map(job => ({
+            name: job.name,
+            description: job.description
+          }))
+        };
+
+        const response = await createDepartment(payload);
+        await fetchData(); 
+        setModalMessage(response.message);
+        setSuccessOpen(true);
+
+      } else {
+         try {
+          const departmentId = selectedDepartment.id;
+          const payload = {
+            name: departmentData.categoryName,
+            description: departmentData.description,
+            responsible_user: userId
+          };
+
+          const response = await updateDepartment(departmentId, payload); 
+          await fetchData();
+          setModalMessage(response.message);
+          setSuccessOpen(true);
+        } catch (error) {
+          const message = error.response?.data?.message || error.response?.data?.name || "Failed to update department";
+          setModalMessage(message);
+          setErrorOpen(true);
+        }
+      }
+    } catch (error) {
+      setModalMessage(error.response.data.name || "Failed");
+      setErrorOpen(true);
     }
   };
 
@@ -143,23 +190,6 @@ const ParameterizationView = () => {
             {info.getValue()}
           </div>
         ),
-      }),
-      columnHelper.accessor('status', {
-        header: 'Status',
-        cell: info => {
-          const status = info.getValue();
-          return (
-            <span 
-              className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
-                status === 'Active' 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-pink-100 text-pink-800'
-              }`}
-            >
-              {status}
-            </span>
-          );
-        },
       }),
       columnHelper.accessor('id', {
         header: 'Details',
@@ -198,26 +228,26 @@ const ParameterizationView = () => {
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+      <div className="parametrization-page p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6 md:mb-10">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Parameterization</h1>
+            <h1 className="parametrization-header text-2xl md:text-3xl font-bold">Parameterization</h1>
           </div>
 
           {/* Filter and Add Department Section */}
           <div className="mb-4 md:mb-6 flex flex-col sm:flex-row gap-4 justify-between lg:justify-start">
-            <button className="flex items-center space-x-2 px-3 md:px-4 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50 transition-colors w-fit">
-              <FiFilter className="w-4 h-4 text-gray-500" />
-              <span className="text-sm text-gray-700">Filter by</span>
+            <button className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit">
+              <FiFilter className="filter-icon w-4 h-4" />
+              <span className="text-sm">Filter by</span>
             </button>
             
             <button 
               onClick={handleAddDepartment}
-              className="flex items-center space-x-2 px-3 md:px-4 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50 transition-colors w-fit"
+              className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit"
             >
-              <FiUsers className="w-4 h-4 text-gray-500" />
-              <span className="text-sm text-gray-700">Add department</span>
+              <FiUsers className="w-4 h-4" />
+              <span className="text-sm">Add department</span>
             </button>
           </div>
 
@@ -230,26 +260,22 @@ const ParameterizationView = () => {
           </div>
 
           {/* Table */}
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-6 md:mb-8">
+          <div className="parametrization-table mb-6 md:mb-8">
             {loading ? (
-              <div className="p-8 text-center text-gray-500">
-                Loading...
-              </div>
+              <div className="parametrization-loading p-8 text-center">Loading...</div>
             ) : error ? (
-              <div className="p-8 text-center text-red-500">
-                Error: {error}
-              </div>
+              <div className="parametrization-error p-8 text-center">Error: {error}</div>
             ) : (
               <>
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
+                    <thead className="parametrization-table-header">
                       {table.getHeaderGroups().map(headerGroup => (
                         <tr key={headerGroup.id}>
                           {headerGroup.headers.map(header => (
                             <th
                               key={header.id}
-                              className="px-4 md:px-6 py-3 md:py-4 text-left text-sm font-semibold text-gray-900 border-r border-gray-200 last:border-r-0"
+                              className="parametrization-table-cell px-4 md:px-6 py-3 md:py-4 text-left text-sm font-semibold last:border-r-0"
                             >
                               {header.isPlaceholder ? null : (
                                 <div
@@ -275,42 +301,54 @@ const ParameterizationView = () => {
                         </tr>
                       ))}
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {table.getRowModel().rows.map(row => (
-                        <tr key={row.id} className="group hover:bg-gray-50">
-                          {row.getVisibleCells().map(cell => (
-                            <td
-                              key={cell.id}
-                              className="px-4 md:px-6 py-3 md:py-4 text-sm border-r border-gray-200 last:border-r-0"
-                            >
-                              {flexRender(
-                                cell.column.columnDef.cell,
-                                cell.getContext()
-                              )}
-                            </td>
-                          ))}
+                    <tbody>
+                      {table.getRowModel().rows.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={columns.length}
+                            className="px-4 py-6 text-center text-gray-500"
+                          >
+                            No departments found
+                          </td>
                         </tr>
-                      ))}
+                      ) : (
+                        table.getRowModel().rows.map(row => (
+                          <tr key={row.id} className="parametrization-table-row group">
+                            {row.getVisibleCells().map(cell => (
+                              <td
+                                key={cell.id}
+                                className="parametrization-table-cell px-4 md:px-6 py-3 md:py-4 text-sm last:border-r-0"
+                              >
+                                {flexRender(
+                                  cell.column.columnDef.cell,
+                                  cell.getContext()
+                                )}
+                              </td>
+                            ))}
+                          </tr>
+                        ))
+                      )}
                     </tbody>
+
                   </table>
                 </div>
 
               {/* Pagination */}
-                <div className="px-4 py-6 border-t border-gray-200 sm:px-6">
+                <div className="parametrization-pagination px-4 py-6 sm:px-6">
                   <div className="flex items-center justify-between">
                     {/* Mobile pagination */}
                     <div className="flex-1 flex justify-between sm:hidden">
                       <button
                         onClick={() => table.previousPage()}
                         disabled={!table.getCanPreviousPage()}
-                        className="relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-600 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="parametrization-pagination-button relative inline-flex items-center px-4 py-2 text-sm font-medium"
                       >
                         ← Previous
                       </button>
                       <button
                         onClick={() => table.nextPage()}
                         disabled={!table.getCanNextPage()}
-                        className="ml-3 relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-600 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="parametrization-pagination-button ml-3 relative inline-flex items-center px-4 py-2 text-sm font-medium"
                       >
                         Next →
                       </button>
@@ -323,7 +361,7 @@ const ParameterizationView = () => {
                         <button
                           onClick={() => table.previousPage()}
                           disabled={!table.getCanPreviousPage()}
-                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          className="parametrization-pagination-button inline-flex items-center px-3 py-2 text-sm font-medium transition-colors"
                         >
                           ← Previous
                         </button>
@@ -340,7 +378,7 @@ const ParameterizationView = () => {
                               <button
                                 key={1}
                                 onClick={() => table.setPageIndex(0)}
-                                className="inline-flex items-center justify-center w-10 h-10 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                                className="parametrization-pagination-button inline-flex items-center justify-center w-10 h-10 text-sm font-medium transition-colors"
                               >
                                 1
                               </button>
@@ -350,7 +388,7 @@ const ParameterizationView = () => {
                           // Show ellipsis if there's a gap
                           if (currentPage > 4) {
                             pages.push(
-                              <span key="ellipsis1" className="inline-flex items-center justify-center w-10 h-10 text-sm text-gray-400">
+                              <span key="ellipsis1" className="parametrization-pagination-ellipsis inline-flex items-center justify-center w-10 h-10 text-sm">
                                 ...
                               </span>
                             );
@@ -362,10 +400,8 @@ const ParameterizationView = () => {
                               <button
                                 key={i}
                                 onClick={() => table.setPageIndex(i - 1)}
-                                className={`inline-flex items-center justify-center w-10 h-10 text-sm font-medium rounded-md transition-colors ${
-                                  i === currentPage
-                                    ? 'bg-gray-800 text-white'
-                                    : 'text-gray-600 bg-gray-100 hover:bg-gray-200'
+                                className={`parametrization-pagination-button inline-flex items-center justify-center w-10 h-10 text-sm font-medium transition-colors ${
+                                  i === currentPage ? 'active' : ''
                                 }`}
                               >
                                 {i}
@@ -376,7 +412,7 @@ const ParameterizationView = () => {
                           // Show ellipsis if there's a gap
                           if (currentPage < totalPages - 3) {
                             pages.push(
-                              <span key="ellipsis2" className="inline-flex items-center justify-center w-10 h-10 text-sm text-gray-400">
+                              <span key="ellipsis2" className="parametrization-pagination-ellipsis inline-flex items-center justify-center w-10 h-10 text-sm">
                                 ...
                               </span>
                             );
@@ -388,7 +424,7 @@ const ParameterizationView = () => {
                               <button
                                 key={totalPages}
                                 onClick={() => table.setPageIndex(totalPages - 1)}
-                                className="inline-flex items-center justify-center w-10 h-10 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                                className="parametrization-pagination-button inline-flex items-center justify-center w-10 h-10 text-sm font-medium transition-colors"
                               >
                                 {totalPages}
                               </button>
@@ -402,7 +438,7 @@ const ParameterizationView = () => {
                         <button
                           onClick={() => table.nextPage()}
                           disabled={!table.getCanNextPage()}
-                          className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          className="parametrization-pagination-button inline-flex items-center px-3 py-2 text-sm font-medium transition-colors"
                         >
                           Next →
                         </button>
@@ -416,7 +452,7 @@ const ParameterizationView = () => {
                         onChange={e => {
                           table.setPageSize(Number(e.target.value))
                         }}
-                        className="border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="parametrization-pagination-select px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       >
                         {[10, 20, 30, 40, 50].map(pageSize => (
                           <option key={pageSize} value={pageSize}>
@@ -440,6 +476,20 @@ const ParameterizationView = () => {
         mode={modalMode}
         departmentData={selectedDepartment}
         onSave={handleSaveDepartment}
+        onStatusChange={fetchData}
+        existingDepartments={data}
+      />
+      <SuccessModal
+        isOpen={successOpen}
+        onClose={() => setSuccessOpen(false)}
+        title="Successful"
+        message={modalMessage}
+      />
+      <ErrorModal
+        isOpen={errorOpen}
+        onClose={() => setErrorOpen(false)}
+        title="Failed"
+        message={modalMessage}
       />
     </>
   );
