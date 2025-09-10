@@ -364,3 +364,33 @@ export const checkServiceHealth = async () => {
         };
     }
 };
+
+export const getBrandCategories = async () => {
+  const { data } = await apiMain.get("/brands_categories/list/");
+  return data;
+};
+
+export const getBrands = async (categoryId) => {
+  const { data } = await apiMain.get(`/brands/list/${categoryId}/`);
+  return data;
+};
+
+export const getModelsByBrand = async (brandId) => {
+  const response = await apiMain.get(`/models/list/${brandId}/`);
+  return response.data.data; // 👈 el backend devuelve { message, data }
+};
+
+export const createBrand = async (payload) => {
+  const { data } = await apiMain.post("/brands/", payload);
+  return data;
+};
+
+export const editBrand = async (payload, brandId) => {
+  const { data } = await apiMain.put(`/brands/${brandId}/`, payload);
+  return data;
+};
+
+export const editModel = async (payload, modelId) => {
+  const { data } = await apiMain.put(`/models/${modelId}/`, payload);
+  return data;
+};

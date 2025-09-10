@@ -2,346 +2,339 @@
 import React, { useState, useEffect } from 'react';
 import { FiX, FiEdit3 } from 'react-icons/fi';
 
-const BrandFormModal = ({ 
-  isOpen, 
-  onClose, 
-  mode = 'add', // 'add' or 'edit'
-  categoryName = '',
-  brandData = null, // Para modo edit
-  onSave,
-  onUpdate,
-  onAddModel, // Nueva prop para agregar modelo
-  onEditModel // Nueva prop para editar modelo
+const BrandFormModal = ({
+    isOpen,
+    onClose,
+    mode = 'add', // 'add' or 'edit'
+    categoryName = '',
+    brandData = null, // Para modo edit
+    onSave,
+    onUpdate,
+    onAddModel, // Nueva prop para agregar modelo
+    onEditModel // Nueva prop para editar modelo
 }) => {
-  const [formData, setFormData] = useState({
-    brandName: '',
-    description: '',
-    isActive: true
-  });
+    const [formData, setFormData] = useState({
+        brandName: '',
+        description: '',
+        isActive: true
+    });
 
-  const [models, setModels] = useState([]);
+    const [models, setModels] = useState([]);
 
-  const [errors, setErrors] = useState({});
-  const [brandNameExists, setBrandNameExists] = useState(false);
+    const [errors, setErrors] = useState({});
+    const [brandNameExists, setBrandNameExists] = useState(false);
 
-  // Reset form cuando se abre/cierra el modal o cambia el modo
-  useEffect(() => {
-    if (isOpen) {
-      if (mode === 'edit' && brandData) {
-        setFormData({
-          brandName: brandData.brandName || '',
-          description: brandData.description || '',
-          isActive: brandData.status === 'Active'
-        });
-        // En modo edit, cargar los modelos existentes del brand
-        setModels(brandData.models || []);
-      } else {
-        // Modo add - resetear form
-        setFormData({
-          brandName: '',
-          description: '',
-          isActive: true
-        });
-        setModels([]);
-      }
-      setErrors({});
-      setBrandNameExists(false);
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
+    useEffect(() => {
+        if (!isOpen) return;
 
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen, mode, brandData]);
+        if (mode === 'edit' && brandData) {
+            setFormData({
+                id: brandData.id,
+                brandName: brandData.brandName || '',
+                description: brandData.description || '',
+                isActive: !!brandData.isActive, // 👈 siempre booleano
+            });
+            console.log("estado (boolean): ", !!brandData.isActive);
+            setModels(brandData.models || []);
+        }
 
-  // Actualizar lista de modelos cuando brandData cambie (para reflejar cambios desde ModelFormModal)
-  useEffect(() => {
-    if (brandData && brandData.models) {
-      setModels(brandData.models);
-    }
-  }, [brandData]);
+        if (mode === 'add') {
+            setFormData({
+                brandName: '',
+                description: '',
+                isActive: true,
+            });
+            setModels([]);
+        }
+    }, [isOpen, mode, brandData]); // 👈 agregar dependencias
 
-  // Simular validación de nombre existente
-  useEffect(() => {
-    if (formData.brandName && formData.brandName.toLowerCase() === 'carterpillar') {
-      setBrandNameExists(true);
-    } else {
-      setBrandNameExists(false);
-    }
-  }, [formData.brandName]);
 
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    
-    // Limpiar error del campo cuando el usuario empiece a escribir
-    if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: ''
-      }));
-    }
-  };
 
-  const handleToggleActive = () => {
-    setFormData(prev => ({
-      ...prev,
-      isActive: !prev.isActive
-    }));
-  };
+    // Actualizar lista de modelos cuando brandData cambie (para reflejar cambios desde ModelFormModal)
+    useEffect(() => {
+        if (brandData && brandData.models) {
+            setModels(brandData.models);
+        }
+    }, [brandData]);
 
-  const validateForm = () => {
-    const newErrors = {};
-    
-    if (!formData.brandName.trim()) {
-      newErrors.brandName = 'Please enter a name for the new role';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    // Validación de nombre existente
+    useEffect(() => {
+        if (!brandData || !brandData.models) return;
 
-  const handleSubmit = () => {
-    if (!validateForm()) {
-      return;
-    }
+        const exists = brandData.models.some(
+            m => m.modelName?.toLowerCase() === formData.brandName.trim().toLowerCase()
+        );
 
-    const submitData = {
-      ...formData,
-      models: models,
-      category: categoryName
+        setBrandNameExists(exists);
+    }, [formData.brandName, brandData]);
+
+    const handleInputChange = (field, value) => {
+        setFormData(prev => ({
+            ...prev,
+            [field]: value
+        }));
+
+        // Limpiar error del campo cuando el usuario empiece a escribir
+        if (errors[field]) {
+            setErrors(prev => ({
+                ...prev,
+                [field]: ''
+            }));
+        }
     };
 
-    if (mode === 'edit' && onUpdate) {
-      onUpdate(submitData);
-    } else if (mode === 'add' && onSave) {
-      onSave(submitData);
-    }
+    const handleToggleActive = () => {
+        setFormData(prev => ({
+            ...prev,
+            isActive: !prev.isActive
+        }));
+    };
 
-    // Cerrar modal después de enviar
-    onClose();
-  };
+    const validateForm = () => {
+        const newErrors = {};
 
-  const handleAddModel = () => {
-    if (onAddModel) {
-      onAddModel();
-    }
-  };
+        if (!formData.brandName.trim()) {
+            newErrors.brandName = 'Please enter a name for the new role';
+        }
 
-  const handleEditModel = (modelId) => {
-    if (onEditModel) {
-      onEditModel(modelId);
-    }
-  };
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
 
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
+    const handleSubmit = () => {
+        if (!validateForm()) {
+            return;
+        }
 
-  const handleEscapeKey = (e) => {
-    if (e.key === 'Escape') {
-      onClose();
-    }
-  };
+        const submitData = {
+            ...formData,
+            models: models,
+            category: categoryName
+        };
 
-  useEffect(() => {
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscapeKey);
-      return () => {
-        document.removeEventListener('keydown', handleEscapeKey);
-      };
-    }
-  }, [isOpen]);
+        if (mode === 'edit' && onUpdate) {
+            onUpdate(submitData);
+        } else if (mode === 'add' && onSave) {
+            onSave(submitData);
+        }
 
-  if (!isOpen) return null;
+        // Cerrar modal después de enviar
+        onClose();
+    };
 
-  return (
-    <div 
-      className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
-      onClick={handleBackdropClick}
-    >
-      <div 
-        className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Modal Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {mode === 'edit' ? 'Modify brand' : 'Add brand'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            aria-label="Close modal"
-          >
-            <FiX className="w-5 h-5 text-gray-500" />
-          </button>
-        </div>
+    const handleAddModel = () => {
+        if (onAddModel) {
+            onAddModel();
+        }
+    };
 
-        {/* Modal Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-          {/* Form Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            {/* Category */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Category
-              </label>
-              <input
-                type="text"
-                value={categoryName}
-                disabled
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500 cursor-not-allowed"
-              />
-            </div>
+    const handleEditModel = (modelId) => {
+        if (onEditModel) {
+            onEditModel(modelId);
+        }
+    };
 
-            {/* Brand Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <span className="text-red-500">*</span> Brand name
-              </label>
-              <input
-                type="text"
-                value={formData.brandName}
-                onChange={(e) => handleInputChange('brandName', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.brandName || brandNameExists 
-                    ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
-                    : 'border-gray-300 focus:border-blue-500'
-                }`}
-                placeholder="Enter brand name"
-              />
-              {errors.brandName && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <span className="text-red-500 mr-1">⚠</span>
-                  {errors.brandName}
-                </p>
-              )}
-              {brandNameExists && mode === 'add' && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <span className="text-red-500 mr-1">⚠</span>
-                  This brand name already exist for this category
-                </p>
-              )}
-            </div>
+    const handleBackdropClick = (e) => {
+        if (e.target === e.currentTarget) {
+            onClose();
+        }
+    };
 
-            {/* Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description
-              </label>
-              <input
-                type="text"
-                value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter description"
-              />
-            </div>
+    const handleEscapeKey = (e) => {
+        if (e.key === 'Escape') {
+            onClose();
+        }
+    };
 
-            {/* Activate/Deactivate Toggle */}
-            <div className="flex items-center justify-between">
-              <label className="block text-sm font-medium text-gray-700">
-                Activate/Deactivate
-              </label>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={handleToggleActive}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
-                    formData.isActive ? 'bg-red-500' : 'bg-gray-200'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      formData.isActive ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-            </div>
-          </div>
+    useEffect(() => {
+        if (isOpen) {
+            document.addEventListener('keydown', handleEscapeKey);
+            return () => {
+                document.removeEventListener('keydown', handleEscapeKey);
+            };
+        }
+    }, [isOpen]);
 
-          {/* Model List Section */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Model list</h3>
-            
-            {/* Model Table */}
-            <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden mb-4">
-              {models.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-100 border-b border-gray-200">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
-                          Model
-                        </th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
-                          Description
-                        </th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {models.map((model) => (
-                        <tr key={model.id} className="hover:bg-gray-50 group">
-                          <td className="px-4 py-3 text-sm text-gray-900 border-r border-gray-200">
-                            {model.model || model.modelName}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-600 border-r border-gray-200">
-                            {model.description}
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            <button
-                              onClick={() => handleEditModel(model.id)}
-                              className="invisible group-hover:visible inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md transition-colors"
-                            >
-                              <FiEdit3 className="w-3 h-3 mr-1.5" />
-                              Edit
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="p-8 text-center text-gray-500">
-                  No models added yet
-                </div>
-              )}
-            </div>
+    if (!isOpen) return null;
 
-            {/* Add Model Button */}
-            <button
-                onClick={handleAddModel}
-                className="px-6 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
-              >
-                Add model
-              </button>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex justify-end">
-            <button
-              onClick={handleSubmit}
-              disabled={!formData.brandName.trim() || brandNameExists}
-              className="px-8 py-3 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+    return (
+        <div
+            className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+            onClick={handleBackdropClick}
+        >
+            <div
+                className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
             >
-              {mode === 'edit' ? 'Update' : 'Save'}
-            </button>
-          </div>
+                {/* Modal Header */}
+                <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                    <h2 className="text-xl font-semibold text-gray-900">
+                        {mode === 'edit' ? 'Modify brand' : 'Add brand'}
+                    </h2>
+                    <button
+                        onClick={onClose}
+                        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                        aria-label="Close modal"
+                    >
+                        <FiX className="w-5 h-5 text-gray-500" />
+                    </button>
+                </div>
+
+                {/* Modal Content */}
+                <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+                    {/* Form Fields */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        {/* Category */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Category
+                            </label>
+                            <input
+                                type="text"
+                                value={categoryName}
+                                disabled
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500 cursor-not-allowed"
+                            />
+                        </div>
+
+                        {/* Brand Name */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <span className="text-red-500">*</span> Brand name
+                            </label>
+                            <input
+                                type="text"
+                                value={formData.brandName}
+                                onChange={(e) => handleInputChange('brandName', e.target.value)}
+                                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.brandName || brandNameExists
+                                    ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+                                    : 'border-gray-300 focus:border-blue-500'
+                                    }`}
+                                placeholder="Enter brand name"
+                            />
+                            {errors.brandName && (
+                                <p className="mt-1 text-sm text-red-600 flex items-center">
+                                    <span className="text-red-500 mr-1">⚠</span>
+                                    {errors.brandName}
+                                </p>
+                            )}
+                            {brandNameExists && mode === 'add' && (
+                                <p className="mt-1 text-sm text-red-600 flex items-center">
+                                    <span className="text-red-500 mr-1">⚠</span>
+                                    This brand name already exist for this category
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Description */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Description
+                            </label>
+                            <input
+                                type="text"
+                                value={formData.description}
+                                onChange={(e) => handleInputChange('description', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Enter description"
+                            />
+                        </div>
+
+                        {/* Activate/Deactivate Toggle */}
+                        <div className="flex items-center justify-between">
+                            <label className="block text-sm font-medium text-gray-700">
+                                Activate/Deactivate
+                            </label>
+                            <div className="relative">
+                                <button
+                                    type="button"
+                                    onClick={handleToggleActive}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${formData.isActive ? 'bg-red-500' : 'bg-gray-200'
+                                        }`}
+                                >
+                                    <span
+                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.isActive ? 'translate-x-6' : 'translate-x-1'
+                                            }`}
+                                    />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Model List Section */}
+                    <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Model list</h3>
+
+                        {/* Model Table */}
+                        <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden mb-4">
+                            {models.length > 0 ? (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead className="bg-gray-100 border-b border-gray-200">
+                                            <tr>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
+                                                    Model
+                                                </th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
+                                                    Description
+                                                </th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                                                    Actions
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                            {models.map((model) => (
+                                                <tr key={model.id_model} className="hover:bg-gray-50 group">
+                                                    <td className="px-4 py-3 text-sm text-gray-900 border-r border-gray-200">
+                                                        {model.modelName}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-sm text-gray-600 border-r border-gray-200">
+                                                        {model.description}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-sm">
+                                                        <button
+                                                            onClick={() => handleEditModel(model.id_model)}
+                                                            className="invisible group-hover:visible inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md transition-colors"
+                                                        >
+                                                            <FiEdit3 className="w-3 h-3 mr-1.5" />
+                                                            Edit
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <div className="p-8 text-center text-gray-500">
+                                    No models added yet
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Add Model Button */}
+                        <button
+                            onClick={handleAddModel}
+                            className="px-6 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
+                        >
+                            Add model
+                        </button>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex justify-end">
+                        <button
+                            onClick={handleSubmit}
+                            disabled={!formData.brandName.trim() || brandNameExists}
+                            className="px-8 py-3 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                        >
+                            {mode === 'edit' ? 'Update' : 'Save'}
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 export default BrandFormModal;

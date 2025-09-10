@@ -2,58 +2,31 @@
 import React, { useState, useEffect } from 'react';
 import { FiX, FiEdit3 } from 'react-icons/fi';
 
-const CategoryModal = ({ 
-  isOpen, 
-  onClose, 
-  categoryName, 
-  data = [], 
-  onAddItem, 
-  onEditItem 
+const CategoryModal = ({
+  isOpen,
+  onClose,
+  categoryId,
+  categoryName,
+  data = [],
+  onAddItem,
+  onEditItem
 }) => {
-  const [modalData, setModalData] = useState([]);
 
-  // Mock data para el ejemplo
-  const mockBrandsData = [
-    { 
-      id: 1, 
-      brandName: 'Carterpillar', 
-      description: 'Example', 
-      status: 'Active' 
-    },
-    { 
-      id: 2, 
-      brandName: 'Carterpillar', 
-      description: 'Example', 
-      status: 'Inactive' 
-    },
-    { 
-      id: 3, 
-      brandName: 'Carterpillar', 
-      description: 'Example', 
-      status: 'Inactive' 
-    }
-  ];
+  const handleEdit = (brandId) => {
+    if (!data) return;
+    console.log("data: ", data);
+    // Buscar solo la marca seleccionada
+    const brand = data.find(b => Number(b.id) === Number(brandId));
 
-  useEffect(() => {
-    if (isOpen) {
-      // Si se pasan datos, usar esos, sino usar mock data
-      setModalData(data.length > 0 ? data : mockBrandsData);
-      // Bloquear scroll del body
-      document.body.style.overflow = 'hidden';
-    } else {
-      // Restaurar scroll del body
-      document.body.style.overflow = 'unset';
-    }
-
-    // Cleanup al desmontar
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen, data]);
-
-  const handleEdit = (itemId) => {
-    if (onEditItem) {
-      onEditItem(itemId);
+    if (brand) {
+      // Abrir el BrandFormModal con esa marca
+      onEditItem({
+        id: brand.id,
+        name: brand.name,
+        description: brand.description,
+        isActive: brand.isActive,
+        responsible_user: brand.responsible_user
+      });
     }
   };
 
@@ -87,11 +60,11 @@ const CategoryModal = ({
   if (!isOpen) return null;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
       onClick={handleBackdropClick}
     >
-      <div 
+      <div
         className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
@@ -111,7 +84,7 @@ const CategoryModal = ({
         </div>
 
         {/* Modal Content */}
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-90px)]">
           {/* Table Container */}
           <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden mb-6">
             <div className="overflow-x-auto">
@@ -133,21 +106,20 @@ const CategoryModal = ({
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {modalData.map((item, index) => (
+                  {data.map((item, index) => (
                     <tr key={item.id || index} className="hover:bg-gray-50">
                       <td className="px-6 py-4 text-sm text-gray-900 border-r border-gray-200">
-                        {item.brandName || item.name}
+                        {item.name}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 border-r border-gray-200">
                         {item.description}
                       </td>
                       <td className="px-6 py-4 text-sm border-r border-gray-200">
-                        <span 
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                            item.status === 'Active' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-pink-100 text-pink-800'
-                          }`}
+                        <span
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${item.status === 'Active'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-pink-100 text-pink-800'
+                            }`}
                         >
                           {item.status}
                         </span>
