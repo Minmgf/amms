@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { FiX, FiEdit3 } from 'react-icons/fi';
+import { toggleUnitStatus } from '@/services/parametrizationService';
 
 const UnitListModal = ({ 
   isOpen, 
@@ -8,24 +9,17 @@ const UnitListModal = ({
   categoryName = 'Weight',
   data = [], // Lista de parámetros existentes
   onAddParameter,
-  onEditParameter
+  onEditParameter,
+  onReloadData // ← NUEVA PROP para recargar datos
 }) => {
   const [parameters, setParameters] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   // Reset form cuando se abre/cierra el modal
   useEffect(() => {
     if (isOpen) {
-      // Cargar los parámetros existentes o datos de ejemplo
-      const mockParameters = data.length > 0 ? data : [
-        { 
-          id: 1, 
-          unitName: 'Ton', 
-          symbol: 'T', 
-          value: 'Decimal', 
-          status: 'Active' 
-        }
-      ];
-      setParameters(mockParameters);
+      // Usar solo los datos que vienen del props, sin fallback a datos mock
+      setParameters(data);
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
@@ -45,6 +39,40 @@ const UnitListModal = ({
   const handleEditParameter = (parameterId) => {
     if (onEditParameter) {
       onEditParameter(parameterId);
+    }
+  };
+
+  // ← NUEVA FUNCIÓN para toggle de estado
+  const handleToggleStatus = async (unitId) => {
+    try {
+      setLoading(true);
+      console.log(`🔄 Toggling status for unit ID: ${unitId}`);
+      
+      const response = await toggleUnitStatus(unitId);
+      console.log('✅ Status toggled successfully:', response);
+      
+      // Actualizar el estado local optimistamente
+      setParameters(prevParams => 
+        prevParams.map(param => 
+          param.id === unitId 
+            ? { 
+                ...param, 
+                status: param.status === 'Activo' ? 'Inactivo' : 'Activo'
+              }
+            : param
+        )
+      );
+      
+      // Recargar datos desde el componente padre si está disponible
+      if (onReloadData) {
+        await onReloadData();
+      }
+      
+    } catch (error) {
+      console.error('❌ Error toggling unit status:', error);
+      // Aquí podrías mostrar un toast de error
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -133,13 +161,17 @@ const UnitListModal = ({
                           {parameter.value}
                         </td>
                         <td className="px-4 py-3 text-sm border-r border-gray-200">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            parameter.status === 'Active' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {parameter.status}
-                          </span>
+                          <button
+                            onClick={() => handleToggleStatus(parameter.id)}
+                            disabled={loading}
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                              parameter.status === 'Activo' || parameter.status === 'Active' 
+                                ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                                : 'bg-red-100 text-red-800 hover:bg-red-200'
+                            } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                          >
+                            {parameter.status === 'Activo' || parameter.status === 'Active' ? 'Active' : 'Inactive'}
+                          </button>
                         </td>
                         <td className="px-4 py-3 text-sm">
                           <button
