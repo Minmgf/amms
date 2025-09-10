@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { FiFilter, FiEdit3, FiBell, FiEye } from "react-icons/fi";
 import {
   useReactTable,
@@ -13,6 +13,7 @@ import {
 import NavigationMenu from "../../../components/parametrization/ParameterNavigation";
 import UnitListModal from "../../../components/parametrization/UnitListModal";
 import AddModifyUnitModal from "../../../components/parametrization/AddModifyUnitModal";
+import { getUnitsCategories, getUnitsByCategory } from "@/services/parametrizationService";
 import { useTheme } from "@/contexts/ThemeContext";
 
 // Componente principal
@@ -34,38 +35,15 @@ const ParameterizationView = () => {
   const [modalMode, setModalMode] = useState("add");
   const [selectedParameter, setSelectedParameter] = useState(null);
 
-  // Datos de ejemplo actualizados
-  const mockData = [
+  // Datos mock para otras pestañas (no Units)
+  const mockDataForOtherTabs = [
     { 
       id: 1, 
-      name: "Weight", 
-      description: "Módulo de maquinaria", 
+      name: "Sample Category", 
+      description: "Sample description", 
       details: "",
-      parameters: [
-        { id: 1, unitName: 'Ton', symbol: 'T', value: 'Decimal', status: 'Active' },
-        { id: 2, unitName: 'Kg', symbol: 'kg', value: 'Decimal', status: 'Active' },
-        { id: 3, unitName: 'Lb', symbol: 'lb', value: 'Decimal', status: 'Inactive' }
-      ]
-    },
-    { 
-      id: 2, 
-      name: "Length", 
-      description: "Módulo de maquinaria", 
-      details: "",
-      parameters: [
-        { id: 4, unitName: 'Meter', symbol: 'm', value: 'Decimal', status: 'Active' },
-        { id: 5, unitName: 'Feet', symbol: 'ft', value: 'Decimal', status: 'Active' }
-      ]
-    },
-    { 
-      id: 3, 
-      name: "Volume", 
-      description: "Módulo de maquinaria", 
-      details: "",
-      parameters: [
-        { id: 6, unitName: 'Liter', symbol: 'L', value: 'Decimal', status: 'Active' }
-      ]
-    },
+      parameters: []
+    }
   ];
 
   // Opciones del menú de navegación
@@ -80,15 +58,38 @@ const ParameterizationView = () => {
 
   // Función para obtener datos del backend
   const fetchData = async (menuItem = "Units") => {
+    console.log("🚀 fetchData called with:", menuItem);
     setLoading(true);
     setError(null);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setData(mockData);
+      if (menuItem === "Units") {
+        console.log("📡 About to call getUnitsCategories()");
+        const response = await getUnitsCategories();
+        console.log("✅ Categories API Response:", response);
+        
+        const transformedData = response.data.map(category => ({
+          id: category.id_units_categories,
+          name: category.name,
+          description: category.description,
+          details: "",
+          parameters: []
+        }));
+        
+        console.log("🔄 Transformed categories data:", transformedData);
+        setData(transformedData);
+      } else {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        setData(mockDataForOtherTabs);
+      }
     } catch (err) {
+      console.error("❌ Error in fetchData:", err);
       setError(err.message);
-      setData([]);
+      if (menuItem === "Units") {
+        setData([]);
+      } else {
+        setData(mockDataForOtherTabs);
+      }
     } finally {
       setLoading(false);
     }
@@ -102,17 +103,59 @@ const ParameterizationView = () => {
     setActiveMenuItem(item);
   };
 
+  // Función para recargar los datos de la categoría seleccionada
+  const handleReloadCategoryData = useCallback(async () => {
+    if (selectedCategory) {
+      try {
+        console.log("🔄 Reloading category data...");
+        const response = await getUnitsByCategory(selectedCategory.id);
+        
+        const transformedUnits = response.data.map(unit => ({
+          id: unit.id_units,
+          unitName: unit.name,
+          symbol: unit.name.substring(0, 2).toLowerCase(),
+          value: unit.unit_type_name, // ← Cambiado de unit.description a unit.unit_type_name
+          status: unit.statues_name,
+          description: unit.description
+        }));
+        
+        setCategoryParameters(transformedUnits);
+      } catch (error) {
+        console.error("❌ Error reloading category data:", error);
+      }
+    }
+  }, [selectedCategory]);
+
   // ==================== HANDLERS PARA UnitListModal ====================
 
   // Abrir UnitListModal (cuando se hace click en el ojo de la tabla principal)
-  const handleViewDetails = (categoryId) => {
+  const handleViewDetails = useCallback(async (categoryId) => {
     const category = data.find((item) => item.id === categoryId);
+    
     if (category) {
       setSelectedCategory(category);
-      setCategoryParameters(category.parameters || []);
       setIsUnitListModalOpen(true);
+      
+      try {
+        const response = await getUnitsByCategory(categoryId);
+        console.log("✅ Units API Response:", response);
+        
+        const transformedUnits = response.data.map(unit => ({
+          id: unit.id_units,
+          unitName: unit.name,
+          symbol: unit.name.substring(0, 2).toLowerCase(),
+          value: unit.unit_type_name, // ← Cambiado de unit.description a unit.unit_type_name
+          status: unit.statues_name,
+          description: unit.description
+        }));
+        
+        setCategoryParameters(transformedUnits);
+      } catch (error) {
+        console.error("❌ Error in handleViewDetails:", error);
+        setCategoryParameters([]);
+      }
     }
-  };
+  }, [data]); // ← Dependencia del estado data
 
   // Cerrar UnitListModal
   const handleCloseUnitListModal = () => {
@@ -148,45 +191,85 @@ const ParameterizationView = () => {
   };
 
   // Guardar/actualizar parameter
-  const handleSaveParameter = (parameterData) => {
-    console.log("Saving/updating parameter:", parameterData);
+  const handleSaveParameter = async (parameterData) => {
+    console.log("💾 Saving/updating parameter:", parameterData);
     
-    if (modalMode === "add") {
-      // Agregar nuevo parámetro
-      const newParameter = {
-        ...parameterData,
-        id: Date.now(), // ID temporal
-      };
-      
-      const updatedParameters = [...categoryParameters, newParameter];
-      setCategoryParameters(updatedParameters);
-      
-      // Actualizar también en los datos principales
-      const updatedData = data.map(item => 
-        item.id === selectedCategory.id 
-          ? { ...item, parameters: updatedParameters }
-          : item
-      );
-      setData(updatedData);
-      
-    } else if (modalMode === "modify") {
-      // Actualizar parámetro existente
-      const updatedParameters = categoryParameters.map(param =>
-        param.id === selectedParameter.id ? { ...param, ...parameterData } : param
-      );
-      setCategoryParameters(updatedParameters);
-      
-      // Actualizar también en los datos principales
-      const updatedData = data.map(item => 
-        item.id === selectedCategory.id 
-          ? { ...item, parameters: updatedParameters }
-          : item
-      );
-      setData(updatedData);
+    try {
+      if (modalMode === "add") {
+        // Si es modo agregar y hay mensaje de éxito, recargar datos
+        if (parameterData.success) {
+          console.log("✅ Unit created successfully, reloading data...");
+          // Recargar la lista de parámetros
+          if (selectedCategory) {
+            const response = await getUnitsByCategory(selectedCategory.id);
+            console.log("🔄 Reloaded units:", response);
+            
+            const transformedUnits = response.data.map(unit => ({
+              id: unit.id_units,
+              unitName: unit.name,
+              symbol: unit.name.substring(0, 2).toLowerCase(),
+              value: unit.unit_type_name, // ← Cambiado de unit.description a unit.unit_type_name
+              status: unit.statues_name,
+              description: unit.description
+            }));
+            
+            setCategoryParameters(transformedUnits);
+          }
+        } else {
+          // Lógica anterior para modo mock (mantener por compatibilidad)
+          const newParameter = {
+            ...parameterData,
+            id: Date.now(),
+          };
+          
+          const updatedParameters = [...categoryParameters, newParameter];
+          setCategoryParameters(updatedParameters);
+          
+          const updatedData = data.map(item => 
+            item.id === selectedCategory.id 
+              ? { ...item, parameters: updatedParameters }
+              : item
+          );
+          setData(updatedData);
+        }
+      } else if (modalMode === "modify") {
+        // Si es modo modificar y hay mensaje de éxito, recargar datos
+        if (parameterData.success) {
+          console.log("✅ Unit updated successfully, reloading data...");
+          // Recargar la lista de parámetros desde la API
+          if (selectedCategory) {
+            const response = await getUnitsByCategory(selectedCategory.id);
+            console.log("🔄 Reloaded units after update:", response);
+            
+            const transformedUnits = response.data.map(unit => ({
+              id: unit.id_units,
+              unitName: unit.name,
+              symbol: unit.name.substring(0, 2).toLowerCase(),
+              value: unit.unit_type_name,
+              status: unit.statues_name,
+              description: unit.description
+            }));
+            
+            setCategoryParameters(transformedUnits);
+          }
+        } else {
+          // Lógica anterior para modo mock (mantener por compatibilidad)
+          const updatedParameters = categoryParameters.map(param =>
+            param.id === selectedParameter.id ? { ...param, ...parameterData } : param
+          );
+          setCategoryParameters(updatedParameters);
+          
+          const updatedData = data.map(item => 
+            item.id === selectedCategory.id 
+              ? { ...item, parameters: updatedParameters }
+              : item
+          );
+          setData(updatedData);
+        }
+      }
+    } catch (error) {
+      console.error("❌ Error in handleSaveParameter:", error);
     }
-
-    // Cerrar el modal
-    handleCloseAddModifyModal();
   };
 
   // ==================== TABLA PRINCIPAL ====================
@@ -218,7 +301,7 @@ const ParameterizationView = () => {
         ),
       }),
     ],
-    [handleViewDetails]
+    [handleViewDetails] // Ahora sí podemos incluirlo ya que es useCallback
   );
 
   const table = useReactTable({
@@ -469,6 +552,7 @@ const ParameterizationView = () => {
         data={categoryParameters}
         onAddParameter={handleAddParameter}
         onEditParameter={handleEditParameter}
+        onReloadData={handleReloadCategoryData}
       />
 
       {/* AddModifyUnitModal - Modal para agregar/editar parámetros */}
@@ -478,6 +562,7 @@ const ParameterizationView = () => {
         mode={modalMode}
         unit={selectedParameter}
         category={selectedCategory?.name || ""}
+        categoryId={selectedCategory?.id || 1}
         onSave={handleSaveParameter}
       />
     </div>

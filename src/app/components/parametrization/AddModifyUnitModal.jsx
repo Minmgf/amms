@@ -1,15 +1,46 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { FiX } from 'react-icons/fi';
+import { getActiveDataTypes, createUnits, updateUnit } from '@/services/parametrizationService';
 
-const AddModifyUnitModal = ({ isOpen, onClose, mode = 'add', unit = null, category = 'Weight', onSave }) => {
+const AddModifyUnitModal = ({ isOpen, onClose, mode = 'add', unit = null, category = 'Weight', categoryId = 1, onSave }) => {
   const [formData, setFormData] = useState({
     category: category,
     typeName: '',
     symbol: '',
     value: '',
+    unitType: '',
     isActive: true
   });
+
+  const [dataTypes, setDataTypes] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Cargar tipos de datos cuando se abre el modal
+  useEffect(() => {
+    if (isOpen) {
+      fetchDataTypes();
+    }
+  }, [isOpen]);
+
+  const fetchDataTypes = async () => {
+    try {
+      setLoading(true);
+      const response = await getActiveDataTypes();
+      console.log('📊 Data types response:', response);
+      
+      // La respuesta puede ser directamente un array o tener una propiedad data
+      const typesArray = Array.isArray(response) ? response : (response.data || []);
+      setDataTypes(typesArray);
+    } catch (err) {
+      console.error('❌ Error fetching data types:', err);
+      setError('Error loading data types');
+      setDataTypes([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (mode === 'modify' && unit) {
@@ -18,6 +49,7 @@ const AddModifyUnitModal = ({ isOpen, onClose, mode = 'add', unit = null, catego
         typeName: unit.unitName || unit.typeName || '',
         symbol: unit.symbol || '',
         value: unit.value || '',
+        unitType: unit.unitType || '',
         isActive: unit.status === 'Active' || unit.isActive === true
       });
     } else {
@@ -26,6 +58,7 @@ const AddModifyUnitModal = ({ isOpen, onClose, mode = 'add', unit = null, catego
         typeName: '',
         symbol: '',
         value: '',
+        unitType: '',
         isActive: true
       });
     }
@@ -46,43 +79,81 @@ const AddModifyUnitModal = ({ isOpen, onClose, mode = 'add', unit = null, catego
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(null);
     
-    if (mode === 'modify') {
-      const updatedUnit = {
-        ...unit,
-        unitName: formData.typeName,
-        typeName: formData.typeName,
-        symbol: formData.symbol,
-        value: formData.value,
-        status: formData.isActive ? 'Active' : 'Inactive',
-        isActive: formData.isActive
-      };
+    try {
+      if (mode === 'modify') {
+        // Actualizar unidad existente usando la API
+        const payload = {
+          name: formData.typeName,
+          symbol: formData.symbol,
+          unit_type: parseInt(formData.unitType),
+          responsible_user: 1
+        };
 
-      console.log('Updating parameter:', updatedUnit);
-      
-      if (onSave) {
-        onSave(updatedUnit);
+        console.log('🔄 Updating unit with payload:', payload);
+        
+        const response = await updateUnit(unit.id, payload);
+        console.log('✅ Unit updated successfully:', response);
+        
+        // Cerrar el modal primero
+        onClose();
+        
+        // Luego notificar al componente padre para recargar datos
+        if (onSave) {
+          await onSave({ success: true, message: response.message });
+        }
+      } else {
+        // Crear nueva unidad usando la API
+        const payload = {
+          name: formData.typeName,
+          symbol: formData.symbol,
+          units_category: categoryId,
+          unit_type: parseInt(formData.unitType),
+          estado: formData.isActive ? 'Activo' : 'Inactivo', // ← AGREGAR ESTADO
+          responsible_user: 1 // TODO: Obtener del contexto de usuario
+        };
+
+        console.log('📦 Creating unit with payload:', payload);
+        
+        const response = await createUnits(payload);
+        console.log('✅ Unit created successfully:', response);
+        
+        // Cerrar el modal primero
+        onClose();
+        
+        // Luego notificar al componente padre para recargar datos
+        if (onSave) {
+          await onSave({ success: true, message: response.message });
+        }
       }
-    } else {
-      const newUnit = {
-        typeName: formData.typeName,
-        symbol: formData.symbol,
-        value: formData.value,
-        status: formData.isActive ? 'Active' : 'Inactive',
-        isActive: formData.isActive,
-        category: formData.category
-      };
-
-      console.log('Adding parameter:', newUnit);
       
-      if (onSave) {
-        onSave(newUnit);
+    } catch (err) {
+      console.error('❌ Error saving unit:', err);
+      
+      // Manejar errores específicos de la API
+      if (mode === 'add') {
+        // Solo validar estos campos en modo "add"
+        if (err.response?.data?.units_category) {
+          setError(`Category error: ${err.response.data.units_category[0]}`);
+        } else if (err.response?.data?.estado) {
+          setError(`Status error: ${err.response.data.estado[0]}`);
+        } else if (err.response?.data?.unit_type) {
+          setError(`Unit type error: ${err.response.data.unit_type[0]}`);
+        } else {
+          setError(err.message || 'Error creating unit');
+        }
+      } else {
+        // En modo "modify" solo validar campos básicos
+        if (err.response?.data?.unit_type) {
+          setError(`Unit type error: ${err.response.data.unit_type[0]}`);
+        } else {
+          setError(err.message || 'Error updating unit');
+        }
       }
     }
-    
-    onClose();
   };
 
   if (!isOpen) return null;
@@ -148,23 +219,43 @@ const AddModifyUnitModal = ({ isOpen, onClose, mode = 'add', unit = null, catego
                 value={formData.symbol}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder=""
+                placeholder="kg"
+                required
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Value
+                Value (Type)
               </label>
-              <input
-                type="text"
-                name="value"
-                value={formData.value}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder=""
-              />
+              {loading ? (
+                <div className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm text-gray-500">
+                  Loading types...
+                </div>
+              ) : (
+                <select
+                  name="unitType"
+                  value={formData.unitType}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                >
+                  <option value="">Select a type</option>
+                  {dataTypes.map(type => (
+                    <option key={type.id_types || type.id} value={type.id_types || type.id}>
+                      {type.name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-red-600 text-sm">{error}</p>
+            </div>
+          )}
 
           {/* Row 3: Toggle */}
           <div className='flex justify-center items-center space-x-4 mb-6'>

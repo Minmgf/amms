@@ -114,8 +114,132 @@ export const getActiveTypesByCategory = async (idTypesCategories) => {
     return data;
 };
 
+/**
+ * Verificar conexión con el servicio
+ * Útil para debugging y health checks
+ */
+export const checkServiceHealth = async () => {
+    try {
+        console.log('🔄 servicioCompleto: Verificando estado del servicio...');
+        // Intentamos obtener las categorías como health check
+        const response = await getTypesCategories();
+        console.log('✅ servicioCompleto: Servicio funcionando correctamente');
+        return {
+            status: 'healthy',
+            message: 'Servicio funcionando correctamente',
+            data: response
+        };
+    } catch (error) {
+        console.error('❌ servicioCompleto: Servicio no disponible:', error);
+        return {
+            status: 'unhealthy',
+            message: error.message,
+            error: error
+        };
+    }
+};
+
 // Activar/desactivar tipo - VISTA: Switch en modal de detalles de tipo
 export const toggleTypeStatus = async (idType) => {
     const { data } = await apiMain.patch(`types/${idType}/toggle-status/`);
     return data;
 };
+
+// =============================================================================
+// VISTA PRINCIPAL - PESTAÑA UNIDADES (HU-PAR-001 / HU-PAR-002)
+// =============================================================================
+
+// ===== CATEGORÍAS DE UNIDADES =====
+
+// Listar categorías de unidades - VISTA: Pestaña Units
+export const getUnitsCategories = async () => {
+    const { data } = await apiMain.get("units_categories/");
+    return data;
+};
+
+// =============================================================================
+// MODAL DETALLE DE CATEGORÍA - UNIDADES (HU-PAR-003 / HU-PAR-004)
+// =============================================================================
+
+// ===== GESTIÓN DE UNIDADES INDIVIDUALES =====
+
+// Listar unidades por categoría - VISTA: Modal "Detalles" de categoría de unidades
+export const getUnitsByCategory = async (idUnitCategory) => {
+    const { data } = await apiMain.get(`units/list/${idUnitCategory}/`);
+    return data;
+};
+
+// Crear unidad individual - VISTA: Modal "Agregar Parámetro" dentro de categoría de unidades
+export const createUnits = async (payload) => {
+    const { data } = await apiMain.post("units/", payload);
+    return data;
+};
+
+// Listar tipos activos para Value/unit_type - VISTA: Select en modal de agregar/editar unidad
+export const getActiveDataTypes = async () => {
+    const { data } = await apiMain.get("types/list/active/1/");
+    return data;
+};
+
+// Actualizar unidad individual - VISTA: Modal "Modificar Unidad"
+export const updateUnit = async (idUnit, payload) => {
+    const { data } = await apiMain.put(`units/${idUnit}/`, payload);
+    return data;
+};
+
+// Activar/desactivar unidad - VISTA: Toggle en modal de detalles de unidad
+export const toggleUnitStatus = async (idUnit) => {
+    const { data } = await apiMain.patch(`units/${idUnit}/toggle-status/`);
+    return data;
+};
+
+//DEPARTAMENTOS Y CARGOS DE TRABAJO
+
+//Listar Departamentos
+export const getDepartments = async () => {
+    const { data } = await apiMain.get(`employee_departments/list/`);
+    return data;
+};
+
+//Crear nuevo departamento
+export const createDepartment = async (payload) => {
+    const { data } = await apiMain.post("employee_departments/", payload);
+    return data;
+};
+
+//Obtener cargos por departamento
+export const getChargesDepartments = async (id_employee_deparment) => {
+    const { data } = await apiMain.get(`employee_charges/list/${id_employee_deparment}/`);
+    return data;
+};
+
+//Activar o desactivar departamento
+export const changeDepartmentStatus = async (id_employee_department) => {
+    const { data } = await apiMain.patch(`employee_departments/${id_employee_department}/toggle-status/`);
+    return data;
+};
+
+//Actualizar departamento
+export const updateDepartment = async (id_employee_department ,payload) => {
+    const { data } = await apiMain.put(`employee_departments/${id_employee_department}/`, payload);
+    return data;
+};
+
+//Crear nuevo puesto de trabajo
+export const createJob = async (payload) => {
+    const { data } = await apiMain.post("employee_charges/", payload);
+    return data;
+};
+
+//Actualizar puesto de trabajo
+export const updateJob = async (id_charge ,payload) => {
+    const { data } = await apiMain.put(`employee_charges/${id_charge}/`, payload);
+    return data;
+};
+
+//Activar o desactivar puesto de trabajo
+export const changeJobStatus = async (id_charge) => {
+    const { data } = await apiMain.patch(`employee_charges/${id_charge}/toggle-status/`);
+    return data;
+};
+

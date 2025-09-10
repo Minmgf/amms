@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { FiX, FiEdit3 } from 'react-icons/fi';
 import JobModal from './JobModal'; // Add this import
+import { changeDepartmentStatus, getChargesDepartments, createJob, updateJob } from '@/services/parametrizationService';
+import { SuccessModal, ErrorModal } from '@/app/components/shared/SuccessErrorModal';
 
 const DepartmentModal = ({ 
   isOpen, 
@@ -9,7 +11,8 @@ const DepartmentModal = ({
   mode = 'add', // 'add' or 'edit'
   departmentData = null,
   onSave,
-  existingDepartments = [] // Array de departamentos existentes para validar unicidad
+  existingDepartments = [],
+  onStatusChange 
 }) => {
   const [formData, setFormData] = useState({
     categoryName: '',
@@ -27,46 +30,79 @@ const DepartmentModal = ({
   const [isJobModalOpen, setIsJobModalOpen] = useState(false);
   const [jobModalMode, setJobModalMode] = useState('add'); // 'add' or 'modify'
   const [selectedJob, setSelectedJob] = useState(null);
-
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+  const [userId, setUserId] = useState("");
   const [jobTitles, setJobTitles] = useState([]);
 
   // Datos mock para cuando no hay posiciones registradas
   const emptyJobTitles = [];
 
   useEffect(() => {
-    if (departmentData && mode === 'edit') {
+    const storedUser = localStorage.getItem("userData");
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUserId(userData.id);
+      } catch (err) {
+
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (departmentData) {
       setFormData({
-        categoryName: departmentData.department || '',
+        id: departmentData.id || departmentData.id_employee_department || '',
+        department: departmentData.department || departmentData.name || '',
+        categoryName: departmentData.department || departmentData.name || '',
         description: departmentData.description || '',
-        isActive: departmentData.status === 'Active',
+        isActive: departmentData.status === 'Activo', 
         jobTitles: departmentData.jobTitles || []
       });
-      // En modo editar, mostrar job titles existentes
-      if (departmentData.department !== 'Department #1') {
-        setJobTitles([
-          { id: 1, name: 'Job Title 1', description: 'Example', status: 'Active' },
-          { id: 2, name: 'Job Title 2', description: 'Example', status: 'Inactive' },
-          { id: 3, name: 'Job Title 3', description: 'Example', status: 'Inactive' }
-        ]);
-      } else {
-        setJobTitles(emptyJobTitles);
-      }
+
+      fetchJobs(departmentData.id || departmentData.id_employee_department);
+
     } else {
-      // Reset form for add mode
       setFormData({
+        id: '',
+        department: '',
         categoryName: '',
         description: '',
         isActive: true,
+        status: 'Active',
         jobTitles: []
       });
-      setJobTitles(emptyJobTitles);
+      setJobTitles([]);
     }
-    // Reset errors when modal opens/closes
+
     setErrors({
       categoryName: '',
       description: ''
     });
   }, [departmentData, mode, isOpen]);
+
+
+  const handleToggleStatus = async () => {
+    if (!formData.id) return;
+
+    try {
+      const response = await changeDepartmentStatus(formData.id);
+      setModalMessage(response.message);
+      setSuccessOpen(true);
+      setFormData(prev => ({
+        ...prev,
+        isActive: !prev.isActive
+      }));
+      if (onStatusChange) {
+       onStatusChange(); 
+    }
+    } catch (error) {
+      setModalMessage(error.response.data.name || "Failed");
+      setErrorOpen(true);
+    }
+  };
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -74,7 +110,6 @@ const DepartmentModal = ({
       [field]: value
     }));
     
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
@@ -82,6 +117,36 @@ const DepartmentModal = ({
       }));
     }
   };
+
+
+  const fetchJobs = async (departmentId) => {
+    if (!departmentId) return;
+    try {
+      const response = await getChargesDepartments(departmentId);
+
+      if (Array.isArray(response)) {
+        setJobTitles(response.map(job => ({
+          id: job.id_employee_charge,  
+          name: job.name,
+          description: job.description,
+          status: job.estado === 'Activo' ? 'Active' : 'Inactive'
+        })));
+      } else if (response.data) {
+        setJobTitles(response.data.map(job => ({
+          id: job.id_job || job.id,
+          name: job.name,
+          description: job.description,
+          status: job.status === 'Activo' ? 'Active' : 'Inactive'
+        })));
+      } else {
+        setJobTitles([]);
+      }
+    } catch (err) {
+      console.error("Error fetching jobs:", err);
+      setJobTitles([]);
+    }
+  };
+
 
   const validateForm = () => {
     const newErrors = {};
@@ -144,30 +209,74 @@ const DepartmentModal = ({
     setSelectedJob(null);
   };
 
-  const handleSaveJob = (jobData) => {
+  const handleSaveJob = async (jobData) => {
     if (jobModalMode === 'add') {
-      // Add new job
-      const newJob = {
-        id: jobTitles.length > 0 ? Math.max(...jobTitles.map(j => j.id)) + 1 : 1,
-        name: jobData.jobTitle,
-        description: jobData.description,
-        status: jobData.isActive ? 'Active' : 'Inactive'
-      };
-      setJobTitles(prev => [...prev, newJob]);
-    } else {
-      // Update existing job
-      setJobTitles(prev => prev.map(job => 
-        job.id === selectedJob.id 
-          ? {
-              ...job,
-              name: jobData.jobTitle,
-              description: jobData.description,
-              status: jobData.isActive ? 'Active' : 'Inactive'
-            }
-          : job
-      ));
+      if (mode === 'add') {
+        // Crear job localmente para un departamento nuevo
+        const newJob = {
+          id: jobTitles.length > 0 ? Math.max(...jobTitles.map(j => j.id)) + 1 : 1,
+          name: jobData.jobTitle,
+          description: jobData.description,
+          status: jobData.isActive ? 'Active' : 'Inactive'
+        };
+        setJobTitles(prev => [...prev, newJob]);
+      } else {
+        // Crear job via backend para un departamento existente
+        try {
+          const departmentId = formData.id;
+          const payload = {
+            department: departmentId,
+            responsible_user: userId,
+            name: jobData.jobTitle,
+            description: jobData.description,
+          };
+          const response = await createJob(payload);
+          await fetchJobs(departmentId);
+
+          setModalMessage(response.message || 'Job created successfully');
+          setSuccessOpen(true);
+        } catch (error) {
+          const message = error.response?.data?.message || 'Failed to create job';
+          setModalMessage(message);
+          setErrorOpen(true);
+        }
+      }
+    } else if (jobModalMode === 'modify') {
+      if (mode === 'add') {
+        // Editar job localmente para departamento nuevo
+        setJobTitles(prev => prev.map(job =>
+          job.id === selectedJob.id
+            ? {
+                ...job,
+                name: jobData.jobTitle,
+                description: jobData.description,
+                status: jobData.isActive ? 'Active' : 'Inactive'
+              }
+            : job
+        ));
+      } else {
+        // Editar job via backend para departamento existente
+        try {
+          const jobId = selectedJob.id;
+          const payload = {
+            name: jobData.jobTitle,
+            description: jobData.description,
+            responsible_user: userId
+          };
+          const response = await updateJob(jobId, payload);
+          await fetchJobs(formData.id);
+          setModalMessage(response.message || 'Job updated successfully');
+          setSuccessOpen(true);
+        } catch (error) {
+          const message = error.response?.data?.message || 'Failed to update job';
+          setModalMessage(message);
+          setErrorOpen(true);
+        }
+      }
     }
   };
+
+
 
   if (!isOpen) return null;
 
@@ -181,7 +290,7 @@ const DepartmentModal = ({
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-900">
-              {isAddMode ? 'Add department' : departmentData?.department || 'Department #X'}
+              {isAddMode ? 'Add department' : 'Modify Department'}
             </h2>
             <button
               onClick={onClose}
@@ -199,7 +308,7 @@ const DepartmentModal = ({
                 <label className={`block text-sm font-medium mb-2 ${
                   errors.categoryName ? 'text-red-500' : 'text-gray-700'
                 }`}>
-                  Category name
+                  Department name
                 </label>
                 <input
                   type="text"
@@ -236,27 +345,33 @@ const DepartmentModal = ({
               </div>
             </div>
 
-            {/* Toggle Switch */}
-            <div className="flex items-center mb-8">
-              <span className="text-sm font-medium text-gray-700 pr-5">Activate/Deactivate</span>
-              <button
-                onClick={() => handleInputChange('isActive', !formData.isActive)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                  formData.isActive ? 'bg-red-500' : 'bg-gray-200'
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    formData.isActive ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
+            {/* Toggle Switch - Solo visible en modo edit */}
+            {!isAddMode && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Activate/Deactivate
+                </label>
+                <button
+                  onClick={() => handleToggleStatus()}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                    ${formData.isActive ? 'bg-green-500' : 'bg-gray-200'}
+                  `}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                      ${formData.isActive ? 'translate-x-6' : 'translate-x-1'}
+                    `}
+                  />
+                </button>
+              </div>
+            )}
+
+
 
             {/* Jobs Titles List Section */}
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">
-                Jobs Titles list
+                Jobs Titles List
               </h3>
               
               <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
@@ -300,7 +415,7 @@ const DepartmentModal = ({
                   ) : (
                     <div className="flex items-center justify-center h-32">
                       <p className="text-sm text-gray-500">
-                        No existen cargos registrados para este departamento.
+                        There are no positions registered for this department.
                       </p>
                     </div>
                   )}
@@ -334,10 +449,25 @@ const DepartmentModal = ({
         isOpen={isJobModalOpen}
         onClose={handleCloseJobModal}
         mode={jobModalMode}
+        departmentMode={mode} 
         jobData={selectedJob}
-        departmentName={formData.categoryName || 'Department X'}
+        departmentId={formData.id}
+        departmentName={formData.categoryName}
         onSave={handleSaveJob}
         existingJobs={jobTitles} // Pasar jobs existentes para validar unicidad
+        onStatusChange={fetchJobs}
+      />
+      <SuccessModal
+        isOpen={successOpen}
+        onClose={() => setSuccessOpen(false)}
+        title="Successful"
+        message={modalMessage}
+      />
+      <ErrorModal
+        isOpen={errorOpen}
+        onClose={() => setErrorOpen(false)}
+        title="Failed"
+        message={modalMessage}
       />
     </>
   );
