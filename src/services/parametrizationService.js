@@ -119,3 +119,51 @@ export const toggleTypeStatus = async (idType) => {
     const { data } = await apiMain.patch(`types/${idType}/toggle-status/`);
     return data;
 };
+
+// =============================================================================
+// VISTA PRINCIPAL - PESTAÑA UNIDADES (HU-PAR-001 / HU-PAR-002)
+// =============================================================================
+
+// ===== CATEGORÍAS DE UNIDADES =====
+
+// Listar categorías de unidades - VISTA: Pestaña Units
+export const getUnitsCategories = async () => {
+    const { data } = await apiMain.get("units_categories/");
+    return data;
+};
+
+// =============================================================================
+// MODAL DETALLE DE CATEGORÍA - UNIDADES (HU-PAR-003 / HU-PAR-004)
+// =============================================================================
+
+// ===== GESTIÓN DE UNIDADES INDIVIDUALES =====
+
+// Listar unidades por categoría - VISTA: Modal "Detalles" de categoría de unidades
+export const getUnitsByCategory = async (idUnitCategory) => {
+    const { data } = await apiMain.get(`units/list/${idUnitCategory}/`);
+    return data;
+};
+
+// Crear unidad individual - VISTA: Modal "Agregar Parámetro" dentro de categoría de unidades
+export const createUnits = async (payload) => {
+    const { data } = await apiMain.post("units/", payload);
+    return data;
+};
+
+// Listar tipos activos para Value/unit_type - VISTA: Select en modal de agregar/editar unidad
+export const getActiveDataTypes = async () => {
+    const { data } = await apiMain.get("types/list/active/1/");
+    return data;
+};
+
+// Actualizar unidad individual - VISTA: Modal "Modificar Unidad"
+export const updateUnit = async (idUnit, payload) => {
+    const { data } = await apiMain.put(`units/${idUnit}/`, payload);
+    return data;
+};
+
+// Activar/desactivar unidad - VISTA: Toggle en modal de detalles de unidad
+export const toggleUnitStatus = async (idUnit) => {
+    const { data } = await apiMain.patch(`units/${idUnit}/toggle-status/`);
+    return data;
+};
