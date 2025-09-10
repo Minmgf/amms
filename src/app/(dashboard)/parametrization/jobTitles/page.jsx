@@ -13,6 +13,10 @@ import {
 import NavigationMenu from '../../../components/ParameterNavigation';
 import DepartmentModal from '../../../components/parametrization/DepartmentModal';
 import { useTheme } from '@/contexts/ThemeContext';
+import { getDepartments, createDepartment, updateDepartment } from '@/services/parametrizationService';
+import { SuccessModal, ErrorModal } from '@/app/components/shared/SuccessErrorModal';
+
+
 
 // Componente principal
 const ParameterizationView = () => {
@@ -22,47 +26,57 @@ const ParameterizationView = () => {
   const [error, setError] = useState(null);
   const [data, setData] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+  const [userId, setUserId] = useState("");
+
   
   // Estados para el modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('add'); // 'add' or 'edit'
   const [selectedDepartment, setSelectedDepartment] = useState(null);
 
-  // Datos de ejemplo para departamentos
-  const mockData = [
-    { id: 1, department: 'Department #1', description: 'Módulo de nómina', status: 'Active' },
-    { id: 2, department: 'Department #2', description: 'Módulo de nómina', status: 'Inactive' },
-    { id: 3, department: 'Department #3', description: 'Módulo de nómina', status: 'Active' },
-    { id: 4, department: 'Human Resources', description: 'Gestión de recursos humanos', status: 'Active' },
-    { id: 5, department: 'Finance', description: 'Departamento financiero', status: 'Active' },
-    { id: 6, department: 'IT Department', description: 'Tecnología de la información', status: 'Active' },
-    { id: 7, department: 'Marketing', description: 'Departamento de marketing', status: 'Inactive' },
-    { id: 8, department: 'Sales', description: 'Departamento de ventas', status: 'Active' },
-    { id: 9, department: 'Operations', description: 'Operaciones generales', status: 'Active' },
-    { id: 10, department: 'Legal', description: 'Departamento legal', status: 'Active' },
-    { id: 11, department: 'Customer Service', description: 'Atención al cliente', status: 'Inactive' },
-    { id: 12, department: 'Research and Development', description: 'I+D', status: 'Active' },
-    { id: 13, department: 'Logistics', description: 'Logística y distribución', status: 'Active' },
-    { id: 14, department: 'Procurement', description: 'Compras y aprovisionamiento', status: 'Inactive' },
-    { id: 15, department: 'Quality Assurance', description: 'Aseguramiento de la calidad', status: 'Active' },
-    { id: 16, department: 'Public Relations', description: 'Relaciones públicas', status: 'Active' },
-    { id: 17, department: 'Administration', description: 'Administración general', status: 'Active' },
-    { id: 18, department: 'Training', description: 'Capacitación y desarrollo', status: 'Inactive' },
-    { id: 19, department: 'Security', description: 'Seguridad y vigilancia', status: 'Active' },
-    { id: 20, department: 'Maintenance', description: 'Mantenimiento de instalaciones', status: 'Active' },
-  ];
+  useEffect(() => {
+    const storedUser = localStorage.getItem("userData");
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUserId(userData.id);
+      } catch (err) {
+
+      }
+    }
+  }, []);
 
   // Función para obtener datos del backend
   const fetchData = async (menuItem = 'Job Titles') => {
     setLoading(true);
     setError(null);
-    
+
     try {
-      // Simular delay del backend
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setData(mockData);
-      
+      const response = await getDepartments();
+
+      if (Array.isArray(response)) {
+        const formatted = response.map(d => ({
+            id: d.id_employee_department,     
+            department: d.name,
+            description: d.description,
+            status: d.estado  
+        }));
+        setData(formatted);
+      } else if (response.data) {
+        const formatted = response.data.map(d => ({
+            id: d.id_employee_department,     
+            department: d.name,
+            description: d.description,
+            status: d.estado  
+        }));
+        setData(formatted);
+      } else {
+        setError("Formato inesperado en la respuesta");
+        setData([]);
+      }
     } catch (err) {
       setError(err.message);
       setData([]);
@@ -70,6 +84,8 @@ const ParameterizationView = () => {
       setLoading(false);
     }
   };
+
+
 
   // Cargar datos al montar el componente y cuando cambien las dependencias
   useEffect(() => {
@@ -82,10 +98,22 @@ const ParameterizationView = () => {
 
   const handleViewDetails = (departmentId) => {
     const department = data.find(d => d.id === departmentId);
-    setSelectedDepartment(department);
-    setModalMode('edit');
-    setIsModalOpen(true);
+    if (department) {
+      const normalized = {
+        id: department.id,
+        department: department.department,
+        description: department.description,
+        status: department.status,
+        jobTitles: department.jobTitles || []
+      };
+
+      setSelectedDepartment(normalized);
+      setModalMode("edit");
+      setIsModalOpen(true);
+    }
   };
+
+
 
   const handleAddDepartment = () => {
     setSelectedDepartment(null);
@@ -98,30 +126,47 @@ const ParameterizationView = () => {
     setSelectedDepartment(null);
   };
 
-  const handleSaveDepartment = (departmentData) => {
-    if (modalMode === 'add') {
-      // Lógica para añadir nuevo departamento
-      const newDepartment = {
-        id: data.length + 1,
-        department: departmentData.categoryName,
-        description: departmentData.description,
-        status: departmentData.isActive ? 'Active' : 'Inactive'
-      };
-      setData(prev => [...prev, newDepartment]);
-      console.log('Adding new department:', newDepartment);
-    } else {
-      // Lógica para actualizar departamento existente
-      setData(prev => prev.map(dept => 
-        dept.id === selectedDepartment.id 
-          ? {
-              ...dept,
-              department: departmentData.categoryName,
-              description: departmentData.description,
-              status: departmentData.isActive ? 'Active' : 'Inactive'
-            }
-          : dept
-      ));
-      console.log('Updating department:', departmentData);
+  const handleSaveDepartment = async (departmentData) => {
+    try {
+      if (modalMode === "add") {
+      
+        const payload = {
+          name: departmentData.categoryName,
+          description: departmentData.description,
+          responsible_user: userId, 
+          charges: departmentData.jobTitles.map(job => ({
+            name: job.name,
+            description: job.description
+          }))
+        };
+
+        const response = await createDepartment(payload);
+        await fetchData(); 
+        setModalMessage(response.message);
+        setSuccessOpen(true);
+
+      } else {
+         try {
+          const departmentId = selectedDepartment.id;
+          const payload = {
+            name: departmentData.categoryName,
+            description: departmentData.description,
+            responsible_user: userId
+          };
+
+          const response = await updateDepartment(departmentId, payload); 
+          await fetchData();
+          setModalMessage(response.message);
+          setSuccessOpen(true);
+        } catch (error) {
+          const message = error.response?.data?.message || error.response?.data?.name || "Failed to update department";
+          setModalMessage(message);
+          setErrorOpen(true);
+        }
+      }
+    } catch (error) {
+      setModalMessage(error.response.data.name || "Failed");
+      setErrorOpen(true);
     }
   };
 
@@ -145,23 +190,6 @@ const ParameterizationView = () => {
             {info.getValue()}
           </div>
         ),
-      }),
-      columnHelper.accessor('status', {
-        header: 'Status',
-        cell: info => {
-          const status = info.getValue();
-          return (
-            <span 
-              className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
-                status === 'Active' 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-pink-100 text-pink-800'
-              }`}
-            >
-              {status}
-            </span>
-          );
-        },
       }),
       columnHelper.accessor('id', {
         header: 'Details',
@@ -273,23 +301,35 @@ const ParameterizationView = () => {
                         </tr>
                       ))}
                     </thead>
-                    <tbody className="">
-                      {table.getRowModel().rows.map(row => (
-                        <tr key={row.id} className="parametrization-table-row group">
-                          {row.getVisibleCells().map(cell => (
-                            <td
-                              key={cell.id}
-                              className="parametrization-table-cell px-4 md:px-6 py-3 md:py-4 text-sm last:border-r-0"
-                            >
-                              {flexRender(
-                                cell.column.columnDef.cell,
-                                cell.getContext()
-                              )}
-                            </td>
-                          ))}
+                    <tbody>
+                      {table.getRowModel().rows.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={columns.length}
+                            className="px-4 py-6 text-center text-gray-500"
+                          >
+                            No departments found
+                          </td>
                         </tr>
-                      ))}
+                      ) : (
+                        table.getRowModel().rows.map(row => (
+                          <tr key={row.id} className="parametrization-table-row group">
+                            {row.getVisibleCells().map(cell => (
+                              <td
+                                key={cell.id}
+                                className="parametrization-table-cell px-4 md:px-6 py-3 md:py-4 text-sm last:border-r-0"
+                              >
+                                {flexRender(
+                                  cell.column.columnDef.cell,
+                                  cell.getContext()
+                                )}
+                              </td>
+                            ))}
+                          </tr>
+                        ))
+                      )}
                     </tbody>
+
                   </table>
                 </div>
 
@@ -436,6 +476,20 @@ const ParameterizationView = () => {
         mode={modalMode}
         departmentData={selectedDepartment}
         onSave={handleSaveDepartment}
+        onStatusChange={fetchData}
+        existingDepartments={data}
+      />
+      <SuccessModal
+        isOpen={successOpen}
+        onClose={() => setSuccessOpen(false)}
+        title="Successful"
+        message={modalMessage}
+      />
+      <ErrorModal
+        isOpen={errorOpen}
+        onClose={() => setErrorOpen(false)}
+        title="Failed"
+        message={modalMessage}
       />
     </>
   );
