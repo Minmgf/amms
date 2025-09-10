@@ -27,9 +27,11 @@ import {
   updateStatue,
   toggleStatueStatus
 } from "@/services/parametrizationService";
+import { useTheme } from "@/contexts/ThemeContext";
 
 // Componente principal
 const ParameterizationView = () => {
+  const { currentTheme } = useTheme();
   const [activeMenuItem, setActiveMenuItem] = useState('Types');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -378,7 +380,7 @@ const ParameterizationView = () => {
       columnHelper.accessor('name', {
         header: 'Category name',
         cell: info => (
-          <div className="font-medium text-gray-900">
+          <div className="font-medium parametrization-table-cell">
             {info.getValue()}
           </div>
         ),
@@ -386,7 +388,7 @@ const ParameterizationView = () => {
       columnHelper.accessor('description', {
         header: 'Description',
         cell: info => (
-          <div className="text-gray-600">
+          <div className="parametrization-table-cell secondary">
             {info.getValue()}
           </div>
         ),
@@ -396,10 +398,10 @@ const ParameterizationView = () => {
         cell: info => (
           <button 
             onClick={() => handleViewDetails(info.getValue())}
-            className="p-2 hover:bg-gray-100 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+            className="parametrization-action-button p-2 transition-colors opacity-0 group-hover:opacity-100"
             title="View details"
           >
-            <FiEye className="w-4 h-4 text-gray-500 hover:text-gray-700" />
+            <FiEye className="w-4 h-4" />
           </button>
         ),
       }),
@@ -426,18 +428,18 @@ const ParameterizationView = () => {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+    <div className="parametrization-page p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6 md:mb-10">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Parameterization</h1>
+          <h1 className="parametrization-header text-2xl md:text-3xl font-bold">Parameterization</h1>
         </div>
 
         {/* Filter Section */}
         <div className="mb-4 md:mb-6 flex flex-col sm:flex-row gap-4 justify-between">
-          <button className="flex items-center space-x-2 px-3 md:px-4 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50 transition-colors w-fit">
-            <FiFilter className="w-4 h-4 text-gray-500" />
-            <span className="text-sm text-gray-700">Filter by</span>
+          <button className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit">
+            <FiFilter className="filter-icon w-4 h-4" />
+            <span className="text-sm">Filter by</span>
           </button>
         </div>
 
@@ -451,34 +453,34 @@ const ParameterizationView = () => {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-red-600 text-sm">{error}</p>
+          <div className="parametrization-error mb-4">
+            <p className="text-sm">{error}</p>
             <button 
               onClick={() => setError(null)}
-              className="mt-2 text-red-600 hover:text-red-700 text-sm underline"
+              className="mt-2 hover:underline text-sm underline"
             >
               Dismiss
             </button>
           </div>
         )}
 
-        {/* Table - Muestra categorías del tipo seleccionado */}
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-6 md:mb-8">
+        {/* Table */}
+        <div className="parametrization-table mb-6 md:mb-8">
           {loading ? (
-            <div className="p-8 text-center text-gray-500">
+            <div className="parametrization-loading p-8 text-center">
               Loading {activeMenuItem.toLowerCase()} categories...
             </div>
           ) : (
             <>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className="parametrization-table-header">
                     {table.getHeaderGroups().map(headerGroup => (
                       <tr key={headerGroup.id}>
                         {headerGroup.headers.map(header => (
                           <th
                             key={header.id}
-                            className="px-4 md:px-6 py-3 md:py-4 text-left text-sm font-semibold text-gray-900 border-r border-gray-200 last:border-r-0"
+                            className="parametrization-table-cell px-4 md:px-6 py-3 md:py-4 text-left text-sm font-semibold last:border-r-0"
                           >
                             {header.isPlaceholder ? null : (
                               <div
@@ -505,51 +507,40 @@ const ParameterizationView = () => {
                     ))}
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {table.getRowModel().rows.length === 0 ? (
-                      <tr>
-                        <td colSpan="3" className="px-6 py-8 text-center text-gray-500">
-                          {activeMenuItem === 'Brands' || activeMenuItem === 'Units' || 
-                           activeMenuItem === 'Styles' || activeMenuItem === 'Positions' 
-                            ? `${activeMenuItem} categories not implemented yet`
-                            : `No ${activeMenuItem.toLowerCase()} categories available`}
-                        </td>
+                    {table.getRowModel().rows.map(row => (
+                      <tr key={row.id} className="parametrization-table-row group">
+                        {row.getVisibleCells().map(cell => (
+                          <td
+                            key={cell.id}
+                            className="parametrization-table-cell px-4 md:px-6 py-3 md:py-4 text-sm last:border-r-0"
+                          >
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
+                          </td>
+                        ))}
                       </tr>
-                    ) : (
-                      table.getRowModel().rows.map(row => (
-                        <tr key={row.id} className="hover:bg-gray-50 group">
-                          {row.getVisibleCells().map(cell => (
-                            <td
-                              key={cell.id}
-                              className="px-4 md:px-6 py-3 md:py-4 text-sm border-r border-gray-200 last:border-r-0"
-                            >
-                              {flexRender(
-                                cell.column.columnDef.cell,
-                                cell.getContext()
-                              )}
-                            </td>
-                          ))}
-                        </tr>
-                      ))
-                    )}
+                    ))}
                   </tbody>
                 </table>
               </div>
 
               {/* Pagination */}
-              <div className="px-4 py-6 border-t border-gray-200 sm:px-6">
+              <div className="parametrization-pagination px-4 py-6 sm:px-6">
                 <div className="flex items-center justify-between">
                   <div className="flex-1 flex justify-between sm:hidden">
                     <button
                       onClick={() => table.previousPage()}
                       disabled={!table.getCanPreviousPage()}
-                      className="relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-600 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="parametrization-pagination-button relative inline-flex items-center px-4 py-2 text-sm font-medium"
                     >
                       ← Previous
                     </button>
                     <button
                       onClick={() => table.nextPage()}
                       disabled={!table.getCanNextPage()}
-                      className="ml-3 relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-600 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="parametrization-pagination-button ml-3 relative inline-flex items-center px-4 py-2 text-sm font-medium"
                     >
                       Next →
                     </button>
@@ -560,7 +551,7 @@ const ParameterizationView = () => {
                       <button
                         onClick={() => table.previousPage()}
                         disabled={!table.getCanPreviousPage()}
-                        className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="parametrization-pagination-button inline-flex items-center px-3 py-2 text-sm font-medium transition-colors"
                       >
                         ← Previous
                       </button>
@@ -575,7 +566,7 @@ const ParameterizationView = () => {
                             <button
                               key={1}
                               onClick={() => table.setPageIndex(0)}
-                              className="inline-flex items-center justify-center w-10 h-10 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                              className="parametrization-pagination-button inline-flex items-center justify-center w-10 h-10 text-sm font-medium transition-colors"
                             >
                               1
                             </button>
@@ -584,7 +575,7 @@ const ParameterizationView = () => {
                         
                         if (currentPage > 4) {
                           pages.push(
-                            <span key="ellipsis1" className="inline-flex items-center justify-center w-10 h-10 text-sm text-gray-400">
+                            <span key="ellipsis1" className="parametrization-pagination-ellipsis inline-flex items-center justify-center w-10 h-10 text-sm">
                               ...
                             </span>
                           );
@@ -595,10 +586,8 @@ const ParameterizationView = () => {
                             <button
                               key={i}
                               onClick={() => table.setPageIndex(i - 1)}
-                              className={`inline-flex items-center justify-center w-10 h-10 text-sm font-medium rounded-md transition-colors ${
-                                i === currentPage
-                                  ? 'bg-gray-800 text-white'
-                                  : 'text-gray-600 bg-gray-100 hover:bg-gray-200'
+                              className={`parametrization-pagination-button inline-flex items-center justify-center w-10 h-10 text-sm font-medium transition-colors ${
+                                i === currentPage ? 'active' : ''
                               }`}
                             >
                               {i}
@@ -608,7 +597,7 @@ const ParameterizationView = () => {
                         
                         if (currentPage < totalPages - 3) {
                           pages.push(
-                            <span key="ellipsis2" className="inline-flex items-center justify-center w-10 h-10 text-sm text-gray-400">
+                            <span key="ellipsis2" className="parametrization-pagination-ellipsis inline-flex items-center justify-center w-10 h-10 text-sm">
                               ...
                             </span>
                           );
@@ -619,7 +608,7 @@ const ParameterizationView = () => {
                             <button
                               key={totalPages}
                               onClick={() => table.setPageIndex(totalPages - 1)}
-                              className="inline-flex items-center justify-center w-10 h-10 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                              className="parametrization-pagination-button inline-flex items-center justify-center w-10 h-10 text-sm font-medium transition-colors"
                             >
                               {totalPages}
                             </button>
@@ -632,7 +621,7 @@ const ParameterizationView = () => {
                       <button
                         onClick={() => table.nextPage()}
                         disabled={!table.getCanNextPage()}
-                        className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="parametrization-pagination-button inline-flex items-center px-3 py-2 text-sm font-medium transition-colors"
                       >
                         Next →
                       </button>
@@ -645,7 +634,7 @@ const ParameterizationView = () => {
                       onChange={e => {
                         table.setPageSize(Number(e.target.value))
                       }}
-                      className="border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="parametrization-pagination-select px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
                       {[10, 20, 30, 40, 50].map(pageSize => (
                         <option key={pageSize} value={pageSize}>
