@@ -121,7 +121,7 @@ const StylesParameterizationView = () => {
     
     // Si es un tema personalizado, actualizarlo. Si no, crear uno nuevo
     const allThemes = getAllThemes();
-    const isCustomTheme = !['oscuro', 'claro', 'personalizado'].includes(currentTheme);
+    const isCustomTheme = !['claro', 'personalizado'].includes(currentTheme);
     
     if (isCustomTheme) {
       updateTheme(currentTheme, themeData);
@@ -245,7 +245,7 @@ const StylesParameterizationView = () => {
     }
     
     // No permitir eliminar temas predefinidos
-    if (['oscuro', 'claro', 'personalizado'].includes(currentTheme)) {
+    if (['claro', 'personalizado'].includes(currentTheme)) {
       alert('No se pueden eliminar los temas predefinidos');
       return;
     }
@@ -312,7 +312,7 @@ const StylesParameterizationView = () => {
                       onClick={handleDeleteTheme}
                       className="btn-theme btn-secondary"
                       title="Eliminar tema actual"
-                      disabled={['oscuro', 'claro', 'personalizado'].includes(currentTheme)}
+                      disabled={['claro', 'personalizado'].includes(currentTheme)}
                     >
                       <FiX className="w-4 h-4" />
                     </button>

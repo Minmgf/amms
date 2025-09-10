@@ -1,0 +1,24 @@
+personalizado: {
+    name: 'Personalizado',
+    colors: {
+      primary: '#7c3aed',
+      secondary: '#a855f7',
+      accent: '#06b6d4',
+      background: '#0f172a',
+      surface: '#1e293b',
+      text: '#f1f5f9',
+      textSecondary: '#cbd5e1',
+      border: '#334155',
+      hover: '#475569',
+      error: '#f87171',
+      success: '#34d399',
+      warning: '#fbbf24',
+    },
+    typography: {
+      fontFamily: 'Poppins, system-ui, sans-serif',
+      fontSize: {
+        paragraph: 'xl',
+        title: 'xl',
+      },
+    }
+}

@@ -16,7 +16,11 @@ export const useTheming = () => {
     getCurrentTheme,
     changeTheme,
     getAllThemes,
-    getThemeNames
+    getThemeNames,
+    // Nuevas funciones para API
+    loadThemesFromAPI,
+    saveThemeToAPI,
+    deleteThemeFromAPI
   } = themeContext;
 
   // Obtener valores específicos del tema actual
@@ -42,36 +46,19 @@ export const useTheming = () => {
     return styles;
   };
 
-  // Verificar si es un tema oscuro
+  // Verificar si es un tema oscuro (siempre false ahora que solo tenemos tema claro)
   const isDarkTheme = () => {
-    const theme = getCurrentTheme();
-    // Considerar oscuro si el fondo es más oscuro que el texto
-    const bg = theme?.colors?.background || '#ffffff';
-    const text = theme?.colors?.text || '#000000';
-    
-    // Convertir hex a RGB y calcular luminancia
-    const getLuminance = (hex) => {
-      const rgb = parseInt(hex.slice(1), 16);
-      const r = (rgb >> 16) & 0xff;
-      const g = (rgb >> 8) & 0xff;
-      const b = (rgb >> 0) & 0xff;
-      return 0.299 * r + 0.587 * g + 0.114 * b;
-    };
-    
-    return getLuminance(bg) < getLuminance(text);
+    return false;
   };
 
   // Obtener color contrastante
   const getContrastColor = (backgroundColor) => {
     const theme = getCurrentTheme();
-    const isDark = isDarkTheme();
     
-    // Si el fondo es claro, devolver color oscuro y viceversa
+    // Si el fondo es claro, devolver color oscuro
     return backgroundColor === theme?.colors?.background 
       ? theme?.colors?.text 
-      : isDark 
-        ? '#ffffff' 
-        : '#000000';
+      : '#000000';
   };
 
   // Aplicar tema a un elemento específico
@@ -98,6 +85,44 @@ export const useTheming = () => {
     return `linear-gradient(${direction}, ${primary}, ${secondary})`;
   };
 
+  // Obtener clases CSS específicas para sidebar
+  const getSidebarClasses = (isActive = false, isHover = false) => {
+    if (isActive) {
+      return 'nav-item-active sidebar-text-active';
+    }
+    if (isHover) {
+      return 'nav-item-theme sidebar-text-primary';
+    }
+    return 'nav-item-theme sidebar-text-secondary';
+  };
+
+  // Función para cargar y aplicar temas dinámicos
+  const loadDynamicThemes = async () => {
+    try {
+      const apiThemes = await loadThemesFromAPI();
+      console.log('🎨 Temas dinámicos cargados:', Object.keys(apiThemes));
+      return apiThemes;
+    } catch (error) {
+      console.error('❌ Error cargando temas dinámicos:', error);
+      return {};
+    }
+  };
+
+  // Función para crear y enviar tema personalizado
+  const createAndSaveTheme = async (themeKey, themeData) => {
+    try {
+      const success = await saveThemeToAPI(themeKey, themeData);
+      if (success) {
+        console.log('✅ Tema creado y guardado exitosamente');
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('❌ Error creando tema:', error);
+      return false;
+    }
+  };
+
   return {
     // Estado del tema
     currentTheme,
@@ -109,6 +134,12 @@ export const useTheming = () => {
     getAllThemes,
     getThemeNames,
     
+    // Funciones para temas dinámicos
+    loadDynamicThemes,
+    createAndSaveTheme,
+    saveThemeToAPI,
+    deleteThemeFromAPI,
+    
     // Utilidades de estilo
     getThemeValue,
     getThemeClasses,
@@ -116,6 +147,7 @@ export const useTheming = () => {
     getContrastColor,
     getThemeGradient,
     applyThemeToElement,
+    getSidebarClasses,
     
     // Colores rápidos (para uso directo)
     colors: getCurrentTheme()?.colors || {},
