@@ -10,7 +10,7 @@ import {
   flexRender,
   createColumnHelper,
 } from '@tanstack/react-table';
-import NavigationMenu from '../../../components/ParameterNavigation';
+import NavigationMenu from '../../../components/parametrization/ParameterNavigation';
 import DepartmentModal from '../../../components/parametrization/DepartmentModal';
 import { useTheme } from '@/contexts/ThemeContext';
 
