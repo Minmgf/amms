@@ -365,6 +365,7 @@ export const checkServiceHealth = async () => {
     }
 };
 
+//Marcas y modelos
 export const getBrandCategories = async () => {
   const { data } = await apiMain.get("/brands_categories/list/");
   return data;
