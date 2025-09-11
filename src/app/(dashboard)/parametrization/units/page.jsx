@@ -110,15 +110,23 @@ const ParameterizationView = () => {
       try {
         console.log("🔄 Reloading category data...");
         const response = await getUnitsByCategory(selectedCategory.id);
+        console.log("🔍 Raw unit data from reload:", response.data[0]); // ← Debug del primer elemento
 
-        const transformedUnits = response.data.map(unit => ({
-          id: unit.id_units,
-          unitName: unit.name,
-          symbol: unit.name.substring(0, 2).toLowerCase(),
-          value: unit.unit_type_name, // ← Cambiado de unit.description a unit.unit_type_name
-          status: unit.statues_name,
-          description: unit.description
-        }));
+        const transformedUnits = response.data.map(unit => {
+          console.log("🔍 Individual unit from reload:", unit); // ← Debug individual unit
+          return {
+            id: unit.id_units,
+            unitName: unit.name,
+            symbol: unit.symbol, // ← Cambiado para usar el symbol real del JSON
+            value: unit.unit_type_name, // ← Cambiado de unit.description a unit.unit_type_name
+            unitType: unit.unit_type || unit.id_types || unit.unit_type_id || unit.id_unit_type, // ← unit_type es el correcto según logs
+            status: unit.statues_name, // ← Usar statues_name directamente del JSON
+            statusId: unit.id_statues, // ← Agregar el ID para referencia
+            description: unit.description
+          };
+        });
+        
+        console.log("🔍 Transformed units from reload:", transformedUnits[0]); // ← Debug del primer elemento transformado
 
         setCategoryParameters(transformedUnits);
       } catch (error) {
@@ -140,15 +148,23 @@ const ParameterizationView = () => {
       try {
         const response = await getUnitsByCategory(categoryId);
         console.log("✅ Units API Response:", response);
+        console.log("🔍 Raw unit data from API:", response.data[0]); // ← Debug del primer elemento
 
-        const transformedUnits = response.data.map(unit => ({
-          id: unit.id_units,
-          unitName: unit.name,
-          symbol: unit.name.substring(0, 2).toLowerCase(),
-          value: unit.unit_type_name, // ← Cambiado de unit.description a unit.unit_type_name
-          status: unit.statues_name,
-          description: unit.description
-        }));
+        const transformedUnits = response.data.map(unit => {
+          console.log("🔍 Individual unit from handleViewDetails:", unit); // ← Debug individual unit
+          return {
+            id: unit.id_units,
+            unitName: unit.name,
+            symbol: unit.symbol, // ← Cambiado para usar el symbol real del JSON
+            value: unit.unit_type_name, // ← Cambiado de unit.description a unit.unit_type_name
+            unitType: unit.unit_type || unit.id_types || unit.unit_type_id || unit.id_unit_type, // ← unit_type es el correcto según logs
+            status: unit.statues_name, // ← Usar statues_name directamente del JSON
+            statusId: unit.id_statues, // ← Agregar el ID para referencia
+            description: unit.description
+          };
+        });
+        
+        console.log("🔍 Transformed units:", transformedUnits[0]); // ← Debug del primer elemento transformado
 
         setCategoryParameters(transformedUnits);
       } catch (error) {
@@ -205,14 +221,19 @@ const ParameterizationView = () => {
             const response = await getUnitsByCategory(selectedCategory.id);
             console.log("🔄 Reloaded units:", response);
 
-            const transformedUnits = response.data.map(unit => ({
-              id: unit.id_units,
-              unitName: unit.name,
-              symbol: unit.name.substring(0, 2).toLowerCase(),
-              value: unit.unit_type_name, // ← Cambiado de unit.description a unit.unit_type_name
-              status: unit.statues_name,
-              description: unit.description
-            }));
+            const transformedUnits = response.data.map(unit => {
+              console.log("🔍 Individual unit from add save:", unit); // ← Debug individual unit
+              return {
+                id: unit.id_units,
+                unitName: unit.name,
+                symbol: unit.symbol, // ← Cambiado para usar el symbol real del JSON
+                value: unit.unit_type_name, // ← Cambiado de unit.description a unit.unit_type_name
+                unitType: unit.unit_type || unit.id_types || unit.unit_type_id || unit.id_unit_type, // ← unit_type es el correcto según logs
+                status: unit.statues_name, // ← Usar statues_name directamente del JSON
+                statusId: unit.id_statues, // ← Agregar el ID para referencia
+                description: unit.description
+              };
+            });
 
             setCategoryParameters(transformedUnits);
           }
@@ -234,22 +255,31 @@ const ParameterizationView = () => {
           setData(updatedData);
         }
       } else if (modalMode === "modify") {
-        // Si es modo modificar y hay mensaje de éxito, recargar datos
-        if (parameterData.success) {
-          console.log("✅ Unit updated successfully, reloading data...");
+        // Si es modo modificar y hay mensaje de éxito O cambio de estado, recargar datos
+        if (parameterData.success || parameterData.statusChanged) {
+          console.log("✅ Unit updated/status changed successfully, reloading data...");
           // Recargar la lista de parámetros desde la API
           if (selectedCategory) {
             const response = await getUnitsByCategory(selectedCategory.id);
             console.log("🔄 Reloaded units after update:", response);
 
-            const transformedUnits = response.data.map(unit => ({
-              id: unit.id_units,
-              unitName: unit.name,
-              symbol: unit.name.substring(0, 2).toLowerCase(),
-              value: unit.unit_type_name,
-              status: unit.statues_name,
-              description: unit.description
-            }));
+            console.log("🔍 Raw unit data from API:", response.data[0]); // ← Debug del primer elemento
+            
+            const transformedUnits = response.data.map(unit => {
+              console.log("🔍 Individual unit from modify save:", unit); // ← Debug individual unit
+              return {
+                id: unit.id_units,
+                unitName: unit.name,
+                symbol: unit.symbol, // ← Cambiado para usar el symbol real del JSON
+                value: unit.unit_type_name,
+                unitType: unit.unit_type || unit.id_types || unit.unit_type_id || unit.id_unit_type, // ← unit_type es el correcto según logs
+                status: unit.statues_name, // ← Usar statues_name directamente del JSON
+                statusId: unit.id_statues, // ← Agregar el ID para referencia
+                description: unit.description
+              };
+            });
+            
+            console.log("🔍 Transformed units:", transformedUnits[0]); // ← Debug del primer elemento transformado
 
             setCategoryParameters(transformedUnits);
           }
