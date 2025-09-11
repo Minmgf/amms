@@ -1,31 +1,103 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AiOutlineCheck, AiOutlineClose } from "react-icons/ai";
 
 // Modal de Éxito
 const SuccessModal = ({ isOpen, onClose, title = "Success", message = "Lorem ipsum dolor sit amet, consectetur adipiscing elit." }) => {
+  
+  useEffect(() => {
+    if (isOpen) {
+      // Prevenir scroll del body
+      document.body.style.overflow = 'hidden';
+      document.body.style.pointerEvents = 'none';
+      
+      // Permitir pointer events solo en el modal
+      const modalElement = document.querySelector('[data-modal="success"]');
+      if (modalElement) {
+        modalElement.style.pointerEvents = 'auto';
+      }
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.pointerEvents = '';
+    }
+    
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.pointerEvents = '';
+    };
+  }, [isOpen]);
+  
   if (!isOpen) return null;
 
+  const handleOverlayClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  const handleModalClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-sm">
+    <div 
+      className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4"
+      onClick={handleOverlayClick}
+      data-modal="success"
+      style={{ 
+        zIndex: 9999,
+        pointerEvents: 'auto',
+        userSelect: 'none'
+      }}
+    >
+      <div 
+        className="modal-theme w-full max-w-sm" 
+        onClick={handleModalClick}
+        style={{ 
+          zIndex: 10000,
+          pointerEvents: 'auto'
+        }}
+      >
         <div className="p-6 text-center">
           {/* Icono de éxito */}
-          <div className="mx-auto w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mb-4">
+          <div className="mx-auto w-16 h-16 bg-success rounded-full flex items-center justify-center mb-4">
             <AiOutlineCheck className="w-8 h-8 text-white" />
           </div>
           
           {/* Título */}
-          <h2 className="text-2xl font-medium text-green-500 mb-3">{title}</h2>
+          <h2 className="text-2xl font-medium text-success mb-3">{title}</h2>
           
           {/* Mensaje */}
-          <p className="text-gray-600 text-sm mb-6 leading-relaxed">
+          <p className="text-secondary text-sm mb-6 leading-relaxed">
             {message}
           </p>
           
           {/* Botón */}
           <button
-            onClick={onClose}
-            className="w-full px-6 py-3 bg-black text-white font-medium rounded-md hover:bg-gray-800 transition-colors text-sm"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('Success button clicked'); // Debug
+              onClose();
+            }}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            className="btn-theme btn-primary w-full relative"
+            type="button"
+            style={{ 
+              zIndex: 10001, 
+              position: 'relative',
+              pointerEvents: 'auto',
+              cursor: 'pointer'
+            }}
           >
             Continue
           </button>
@@ -37,29 +109,101 @@ const SuccessModal = ({ isOpen, onClose, title = "Success", message = "Lorem ips
 
 // Modal de Error
 const ErrorModal = ({ isOpen, onClose, title = "Error", message = "Lorem ipsum dolor sit amet, consectetur adipiscing elit." }) => {
+  
+  useEffect(() => {
+    if (isOpen) {
+      // Prevenir scroll del body
+      document.body.style.overflow = 'hidden';
+      document.body.style.pointerEvents = 'none';
+      
+      // Permitir pointer events solo en el modal
+      const modalElement = document.querySelector('[data-modal="error"]');
+      if (modalElement) {
+        modalElement.style.pointerEvents = 'auto';
+      }
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.pointerEvents = '';
+    }
+    
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.pointerEvents = '';
+    };
+  }, [isOpen]);
+  
   if (!isOpen) return null;
 
+  const handleOverlayClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  const handleModalClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-sm">
+    <div 
+      className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4"
+      onClick={handleOverlayClick}
+      data-modal="error"
+      style={{ 
+        zIndex: 9999,
+        pointerEvents: 'auto',
+        userSelect: 'none'
+      }}
+    >
+      <div 
+        className="modal-theme w-full max-w-sm" 
+        onClick={handleModalClick}
+        style={{ 
+          zIndex: 10000,
+          pointerEvents: 'auto'
+        }}
+      >
         <div className="p-6 text-center">
           {/* Icono de error */}
-          <div className="mx-auto w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mb-4">
+          <div className="mx-auto w-16 h-16 bg-error rounded-full flex items-center justify-center mb-4">
             <AiOutlineClose className="w-8 h-8 text-white" />
           </div>
           
           {/* Título */}
-          <h2 className="text-2xl font-medium text-red-500 mb-3">{title}</h2>
+          <h2 className="text-2xl font-medium text-error mb-3">{title}</h2>
           
           {/* Mensaje */}
-          <p className="text-gray-600 text-sm mb-6 leading-relaxed">
+          <p className="text-secondary text-sm mb-6 leading-relaxed">
             {message}
           </p>
           
           {/* Botón */}
           <button
-            onClick={onClose}
-            className="w-full px-6 py-3 bg-black text-white font-medium rounded-md hover:bg-gray-800 transition-colors text-sm"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('Error button clicked'); // Debug
+              onClose();
+            }}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            className="btn-theme btn-error w-full relative"
+            type="button"
+            style={{ 
+              zIndex: 10001, 
+              position: 'relative',
+              pointerEvents: 'auto',
+              cursor: 'pointer'
+            }}
           >
             Try again
           </button>
@@ -77,36 +221,110 @@ const ConfirmModal = ({
   message = "Are you sure you want to continue?",
   confirmText = "Confirm",
   cancelText = "Cancel",
-  confirmColor = "bg-red-600 hover:bg-red-500 active:bg-red-700",
-  cancelColor = "bg-black hover:bg-gray-800",
+  confirmColor = "btn-error",
+  cancelColor = "btn-secondary",
 }) => {
   if (!isOpen) return null;
 
+  const handleOverlayClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  const handleModalClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-sm relative">
+    <div 
+      className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4"
+      onClick={handleOverlayClick}
+      style={{ zIndex: 9999 }}
+    >
+      <div 
+        className="modal-theme w-full max-w-sm relative" 
+        onClick={handleModalClick}
+        style={{ zIndex: 10000 }}
+      >
         <button
-          onClick={onClose}
-          className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Close button clicked'); // Debug
+            onClose();
+          }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          className="absolute top-3 right-3 text-secondary hover:text-primary"
+          type="button"
+          style={{ 
+            zIndex: 10001, 
+            position: 'absolute',
+            pointerEvents: 'auto',
+            cursor: 'pointer'
+          }}
         >
           <AiOutlineClose className="w-5 h-5" />
         </button>
 
         <div className="p-6 text-center">
-          <h2 className="text-2xl font-semibold mb-4">{title}</h2>
-          <p className="text-gray-600 text-sm mb-6 leading-relaxed">
+          <h2 className="text-2xl font-semibold mb-4 text-primary">{title}</h2>
+          <p className="text-secondary text-sm mb-6 leading-relaxed">
             {message}
           </p>
           <div className="flex gap-3">
             <button
-              onClick={onClose}
-              className={`w-1/2 px-6 py-2 text-white font-medium rounded-md transition-colors text-sm ${cancelColor}`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Cancel button clicked'); // Debug
+                onClose();
+              }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              className={`btn-theme ${cancelColor} w-1/2 relative`}
+              type="button"
+              style={{ 
+                zIndex: 10001, 
+                position: 'relative',
+                pointerEvents: 'auto',
+                cursor: 'pointer'
+              }}
             >
               {cancelText}
             </button>
             <button
-              onClick={onConfirm}
-              className={`w-1/2 px-6 py-2 text-white font-medium rounded-md transition-colors text-sm ${confirmColor}`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Confirm button clicked'); // Debug
+                console.log('onConfirm function:', onConfirm);
+                if (onConfirm) {
+                  onConfirm();
+                } else {
+                  console.error('onConfirm function is not defined!');
+                }
+              }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              className={`btn-theme ${confirmColor} w-1/2 relative`}
+              type="button"
+              style={{ 
+                zIndex: 10001, 
+                position: 'relative',
+                pointerEvents: 'auto',
+                cursor: 'pointer'
+              }}
             >
               {confirmText}
             </button>

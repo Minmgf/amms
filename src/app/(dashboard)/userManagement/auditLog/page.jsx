@@ -4,16 +4,16 @@ import { useEffect, useState } from "react";
 import { FiSearch, FiFilter } from "react-icons/fi";
 
 const badgeColors = [
-    "bg-red-500 text-white",
-    "bg-pink-500 text-white",
-    "bg-orange-400 text-white",
-    "bg-yellow-400 text-black",
-    "bg-green-500 text-white",
-    "bg-emerald-500 text-white",
-    "bg-teal-500 text-white",
-    "bg-blue-500 text-white",
-    "bg-indigo-500 text-white",
-    "bg-purple-500 text-white",
+    'parametrization-badge parametrization-badge-1',
+    'parametrization-badge parametrization-badge-2',
+    'parametrization-badge parametrization-badge-3',
+    'parametrization-badge parametrization-badge-4',
+    'parametrization-badge parametrization-badge-5',
+    'parametrization-badge parametrization-badge-6',
+    'parametrization-badge parametrization-badge-7',
+    'parametrization-badge parametrization-badge-8',
+    'parametrization-badge parametrization-badge-9',
+    'parametrization-badge parametrization-badge-10',
 ];
 
 // 🔄 Función para asignar siempre el mismo color a cada acción
@@ -82,23 +82,23 @@ const page = () => {
     };
 
     return (
-        <div className="p-6 w-full bg-gray-100 min-h-screen">
-            <h1 className="text-2xl font-bold mb-6">Access and Audit Log</h1>
+        <div className="parametrization-page p-6 w-full min-h-screen">
+            <h1 className="parametrization-header text-2xl font-bold mb-6">Access and Audit Log</h1>
 
             <div className="flex items-center gap-3 mb-6">
                 <div className="relative flex-1 min-w-0 sm:flex-none sm:w-72">
-                    <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2" />
+                    <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary" />
                     <input
                         type="text"
                         placeholder="Introduce a name..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full bg-white pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500"
+                        className="parametrization-input w-full pl-10 pr-4 py-2"
                     />
                 </div>
                 <button
                     onClick={() => setIsModalOpen(true)}
-                    className="flex bg-white items-center justify-center gap-2 border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-100 transition"
+                    className="parametrization-filter-button flex items-center justify-center gap-2 px-4 py-2"
                 >
                     <FiFilter /> Filter by
                 </button>
@@ -108,9 +108,9 @@ const page = () => {
                 />
             </div>
 
-            <div className="overflow-x-auto bg-white shadow rounded-xl">
+            <div className="overflow-x-auto parametrization-table shadow rounded-xl">
                 <table className="w-full text-left">
-                    <thead className="bg-gray-50 text-gray-900 text-sm">
+                    <thead className="parametrization-table-header text-sm">
                         <tr>
                             <th className="px-6 py-3">Date</th>
                             <th className="px-6 py-3">User name</th>
@@ -118,11 +118,11 @@ const page = () => {
                             <th className="px-6 py-3">Description</th>
                         </tr>
                     </thead>
-                    <tbody className="bg-white text-gray-600 text-sm">
+                    <tbody className="parametrization-table-body text-sm">
                         {currentData.map((item, index) => (
-                            <tr key={index} className="border-t border-gray-300">
-                                <td className="px-6 py-3 whitespace-nowrap">{item.date}</td>
-                                <td className="px-6 py-3">{item.user}</td>
+                            <tr key={index} className="parametrization-table-row">
+                                <td className="px-6 py-3 whitespace-nowrap text-secondary">{item.date}</td>
+                                <td className="px-6 py-3 text-primary">{item.user}</td>
                                 <td className="px-6 py-3">
                                     <span
                                         className={`px-3 py-1 rounded-full text-xs font-medium ${getRandomColor(
@@ -132,7 +132,7 @@ const page = () => {
                                         {item.action}
                                     </span>
                                 </td>
-                                <td className="px-6 py-3">{item.description}</td>
+                                <td className="px-6 py-3 text-secondary">{item.description}</td>
                             </tr>
                         ))}
 
@@ -140,7 +140,7 @@ const page = () => {
                             <tr>
                                 <td
                                     colSpan="4"
-                                    className="text-center text-gray-500 py-6"
+                                    className="text-center parametrization-empty py-6"
                                 >
                                     No results found
                                 </td>
@@ -150,11 +150,11 @@ const page = () => {
                 </table>
             </div>
 
-            <div className="flex items-center justify-between mt-6 text-sm text-gray-700">
+            <div className="flex items-center justify-between mt-6 text-sm">
                 <button
                     onClick={() => goToPage(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="flex items-center gap-1 px-3 py-1 border rounded-lg hover:bg-gray-100 disabled:opacity-50"
+                    className="parametrization-pagination-button flex items-center gap-1 px-3 py-1"
                 >
                     ← Previous
                 </button>
@@ -166,22 +166,19 @@ const page = () => {
                             <button
                                 key={pageNum}
                                 onClick={() => goToPage(pageNum)}
-                                className={`px-3 py-1 rounded-lg ${currentPage === pageNum
-                                    ? "bg-gray-900 text-white"
-                                    : "border hover:bg-gray-100"
-                                    }`}
+                                className={`parametrization-pagination-button px-3 py-1 rounded-lg ${currentPage === pageNum ? 'active' : ''}`}
                             >
                                 {pageNum}
                             </button>
                         ))}
 
-                    {totalPages > 5 && <span>...</span>}
+                    {totalPages > 5 && <span className="text-secondary">...</span>}
                 </div>
 
                 <button
                     onClick={() => goToPage(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="flex items-center gap-1 px-3 py-1 border rounded-lg hover:bg-gray-100 disabled:opacity-50"
+                    className="parametrization-pagination-button flex items-center gap-1 px-3 py-1"
                 >
                     Next →
                 </button>

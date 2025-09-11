@@ -16,3 +16,8 @@ export const changeUserPassword = async (userId, payload) => {
     const { data } = await apiUsers.post(`users/${userId}/change-password`, payload);
     return data;
 };
+
+export const updateBasicInformation = async (userId, payload) => {
+    const { data } = await apiUsers.put(`/users/edit-profile/${userId}`, payload);
+    return data;
+};

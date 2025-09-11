@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
-import React, { useState } from "react";
+import Cookies from "js-cookie";
+import React, { useState, useEffect } from "react";
 import { FaLock, FaUser, FaEye, FaEyeSlash } from "react-icons/fa";
 import Logo from "../../components/auth/Logo";
 import LoginCard from "../../components/auth/LoginCard";
@@ -36,24 +37,33 @@ const Page = () => {
     }
   }
 
+  useEffect(() => {
+    const token = Cookies.get("token");
+    if (token) {
+      router.replace("/home");
+    } else {
+      setLoading(false);
+    }
+  }, [router]);
+
   const onSubmit = async (data) => {
     setLoading(true);
     try {
-      const response = await login(data);
+      const response = await login(data, data.rememberMe);
       const payload = decodeToken(response.access_token);
       localStorage.setItem("userData", JSON.stringify(payload));
       setModalMessage("You have logged in successfully");
       setSuccessOpen(true);
       setTimeout(() => {
         setSuccessOpen(false);
-        if (payload.first_login_complete) {          
+        if (payload.first_login_complete) {
           router.push("/home");
-        }else{
+        } else {
           router.push("/editUser");
         }
       }, 2000);
     } catch (error) {
-      setModalMessage(error.response.data.detail);
+      setModalMessage(error.response.data.detail || "Failed login");
       setErrorOpen(true);
     } finally {
       setLoading(false);
@@ -135,6 +145,7 @@ const Page = () => {
               <label className="flex items-center gap-3 text-sm">
                 <input
                   type="checkbox"
+                  {...register("rememberMe")}
                   className="h-4 w-4 rounded border-white/30 bg-black/30 accent-red-600"
                 />
                 <span className="text-white/90">Remember me</span>

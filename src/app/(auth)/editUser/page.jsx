@@ -4,18 +4,25 @@ import { firstLogin } from "@/services/userService";
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
+import { getCountries, getStates, getCities } from "@/services/locationService";
 
 const Page = () => {
   const [id, setId] = useState("");
   const [successOpen, setSuccessOpen] = useState(false);
   const [errorOpen, setErrorOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
+  const [countriesList, setCountriesList] = useState([]);
+  const [statesList, setStatesList] = useState([]);
+  const [citiesList, setCitiesList] = useState([]);
   const router = useRouter();
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors }
   } = useForm();
+  const watchCountry = watch("country");
+  const watchState = watch("region");
 
   useEffect(() => {
     const storedUser = localStorage.getItem("userData");
@@ -28,6 +35,28 @@ const Page = () => {
       }
     }
   }, []);
+
+  useEffect(() => {
+    getCountries().then((data) => setCountriesList(data)).catch(console.error);
+  }, []);
+
+  // Cuando cambia el país, carga los estados
+  useEffect(() => {
+    if (!watchCountry) return; // watchCountry vendrá de React Hook Form
+    getStates(watchCountry)
+      .then(setStatesList)
+      .catch(console.error);
+    setCitiesList([]);
+  }, [watchCountry]);
+
+  // Cuando cambia el estado, carga las ciudades
+  useEffect(() => {
+    if (!watchState) return; // watchState vendrá de React Hook Form
+    getCities(watchCountry, watchState)
+      .then(setCitiesList)
+      .catch(console.error);
+  }, [watchState]);
+
 
   const onSubmit = async (data) => {
     try {
@@ -90,9 +119,9 @@ const Page = () => {
                 className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
               >
                 <option value="">Select...</option>
-                <option value="Colombia">Colombia</option>
-                <option value="mexico">Mexico</option>
-                <option value="usa">USA</option>
+                {countriesList.map((c) => (
+                  <option key={c.iso2} value={c.iso2}>{c.name}</option>
+                ))}
               </select>
               {errors.country && (
                 <span className="text-red-400 text-xs absolute left-0 -bottom-5">
@@ -104,12 +133,13 @@ const Page = () => {
             <div className="relative">
               <label className="block mb-2 text-sm font-medium">Region</label>
               <select
-                {...register("region", { required: "Region is required" })}
+                {...register("region", { required: "Region is required" })} disabled={!statesList.length}
                 className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
               >
                 <option value="">Select...</option>
-                <option value="huila">Huila</option>
-                <option value="Antioquia">Antioquia</option>
+                {statesList.map((s) => (
+                  <option key={s.iso2} value={s.iso2}>{s.name}</option>
+                ))}
               </select>
               {errors.region && (
                 <span className="text-red-400 text-xs absolute left-0 -bottom-5">
@@ -121,12 +151,13 @@ const Page = () => {
             <div className="relative">
               <label className="block mb-2 text-sm font-medium">City</label>
               <select
-                {...register("city", { required: "City is required" })}
+                {...register("city", { required: "City is required" })} disabled={!citiesList.length}
                 className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
               >
                 <option value="">Select...</option>
-                <option value="neiva">Neiva</option>
-                <option value="101">Medellín</option>
+                {citiesList.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
               </select>
               {errors.city && (
                 <span className="text-red-400 text-xs absolute left-0 -bottom-5">

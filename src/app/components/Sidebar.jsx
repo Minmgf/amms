@@ -35,6 +35,7 @@ import {
   ErrorModal,
   ConfirmModal,
 } from "./shared/SuccessErrorModal";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function Sidebar({ isOpen, setIsOpen }) {
   const [openMenus, setOpenMenus] = useState({});
@@ -45,6 +46,11 @@ export default function Sidebar({ isOpen, setIsOpen }) {
   const [modalMessage, setModalMessage] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showNotis, setShowNotis] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Theme Context
+  const { currentTheme } = useTheme();
 
   const handleLogout = async () => {
     try {
@@ -187,7 +193,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     <>
       {!isOpen && (
         <button
-          className="p-2 fixed top-2 left-2 z-50 bg-gray-500/50 rounded-lg"
+          className="p-2 fixed top-2 left-2 z-50 bg-surface text-primary border-primary rounded-theme-lg backdrop-blur-sm hover:bg-hover transition-colors"
           onClick={() => setIsOpen(true)}
         >
           <FiMenu size={18} />
@@ -195,11 +201,11 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       )}
 
       <aside
-        className={`fixed top-0 left-0 h-screen overflow-y-auto bg-white shadow-md flex flex-col transform transition-transform duration-300 z-40
+        className={`sidebar-theme fixed top-0 left-0 h-screen overflow-y-auto flex flex-col transform transition-transform duration-300 z-40
         ${isOpen ? "translate-x-0 w-64" : "-translate-x-full w-64"}`}
       >
         <button
-          className="absolute top-2 right-2 p-2 rounded-lg hover:bg-gray-100 lg:block"
+          className="absolute top-2 right-2 p-2 rounded-theme-lg hover:bg-hover lg:block text-secondary transition-colors"
           onClick={() => setIsOpen(false)}
         >
           <FiX size={18} />
@@ -224,10 +230,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                   {!item.sub ? (
                     <Link
                       href={item.path}
-                      className={`flex justify-between items-center w-full p-2 rounded-lg transition 
-                                                ${isActiveParent
-                          ? "bg-yellow-200 font-medium text-black"
-                          : "hover:bg-gray-100 text-gray-700"
+                      className={`nav-item-theme flex justify-between items-center w-full p-2 rounded-theme-lg transition-colors ${isActiveParent ? "nav-item-active" : ""
                         }`}
                     >
                       <span className="flex items-center gap-3">
@@ -241,10 +244,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                         onClick={() => {
                           toggleMenu(item.name);
                         }}
-                        className={`flex justify-between items-center w-full p-2 rounded-lg transition 
-                                                            ${isActiveParent
-                            ? "bg-yellow-200 font-medium text-black"
-                            : "hover:bg-gray-100 text-gray-700"
+                        className={`nav-item-theme flex justify-between items-center w-full p-2 rounded-theme-lg transition-colors ${isActiveParent ? "nav-item-active" : ""
                           }`}
                       >
                         <span className="flex items-center gap-3">
@@ -258,17 +258,14 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                       </Link>
 
                       {openMenus[item.name] && (
-                        <div className="ml-8 flex flex-col gap-1 text-sm text-gray-600">
+                        <div className="w-full mt-1 flex flex-col gap-1 text-sm pl-6">
                           {item.sub.map((sub) => {
                             const isActiveSub = pathname === sub.path;
                             return (
                               <Link
                                 key={sub.name}
                                 href={sub.path}
-                                className={`p-1 hover:text-black hover:font-medium rounded-lg text-left flex items-center gap-3 
-                                                                        ${isActiveSub
-                                    ? "bg-gray-200 font-medium"
-                                    : ""
+                                className={`nav-sub-item-theme p-2 rounded-theme-lg text-left flex items-center gap-3 transition-colors ${isActiveSub ? "nav-sub-item-active" : ""
                                   }`}
                               >
                                 {sub.icon} {sub.name}
@@ -277,6 +274,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                           })}
                         </div>
                       )}
+
                     </>
                   )}
                 </div>
@@ -286,11 +284,11 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         </div>
 
         {/* BOTÓN LOGOUT */}
-        <div className="p-4 border-t border-gray-100 mt-auto flex justify-center">
+        <div className="p-4 border-primary mt-auto flex justify-center">
           <button
             onClick={() => setConfirmOpen(true)}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 text-red-500 text-sm hover:text-red-600 transition"
+            className="flex items-center gap-2 px-4 py-2 text-error text-sm hover:text-error/80 transition-colors rounded-theme-md hover:bg-hover"
           >
             <FiLogOut /> Log Out
           </button>
@@ -314,7 +312,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         onConfirm={handleLogout}
         title="Confirm Logout"
         message="Are you sure you want to log out?"
-        confirmText="<Confirm"
+        confirmText="Confirm"
         cancelText="Cancel"
         confirmColor="bg-red-600 hover:bg-red-500 active:bg-red-700"
         cancelColor="bg-gray-600 hover:bg-gray-500"

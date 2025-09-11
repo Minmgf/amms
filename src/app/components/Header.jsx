@@ -1,44 +1,38 @@
-"use client";
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { FiBell, FiUser, FiX } from "react-icons/fi";
 import { MdPalette } from "react-icons/md";
-
-const initialNotis = [
-  {
-    id: "n1",
-    title: "Maintenance Request Approved",
-    body: "Your maintenance request for Tractor CATO0D5GPWGBO1070 has been approved and scheduled.",
-    date: "15/01/2024",
-    status: "unread",
-    type: "success",
-  },
-  {
-    id: "n2",
-    title: "New Employee Added",
-    body: "Hernán Torres has been successfully added to the payroll system.",
-    date: "15/01/2024",
-    status: "unread",
-    type: "info",
-  },
-  {
-    id: "n3",
-    title: "System Maintenance",
-    body: "Scheduled system maintenance will occur tonight from 2:00 AM to 4:00 AM.",
-    date: "14/01/2024",
-    status: "read",
-    type: "warning",
-  },
-];
+import { getUserData } from "@/services/profileService";
+import { markAllNotAsRead, markOneNotAsRead } from "@/services/notificationService";
+import { SuccessModal, ErrorModal } from "./shared/SuccessErrorModal";
+import { useTheme } from "@/contexts/ThemeContext";
+import useNotifications from "@/hooks/useNotifications";
 
 export default function Header() {
+  const [userId, setUserId] = useState("");
   const [username, setUsername] = useState("");
+  const [profilePhoto, setProfilePhoto] = useState(null);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const [showNotis, setShowNotis] = useState(false);
-  const [notis, setNotis] = useState(initialNotis);
   const panelRef = useRef(null);
-  const unreadCount = notis.filter((n) => n.status === "unread").length;
+  const [message, setMessage] = useState("");
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // Hook del tema global
+  const { 
+    currentTheme, 
+    getAllThemes, 
+    getThemeNames, 
+    changeTheme 
+  } = useTheme();
+
+  // Hook de notificaciones
+  const { notifications: notis, reload } = useNotifications();
+  const unreadCount = notis.filter(n => n.status === "unread").length;
 
   useEffect(() => {
     const storedUser = localStorage.getItem("userData");
@@ -46,13 +40,46 @@ export default function Header() {
       try {
         const userData = JSON.parse(storedUser);
         setUsername(userData.name);
+        setUserId(userData.id);
       } catch (err) {
         console.error("Error parsing userData", err);
       }
     }
   }, []);
 
-  // Cerrar menú si se hace clic fuera
+
+  useEffect(() => {
+    if (!userId) return;
+
+    async function fetchUserPhoto() {
+      try {
+        const response = await getUserData(userId);
+        const data = response.data[0];
+        console.log("esta es la foto del header", data.profile_picture);
+        if (data.profile_picture) {
+          setProfilePhoto(data.profile_picture);
+        }
+      } catch (err) {
+        console.error("Error fetching user photo:", err);
+      }
+    }
+
+    fetchUserPhoto();
+  }, [userId]);
+
+  useEffect(() => {
+    const photo = localStorage.getItem("userPhoto");
+    if (photo) setProfilePhoto(photo);
+
+    function handlePhotoChange() {
+      const photo = localStorage.getItem("userPhoto");
+      if (photo) setProfilePhoto(photo);
+    }
+
+    window.addEventListener("userPhotoChanged", handlePhotoChange);
+    return () => window.removeEventListener("userPhotoChanged", handlePhotoChange);
+  }, []);
+
   useEffect(() => {
     function handleClickOutside(e) {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -82,13 +109,45 @@ export default function Header() {
     };
   }, [showNotis]);
 
-  const markAllAsRead = () =>
-    setNotis((prev) => prev.map((n) => ({ ...n, status: "read" })));
+  const markAllAsRead = async () => {
+    setLoading(true);
+    try {
+      const response = await markAllNotAsRead();
+      if (response.success) {
+        reload();
+        setModalMessage(response.message);
+        setSuccessOpen(true);
+      }
+    } catch (error) {
+      setModalMessage(error.response?.data?.detail || "Error marking all as read");
+      setErrorOpen(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const markOneAsRead = (id) =>
-    setNotis((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, status: "read" } : n))
-    );
+  const markOneAsRead = async (id) => {
+    setLoading(true);
+
+    const payload = {
+      notification_ids: [id],
+      mark_all: false,
+    };
+
+    try {
+      const response = await markOneNotAsRead(payload);
+      if (response.success) {
+        reload();
+        setModalMessage(response.message);
+        setSuccessOpen(true);
+      }
+    } catch (error) {
+      setModalMessage(error.response?.data?.detail || "Error marking notification as read");
+      setErrorOpen(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const iconDot = (type) => {
     const map = {
@@ -100,144 +159,196 @@ export default function Header() {
   };
 
   return (
-    <header className="w-full flex items-center justify-end px-6 bg-gray-100 py-4 relative">
-      <div className="flex items-center gap-4">
-        {/* Botón Tema */}
-        <div className="relative" ref={menuRef}>
-          <button
-            onClick={() => setThemeMenuOpen(!themeMenuOpen)}
-            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
-            <MdPalette className="text-gray-600 dark:text-gray-300" size={20} />
-          </button>
-
-          {themeMenuOpen && (
-            <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
-              <button
-                className="block w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                Claro
-              </button>
-              <button
-                className="block w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                Oscuro
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Notificaciones */}
-        <button
-          type="button"
-          onClick={() => setShowNotis((s) => !s)}
-          className="relative inline-flex items-center justify-center rounded-md p-2 hover:bg-gray-100 text-gray-700 cursor-pointer"
-          aria-haspopup="dialog"
-          aria-expanded={showNotis}
-          aria-controls="notifications-panel"
-          aria-label="Open notifications"
-        >
-          <FiBell className="text-xl" />
-          {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-red-500 text-white text-[10px] leading-4 text-center">
-              {unreadCount}
-            </span>
-          )}
-        </button>
-
-        {/* Panel Notificaciones ⬅️ */}
-        {showNotis && (
-          <div
-            className="fixed inset-0 z-50"
-            role="dialog"
-            aria-modal="true"
-            id="notifications-panel"
-          >
-            <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px]" />
-            <div
-              ref={panelRef}
-              className="absolute right-4 top-4 w-[380px] max-w-[92vw] rounded-2xl bg-white shadow-2xl border border-gray-200 overflow-hidden"
+    <>
+      <header className="header-theme w-full flex items-center justify-end px-6 py-4 relative">
+        <div className="flex items-center gap-4">
+          {/* Botón Tema */}
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setThemeMenuOpen(!themeMenuOpen)}
+              className="p-2 rounded-theme-md hover:bg-hover text-primary transition-colors"
             >
-              <div className="flex items-center justify-between px-4 py-3 border-b bg-[#F9F9F9]">
-                <div className="flex items-center gap-2">
-                  <h2 className="font-semibold text-black">Notifications</h2>
-                  <span className="text-sm text-gray-500">
-                    {unreadCount} {unreadCount === 1 ? "unread" : "unread"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={markAllAsRead}
-                    className="text-sm text-blue-600 cursor-pointer hover:underline"
+              <MdPalette size={20} />
+            </button>
+
+            {themeMenuOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-surface border border-primary rounded-theme-lg shadow-lg z-50">
+                <div className="p-2">
+                  <div className="text-xs text-secondary mb-2 px-2">Seleccionar Tema:</div>
+                  {getThemeNames().map(themeKey => {
+                    const theme = getAllThemes()[themeKey];
+                    return (
+                      <button
+                        key={themeKey}
+                        onClick={() => {
+                          changeTheme(themeKey);
+                          setThemeMenuOpen(false);
+                        }}
+                        className={`block w-full px-3 py-2 text-left text-sm rounded-theme-sm mb-1 transition-colors ${
+                          currentTheme === themeKey 
+                            ? 'bg-accent text-white' 
+                            : 'text-primary hover:bg-hover'
+                        }`}
+                      >
+                        {theme.name}
+                      </button>
+                    );
+                  })}
+                  <hr className="border-primary my-2" />
+                  <Link 
+                    href="/parametrization/styles"
+                    className="block w-full px-3 py-2 text-left text-sm text-accent hover:bg-hover rounded-theme-sm transition-colors"
+                    onClick={() => setThemeMenuOpen(false)}
                   >
-                    Mark all as read
-                  </button>
-                  <button
-                    onClick={() => setShowNotis(false)}
-                    className="rounded-md cursor-pointer hover:bg-gray-100"
-                    aria-label="Close notifications"
-                  >
-                    <FiX size={18} className="text-gray-400" />
-                  </button>
+                    🎨 Personalizar Temas
+                  </Link>
                 </div>
               </div>
-              <ul className="max-h-[70vh] overflow-y-auto divide-y">
-                {notis.map((n) => (
-                  <li
-                    key={n.id}
-                    className={`p-4 ${n.status === "unread" ? "bg-[#FEF7FF]" : ""
-                      }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      {/* icon */}
-                      <span
-                        className={`mt-1 inline-block h-[32px] w-[32px] rounded-full ${iconDot(
-                          n.type
-                        )}`}
-                      />
-                      <div className="flex-1">
-                        <p className="font-medium text-black">{n.title}</p>
-                        <p className="text-sm text-gray-600">{n.body}</p>
-                        <div className="flex justify-between mt-2">
-                          <span className="text-xs text-gray-400">
-                            {n.date}
-                          </span>
-                          {n.status === "unread" ? (
-                            <button
-                              onClick={() => markOneAsRead(n.id)}
-                              className="text-xs text-blue-600 cursor-pointer hover:underline"
-                            >
-                              Mark as read
-                            </button>
-                          ) : (
-                            <span className="text-xs text-gray-400">Read</span>
-                          )}
+            )}
+          </div>
+
+          {/* Notificaciones */}
+          <button
+            type="button"
+            onClick={() => setShowNotis((s) => !s)}
+            className="relative inline-flex items-center justify-center rounded-theme-md p-2 hover:bg-hover text-primary cursor-pointer transition-colors"
+            aria-haspopup="dialog"
+            aria-expanded={showNotis}
+            aria-controls="notifications-panel"
+            aria-label="Open notifications"
+          >
+            <FiBell className="text-xl" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-error text-white text-[10px] leading-4 text-center">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+
+          {/* Panel Notificaciones */}
+          {showNotis && (
+            <div
+              className="fixed inset-0 z-50"
+              role="dialog"
+              aria-modal="true"
+              id="notifications-panel"
+            >
+              <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px]" />
+              <div
+                ref={panelRef}
+                className="absolute right-4 top-4 w-[380px] max-w-[92vw] rounded-theme-xl modal-theme overflow-hidden"
+              >
+                <div className="flex items-center justify-between px-4 py-3 border-b border-primary bg-background">
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-semibold text-primary">Notifications</h2>
+                    <span className="text-sm text-secondary">
+                      {unreadCount} {unreadCount === 1 ? "unread" : "unread"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={markAllAsRead}
+                      disabled={loading}
+                      className="text-sm text-accent cursor-pointer hover:underline"
+                    >
+                      Mark all as read
+                    </button>
+                    <button
+                      onClick={() => setShowNotis(false)}
+                      className="rounded-theme-md cursor-pointer hover:bg-hover p-1 transition-colors"
+                      aria-label="Close notifications"
+                    >
+                      <FiX size={18} className="text-secondary" />
+                    </button>
+                  </div>
+                </div>
+                <ul className="max-h-[70vh] overflow-y-auto divide-y divide-border">
+                  {notis.map((n) => (
+                    <li
+                      key={n.id}
+                      className={`p-4 transition-colors ${n.status === "unread"
+                          ? "bg-surface border-l-4 border-accent"
+                          : "bg-background opacity-70"
+                        }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <span
+                          className={`mt-1 inline-block h-[32px] w-[32px] rounded-full ${iconDot(
+                            n.type
+                          )}`}
+                        />
+                        <div className="flex-1">
+                          <p
+                            className={`font-medium ${n.status === "unread" ? "text-primary" : "text-secondary"
+                              }`}
+                          >
+                            {n.title}
+                          </p>
+                          <p
+                            className={`text-sm ${n.status === "unread" ? "text-secondary" : "text-secondary opacity-60"
+                              }`}
+                          >
+                            {n.body}
+                          </p>
+                          <div className="flex justify-between mt-2">
+                            <span className="text-xs text-secondary">{n.date}</span>
+                            {n.status === "unread" ? (
+                              <button
+                                onClick={() => markOneAsRead(n.id)}
+                                className="text-xs text-accent cursor-pointer hover:underline"
+                              >
+                                Mark as read
+                              </button>
+                            ) : (
+                              <span className="text-xs text-secondary">Read</span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Usuario */}
-        <Link
-          href="/userProfile"
-          className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-        >
-          <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white font-bold">
-            JV
-          </div>
-          <span className="text-sm text-gray-700 dark:text-gray-200">
-            Bienvenido!
-            <br />
-            {username}
-          </span>
-          <FiUser className="text-gray-600 dark:text-gray-300" />
-        </Link>
-      </div>
-    </header>
+          {/* Usuario */}
+          <Link
+            href="/userProfile"
+            className="flex items-center gap-2 bg-surface hover:bg-hover px-3 py-1 rounded-theme-full cursor-pointer transition-colors"
+          >
+            {profilePhoto ? (
+              <img
+                src={profilePhoto}
+                alt="Profile"
+                className="w-8 h-8 rounded-full object-cover border-2 border-accent"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-white">
+                <FiUser size={20} />
+              </div>
+            )}
+            <span className="text-sm text-primary">
+              Bienvenido!
+              <br />
+              {username}
+            </span>
+            <FiUser className="text-secondary" />
+          </Link>
+        </div>
+      </header>
+      <SuccessModal
+        isOpen={successOpen}
+        onClose={() => setSuccessOpen(false)}
+        title="Success"
+        message={modalMessage}
+      />
+      <ErrorModal
+        isOpen={errorOpen}
+        onClose={() => setErrorOpen(false)}
+        title="Error"
+        message={modalMessage}
+      />
+    </>
   );
 }
