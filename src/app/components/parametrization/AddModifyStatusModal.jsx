@@ -131,7 +131,7 @@ const AddModifyStatusModal = ({
             </div>
 
             {/* Row 2 */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Description
@@ -148,7 +148,7 @@ const AddModifyStatusModal = ({
                 />
               </div>
 
-              <div>
+              {/* <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Activate/Deactivate
                 </label>
@@ -169,7 +169,7 @@ const AddModifyStatusModal = ({
                     />
                   </button>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
