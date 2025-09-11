@@ -12,6 +12,7 @@ import {
 } from '@tanstack/react-table';
 import NavigationMenu from '../../../components/parametrization/ParameterNavigation';
 import DepartmentModal from '../../../components/parametrization/DepartmentModal';
+import FilterSection from '@/app/components/parametrization/FilterSection';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getDepartments, createDepartment, updateDepartment } from '@/services/parametrizationService';
 import { SuccessModal, ErrorModal } from '@/app/components/shared/SuccessErrorModal';
@@ -31,7 +32,7 @@ const ParameterizationView = () => {
   const [modalMessage, setModalMessage] = useState("");
   const [userId, setUserId] = useState("");
 
-  
+
   // Estados para el modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('add'); // 'add' or 'edit'
@@ -59,18 +60,18 @@ const ParameterizationView = () => {
 
       if (Array.isArray(response)) {
         const formatted = response.map(d => ({
-            id: d.id_employee_department,     
-            department: d.name,
-            description: d.description,
-            status: d.estado  
+          id: d.id_employee_department,
+          department: d.name,
+          description: d.description,
+          status: d.estado
         }));
         setData(formatted);
       } else if (response.data) {
         const formatted = response.data.map(d => ({
-            id: d.id_employee_department,     
-            department: d.name,
-            description: d.description,
-            status: d.estado  
+          id: d.id_employee_department,
+          department: d.name,
+          description: d.description,
+          status: d.estado
         }));
         setData(formatted);
       } else {
@@ -129,11 +130,11 @@ const ParameterizationView = () => {
   const handleSaveDepartment = async (departmentData) => {
     try {
       if (modalMode === "add") {
-      
+
         const payload = {
           name: departmentData.categoryName,
           description: departmentData.description,
-          responsible_user: userId, 
+          responsible_user: userId,
           charges: departmentData.jobTitles.map(job => ({
             name: job.name,
             description: job.description
@@ -141,12 +142,12 @@ const ParameterizationView = () => {
         };
 
         const response = await createDepartment(payload);
-        await fetchData(); 
+        await fetchData();
         setModalMessage(response.message);
         setSuccessOpen(true);
 
       } else {
-         try {
+        try {
           const departmentId = selectedDepartment.id;
           const payload = {
             name: departmentData.categoryName,
@@ -154,7 +155,7 @@ const ParameterizationView = () => {
             responsible_user: userId
           };
 
-          const response = await updateDepartment(departmentId, payload); 
+          const response = await updateDepartment(departmentId, payload);
           await fetchData();
           setModalMessage(response.message);
           setSuccessOpen(true);
@@ -194,7 +195,7 @@ const ParameterizationView = () => {
       columnHelper.accessor('id', {
         header: 'Details',
         cell: info => (
-          <button 
+          <button
             onClick={() => handleViewDetails(info.getValue())}
             className="p-2 hover:bg-gray-100 rounded-md transition-colors opacity-0 group-hover:opacity-100"
             title="View details"
@@ -237,12 +238,14 @@ const ParameterizationView = () => {
 
           {/* Filter and Add Department Section */}
           <div className="mb-4 md:mb-6 flex flex-col sm:flex-row gap-4 justify-between lg:justify-start">
-            <button className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit">
-              <FiFilter className="filter-icon w-4 h-4" />
-              <span className="text-sm">Filter by</span>
-            </button>
-            
-            <button 
+            {/* Filter Section */}
+            <FilterSection
+              globalFilter={globalFilter}
+              setGlobalFilter={setGlobalFilter}
+              placeholder="Search categories..."
+            />
+
+            <button
               onClick={handleAddDepartment}
               className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit"
             >
@@ -333,7 +336,7 @@ const ParameterizationView = () => {
                   </table>
                 </div>
 
-              {/* Pagination */}
+                {/* Pagination */}
                 <div className="parametrization-pagination px-4 py-6 sm:px-6">
                   <div className="flex items-center justify-between">
                     {/* Mobile pagination */}
@@ -353,7 +356,7 @@ const ParameterizationView = () => {
                         Next →
                       </button>
                     </div>
-                    
+
                     {/* Desktop pagination */}
                     <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-center">
                       <div className="flex items-center gap-1">
@@ -365,13 +368,13 @@ const ParameterizationView = () => {
                         >
                           ← Previous
                         </button>
-                        
+
                         {/* Page numbers */}
                         {(() => {
                           const currentPage = table.getState().pagination.pageIndex + 1;
                           const totalPages = table.getPageCount();
                           const pages = [];
-                          
+
                           // Always show first page
                           if (currentPage > 3) {
                             pages.push(
@@ -384,7 +387,7 @@ const ParameterizationView = () => {
                               </button>
                             );
                           }
-                          
+
                           // Show ellipsis if there's a gap
                           if (currentPage > 4) {
                             pages.push(
@@ -393,22 +396,21 @@ const ParameterizationView = () => {
                               </span>
                             );
                           }
-                          
+
                           // Show pages around current page
                           for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
                             pages.push(
                               <button
                                 key={i}
                                 onClick={() => table.setPageIndex(i - 1)}
-                                className={`parametrization-pagination-button inline-flex items-center justify-center w-10 h-10 text-sm font-medium transition-colors ${
-                                  i === currentPage ? 'active' : ''
-                                }`}
+                                className={`parametrization-pagination-button inline-flex items-center justify-center w-10 h-10 text-sm font-medium transition-colors ${i === currentPage ? 'active' : ''
+                                  }`}
                               >
                                 {i}
                               </button>
                             );
                           }
-                          
+
                           // Show ellipsis if there's a gap
                           if (currentPage < totalPages - 3) {
                             pages.push(
@@ -417,7 +419,7 @@ const ParameterizationView = () => {
                               </span>
                             );
                           }
-                          
+
                           // Always show last page
                           if (currentPage < totalPages - 2) {
                             pages.push(
@@ -430,10 +432,10 @@ const ParameterizationView = () => {
                               </button>
                             );
                           }
-                          
+
                           return pages;
                         })()}
-                        
+
                         {/* Next button */}
                         <button
                           onClick={() => table.nextPage()}
@@ -444,7 +446,7 @@ const ParameterizationView = () => {
                         </button>
                       </div>
                     </div>
-                    
+
                     {/* Page size selector */}
                     <div className="hidden sm:block">
                       <select

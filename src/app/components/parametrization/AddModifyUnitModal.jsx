@@ -281,7 +281,7 @@ const AddModifyUnitModal = ({ isOpen, onClose, mode = 'add', unit = null, catego
           <div className="flex justify-center">
             <button
               type="submit"
-              className="px-12 py-2.5 bg-black text-white rounded-md text-sm font-medium hover:bg-gray-800 transition-colors"
+            className="btn-theme btn-primary not-disabled: w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {mode === 'modify' ? 'Update' : 'Save'}
             </button>

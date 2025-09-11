@@ -40,7 +40,7 @@ const NavigationMenu = ({
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-2 sm:px-4">
+    <div className="w-full max-w-6xl mx-auto px-2 mt-4 sm:px-4">
       {/* Desktop y Tablet (md y superior) - Grid responsivo */}
       <div className="hidden md:grid md:grid-cols-3 lg:grid-cols-6 gap-2 lg:gap-3">
         {items.map((item, index) => (

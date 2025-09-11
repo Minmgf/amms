@@ -131,7 +131,7 @@ const AddModifyStatusModal = ({
             </div>
 
             {/* Row 2 */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Description
@@ -148,7 +148,7 @@ const AddModifyStatusModal = ({
                 />
               </div>
 
-              <div>
+              {/* <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Activate/Deactivate
                 </label>
@@ -169,7 +169,7 @@ const AddModifyStatusModal = ({
                     />
                   </button>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
@@ -179,7 +179,7 @@ const AddModifyStatusModal = ({
           <button
             onClick={handleSave}
             disabled={saving || !formData.typeName.trim()}
-            className="bg-black text-white px-6 sm:px-8 py-2 rounded-md hover:bg-gray-800 transition-colors text-sm font-medium w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-theme btn-primary not-disabled: w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? (
               <span className="flex items-center justify-center">

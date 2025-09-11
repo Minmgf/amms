@@ -94,9 +94,9 @@ const StatusListModal = ({
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
                       Description
                     </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
+                    {/* <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
                       Status
-                    </th>
+                    </th> */}
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
                       Actions
                     </th>
@@ -118,11 +118,11 @@ const StatusListModal = ({
                     </tr>
                   ) : (
                     modalData.map((item, idx) => {
-                      const isActive =
-                        item.isActive ??
-                        (item.status
-                          ? item.status === "Active"
-                          : (item.estado ?? "").toString().toLowerCase() === "activo");
+                      // const isActive =
+                      //   item.isActive ??
+                      //   (item.status
+                      //     ? item.status === "Active"
+                      //     : (item.estado ?? "").toString().toLowerCase() === "activo");
 
                       return (
                         <tr key={item.id ?? idx} className="hover:bg-gray-50">
@@ -132,9 +132,10 @@ const StatusListModal = ({
                           <td className="px-6 py-4 text-sm text-gray-600 border-r border-gray-200">
                             {item.description}
                           </td>
+                          {/* Los estados NO tienen estados
                           <td className="px-6 py-4 text-sm border-r border-gray-200">
                             <div className="flex items-center gap-3">
-                              {/* Badge */}
+                              
                               <span
                                 className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
                                   isActive
@@ -145,7 +146,6 @@ const StatusListModal = ({
                                 {isActive ? "Active" : "Inactive"}
                               </span>
 
-                              {/* Toggle opcional */}
                               {onToggleStatus && (
                                 <button
                                   onClick={() => handleToggle(item.id)}
@@ -158,6 +158,7 @@ const StatusListModal = ({
                               )}
                             </div>
                           </td>
+                          */}
                           <td className="px-6 py-4 text-sm">
                             <button
                               onClick={() => handleEdit(item.id)}
