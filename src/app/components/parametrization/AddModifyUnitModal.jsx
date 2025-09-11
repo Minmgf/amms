@@ -1,7 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { FiX } from 'react-icons/fi';
-import { getActiveDataTypes, createUnits, updateUnit } from '@/services/parametrizationService';
+import { getActiveDataTypes, createUnits, updateUnit, toggleUnitStatus } from '@/services/parametrizationService';
+import { SuccessModal, ErrorModal } from '@/app/components/shared/SuccessErrorModal';
 
 const AddModifyUnitModal = ({ isOpen, onClose, mode = 'add', unit = null, category = 'Weight', categoryId = 1, onSave }) => {
   const [formData, setFormData] = useState({
@@ -16,6 +17,9 @@ const AddModifyUnitModal = ({ isOpen, onClose, mode = 'add', unit = null, catego
   const [dataTypes, setDataTypes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
 
   // Cargar tipos de datos cuando se abre el modal
   useEffect(() => {
@@ -43,16 +47,35 @@ const AddModifyUnitModal = ({ isOpen, onClose, mode = 'add', unit = null, catego
   };
 
   useEffect(() => {
-    if (mode === 'modify' && unit) {
+    if (mode === 'modify' && unit && dataTypes.length > 0) {
+      console.log('🔍 Unit data for modify mode:', unit); // ← Debug log
+      console.log('🔍 unitType field specifically:', unit.unitType); // ← Debug específico para unitType
+      console.log('🔍 Available data types:', dataTypes); // ← Ver tipos disponibles
+      console.log('🔍 All unit properties:', Object.keys(unit)); // ← Ver todas las propiedades disponibles
+      
+      // Buscar el unitType correcto basado en el value (nombre del tipo)
+      // O usar directamente el unitType si ya es el ID correcto
+      let unitTypeId = unit.unitType;
+      
+      // Si unitType no está definido, buscar por el nombre del tipo
+      if (!unitTypeId && dataTypes.length > 0) {
+        const matchingType = dataTypes.find(type => type.name === unit.value);
+        unitTypeId = matchingType ? (matchingType.id_types || matchingType.id) : '';
+        console.log('🔍 Matching type found by name:', matchingType);
+      }
+      
+      console.log('🔍 Final resolved unitTypeId:', unitTypeId);
+      
       setFormData({
         category: category,
         typeName: unit.unitName || unit.typeName || '',
         symbol: unit.symbol || '',
         value: unit.value || '',
-        unitType: unit.unitType || '',
-        isActive: unit.status === 'Active' || unit.isActive === true
+        unitType: unitTypeId,
+        // ← Actualizar lógica para usar statusId
+        isActive: unit.statusId === 1 || unit.status === 'Activo' || unit.status === 'Active' || unit.isActive === true
       });
-    } else {
+    } else if (mode === 'add') {
       setFormData({
         category: category,
         typeName: '',
@@ -62,7 +85,7 @@ const AddModifyUnitModal = ({ isOpen, onClose, mode = 'add', unit = null, catego
         isActive: true
       });
     }
-  }, [unit, mode, category]);
+  }, [unit, mode, category, dataTypes]); // ← Agregar dataTypes como dependencia
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -72,11 +95,45 @@ const AddModifyUnitModal = ({ isOpen, onClose, mode = 'add', unit = null, catego
     }));
   };
 
-  const handleToggleChange = () => {
-    setFormData(prev => ({
-      ...prev,
-      isActive: !prev.isActive
-    }));
+  const handleToggleChange = async () => {
+    if (mode === 'modify' && unit?.id) {
+      // Si estamos en modo edición, hacer toggle real en la API
+      try {
+        setLoading(true);
+        console.log(`🔄 Toggling status for unit ID: ${unit.id}`);
+        
+        const response = await toggleUnitStatus(unit.id);
+        console.log('✅ Status toggled successfully:', response);
+        
+        // Mostrar mensaje de éxito
+        setModalMessage(response.message);
+        setSuccessOpen(true);
+        
+        // Actualizar el estado local del formulario
+        setFormData(prev => ({
+          ...prev,
+          isActive: !prev.isActive
+        }));
+        
+        // Notificar al componente padre para recargar datos
+        if (onSave) {
+          await onSave({ success: true, message: response.message, statusChanged: true });
+        }
+        
+      } catch (error) {
+        console.error('❌ Error toggling unit status:', error);
+        setModalMessage(error.response?.data?.message || error.message || "Error al cambiar estado");
+        setErrorOpen(true);
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // Si estamos en modo agregar, solo cambiar el estado local
+      setFormData(prev => ({
+        ...prev,
+        isActive: !prev.isActive
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -288,6 +345,20 @@ const AddModifyUnitModal = ({ isOpen, onClose, mode = 'add', unit = null, catego
           </div>
         </form>
       </div>
+
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={successOpen}
+        onClose={() => setSuccessOpen(false)}
+        message={modalMessage}
+      />
+
+      {/* Error Modal */}
+      <ErrorModal
+        isOpen={errorOpen}
+        onClose={() => setErrorOpen(false)}
+        message={modalMessage}
+      />
     </div>
   );
 };
