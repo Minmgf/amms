@@ -1,5 +1,18 @@
 import axios from "axios";
 
+// Función helper para obtener el token desde localStorage o sessionStorage
+const getAuthToken = () => {
+  // Primero intentar localStorage
+  let token = localStorage.getItem('token');
+  
+  // Si no está en localStorage, intentar sessionStorage
+  if (!token) {
+    token = sessionStorage.getItem('token');
+  }
+  
+  return token;
+};
+
 // Instancia para el microservicio de usuarios
 export const apiUsers = axios.create({
   baseURL: process.env.NEXT_PUBLIC_BASE_URL_USERS,
@@ -30,13 +43,11 @@ export const apiLocation = axios.create({
 const addInterceptors = (instance) => {
   instance.interceptors.request.use(
     (config) => {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
-        console.log('Token enviado en request:', token);
-        console.log('Headers completos:', config.headers);
       } else {
-        console.warn('No se encontró token en localStorage');
+        console.warn('No se encontró token en localStorage ni sessionStorage');
       }
       return config;
     },

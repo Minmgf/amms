@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import Logo from "../../../components/auth/Logo";
 import { useParams } from "next/navigation";
 import { activateAccount } from "@/services/authService";
@@ -10,31 +10,39 @@ const page = () => {
   const { token } = useParams();
   const [status, setStatus] = useState("loading"); // loading, success, error
   const [message, setMessage] = useState("");
+  const hasCalled = useRef(false);
 
   useEffect(() => {
-    if (!token) return; // token aún no está disponible
-    console.log("Token recibido:", token);
+    if (!token || hasCalled.current) return;
+
+    const controller = new AbortController();
+    hasCalled.current = true;
 
     const activate = async () => {
       try {
-        const data = await activateAccount(token);
-        console.log("Activación exitosa:", data);
-        setStatus("success");
-        setMessage(data.message || "Cuenta activada correctamente");
+        const data = await activateAccount(token, { signal: controller.signal });
+        if (!controller.signal.aborted) {
+          setStatus("success");
+          setMessage(data.message || "Cuenta activada correctamente");
+        }
       } catch (error) {
-        console.error("Error activando cuenta:", error);
-        setStatus("error");
-        setMessage(error.response.data.detail || "Error al activar la cuenta");
+        if (!controller.signal.aborted) {
+          setStatus("error");
+          setMessage(error?.response?.data?.detail || "Error al activar la cuenta");
+        }
       }
     };
 
     activate();
+
+    // Para este caso específico, NO hacer cleanup porque es una operación crítica
+    // que debe completarse una sola vez
   }, [token]);
 
   return (
     <div
       className="relative min-h-screen bg-cover bg-center"
-      style={{ backgroundImage: "url('./images/login-background.jpg')" }}
+      style={{ backgroundImage: "url('/sigma/images/login-background.jpg')" }}
     >
       <div className="absolute inset-0 bg-black/50"></div>
       <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 items-center min-h-screen">
@@ -47,7 +55,7 @@ const page = () => {
             <Logo variant="mobile" />
 
             {status === "success" && (
-              <img className="w-24 mt-10" src="./images/activation-icon.png" alt="" />
+              <img className="w-24 mt-10" src="/sigma/images/activation-icon.png" alt="" />
             )}
             {status === "error" && (
               <AiOutlineCloseCircle className="w-24 h-24 mt-10 text-red-600" />
