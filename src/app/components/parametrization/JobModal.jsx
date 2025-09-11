@@ -8,7 +8,7 @@ const JobModal = ({
   isOpen,
   onClose,
   mode = "add", // 'add' or 'modify'
-  departmentMode="",
+  departmentMode = "",
   jobData = null,
   departmentId = null,
   departmentName = "Department X",
@@ -71,7 +71,7 @@ const JobModal = ({
     }
   };
 
-const handleToggleStatus = async () => {
+  const handleToggleStatus = async () => {
     if (!jobData.id) return;
 
     try {
@@ -83,8 +83,8 @@ const handleToggleStatus = async () => {
         isActive: !prev.isActive
       }));
       if (onStatusChange) {
-        onStatusChange(departmentId); 
-    }
+        onStatusChange(departmentId);
+      }
     } catch (error) {
       setModalMessage(error.response.data.name || "Failed");
       setErrorOpen(true);
@@ -174,9 +174,8 @@ const handleToggleStatus = async () => {
 
                 <div>
                   <label
-                    className={`block text-sm font-medium mb-2 ${
-                      errors.jobTitle ? "text-red-500" : "text-gray-700"
-                    }`}
+                    className={`block text-sm font-medium mb-2 ${errors.jobTitle ? "text-red-500" : "text-gray-700"
+                      }`}
                   >
                     Job Title
                   </label>
@@ -187,11 +186,10 @@ const handleToggleStatus = async () => {
                       handleInputChange("jobTitle", e.target.value)
                     }
                     placeholder={isAddMode ? "" : ""}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                      errors.jobTitle
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errors.jobTitle
                         ? "border-red-500 focus:border-red-500 focus:ring-red-500"
                         : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                    }`}
+                      }`}
                   />
                   {errors.jobTitle && (
                     <div className="flex items-center mt-1 text-red-500 text-xs">
@@ -236,14 +234,12 @@ const handleToggleStatus = async () => {
                     <div className="mt-1 sm:mt-0">
                       <button
                         onClick={() => handleToggleStatus()}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                          formData.isActive ? "bg-red-500" : "bg-gray-200"
-                        }`}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${formData.isActive ? "bg-red-500" : "bg-gray-200"
+                          }`}
                       >
                         <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            formData.isActive ? "translate-x-6" : "translate-x-1"
-                          }`}
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.isActive ? "translate-x-6" : "translate-x-1"
+                            }`}
                         />
                       </button>
                     </div>
@@ -258,7 +254,7 @@ const handleToggleStatus = async () => {
           <div className="flex justify-center px-4 sm:px-6 py-4 border-t border-gray-200 bg-gray-50">
             <button
               onClick={handleSave}
-              className="bg-black text-white px-6 sm:px-8 py-2 rounded-md hover:bg-gray-800 transition-colors text-sm font-medium w-full sm:w-auto"
+              className="btn-theme btn-primary not-disabled: w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isAddMode ? "Save" : "Update"}
             </button>

@@ -13,6 +13,7 @@ import {
 import NavigationMenu from "../../../components/parametrization/ParameterNavigation";
 import UnitListModal from "../../../components/parametrization/UnitListModal";
 import AddModifyUnitModal from "../../../components/parametrization/AddModifyUnitModal";
+import FilterSection from '@/app/components/parametrization/FilterSection';
 import { getUnitsCategories, getUnitsByCategory } from "@/services/parametrizationService";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -37,10 +38,10 @@ const ParameterizationView = () => {
 
   // Datos mock para otras pestañas (no Units)
   const mockDataForOtherTabs = [
-    { 
-      id: 1, 
-      name: "Sample Category", 
-      description: "Sample description", 
+    {
+      id: 1,
+      name: "Sample Category",
+      description: "Sample description",
       details: "",
       parameters: []
     }
@@ -67,7 +68,7 @@ const ParameterizationView = () => {
         console.log("📡 About to call getUnitsCategories()");
         const response = await getUnitsCategories();
         console.log("✅ Categories API Response:", response);
-        
+
         const transformedData = response.data.map(category => ({
           id: category.id_units_categories,
           name: category.name,
@@ -75,7 +76,7 @@ const ParameterizationView = () => {
           details: "",
           parameters: []
         }));
-        
+
         console.log("🔄 Transformed categories data:", transformedData);
         setData(transformedData);
       } else {
@@ -109,7 +110,7 @@ const ParameterizationView = () => {
       try {
         console.log("🔄 Reloading category data...");
         const response = await getUnitsByCategory(selectedCategory.id);
-        
+
         const transformedUnits = response.data.map(unit => ({
           id: unit.id_units,
           unitName: unit.name,
@@ -118,7 +119,7 @@ const ParameterizationView = () => {
           status: unit.statues_name,
           description: unit.description
         }));
-        
+
         setCategoryParameters(transformedUnits);
       } catch (error) {
         console.error("❌ Error reloading category data:", error);
@@ -131,15 +132,15 @@ const ParameterizationView = () => {
   // Abrir UnitListModal (cuando se hace click en el ojo de la tabla principal)
   const handleViewDetails = useCallback(async (categoryId) => {
     const category = data.find((item) => item.id === categoryId);
-    
+
     if (category) {
       setSelectedCategory(category);
       setIsUnitListModalOpen(true);
-      
+
       try {
         const response = await getUnitsByCategory(categoryId);
         console.log("✅ Units API Response:", response);
-        
+
         const transformedUnits = response.data.map(unit => ({
           id: unit.id_units,
           unitName: unit.name,
@@ -148,7 +149,7 @@ const ParameterizationView = () => {
           status: unit.statues_name,
           description: unit.description
         }));
-        
+
         setCategoryParameters(transformedUnits);
       } catch (error) {
         console.error("❌ Error in handleViewDetails:", error);
@@ -193,7 +194,7 @@ const ParameterizationView = () => {
   // Guardar/actualizar parameter
   const handleSaveParameter = async (parameterData) => {
     console.log("💾 Saving/updating parameter:", parameterData);
-    
+
     try {
       if (modalMode === "add") {
         // Si es modo agregar y hay mensaje de éxito, recargar datos
@@ -203,7 +204,7 @@ const ParameterizationView = () => {
           if (selectedCategory) {
             const response = await getUnitsByCategory(selectedCategory.id);
             console.log("🔄 Reloaded units:", response);
-            
+
             const transformedUnits = response.data.map(unit => ({
               id: unit.id_units,
               unitName: unit.name,
@@ -212,7 +213,7 @@ const ParameterizationView = () => {
               status: unit.statues_name,
               description: unit.description
             }));
-            
+
             setCategoryParameters(transformedUnits);
           }
         } else {
@@ -221,12 +222,12 @@ const ParameterizationView = () => {
             ...parameterData,
             id: Date.now(),
           };
-          
+
           const updatedParameters = [...categoryParameters, newParameter];
           setCategoryParameters(updatedParameters);
-          
-          const updatedData = data.map(item => 
-            item.id === selectedCategory.id 
+
+          const updatedData = data.map(item =>
+            item.id === selectedCategory.id
               ? { ...item, parameters: updatedParameters }
               : item
           );
@@ -240,7 +241,7 @@ const ParameterizationView = () => {
           if (selectedCategory) {
             const response = await getUnitsByCategory(selectedCategory.id);
             console.log("🔄 Reloaded units after update:", response);
-            
+
             const transformedUnits = response.data.map(unit => ({
               id: unit.id_units,
               unitName: unit.name,
@@ -249,7 +250,7 @@ const ParameterizationView = () => {
               status: unit.statues_name,
               description: unit.description
             }));
-            
+
             setCategoryParameters(transformedUnits);
           }
         } else {
@@ -258,9 +259,9 @@ const ParameterizationView = () => {
             param.id === selectedParameter.id ? { ...param, ...parameterData } : param
           );
           setCategoryParameters(updatedParameters);
-          
-          const updatedData = data.map(item => 
-            item.id === selectedCategory.id 
+
+          const updatedData = data.map(item =>
+            item.id === selectedCategory.id
               ? { ...item, parameters: updatedParameters }
               : item
           );
@@ -331,12 +332,11 @@ const ParameterizationView = () => {
         </div>
 
         {/* Filter Section */}
-        <div className="mb-4 md:mb-6 flex flex-col sm:flex-row gap-4 justify-between">
-          <button className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit">
-            <FiFilter className="filter-icon w-4 h-4" />
-            <span className="text-sm">Filter by</span>
-          </button>
-        </div>
+        <FilterSection
+          globalFilter={globalFilter}
+          setGlobalFilter={setGlobalFilter}
+          placeholder="Search categories..."
+        />
 
         {/* Navigation Menu */}
         <div className="mb-6 md:mb-8">
@@ -477,9 +477,8 @@ const ParameterizationView = () => {
                             <button
                               key={i}
                               onClick={() => table.setPageIndex(i - 1)}
-                              className={`parametrization-pagination-button inline-flex items-center justify-center w-10 h-10 text-sm font-medium transition-colors ${
-                                i === currentPage ? 'active' : ''
-                              }`}
+                              className={`parametrization-pagination-button inline-flex items-center justify-center w-10 h-10 text-sm font-medium transition-colors ${i === currentPage ? 'active' : ''
+                                }`}
                             >
                               {i}
                             </button>

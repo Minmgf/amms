@@ -5,14 +5,14 @@ import JobModal from './JobModal'; // Add this import
 import { changeDepartmentStatus, getChargesDepartments, createJob, updateJob } from '@/services/parametrizationService';
 import { SuccessModal, ErrorModal } from '@/app/components/shared/SuccessErrorModal';
 
-const DepartmentModal = ({ 
-  isOpen, 
-  onClose, 
+const DepartmentModal = ({
+  isOpen,
+  onClose,
   mode = 'add', // 'add' or 'edit'
   departmentData = null,
   onSave,
   existingDepartments = [],
-  onStatusChange 
+  onStatusChange
 }) => {
   const [formData, setFormData] = useState({
     categoryName: '',
@@ -58,7 +58,7 @@ const DepartmentModal = ({
         department: departmentData.department || departmentData.name || '',
         categoryName: departmentData.department || departmentData.name || '',
         description: departmentData.description || '',
-        isActive: departmentData.status === 'Activo', 
+        isActive: departmentData.status === 'Activo',
         jobTitles: departmentData.jobTitles || []
       });
 
@@ -96,8 +96,8 @@ const DepartmentModal = ({
         isActive: !prev.isActive
       }));
       if (onStatusChange) {
-       onStatusChange(); 
-    }
+        onStatusChange();
+      }
     } catch (error) {
       setModalMessage(error.response.data.name || "Failed");
       setErrorOpen(true);
@@ -109,7 +109,7 @@ const DepartmentModal = ({
       ...prev,
       [field]: value
     }));
-    
+
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
@@ -126,7 +126,7 @@ const DepartmentModal = ({
 
       if (Array.isArray(response)) {
         setJobTitles(response.map(job => ({
-          id: job.id_employee_charge,  
+          id: job.id_employee_charge,
           name: job.name,
           description: job.description,
           status: job.estado === 'Activo' ? 'Active' : 'Inactive'
@@ -150,13 +150,13 @@ const DepartmentModal = ({
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     // Validación de campo obligatorio
     if (!formData.categoryName.trim()) {
       newErrors.categoryName = 'Please enter a name for the new department';
     } else if (mode === 'add') {
       // Validación de unicidad para modo add
-      const isDuplicate = existingDepartments.some(dept => 
+      const isDuplicate = existingDepartments.some(dept =>
         dept.department.toLowerCase().trim() === formData.categoryName.toLowerCase().trim()
       );
       if (isDuplicate) {
@@ -164,7 +164,7 @@ const DepartmentModal = ({
       }
     } else if (mode === 'edit') {
       // Validación de unicidad para modo edit (excluir el departamento actual)
-      const isDuplicate = existingDepartments.some(dept => 
+      const isDuplicate = existingDepartments.some(dept =>
         dept.department.toLowerCase().trim() === formData.categoryName.toLowerCase().trim() &&
         dept.id !== departmentData.id
       );
@@ -172,7 +172,7 @@ const DepartmentModal = ({
         newErrors.categoryName = 'This department name already exist';
       }
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -181,7 +181,7 @@ const DepartmentModal = ({
     if (!validateForm()) {
       return;
     }
-    
+
     const dataToSave = {
       ...formData,
       jobTitles
@@ -247,11 +247,11 @@ const DepartmentModal = ({
         setJobTitles(prev => prev.map(job =>
           job.id === selectedJob.id
             ? {
-                ...job,
-                name: jobData.jobTitle,
-                description: jobData.description,
-                status: jobData.isActive ? 'Active' : 'Inactive'
-              }
+              ...job,
+              name: jobData.jobTitle,
+              description: jobData.description,
+              status: jobData.isActive ? 'Active' : 'Inactive'
+            }
             : job
         ));
       } else {
@@ -305,9 +305,8 @@ const DepartmentModal = ({
             {/* Form Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               <div>
-                <label className={`block text-sm font-medium mb-2 ${
-                  errors.categoryName ? 'text-red-500' : 'text-gray-700'
-                }`}>
+                <label className={`block text-sm font-medium mb-2 ${errors.categoryName ? 'text-red-500' : 'text-gray-700'
+                  }`}>
                   Department name
                 </label>
                 <input
@@ -315,11 +314,10 @@ const DepartmentModal = ({
                   value={formData.categoryName}
                   onChange={(e) => handleInputChange('categoryName', e.target.value)}
                   placeholder={isAddMode ? "Enter a name" : ""}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.categoryName 
-                      ? 'border-red-500 focus:border-red-500' 
-                      : 'border-gray-300 focus:border-blue-500'
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.categoryName
+                    ? 'border-red-500 focus:border-red-500'
+                    : 'border-gray-300 focus:border-blue-500'
+                    }`}
                 />
                 {errors.categoryName && (
                   <div className="flex items-center mt-1 text-red-500 text-xs">
@@ -330,7 +328,7 @@ const DepartmentModal = ({
                   </div>
                 )}
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Description
@@ -373,7 +371,7 @@ const DepartmentModal = ({
               <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">
                 Jobs Titles List
               </h3>
-              
+
               <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
                 {/* Table Header */}
                 <div className="bg-gray-50 border-b border-gray-200">
@@ -384,7 +382,7 @@ const DepartmentModal = ({
                     <div className="text-sm font-medium text-gray-700">Actions</div>
                   </div>
                 </div>
-                
+
                 {/* Table Body */}
                 <div className="bg-white min-h-[120px]">
                   {hasJobTitles ? (
@@ -393,11 +391,10 @@ const DepartmentModal = ({
                         <div className="text-sm text-gray-900">{job.name}</div>
                         <div className="text-sm text-gray-600">{job.description}</div>
                         <div>
-                          <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${
-                            job.status === 'Active' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-pink-100 text-pink-800'
-                          }`}>
+                          <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${job.status === 'Active'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-pink-100 text-pink-800'
+                            }`}>
                             {job.status}
                           </span>
                         </div>
@@ -421,11 +418,11 @@ const DepartmentModal = ({
                   )}
                 </div>
               </div>
-              
+
               {/* Add Job Button */}
               <button
                 onClick={handleAddJob}
-                className="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors text-sm font-medium"
+                className="px-6 py-2 btn-theme btn-secondary text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
               >
                 Add Job
               </button>
@@ -436,7 +433,7 @@ const DepartmentModal = ({
           <div className="flex justify-end px-6 py-4 border-t border-gray-200 bg-gray-50">
             <button
               onClick={handleSave}
-              className="bg-black text-white px-8 py-2 rounded-md hover:bg-gray-800 transition-colors text-sm font-medium"
+              className="px-8 py-3 btn-theme btn-primary text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               Save
             </button>
@@ -449,7 +446,7 @@ const DepartmentModal = ({
         isOpen={isJobModalOpen}
         onClose={handleCloseJobModal}
         mode={jobModalMode}
-        departmentMode={mode} 
+        departmentMode={mode}
         jobData={selectedJob}
         departmentId={formData.id}
         departmentName={formData.categoryName}
