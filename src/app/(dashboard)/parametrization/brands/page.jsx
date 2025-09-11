@@ -13,7 +13,7 @@ import {
 import NavigationMenu from '../../../components/parametrization/ParameterNavigation';
 import CategoryModal from '../../../components/parametrization/ModelListModal';
 import BrandFormModal from '../../../components/parametrization/BrandFormModal';
-import AddEditModelModal from '../../../components/parametrization/AddEditModelModal';
+import AddModifyModelModal from '../../../components/parametrization/AddModifyModelModal';
 import { useTheme } from "@/contexts/ThemeContext";
 import { getBrandCategories, getModelsByBrand, createBrand, getBrands, editBrand, editModel, createModel } from '@/services/parametrizationService';
 import { SuccessModal, ErrorModal } from '@/app/components/shared/SuccessErrorModal';
@@ -243,9 +243,9 @@ const ParameterizationView = () => {
     }
   };
 
-  // ==================== HANDLERS PARA AddEditModelModal ====================
+  // ==================== HANDLERS PARA AddModifyModelModal ====================
 
-  // Abrir AddEditModelModal en modo ADD (desde botón "Add model" del BrandFormModal)
+  // Abrir AddModifyModelModal en modo ADD (desde botón "Add model" del BrandFormModal)
   const handleAddModel = () => {
     setModelModalMode('add');
     setSelectedModelData(null);
