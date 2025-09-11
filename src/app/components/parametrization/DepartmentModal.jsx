@@ -129,14 +129,16 @@ const DepartmentModal = ({
           id: job.id_employee_charge,
           name: job.name,
           description: job.description,
-          status: job.estado === 'Activo' ? 'Active' : 'Inactive'
+          idStatues: job.id_statues,
+          status: job.estado
         })));
       } else if (response.data) {
         setJobTitles(response.data.map(job => ({
           id: job.id_job || job.id,
           name: job.name,
           description: job.description,
-          status: job.status === 'Activo' ? 'Active' : 'Inactive'
+          idStatues: job.id_statues,
+          status: job.estado
         })));
       } else {
         setJobTitles([]);
@@ -383,6 +385,7 @@ const DepartmentModal = ({
                   </div>
                 </div>
 
+
                 {/* Table Body */}
                 <div className="bg-white min-h-[120px]">
                   {hasJobTitles ? (
@@ -391,9 +394,11 @@ const DepartmentModal = ({
                         <div className="text-sm text-gray-900">{job.name}</div>
                         <div className="text-sm text-gray-600">{job.description}</div>
                         <div>
-                          <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${job.status === 'Active'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-pink-100 text-pink-800'
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${job.idStatues === 1
+                              ? 'bg-green-100 text-green-800'
+                              : job.idStatues === 2
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-gray-100 text-gray-800'
                             }`}>
                             {job.status}
                           </span>

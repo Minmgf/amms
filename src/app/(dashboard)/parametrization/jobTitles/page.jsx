@@ -63,6 +63,7 @@ const ParameterizationView = () => {
           id: d.id_employee_department,
           department: d.name,
           description: d.description,
+          idStatues: d.id_statues,
           status: d.estado
         }));
         setData(formatted);
@@ -71,6 +72,7 @@ const ParameterizationView = () => {
           id: d.id_employee_department,
           department: d.name,
           description: d.description,
+          idStatues: d.id_statues,
           status: d.estado
         }));
         setData(formatted);
@@ -104,6 +106,7 @@ const ParameterizationView = () => {
         id: department.id,
         department: department.department,
         description: department.description,
+        idStatues: department.idStatues,
         status: department.status,
         jobTitles: department.jobTitles || []
       };

@@ -90,13 +90,13 @@ const ParameterizationView = () => {
     try {
       const response = await getBrands(categoryId);
       const normalized = (response || []).map(b => {
-        const isActive = String(b.estado).toLowerCase() === 'activo';
         return {
           id: b.id_brands,
           name: b.name,
           description: b.description,
-          status: isActive ? 'Activo' : 'Inactivo', // 👈 string
-          isActive, // 👈 boolean
+          idStatues: b.id_statues,
+          status: b.estado,
+          isActive: b.estado === 'Activo',
           models: b.models || []
         };
       });

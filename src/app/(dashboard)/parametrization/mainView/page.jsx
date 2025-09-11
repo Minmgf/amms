@@ -24,6 +24,11 @@ import {
 } from "@/services/parametrizationService";
 import { useTheme } from "@/contexts/ThemeContext";
 
+// Función helper para determinar si está activo basado en id_statues
+const isActiveFromId = (idStatues) => {
+  return idStatues === 1;
+};
+
 // Componente principal
 const ParameterizationView = () => {
   const { currentTheme } = useTheme();
@@ -97,13 +102,15 @@ const ParameterizationView = () => {
       const response = await getTypesByCategory(categoryId);
       
       // Mapear los datos al formato esperado por el modal
+      // CAMBIO PRINCIPAL: Usar id_statues en lugar del texto "estado"
       const mappedParameters = response.map(item => ({
         id: item.id_types,
         typeName: item.name,
         name: item.name,
         description: item.description,
-        status: item.estado === 'Activo' ? 'Active' : 'Inactive',
-        isActive: item.estado === 'Activo'
+        id_statues: item.id_statues, // Mantener el ID del estado original
+        status: item.estado, // Convertir ID a texto para display
+        isActive: isActiveFromId(item.id_statues) // Determinar si está activo basado en ID
       }));
       
       setParametersData(mappedParameters);
@@ -206,6 +213,7 @@ const ParameterizationView = () => {
         };
         
         const createdResponse = await createTypeItem(payload);   
+        
         // Si se crea como inactivo, hacer toggle después de crear
         if (!parameterData.isActive) {
           try {
@@ -241,6 +249,7 @@ const ParameterizationView = () => {
         
         const updatedResponse = await updateTypeItem(selectedParameter.id, updatePayload);
         
+        // CAMBIO PRINCIPAL: Comparar basado en isActive en lugar del texto del estado
         // Si el estado cambió, hacer toggle
         if (parameterData.isActive !== selectedParameter.isActive) {
           try {
@@ -336,7 +345,7 @@ const ParameterizationView = () => {
           <h1 className="parametrization-header text-2xl md:text-3xl font-bold">Parameterization</h1>
         </div>
 
-                {/* Filter Section */}
+        {/* Filter Section */}
         <FilterSection
           globalFilter={globalFilter}
           setGlobalFilter={setGlobalFilter}
