@@ -10,7 +10,7 @@ import {
   flexRender,
   createColumnHelper,
 } from '@tanstack/react-table';
-import NavigationMenu from '../../../components/ParameterNavigation';
+import NavigationMenu from '../../../components/parametrization/ParameterNavigation';
 import CategoryModal from '../../../components/parametrization/ModelListModal';
 import BrandFormModal from '../../../components/parametrization/BrandFormModal';
 import AddEditModelModal from '../../../components/parametrization/AddEditModelModal';
@@ -42,7 +42,7 @@ const ParameterizationView = () => {
   const [brandFormMode, setBrandFormMode] = useState('add'); // 'add' o 'edit'
   const [selectedBrand, setSelectedBrand] = useState(null);
 
-  // Estados para AddEditModelModal (agregar/editar model)
+  // Estados para AddModifyModelModal (agregar/editar model)
   const [isModelModalOpen, setIsModelModalOpen] = useState(false);
   const [modelModalMode, setModelModalMode] = useState('add');
   const [selectedModelData, setSelectedModelData] = useState(null);
@@ -252,7 +252,7 @@ const ParameterizationView = () => {
     setIsModelModalOpen(true);
   };
 
-  // Abrir AddEditModelModal en modo EDIT (desde botón "Edit" de la tabla del BrandFormModal)
+  // Abrir AddModifyModelModal en modo EDIT (desde botón "Edit" de la tabla del BrandFormModal)
   const handleEditModel = (modelId) => {
     // Buscar el modelo en los datos del brand seleccionado
     const model = selectedBrand?.models?.find(m => m.id_model === modelId);
@@ -263,7 +263,7 @@ const ParameterizationView = () => {
     }
   };
 
-  // Cerrar AddEditModelModal
+  // Cerrar AddModifyModelModal
   const handleModelModalClose = () => {
     setIsModelModalOpen(false);
     setSelectedModelData(null);
@@ -672,8 +672,8 @@ const ParameterizationView = () => {
         onStatusChanged={handleStatusChanged}
       />
 
-      {/* AddEditModelModal - Modal para agregar/editar model */}
-      <AddEditModelModal
+      {/* AddModifyModelModal - Modal para agregar/editar model */}
+      <AddModifyModelModal
         isOpen={isModelModalOpen}
         onClose={handleModelModalClose}
         mode={modelModalMode} // 'add' o 'edit'

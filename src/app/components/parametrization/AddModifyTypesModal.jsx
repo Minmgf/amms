@@ -16,6 +16,8 @@ const AddModifyTypesModal = ({
     description: "",
     isActive: true,
   });
+  
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (mode === "modify" && status) {
@@ -42,38 +44,48 @@ const AddModifyTypesModal = ({
     }));
   };
 
-  const handleSave = () => {
-    if (mode === "modify") {
-      const updatedStatus = {
-        ...status,
-        typeName: formData.typeName,
-        description: formData.description,
-        status: formData.isActive ? "Active" : "Inactive",
-        isActive: formData.isActive,
-      };
-
-      console.log("Updating status parameter:", updatedStatus);
-
-      if (onSave) {
-        onSave(updatedStatus);
-      }
-    } else {
-      const newStatus = {
-        typeName: formData.typeName,
-        description: formData.description,
-        status: formData.isActive ? "Active" : "Inactive",
-        isActive: formData.isActive,
-        category: formData.category,
-      };
-
-      console.log("Adding status parameter:", newStatus);
-
-      if (onSave) {
-        onSave(newStatus);
-      }
+  const handleSave = async () => {
+    // Validación básica
+    if (!formData.typeName.trim()) {
+      return;
     }
 
-    onClose();
+    setSaving(true);
+
+    try {
+      if (mode === "modify") {
+        // Preparar datos para modificación
+        const updatedData = {
+          typeName: formData.typeName.trim(),
+          description: formData.description.trim(),
+          isActive: formData.isActive,
+        };
+
+        if (onSave) {
+          await onSave(updatedData);
+        }
+      } else {
+        // Preparar datos para creación
+        const newData = {
+          typeName: formData.typeName.trim(),
+          description: formData.description.trim(),
+          isActive: formData.isActive,
+        };
+
+        if (onSave) {
+          await onSave(newData);
+        }
+      }
+
+      // Solo cerrar el modal si todo salió bien
+      onClose();
+    } catch (err) {
+      console.error("Error saving type:", err);
+      // El manejo de errores se hace en el componente padre
+      throw err;
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -90,7 +102,8 @@ const AddModifyTypesModal = ({
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+            disabled={saving}
+            className="p-2 hover:bg-gray-100 rounded-md transition-colors disabled:opacity-50"
           >
             <FiX className="w-5 h-5 text-gray-500" />
           </button>
@@ -112,14 +125,14 @@ const AddModifyTypesModal = ({
                   onChange={(e) =>
                     handleInputChange("category", e.target.value)
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600 focus:outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-black focus:outline-none"
                   readOnly
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Type name
+                  Type name *
                 </label>
                 <input
                   type="text"
@@ -127,7 +140,9 @@ const AddModifyTypesModal = ({
                   onChange={(e) =>
                     handleInputChange("typeName", e.target.value)
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={saving}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  placeholder="Enter type name"
                 />
               </div>
             </div>
@@ -144,7 +159,9 @@ const AddModifyTypesModal = ({
                   onChange={(e) =>
                     handleInputChange("description", e.target.value)
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={saving}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  placeholder="Enter description"
                 />
               </div>
 
@@ -157,7 +174,8 @@ const AddModifyTypesModal = ({
                     onClick={() =>
                       handleInputChange("isActive", !formData.isActive)
                     }
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                    disabled={saving}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
                       formData.isActive ? "bg-red-500" : "bg-gray-200"
                     }`}
                   >
@@ -177,9 +195,20 @@ const AddModifyTypesModal = ({
         <div className="flex justify-center px-4 sm:px-6 py-4 border-t border-gray-200 bg-gray-50">
           <button
             onClick={handleSave}
-            className="bg-black text-white px-6 sm:px-8 py-2 rounded-md hover:bg-gray-800 transition-colors text-sm font-medium w-full sm:w-auto"
+            disabled={saving || !formData.typeName.trim()}
+            className="bg-black text-white px-6 sm:px-8 py-2 rounded-md hover:bg-gray-800 transition-colors text-sm font-medium w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isAddMode ? "Save" : "Update"}
+            {saving ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                {isAddMode ? "Saving..." : "Updating..."}
+              </span>
+            ) : (
+              isAddMode ? "Save" : "Update"
+            )}
           </button>
         </div>
       </div>
