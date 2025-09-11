@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiX, FiEdit3 } from 'react-icons/fi';
 import { toggleUnitStatus } from '@/services/parametrizationService';
+import { SuccessModal, ErrorModal } from '@/app/components/shared/SuccessErrorModal';
 
 const UnitListModal = ({ 
   isOpen, 
@@ -14,6 +15,9 @@ const UnitListModal = ({
 }) => {
   const [parameters, setParameters] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
 
   // Reset form cuando se abre/cierra el modal
   useEffect(() => {
@@ -50,17 +54,29 @@ const UnitListModal = ({
       
       const response = await toggleUnitStatus(unitId);
       console.log('✅ Status toggled successfully:', response);
+      console.log('📋 Response message:', response.message);
       
-      // Actualizar el estado local optimistamente
+      // Mostrar mensaje de éxito usando la respuesta del servidor
+      setModalMessage(response.message);
+      setSuccessOpen(true);
+      
+      // Actualizar estado local inmediatamente con la lógica correcta
       setParameters(prevParams => 
-        prevParams.map(param => 
-          param.id === unitId 
-            ? { 
-                ...param, 
-                status: param.status === 'Activo' ? 'Inactivo' : 'Activo'
-              }
-            : param
-        )
+        prevParams.map(param => {
+          if (param.id === unitId) {
+            const newStatusId = param.statusId === 1 ? 2 : 1;
+            const newStatus = newStatusId === 1 ? 'Activo' : 'Inactivo';
+            
+            console.log(`🔄 Updating unit ${unitId}: ${param.statusId} -> ${newStatusId}, ${param.status} -> ${newStatus}`);
+            
+            return {
+              ...param,
+              statusId: newStatusId,
+              status: newStatus
+            };
+          }
+          return param;
+        })
       );
       
       // Recargar datos desde el componente padre si está disponible
@@ -70,7 +86,8 @@ const UnitListModal = ({
       
     } catch (error) {
       console.error('❌ Error toggling unit status:', error);
-      // Aquí podrías mostrar un toast de error
+      setModalMessage(error.response?.data?.message || error.message || "Error al cambiar estado");
+      setErrorOpen(true);
     } finally {
       setLoading(false);
     }
@@ -165,12 +182,12 @@ const UnitListModal = ({
                             onClick={() => handleToggleStatus(parameter.id)}
                             disabled={loading}
                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${
-                              parameter.status === 'Activo' || parameter.status === 'Active' 
+                              parameter.statusId === 1 || parameter.status === 'Activo' // ← Usar statusId como prioridad
                                 ? 'bg-green-100 text-green-800 hover:bg-green-200' 
                                 : 'bg-red-100 text-red-800 hover:bg-red-200'
                             } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                           >
-                            {parameter.status === 'Activo' || parameter.status === 'Active' ? 'Active' : 'Inactive'}
+                            {parameter.status} {/* ← Mostrar statues_name real del JSON */}
                           </button>
                         </td>
                         <td className="px-4 py-3 text-sm">
@@ -205,6 +222,20 @@ const UnitListModal = ({
           </div>
         </div>
       </div>
+
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={successOpen}
+        onClose={() => setSuccessOpen(false)}
+        message={modalMessage}
+      />
+
+      {/* Error Modal */}
+      <ErrorModal
+        isOpen={errorOpen}
+        onClose={() => setErrorOpen(false)}
+        message={modalMessage}
+      />
     </div>
   );
 };
