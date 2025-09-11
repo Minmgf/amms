@@ -1,11 +1,10 @@
 "use client";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { FiSearch, FiXCircle, FiCheckCircle, FiUsers, FiFilter, FiEye, FiEdit2, FiLock, FiUnlock, FiPlus } from "react-icons/fi";
-import RoleManagementFilter from "../../../components/roleManagement/filters/RoleManagementFilter";
+import RoleManagementFilter from "../../../components/rolesManagement/RoleManagementFilter";
 import { getRoleTypes } from "@/services/authService";
 import { createRole, updateRole, changeRoleStatus } from "@/services/roleService";
 import { SuccessModal, ErrorModal, ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
-import { useRouter } from "next/navigation";
 import { useTheme } from "@/contexts/ThemeContext";
 
 import RoleFormModal from "@/app/components/rolesManagement/RoleFormModal";
@@ -27,6 +26,8 @@ const page = () => {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
   const [successOpen, setSuccessOpen] = useState(false);
   const [errorOpen, setErrorOpen] = useState(false);
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
+
   const [modalMessage, setModalMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
@@ -258,6 +259,7 @@ const page = () => {
     return data.filter((item) => {
       const matchesSearch = item.roleName.toLowerCase().includes(globalFilter.toLowerCase());
       const matchesStatus = statusFilter === "" || item.status === statusFilter;
+      setFilterModalOpen(false)
       return matchesSearch && matchesStatus;
     });
   }, [data, globalFilter, statusFilter]);
@@ -286,7 +288,11 @@ const page = () => {
               </div>
             </div>
 
-            <button className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit">
+            <button
+              className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit"
+              onClick={() => setFilterModalOpen(true)}
+
+            >
               <FiFilter className="filter-icon w-4 h-4" />
               <span className="text-sm">Filter by</span>
             </button>
@@ -327,6 +333,12 @@ const page = () => {
         message={confirmMessage}
         confirmText={pendingStatusChange?.currentStatusId === 1 ? "Deactivate" : "Activate"}
         cancelText="Cancel"
+      />
+      <RoleManagementFilter
+        isOpen={filterModalOpen}
+        onClose={() => setFilterModalOpen(false)}
+        statusFilter={statusFilter}
+        onApply={(newStatus) => setStatusFilter(newStatus)}
       />
       <SuccessModal isOpen={successOpen} onClose={() => setSuccessOpen(false)} title="Successfull" message={modalMessage} />
       <ErrorModal isOpen={errorOpen} onClose={() => setErrorOpen(false)} title="Failed" message={modalMessage} />

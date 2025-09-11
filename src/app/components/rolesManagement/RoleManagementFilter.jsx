@@ -38,7 +38,7 @@ export default function RoleManagementFilter({ isOpen, onClose, statusFilter, on
         <div>
           <label className="block text-sm font-medium mb-1 text-secondary">Status</label>
           <select
-            value={statusFilter}
+            value={localStatus}
             onChange={(e) => setLocalStatus(e.target.value)}
             className="w-full parametrization-input"
           >
@@ -49,10 +49,10 @@ export default function RoleManagementFilter({ isOpen, onClose, statusFilter, on
         </div>
 
         <div className="flex gap-4 mt-6">
-          <button onClick={handleClean} className="flex-1 parametrization-button parametrization-button-danger">
+          <button onClick={handleClean} className="btn-theme btn-secondary w-1/2 relative">
             Clean
           </button>
-          <button onClick={handleApply} className="flex-1 parametrization-button">
+          <button onClick={handleApply} className="btn-theme btn-primary w-1/2 relative">
             Apply
           </button>
         </div>
