@@ -394,3 +394,18 @@ export const editModel = async (payload, modelId) => {
   const { data } = await apiMain.put(`/models/${modelId}/`, payload);
   return data;
 };
+
+export const createModel = async (payload) => {
+  const { data } = await apiMain.post("/models/", payload);
+  return data;
+};
+
+export const toggleStatusBrand = async (brandId) => {
+  const { data } = await apiMain.patch(`/brands/${brandId}/toggle-status/`);
+  return data;
+};
+
+export const toggleStatusModel = async (modelId) => {
+  const { data } = await apiMain.patch(`/models/${modelId}/toggle-status/`);
+  return data;
+};

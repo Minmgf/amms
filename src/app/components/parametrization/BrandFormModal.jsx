@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { FiX, FiEdit3 } from 'react-icons/fi';
+import { toggleStatusBrand } from '@/services/parametrizationService';
+import { SuccessModal, ErrorModal } from '../shared/SuccessErrorModal';
 
 const BrandFormModal = ({
     isOpen,
@@ -11,7 +13,8 @@ const BrandFormModal = ({
     onSave,
     onUpdate,
     onAddModel, // Nueva prop para agregar modelo
-    onEditModel // Nueva prop para editar modelo
+    onEditModel, // Nueva prop para editar modelo
+    onStatusChanged
 }) => {
     const [formData, setFormData] = useState({
         brandName: '',
@@ -23,30 +26,41 @@ const BrandFormModal = ({
 
     const [errors, setErrors] = useState({});
     const [brandNameExists, setBrandNameExists] = useState(false);
+    const [hasInitialized, setHasInitialized] = useState(false);
+    const [successOpen, setSuccessOpen] = useState(false);
+    const [errorOpen, setErrorOpen] = useState(false);
+    const [modalMessage, setModalMessage] = useState("");
 
     useEffect(() => {
-        if (!isOpen) return;
-
-        if (mode === 'edit' && brandData) {
-            setFormData({
-                id: brandData.id,
-                brandName: brandData.brandName || '',
-                description: brandData.description || '',
-                isActive: !!brandData.isActive, // 👈 siempre booleano
-            });
-            console.log("estado (boolean): ", !!brandData.isActive);
-            setModels(brandData.models || []);
+        if (!isOpen) {
+            // cada vez que se cierra, reseteamos el flag
+            setHasInitialized(false);
+            return;
         }
 
-        if (mode === 'add') {
+        if (mode === "edit" && brandData) {
             setFormData({
-                brandName: '',
-                description: '',
+                id: brandData.id,
+                brandName: brandData.brandName || "",
+                description: brandData.description || "",
+                isActive: !!brandData.isActive,
+            });
+            setModels(brandData.models || []);
+            setHasInitialized(true);
+        }
+
+        if (mode === "add" && !hasInitialized) {
+            // solo la primera vez que abro en add
+            setFormData({
+                brandName: "",
+                description: "",
                 isActive: true,
             });
             setModels([]);
+            setHasInitialized(true);
         }
-    }, [isOpen, mode, brandData]); // 👈 agregar dependencias
+    }, [isOpen, mode, brandData, hasInitialized]);
+
 
 
 
@@ -83,11 +97,22 @@ const BrandFormModal = ({
         }
     };
 
-    const handleToggleActive = () => {
-        setFormData(prev => ({
-            ...prev,
-            isActive: !prev.isActive
-        }));
+    const handleToggleStatus = async () => {
+        if (!formData.id) return;
+
+        try {
+            const response = await toggleStatusBrand(formData.id);
+            setModalMessage(response.message || "Estado actualizado exitosamente");
+            setSuccessOpen(true);
+            setFormData((prev) => ({
+                ...prev,
+                isActive: !prev.isActive,
+            }));
+            onStatusChanged(formData.id);
+        } catch (error) {
+            setModalMessage(error.response.data.detail || "Error al actualizar el estado");
+            setErrorOpen(true);
+        }
     };
 
     const validateForm = () => {
@@ -241,24 +266,26 @@ const BrandFormModal = ({
                         </div>
 
                         {/* Activate/Deactivate Toggle */}
-                        <div className="flex items-center justify-between">
-                            <label className="block text-sm font-medium text-gray-700">
-                                Activate/Deactivate
-                            </label>
-                            <div className="relative">
-                                <button
-                                    type="button"
-                                    onClick={handleToggleActive}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${formData.isActive ? 'bg-red-500' : 'bg-gray-200'
-                                        }`}
-                                >
-                                    <span
-                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.isActive ? 'translate-x-6' : 'translate-x-1'
+                        {mode === "edit" && (
+                            <div className="flex items-center justify-between">
+                                <label className="block text-sm font-medium text-gray-700">
+                                    Activate/Deactivate
+                                </label>
+                                <div className="relative">
+                                    <button
+                                        type="button"
+                                        onClick={handleToggleStatus}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${formData.isActive ? 'bg-red-500' : 'bg-gray-200'
                                             }`}
-                                    />
-                                </button>
+                                    >
+                                        <span
+                                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.isActive ? 'translate-x-6' : 'translate-x-1'
+                                                }`}
+                                        />
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
 
                     {/* Model List Section */}
@@ -334,6 +361,18 @@ const BrandFormModal = ({
                     </div>
                 </div>
             </div>
+            <SuccessModal
+                isOpen={successOpen}
+                onClose={() => setSuccessOpen(false)}
+                title="Success"
+                message={modalMessage}
+            />
+            <ErrorModal
+                isOpen={errorOpen}
+                onClose={() => setErrorOpen(false)}
+                title="Failed"
+                message={modalMessage}
+            />
         </div>
     );
 };

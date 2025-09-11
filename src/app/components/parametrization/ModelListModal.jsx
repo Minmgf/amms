@@ -14,19 +14,12 @@ const CategoryModal = ({
 
   const handleEdit = (brandId) => {
     if (!data) return;
-    console.log("data: ", data);
     // Buscar solo la marca seleccionada
     const brand = data.find(b => Number(b.id) === Number(brandId));
 
     if (brand) {
       // Abrir el BrandFormModal con esa marca
-      onEditItem({
-        id: brand.id,
-        name: brand.name,
-        description: brand.description,
-        isActive: brand.isActive,
-        responsible_user: brand.responsible_user
-      });
+      onEditItem(brand);
     }
   };
 
