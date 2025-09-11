@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   basePath: '/sigma',
+  output: 'standalone', // Necesario para Docker
   async redirects() {
     return [
       {

@@ -16,7 +16,7 @@ const Logo = ({ variant = "desktop" }) => {
                 ${isMobile ? "w-[140px] h-[140px]" : "w-[200px] h-[200px] md:w-[250px] md:h-[250px]"}`}
             >
                 <img
-                    src="./images/logo.png"
+                    src="/sigma/images/logo.png"
                     alt="Logo"
                     className="object-contain w-full h-full p-4"
                 />
