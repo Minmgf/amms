@@ -183,7 +183,7 @@ const TypesModal = ({
           <div className="flex justify-center">
             <button
               onClick={handleAddParameter}
-              className="px-8 py-3 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
+              className="btn-theme btn-primary"
             >
               Add Parameter
             </button>

@@ -196,7 +196,7 @@ const AddModifyTypesModal = ({
           <button
             onClick={handleSave}
             disabled={saving || !formData.typeName.trim()}
-            className="bg-black text-white px-6 sm:px-8 py-2 rounded-md hover:bg-gray-800 transition-colors text-sm font-medium w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-theme btn-primary not-disabled: w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? (
               <span className="flex items-center justify-center">
