@@ -1,15 +1,18 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { FiX } from 'react-icons/fi';
+import { toggleStatusModel } from '@/services/parametrizationService';
+import { SuccessModal, ErrorModal } from '../shared/SuccessErrorModal';
 
-const ModelFormModal = ({ 
-  isOpen, 
-  onClose, 
+const ModelFormModal = ({
+  isOpen,
+  onClose,
   mode = 'add', // 'add' or 'edit'
   brandName = '',
   modelData = null, // Para modo edit
   onSave,
-  onUpdate
+  onUpdate,
+  brandModels = []
 }) => {
   const [formData, setFormData] = useState({
     modelName: '',
@@ -19,13 +22,17 @@ const ModelFormModal = ({
 
   const [errors, setErrors] = useState({});
   const [modelNameExists, setModelNameExists] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
 
   // Reset form cuando se abre/cierra el modal o cambia el modo
   useEffect(() => {
     if (isOpen) {
       if (mode === 'edit' && modelData) {
         setFormData({
-          modelName: modelData.model || '',
+          id: modelData.id_model,
+          modelName: modelData.modelName || '',
           description: modelData.description || '',
           isActive: modelData.status === 'Active' || modelData.isActive !== false
         });
@@ -49,21 +56,28 @@ const ModelFormModal = ({
     };
   }, [isOpen, mode, modelData]);
 
-  // Simular validación de nombre de modelo existente
+  // Validación de nombre de modelo existente
   useEffect(() => {
-    if (formData.modelName && formData.modelName.toLowerCase() === 'cat100') {
-      setModelNameExists(true);
-    } else {
+    if (!formData.modelName) {
       setModelNameExists(false);
+      return;
     }
-  }, [formData.modelName]);
+
+    const exists = (brandModels || []).some(
+      m => m?.modelName?.toLowerCase() === formData.modelName.toLowerCase() &&
+        m.id_model !== modelData?.id_model
+    );
+
+
+    setModelNameExists(exists);
+  }, [formData.modelName, brandModels, modelData]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
-    
+
     // Limpiar error del campo cuando el usuario empiece a escribir
     if (errors[field]) {
       setErrors(prev => ({
@@ -73,20 +87,30 @@ const ModelFormModal = ({
     }
   };
 
-  const handleToggleActive = () => {
-    setFormData(prev => ({
-      ...prev,
-      isActive: !prev.isActive
-    }));
+  const handleToggleStatus = async () => {
+    if (!formData.id) return;
+
+    try {
+      const response = await toggleStatusModel(formData.id);
+      setModalMessage(response.message || "Estado actualizado exitosamente");
+      setSuccessOpen(true);
+      setFormData((prev) => ({
+        ...prev,
+        isActive: !prev.isActive,
+      }));
+    } catch (error) {
+      setModalMessage(error.response.data.detail || "Error al actualizar el estado");
+      setErrorOpen(true);
+    }
   };
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.modelName.trim()) {
-      newErrors.modelName = 'Please enter a name for the new role';
+      newErrors.modelName = 'Please enter a name for the new model';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -99,7 +123,7 @@ const ModelFormModal = ({
     const submitData = {
       ...formData,
       brand: brandName,
-      id: modelData?.id || Date.now() // Generar ID si es nuevo
+      id: modelData?.id_model
     };
 
     if (mode === 'edit' && onUpdate) {
@@ -136,11 +160,11 @@ const ModelFormModal = ({
   if (!isOpen) return null;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
       onClick={handleBackdropClick}
     >
-      <div 
+      <div
         className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
@@ -184,11 +208,10 @@ const ModelFormModal = ({
                 type="text"
                 value={formData.modelName}
                 onChange={(e) => handleInputChange('modelName', e.target.value)}
-                className={`w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.modelName || modelNameExists 
-                    ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
-                    : 'border-gray-300 focus:border-blue-500'
-                }`}
+                className={`w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.modelName || modelNameExists
+                  ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+                  : 'border-gray-300 focus:border-blue-500'
+                  }`}
                 placeholder="Enter model name"
               />
               {errors.modelName && (
@@ -222,33 +245,33 @@ const ModelFormModal = ({
             </div>
 
             {/* Activate/Deactivate Toggle - Right Column */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Activate/Deactivate
-              </label>
-              <div className="mt-3">
-                <button
-                  type="button"
-                  onClick={handleToggleActive}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
-                    formData.isActive ? 'bg-red-500' : 'bg-gray-200'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      formData.isActive ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
+            {mode === "edit" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Activate/Deactivate
+                </label>
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={handleToggleStatus}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${formData.isActive ? 'bg-red-500' : 'bg-gray-200'
+                      }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.isActive ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                    />
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Action Button - Centered */}
           <div className="flex justify-center pt-4">
             <button
               onClick={handleSubmit}
-              disabled={!formData.modelName.trim() || modelNameExists}
+              disabled={!formData.modelName.trim() || (mode === 'add' && modelNameExists)}
               className="px-8 py-2.5 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {mode === 'edit' ? 'Update' : 'Save'}
@@ -256,6 +279,18 @@ const ModelFormModal = ({
           </div>
         </div>
       </div>
+      <SuccessModal
+        isOpen={successOpen}
+        onClose={() => setSuccessOpen(false)}
+        title="Success"
+        message={modalMessage}
+      />
+      <ErrorModal
+        isOpen={errorOpen}
+        onClose={() => setErrorOpen(false)}
+        title="Failed"
+        message={modalMessage}
+      />
     </div>
   );
 };

@@ -13,22 +13,30 @@ import {
 import NavigationMenu from '../../../components/parametrization/ParameterNavigation';
 import CategoryModal from '../../../components/parametrization/ModelListModal';
 import BrandFormModal from '../../../components/parametrization/BrandFormModal';
-import AddModifyModelModal from '../../../components/parametrization/AddModifyModelModal'; 
+import AddEditModelModal from '../../../components/parametrization/AddEditModelModal';
 import { useTheme } from "@/contexts/ThemeContext";
+import { getBrandCategories, getModelsByBrand, createBrand, getBrands, editBrand, editModel, createModel } from '@/services/parametrizationService';
+import { SuccessModal, ErrorModal } from '@/app/components/shared/SuccessErrorModal';
 
 // Componente principal
 const ParameterizationView = () => {
   const { currentTheme } = useTheme();
+  const [id, setId] = useState("");
   const [activeMenuItem, setActiveMenuItem] = useState('Brands');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [data, setData] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
-  
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+
   // Estados para CategoryModal (lista de brands)
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
-  
+  const [categoryBrands, setCategoryBrands] = useState([]); // ← lista de brands por categoría
+
+
   // Estados para BrandFormModal (agregar/editar brand)
   const [isBrandFormModalOpen, setIsBrandFormModalOpen] = useState(false);
   const [brandFormMode, setBrandFormMode] = useState('add'); // 'add' o 'edit'
@@ -39,53 +47,62 @@ const ParameterizationView = () => {
   const [modelModalMode, setModelModalMode] = useState('add');
   const [selectedModelData, setSelectedModelData] = useState(null);
 
-  // Datos de ejemplo
-  const mockData = [
-    { id: 1, name: 'Machinery', description: 'Módulo de maquinaria', details: '' },
-    { id: 2, name: 'Motors', description: 'Módulo de maquinaria', details: '' },
-    { id: 3, name: 'Wheels', description: 'Módulo de maquinaria', details: '' },
-    { id: 4, name: 'Engines', description: 'Módulo de motores', details: '' },
-    { id: 5, name: 'Transmissions', description: 'Módulo de transmisiones', details: '' },
-    { id: 6, name: 'Hydraulics', description: 'Sistema hidráulico', details: '' },
-    { id: 7, name: 'Electronics', description: 'Componentes electrónicos', details: '' },
-    { id: 8, name: 'Cooling', description: 'Sistema de refrigeración', details: '' },
-    { id: 9, name: 'Fuel System', description: 'Sistema de combustible', details: '' },
-    { id: 10, name: 'Brakes', description: 'Sistema de frenos', details: '' },
-    { id: 11, name: 'Suspension', description: 'Sistema de suspensión', details: '' },
-    { id: 12, name: 'Steering', description: 'Sistema de dirección', details: '' },
-    { id: 13, name: 'Exhaust', description: 'Sistema de escape', details: '' },
-    { id: 14, name: 'Lighting', description: 'Sistema de iluminación', details: '' },
-    { id: 15, name: 'Safety', description: 'Sistemas de seguridad', details: '' },
-    { id: 16, name: 'Comfort', description: 'Sistemas de confort', details: '' },
-    { id: 17, name: 'Navigation', description: 'Sistemas de navegación', details: '' },
-    { id: 18, name: 'Communication', description: 'Sistemas de comunicación', details: '' },
-    { id: 19, name: 'Storage', description: 'Sistemas de almacenamiento', details: '' },
-    { id: 20, name: 'Maintenance', description: 'Sistemas de mantenimiento', details: '' },
-    { id: 21, name: 'Monitoring', description: 'Sistemas de monitoreo', details: '' },
-    { id: 22, name: 'Control', description: 'Sistemas de control', details: '' },
-    { id: 23, name: 'Power', description: 'Sistemas de energía', details: '' },
-    { id: 24, name: 'Tools', description: 'Herramientas', details: '' },
-    { id: 25, name: 'Accessories', description: 'Accesorios', details: '' },
-    { id: 26, name: 'Spare Parts', description: 'Repuestos', details: '' },
-    { id: 27, name: 'Consumables', description: 'Consumibles', details: '' },
-    { id: 28, name: 'Lubricants', description: 'Lubricantes', details: '' },
-    { id: 29, name: 'Filters', description: 'Filtros', details: '' },
-    { id: 30, name: 'Belts', description: 'Correas', details: '' }
-  ];
+  useEffect(() => {
+    const storedUser = localStorage.getItem("userData");
+    if (storedUser) {
+      try {
+        const parsed = JSON.parse(storedUser);
+        setId(parsed.id);
+      } catch (err) {
+        console.error("Error parsing userData", err);
+      }
+    }
+  }, []);
 
   // Función para obtener datos del backend
   const fetchData = async (menuItem = 'Brands') => {
     setLoading(true);
     setError(null);
-    
+
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setData(mockData);
+      // 🚀 GET real al backend
+      const categories = await getBrandCategories();
+
+      // Adaptar a lo que espera tu tabla
+      const formattedData = categories.map(c => ({
+        id: c.id_brands_categories,
+        name: c.name,
+        description: c.description,
+      }));
+
+      setData(formattedData);
     } catch (err) {
       setError(err.message);
       setData([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchBrandsByCategory = async (categoryId) => {
+    if (!categoryId) return;
+    try {
+      const response = await getBrands(categoryId);
+      const normalized = (response || []).map(b => {
+        const isActive = String(b.estado).toLowerCase() === 'activo';
+        return {
+          id: b.id_brands,
+          name: b.name,
+          description: b.description,
+          status: isActive ? 'Activo' : 'Inactivo', // 👈 string
+          isActive, // 👈 boolean
+          models: b.models || []
+        };
+      });
+      setCategoryBrands(normalized); // actualiza el estado de la lista
+    } catch (error) {
+      console.error('Error fetching brands:', error);
+      setCategoryBrands([]);
     }
   };
 
@@ -97,14 +114,25 @@ const ParameterizationView = () => {
     setActiveMenuItem(item);
   };
 
+  const handleStatusChanged = (brandId) => {
+    setCategoryBrands(prev =>
+      prev.map(b =>
+        b.id === brandId
+          ? { ...b, isActive: !b.isActive, status: !b.isActive ? "Activo" : "Inactivo" }
+          : b
+      )
+    );
+  };
+
   // ==================== HANDLERS PARA CategoryModal ====================
-  
+
   // Abrir CategoryModal (cuando se hace click en el ojo de la tabla principal)
   const handleViewDetails = (categoryId) => {
     const category = data.find(item => item.id === categoryId);
     if (category) {
       setSelectedCategory(category);
-      setIsCategoryModalOpen(true);
+      setIsCategoryModalOpen(true); // solo abrir el modal
+      fetchBrandsByCategory(category.id); // 🚀 traer marcas al abrir moda
     }
   };
 
@@ -115,33 +143,44 @@ const ParameterizationView = () => {
   };
 
   // ==================== HANDLERS PARA BrandFormModal ====================
-  
+
   // Abrir BrandFormModal en modo ADD (desde botón "Add Brand" del CategoryModal)
   const handleAddBrand = () => {
     setBrandFormMode('add');
-    setSelectedBrand(null);
+    setSelectedBrand({
+      brandName: '',
+      description: '',
+      models: [] // 👈 inicializar vacío
+    });
     setIsBrandFormModalOpen(true);
   };
 
   // Abrir BrandFormModal en modo EDIT (desde botón "Edit" de la tabla del CategoryModal)
-  const handleEditBrand = (brandId) => {
-    // Aquí normalmente harías una llamada a la API para obtener los datos del brand
-    // Por ahora uso datos mock basados en el brandId
-    const mockBrandData = {
-      id: brandId,
-      brandName: 'Carterpillar',
-      description: 'Example',
-      status: 'Active',
-      models: [
-        { id: 1, model: 'CAT1000', description: 'Example' },
-        { id: 2, model: 'CAT1000', description: 'Example' },
-        { id: 3, model: 'CAT1000', description: 'Example' }
-      ]
-    };
-    
-    setBrandFormMode('edit');
-    setSelectedBrand(mockBrandData);
-    setIsBrandFormModalOpen(true);
+  const handleEditBrand = async (brand) => {
+    try {
+      const models = await getModelsByBrand(brand.id);
+
+      const normalizedModels = (models || []).map(m => ({
+        id_model: m.id_model,
+        modelName: m.name,      // <-- mapear 'name' → 'modelName'
+        description: m.description,
+        isActive: m.estado === 'Activo'
+      }));
+
+      const brandToEdit = {
+        id: brand.id,
+        brandName: brand.name,
+        description: brand.description,
+        isActive: brand.isActive,
+        models: normalizedModels,
+      };
+
+      setSelectedBrand(brandToEdit);
+      setBrandFormMode('edit');
+      setIsBrandFormModalOpen(true);
+    } catch (error) {
+      console.error("Error fetching models:", error);
+    }
   };
 
   // Cerrar BrandFormModal
@@ -152,33 +191,61 @@ const ParameterizationView = () => {
   };
 
   // Guardar nuevo brand
-  const handleSaveBrand = (brandData) => {
-    console.log('Saving new brand:', brandData);
-    // Aquí harías la llamada a tu API para guardar el nuevo brand
-    // Por ejemplo: await api.brands.create(brandData);
-    
-    // Cerrar el modal después de guardar exitosamente
-    handleCloseBrandFormModal();
-    
-    // Opcionalmente, podrías actualizar la lista de brands en CategoryModal
-    // o recargar los datos
+  const handleSaveBrand = async (brandData) => {
+    try {
+      const payload = {
+        name: brandData.brandName,
+        description: brandData.description,
+        brands_category: selectedCategory.id,
+        responsible_user: id,
+        models: (brandData.models || []).map(m => ({
+          name: m.modelName,
+          description: m.description
+        }))
+      };
+
+      const response = await createBrand(payload); // llamamos a tu servicio
+      setModalMessage(response.message || "Marca creada exitosamente");
+      setSuccessOpen(true);
+      fetchBrandsByCategory(selectedCategory.id);
+      handleCloseBrandFormModal(); // cerrar modal
+      fetchData(activeMenuItem); // refrescar lista
+
+    } catch (error) {
+      setModalMessage(error.response.data.detail || "Error al crear la marca");
+      setErrorOpen(true);
+    }
   };
 
   // Actualizar brand existente
-  const handleUpdateBrand = (brandData) => {
-    console.log('Updating brand:', brandData);
-    // Aquí harías la llamada a tu API para actualizar el brand
-    // Por ejemplo: await api.brands.update(brandData.id, brandData);
-    
-    // Cerrar el modal después de actualizar exitosamente
-    handleCloseBrandFormModal();
-    
-    // Opcionalmente, podrías actualizar la lista de brands en CategoryModal
+  const handleUpdateBrand = async (brandData) => {
+    try {
+
+      const payload = {
+        name: brandData.brandName,
+        description: brandData.description,
+        responsible_user: id, // si el backend lo pide fijo, cámbialo según tu lógica
+      };
+
+      // Llamada PUT
+      const response = await editBrand(payload, brandData.id);
+      setModalMessage(response.mmessage || "Marca actualizada exitosamente");
+      setSuccessOpen(true);
+
+      // Refrescar lista de marcas (si tienes fetchBrands o similar)
+      await fetchBrandsByCategory(selectedCategory.id);
+
+      // Cerrar modal
+      handleCloseBrandFormModal();
+    } catch (error) {
+      setModalMessage(error.response.data.detail || "Error al actualizar la marca");
+      setErrorOpen(true);
+    }
   };
 
-  // ==================== HANDLERS PARA AddModifyModelModal ====================
-  
-  // Abrir AddModifyModelModal en modo ADD (desde botón "Add model" del BrandFormModal)
+  // ==================== HANDLERS PARA AddEditModelModal ====================
+
+  // Abrir AddEditModelModal en modo ADD (desde botón "Add model" del BrandFormModal)
   const handleAddModel = () => {
     setModelModalMode('add');
     setSelectedModelData(null);
@@ -188,7 +255,7 @@ const ParameterizationView = () => {
   // Abrir AddModifyModelModal en modo EDIT (desde botón "Edit" de la tabla del BrandFormModal)
   const handleEditModel = (modelId) => {
     // Buscar el modelo en los datos del brand seleccionado
-    const model = selectedBrand?.models?.find(m => m.id === modelId);
+    const model = selectedBrand?.models?.find(m => m.id_model === modelId);
     if (model) {
       setModelModalMode('edit');
       setSelectedModelData(model);
@@ -204,45 +271,113 @@ const ParameterizationView = () => {
   };
 
   // Guardar nuevo model
-  const handleModelSave = (modelData) => {
-    console.log('Saving new model:', modelData);
-    // Aquí harías la llamada a tu API para guardar el nuevo model
-    // Por ejemplo: await api.models.create(modelData);
-    
-    // Actualizar la lista de modelos en el brand actual
-    if (selectedBrand) {
-      const updatedBrand = {
-        ...selectedBrand,
-        models: [...(selectedBrand.models || []), modelData]
-      };
-      setSelectedBrand(updatedBrand);
+  const handleModelSave = async (modelData) => {
+    try {
+      if (brandFormMode === "add") {
+        // 🚀 Caso: creando una nueva marca (todavía no existe en backend)
+        // Guardamos el modelo solo localmente
+        setSelectedBrand(prev => ({
+          ...prev, // 👈 preserva brandName, description, etc.
+          models: [
+            ...(prev?.models || []),
+            {
+              id_model: modelData.id_model,
+              modelName: modelData.modelName,
+              description: modelData.description,
+            }
+          ]
+        }));
+      } else if (brandFormMode === "edit") {
+        // 🚀 Caso: editando marca existente → modelo debe ir al backend
+        if (!selectedBrand?.id) {
+          console.error("No se puede crear modelo: falta brandId");
+          return;
+        }
+
+        const payload = {
+          name: modelData.modelName,
+          description: modelData.description,
+          estado: modelData.isActive ? "Activo" : "Inactivo",
+          responsible_user: id,
+          brand: selectedBrand.id, // 👈 necesario
+        };
+
+        const response =await createModel(payload);
+        setModalMessage(response.message || "Modelo creado exitosamente");
+        setSuccessOpen(true);
+        // Refrescamos modelos desde el backend
+        const refreshedModels = await getModelsByBrand(selectedBrand.id);
+        const normalizedModels = (refreshedModels || []).map(m => ({
+          id_model: m.id_model,
+          modelName: m.name,
+          description: m.description,
+          isActive: m.estado === "Activo",
+        }));
+
+        setSelectedBrand(prev => ({
+          ...prev,
+          models: normalizedModels,
+        }));
+      }
+
+      handleModelModalClose();
+    } catch (error) {
+      setModalMessage(error.response.data.detail || "Error al crear marca");
+      setErrorOpen(true);
     }
-    
-    // Cerrar el modal después de guardar exitosamente
-    handleModelModalClose();
   };
 
   // Actualizar model existente
-  const handleModelUpdate = (modelData) => {
-    console.log('Updating model:', modelData);
-    // Aquí harías la llamada a tu API para actualizar el model
-    // Por ejemplo: await api.models.update(modelData.id, modelData);
-    
-    // Actualizar la lista de modelos en el brand actual
-    if (selectedBrand) {
-      const updatedModels = selectedBrand.models.map(model => 
-        model.id === modelData.id ? modelData : model
-      );
-      const updatedBrand = {
-        ...selectedBrand,
-        models: updatedModels
-      };
-      setSelectedBrand(updatedBrand);
+  const handleModelUpdate = async (modelData) => {
+    try {
+      if (brandFormMode === "add") {
+        // 🚀 Caso: creando una marca nueva → actualizar localmente
+        setSelectedBrand(prev => {
+          const updatedModels = (prev?.models || []).map(m =>
+            m.id_model === modelData.id_model ? { ...m, ...modelData } : m
+          );
+          return {
+            ...prev,
+            models: updatedModels,
+          };
+        });
+      } else if (brandFormMode === "edit") {
+        // 🚀 Caso: editando marca existente → actualizar en backend
+        const response = await editModel(
+          {
+            name: modelData.modelName,
+            description: modelData.description,
+            responsible_user: id,
+          },
+          modelData.id
+        );
+        setModalMessage(response.message || "Modelo editado exitosamente");
+        setSuccessOpen(true);
+
+        // Refrescar desde backend
+        const refreshedModels = await getModelsByBrand(selectedBrand.id);
+        const normalizedModels = (refreshedModels || []).map(m => ({
+          id_model: m.id_model,
+          modelName: m.name,
+          description: m.description,
+          isActive: m.estado === "Activo",
+        }));
+
+        setSelectedBrand(prev => ({
+          ...prev,
+          models: normalizedModels,
+        }));
+
+        await fetchBrandsByCategory(selectedCategory.id);
+      }
+
+      handleModelModalClose();
+    } catch (error) {
+      setModalMessage(error.response.data.detail || "Ocurrio un error al editar el modelo");
+      setErrorOpen(true);
     }
-    
-    // Cerrar el modal después de actualizar exitosamente
-    handleModelModalClose();
   };
+
 
   // ==================== TABLA PRINCIPAL ====================
 
@@ -269,7 +404,7 @@ const ParameterizationView = () => {
       columnHelper.accessor('id', {
         header: 'Details',
         cell: info => (
-          <button 
+          <button
             onClick={() => handleViewDetails(info.getValue())}
             className="parametrization-action-button p-2 transition-colors opacity-0 group-hover:opacity-100"
             title="View details"
@@ -386,7 +521,7 @@ const ParameterizationView = () => {
                 </table>
               </div>
 
-            {/* Pagination */}
+              {/* Pagination */}
               <div className="parametrization-pagination px-4 py-6 sm:px-6">
                 <div className="flex items-center justify-between">
                   <div className="flex-1 flex justify-between sm:hidden">
@@ -405,7 +540,7 @@ const ParameterizationView = () => {
                       Next →
                     </button>
                   </div>
-                  
+
                   <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-center">
                     <div className="flex items-center gap-1">
                       <button
@@ -415,12 +550,12 @@ const ParameterizationView = () => {
                       >
                         ← Previous
                       </button>
-                      
+
                       {(() => {
                         const currentPage = table.getState().pagination.pageIndex + 1;
                         const totalPages = table.getPageCount();
                         const pages = [];
-                        
+
                         if (currentPage > 3) {
                           pages.push(
                             <button
@@ -432,7 +567,7 @@ const ParameterizationView = () => {
                             </button>
                           );
                         }
-                        
+
                         if (currentPage > 4) {
                           pages.push(
                             <span key="ellipsis1" className="parametrization-pagination-ellipsis inline-flex items-center justify-center w-10 h-10 text-sm">
@@ -440,23 +575,22 @@ const ParameterizationView = () => {
                             </span>
                           );
                         }
-                        
+
                         for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
                           pages.push(
                             <button
                               key={i}
                               onClick={() => table.setPageIndex(i - 1)}
-                              className={`parametrization-pagination-button inline-flex items-center justify-center w-10 h-10 text-sm font-medium transition-colors ${
-                                i === currentPage
-                                  ? 'active'
-                                  : ''
-                              }`}
+                              className={`parametrization-pagination-button inline-flex items-center justify-center w-10 h-10 text-sm font-medium transition-colors ${i === currentPage
+                                ? 'active'
+                                : ''
+                                }`}
                             >
                               {i}
                             </button>
                           );
                         }
-                        
+
                         if (currentPage < totalPages - 3) {
                           pages.push(
                             <span key="ellipsis2" className="parametrization-pagination-ellipsis inline-flex items-center justify-center w-10 h-10 text-sm">
@@ -464,7 +598,7 @@ const ParameterizationView = () => {
                             </span>
                           );
                         }
-                        
+
                         if (currentPage < totalPages - 2) {
                           pages.push(
                             <button
@@ -476,10 +610,10 @@ const ParameterizationView = () => {
                             </button>
                           );
                         }
-                        
+
                         return pages;
                       })()}
-                      
+
                       <button
                         onClick={() => table.nextPage()}
                         disabled={!table.getCanNextPage()}
@@ -489,7 +623,7 @@ const ParameterizationView = () => {
                       </button>
                     </div>
                   </div>
-                  
+
                   <div className="hidden sm:block">
                     <select
                       value={table.getState().pagination.pageSize}
@@ -511,15 +645,17 @@ const ParameterizationView = () => {
           )}
         </div>
       </div>
-      
+
       {/* CategoryModal - Modal de lista de brands */}
       <CategoryModal
         isOpen={isCategoryModalOpen}
         onClose={handleCloseCategoryModal}
-        categoryName={selectedCategory?.name || ''}
-        data={[]} // Aquí pasarías la lista de brands de la categoría seleccionada
+        categoryId={selectedCategory?.id}       // 👈 pásale el id
+        categoryName={selectedCategory?.name}   // 👈 pásale el nombre
+        data={categoryBrands} // Aquí pasarías la lista de brands de la categoría seleccionada
         onAddItem={handleAddBrand} // Se ejecuta cuando se presiona "Add Brand"
         onEditItem={handleEditBrand} // Se ejecuta cuando se presiona "Edit" en la tabla
+        refreshBrands={() => fetchBrandsByCategory(selectedCategory?.id)}
       />
 
       {/* BrandFormModal - Modal para agregar/editar brand */}
@@ -533,6 +669,7 @@ const ParameterizationView = () => {
         onUpdate={handleUpdateBrand} // Se ejecuta al actualizar brand existente
         onAddModel={handleAddModel} // Se ejecuta cuando se presiona "Add model"
         onEditModel={handleEditModel} // Se ejecuta cuando se presiona "Edit" en la tabla de modelos
+        onStatusChanged={handleStatusChanged}
       />
 
       {/* AddModifyModelModal - Modal para agregar/editar model */}
@@ -541,9 +678,23 @@ const ParameterizationView = () => {
         onClose={handleModelModalClose}
         mode={modelModalMode} // 'add' o 'edit'
         brandName={selectedBrand?.brandName || ''}
+        brandModels={selectedBrand?.models || []}
         modelData={selectedModelData} // Datos del model en modo edición
         onSave={handleModelSave} // Se ejecuta al guardar nuevo model
         onUpdate={handleModelUpdate} // Se ejecuta al actualizar model existente
+      />
+
+      <SuccessModal
+        isOpen={successOpen}
+        onClose={() => setSuccessOpen(false)}
+        title="Success"
+        message={modalMessage}
+      />
+      <ErrorModal
+        isOpen={errorOpen}
+        onClose={() => setErrorOpen(false)}
+        title="Error"
+        message={modalMessage}
       />
     </div>
   );
