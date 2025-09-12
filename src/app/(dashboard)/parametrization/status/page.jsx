@@ -239,6 +239,7 @@ const StatusParameterizationView = () => {
   // ==================== TABLA PRINCIPAL ====================
   const columnHelper = createColumnHelper();
 
+
   const columns = useMemo(
     () => [
       columnHelper.accessor("name", {
@@ -262,7 +263,7 @@ const StatusParameterizationView = () => {
         ),
       }),
     ],
-    []
+    [handleViewDetails]
   );
 
   return (
