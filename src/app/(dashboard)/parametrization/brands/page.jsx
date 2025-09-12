@@ -10,7 +10,7 @@ import {
   flexRender,
   createColumnHelper,
 } from '@tanstack/react-table';
-import NavigationMenu from '../../../components/parametrization/ParameterNavigation';
+import NavigationMenu from '../../../components/shared/ParameterNavigation';
 import CategoryModal from '../../../components/parametrization/ModelListModal';
 import BrandFormModal from '../../../components/parametrization/BrandFormModal';
 import AddModifyModelModal from '../../../components/parametrization/AddModifyModelModal';
