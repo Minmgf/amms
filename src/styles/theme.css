@@ -410,10 +410,17 @@
 }
 
 .parametrization-action-button {
-  background: var(--color-accent);
-  color: white;
   border-radius: var(--border-radius-md);
   padding: 0.25rem 0.5rem;
+}
+
+.group:is(:hover) .parametrization-action-button {
+  color: var(--color-text);
+}
+
+.group:is(:hover) .parametrization-action-button:hover {
+  background: var(--color-accent);
+  color: var(--color-text-secondary);
 }
 
 .parametrization-button {
@@ -593,10 +600,6 @@
   color: var(--color-text-secondary);
 } */
 
-.parametrization-action-button:hover {
-  background-color: var(--color-hover);
-  color: var(--color-text);
-}
 
 /* Paginación */
 .parametrization-pagination {
