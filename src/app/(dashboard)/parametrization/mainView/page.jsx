@@ -13,6 +13,7 @@ import {
 import NavigationMenu from '../../../components/shared/ParameterNavigation';
 import TypesModal from '../../../components/parametrization/TypesModal';
 import AddModifyTypesModal from '../../../components/parametrization/AddModifyTypesModal';
+import FilterSection from '@/app/components/parametrization/FilterSection';
 import { SuccessModal, ErrorModal } from '../../../components/shared/SuccessErrorModal';
 import { 
   getTypesCategories,
@@ -22,6 +23,11 @@ import {
   toggleTypeStatus
 } from "@/services/parametrizationService";
 import { useTheme } from "@/contexts/ThemeContext";
+
+// Función helper para determinar si está activo basado en id_statues
+const isActiveFromId = (idStatues) => {
+  return idStatues === 1;
+};
 
 // Componente principal
 const ParameterizationView = () => {
@@ -96,13 +102,15 @@ const ParameterizationView = () => {
       const response = await getTypesByCategory(categoryId);
       
       // Mapear los datos al formato esperado por el modal
+      // CAMBIO PRINCIPAL: Usar id_statues en lugar del texto "estado"
       const mappedParameters = response.map(item => ({
         id: item.id_types,
         typeName: item.name,
         name: item.name,
         description: item.description,
-        status: item.estado === 'Activo' ? 'Active' : 'Inactive',
-        isActive: item.estado === 'Activo'
+        id_statues: item.id_statues, // Mantener el ID del estado original
+        status: item.estado, // Convertir ID a texto para display
+        isActive: isActiveFromId(item.id_statues) // Determinar si está activo basado en ID
       }));
       
       setParametersData(mappedParameters);
@@ -205,6 +213,7 @@ const ParameterizationView = () => {
         };
         
         const createdResponse = await createTypeItem(payload);   
+        
         // Si se crea como inactivo, hacer toggle después de crear
         if (!parameterData.isActive) {
           try {
@@ -240,6 +249,7 @@ const ParameterizationView = () => {
         
         const updatedResponse = await updateTypeItem(selectedParameter.id, updatePayload);
         
+        // CAMBIO PRINCIPAL: Comparar basado en isActive en lugar del texto del estado
         // Si el estado cambió, hacer toggle
         if (parameterData.isActive !== selectedParameter.isActive) {
           try {
@@ -336,41 +346,11 @@ const ParameterizationView = () => {
         </div>
 
         {/* Filter Section */}
-        <div className="mb-4 md:mb-6 flex flex-col sm:flex-row gap-4 justify-between">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-            <button 
-              onClick={() => setShowFilters(!showFilters)}
-              className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit"
-            >
-              <FiFilter className="filter-icon w-4 h-4" />
-              <span className="text-sm">Filter by</span>
-            </button>
-            
-            {/* Expandable Filter Input */}
-            {showFilters && (
-              <div className="relative w-full sm:w-auto">
-                <input
-                  type="text"
-                  value={globalFilter}
-                  onChange={(e) => setGlobalFilter(e.target.value)}
-                  placeholder="Search categories..."
-                  className="parametrization-filter-input px-3 py-2 pr-10 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:min-w-[200px]"
-                />
-                {globalFilter && (
-                  <button
-                    onClick={() => setGlobalFilter('')}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1"
-                    title="Clear filter"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+        <FilterSection
+          globalFilter={globalFilter}
+          setGlobalFilter={setGlobalFilter}
+          placeholder="Search categories..."
+        />
 
         {/* Navigation Menu - Tabs para Types, States, Brands, etc. */}
         <div className="mb-6 md:mb-8">

@@ -14,6 +14,7 @@ import NavigationMenu from '../../../components/shared/ParameterNavigation';
 import CategoryModal from '../../../components/parametrization/ModelListModal';
 import BrandFormModal from '../../../components/parametrization/BrandFormModal';
 import AddModifyModelModal from '../../../components/parametrization/AddModifyModelModal';
+import FilterSection from '@/app/components/parametrization/FilterSection';
 import { useTheme } from "@/contexts/ThemeContext";
 import { getBrandCategories, getModelsByBrand, createBrand, getBrands, editBrand, editModel, createModel } from '@/services/parametrizationService';
 import { SuccessModal, ErrorModal } from '@/app/components/shared/SuccessErrorModal';
@@ -89,13 +90,13 @@ const ParameterizationView = () => {
     try {
       const response = await getBrands(categoryId);
       const normalized = (response || []).map(b => {
-        const isActive = String(b.estado).toLowerCase() === 'activo';
         return {
           id: b.id_brands,
           name: b.name,
           description: b.description,
-          status: isActive ? 'Activo' : 'Inactivo', // 👈 string
-          isActive, // 👈 boolean
+          idStatues: b.id_statues,
+          status: b.estado,
+          isActive: b.estado === 'Activo',
           models: b.models || []
         };
       });
@@ -302,7 +303,7 @@ const ParameterizationView = () => {
           brand: selectedBrand.id, // 👈 necesario
         };
 
-        const response =await createModel(payload);
+        const response = await createModel(payload);
         setModalMessage(response.message || "Modelo creado exitosamente");
         setSuccessOpen(true);
         // Refrescamos modelos desde el backend
@@ -444,12 +445,11 @@ const ParameterizationView = () => {
         </div>
 
         {/* Filter Section */}
-        <div className="mb-4 md:mb-6 flex flex-col sm:flex-row gap-4 justify-between">
-          <button className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit">
-            <FiFilter className="filter-icon w-4 h-4" />
-            <span className="text-sm">Filter by</span>
-          </button>
-        </div>
+        <FilterSection
+          globalFilter={globalFilter}
+          setGlobalFilter={setGlobalFilter}
+          placeholder="Search categories..."
+        />
 
         {/* Navigation Menu */}
         <div className="mb-6 md:mb-8">

@@ -152,9 +152,11 @@ const TypesModal = ({
                             {/* Status Badge */}
                             <span 
                               className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                                item.status === 'Active' 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : 'bg-pink-100 text-pink-800'
+                                item.id_statues === 1
+                                  ? 'bg-green-100 text-green-800'
+                                  : item.id_statues === 2
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-gray-100 text-gray-800'
                               }`}
                             >
                               {item.status}

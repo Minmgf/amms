@@ -343,7 +343,7 @@ const BrandFormModal = ({
                         {/* Add Model Button */}
                         <button
                             onClick={handleAddModel}
-                            className="px-6 py-2 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
+                            className="px-6 py-2 btn-theme btn-secondary text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
                         >
                             Add model
                         </button>
@@ -354,7 +354,7 @@ const BrandFormModal = ({
                         <button
                             onClick={handleSubmit}
                             disabled={!formData.brandName.trim() || brandNameExists}
-                            className="px-8 py-3 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                            className="px-8 py-3 btn-theme btn-primary text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                         >
                             {mode === 'edit' ? 'Update' : 'Save'}
                         </button>

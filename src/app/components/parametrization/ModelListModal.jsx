@@ -109,9 +109,11 @@ const CategoryModal = ({
                       </td>
                       <td className="px-6 py-4 text-sm border-r border-gray-200">
                         <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${item.status === 'Active'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-pink-100 text-pink-800'
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${item.idStatues === 1
+                              ? 'bg-green-100 text-green-800'
+                              : item.idStatues  === 2
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-gray-100 text-gray-800'
                             }`}
                         >
                           {item.status}
@@ -137,7 +139,7 @@ const CategoryModal = ({
           <div className="flex justify-center">
             <button
               onClick={handleAddBrand}
-              className="px-8 py-3 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
+              className="px-8 py-3 btn-theme btn-primary relative"
             >
               Add Brand
             </button>

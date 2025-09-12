@@ -48,7 +48,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
   const [loading, setLoading] = useState(false);
   const [showNotis, setShowNotis] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  
+
   // Theme Context
   const { currentTheme } = useTheme();
 
@@ -230,9 +230,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                   {!item.sub ? (
                     <Link
                       href={item.path}
-                      className={`nav-item-theme flex justify-between items-center w-full p-2 rounded-theme-lg transition-colors ${
-                        isActiveParent ? "nav-item-active" : ""
-                      }`}
+                      className={`nav-item-theme flex justify-between items-center w-full p-2 rounded-theme-lg transition-colors ${isActiveParent ? "nav-item-active" : ""
+                        }`}
                     >
                       <span className="flex items-center gap-3">
                         {item.icon} {item.name}
@@ -245,9 +244,8 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                         onClick={() => {
                           toggleMenu(item.name);
                         }}
-                        className={`nav-item-theme flex justify-between items-center w-full p-2 rounded-theme-lg transition-colors ${
-                          isActiveParent ? "nav-item-active" : ""
-                        }`}
+                        className={`nav-item-theme flex justify-between items-center w-full p-2 rounded-theme-lg transition-colors ${isActiveParent ? "nav-item-active" : ""
+                          }`}
                       >
                         <span className="flex items-center gap-3">
                           {item.icon} {item.name}
@@ -260,16 +258,15 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                       </Link>
 
                       {openMenus[item.name] && (
-                        <div className="ml-8 flex flex-col gap-1 text-sm">
+                        <div className="w-full mt-1 flex flex-col gap-1 text-sm pl-6">
                           {item.sub.map((sub) => {
                             const isActiveSub = pathname === sub.path;
                             return (
                               <Link
                                 key={sub.name}
                                 href={sub.path}
-                                className={`nav-sub-item-theme p-1 rounded-theme-lg text-left flex items-center gap-3 transition-colors ${
-                                  isActiveSub ? "nav-sub-item-active" : ""
-                                }`}
+                                className={`nav-sub-item-theme p-2 rounded-theme-lg text-left flex items-center gap-3 transition-colors ${isActiveSub ? "nav-sub-item-active" : ""
+                                  }`}
                               >
                                 {sub.icon} {sub.name}
                               </Link>
@@ -277,6 +274,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                           })}
                         </div>
                       )}
+
                     </>
                   )}
                 </div>

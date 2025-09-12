@@ -272,7 +272,7 @@ const ModelFormModal = ({
             <button
               onClick={handleSubmit}
               disabled={!formData.modelName.trim() || (mode === 'add' && modelNameExists)}
-              className="px-8 py-2.5 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="btn-theme btn-primary not-disabled: w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {mode === 'edit' ? 'Update' : 'Save'}
             </button>

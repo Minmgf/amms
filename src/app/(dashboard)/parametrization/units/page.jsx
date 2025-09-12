@@ -13,6 +13,7 @@ import {
 import NavigationMenu from "../../../components/shared/ParameterNavigation";
 import UnitListModal from "../../../components/parametrization/UnitListModal";
 import AddModifyUnitModal from "../../../components/parametrization/AddModifyUnitModal";
+import FilterSection from '@/app/components/parametrization/FilterSection';
 import { getUnitsCategories, getUnitsByCategory } from "@/services/parametrizationService";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -37,10 +38,10 @@ const ParameterizationView = () => {
 
   // Datos mock para otras pestañas (no Units)
   const mockDataForOtherTabs = [
-    { 
-      id: 1, 
-      name: "Sample Category", 
-      description: "Sample description", 
+    {
+      id: 1,
+      name: "Sample Category",
+      description: "Sample description",
       details: "",
       parameters: []
     }
@@ -67,7 +68,7 @@ const ParameterizationView = () => {
         console.log("📡 About to call getUnitsCategories()");
         const response = await getUnitsCategories();
         console.log("✅ Categories API Response:", response);
-        
+
         const transformedData = response.data.map(category => ({
           id: category.id_units_categories,
           name: category.name,
@@ -75,7 +76,7 @@ const ParameterizationView = () => {
           details: "",
           parameters: []
         }));
-        
+
         console.log("🔄 Transformed categories data:", transformedData);
         setData(transformedData);
       } else {
@@ -109,16 +110,24 @@ const ParameterizationView = () => {
       try {
         console.log("🔄 Reloading category data...");
         const response = await getUnitsByCategory(selectedCategory.id);
+        console.log("🔍 Raw unit data from reload:", response.data[0]); // ← Debug del primer elemento
+
+        const transformedUnits = response.data.map(unit => {
+          console.log("🔍 Individual unit from reload:", unit); // ← Debug individual unit
+          return {
+            id: unit.id_units,
+            unitName: unit.name,
+            symbol: unit.symbol, // ← Cambiado para usar el symbol real del JSON
+            value: unit.unit_type_name, // ← Cambiado de unit.description a unit.unit_type_name
+            unitType: unit.unit_type || unit.id_types || unit.unit_type_id || unit.id_unit_type, // ← unit_type es el correcto según logs
+            status: unit.statues_name, // ← Usar statues_name directamente del JSON
+            statusId: unit.id_statues, // ← Agregar el ID para referencia
+            description: unit.description
+          };
+        });
         
-        const transformedUnits = response.data.map(unit => ({
-          id: unit.id_units,
-          unitName: unit.name,
-          symbol: unit.name.substring(0, 2).toLowerCase(),
-          value: unit.unit_type_name, // ← Cambiado de unit.description a unit.unit_type_name
-          status: unit.statues_name,
-          description: unit.description
-        }));
-        
+        console.log("🔍 Transformed units from reload:", transformedUnits[0]); // ← Debug del primer elemento transformado
+
         setCategoryParameters(transformedUnits);
       } catch (error) {
         console.error("❌ Error reloading category data:", error);
@@ -131,24 +140,32 @@ const ParameterizationView = () => {
   // Abrir UnitListModal (cuando se hace click en el ojo de la tabla principal)
   const handleViewDetails = useCallback(async (categoryId) => {
     const category = data.find((item) => item.id === categoryId);
-    
+
     if (category) {
       setSelectedCategory(category);
       setIsUnitListModalOpen(true);
-      
+
       try {
         const response = await getUnitsByCategory(categoryId);
         console.log("✅ Units API Response:", response);
+        console.log("🔍 Raw unit data from API:", response.data[0]); // ← Debug del primer elemento
+
+        const transformedUnits = response.data.map(unit => {
+          console.log("🔍 Individual unit from handleViewDetails:", unit); // ← Debug individual unit
+          return {
+            id: unit.id_units,
+            unitName: unit.name,
+            symbol: unit.symbol, // ← Cambiado para usar el symbol real del JSON
+            value: unit.unit_type_name, // ← Cambiado de unit.description a unit.unit_type_name
+            unitType: unit.unit_type || unit.id_types || unit.unit_type_id || unit.id_unit_type, // ← unit_type es el correcto según logs
+            status: unit.statues_name, // ← Usar statues_name directamente del JSON
+            statusId: unit.id_statues, // ← Agregar el ID para referencia
+            description: unit.description
+          };
+        });
         
-        const transformedUnits = response.data.map(unit => ({
-          id: unit.id_units,
-          unitName: unit.name,
-          symbol: unit.name.substring(0, 2).toLowerCase(),
-          value: unit.unit_type_name, // ← Cambiado de unit.description a unit.unit_type_name
-          status: unit.statues_name,
-          description: unit.description
-        }));
-        
+        console.log("🔍 Transformed units:", transformedUnits[0]); // ← Debug del primer elemento transformado
+
         setCategoryParameters(transformedUnits);
       } catch (error) {
         console.error("❌ Error in handleViewDetails:", error);
@@ -193,7 +210,7 @@ const ParameterizationView = () => {
   // Guardar/actualizar parameter
   const handleSaveParameter = async (parameterData) => {
     console.log("💾 Saving/updating parameter:", parameterData);
-    
+
     try {
       if (modalMode === "add") {
         // Si es modo agregar y hay mensaje de éxito, recargar datos
@@ -203,16 +220,21 @@ const ParameterizationView = () => {
           if (selectedCategory) {
             const response = await getUnitsByCategory(selectedCategory.id);
             console.log("🔄 Reloaded units:", response);
-            
-            const transformedUnits = response.data.map(unit => ({
-              id: unit.id_units,
-              unitName: unit.name,
-              symbol: unit.name.substring(0, 2).toLowerCase(),
-              value: unit.unit_type_name, // ← Cambiado de unit.description a unit.unit_type_name
-              status: unit.statues_name,
-              description: unit.description
-            }));
-            
+
+            const transformedUnits = response.data.map(unit => {
+              console.log("🔍 Individual unit from add save:", unit); // ← Debug individual unit
+              return {
+                id: unit.id_units,
+                unitName: unit.name,
+                symbol: unit.symbol, // ← Cambiado para usar el symbol real del JSON
+                value: unit.unit_type_name, // ← Cambiado de unit.description a unit.unit_type_name
+                unitType: unit.unit_type || unit.id_types || unit.unit_type_id || unit.id_unit_type, // ← unit_type es el correcto según logs
+                status: unit.statues_name, // ← Usar statues_name directamente del JSON
+                statusId: unit.id_statues, // ← Agregar el ID para referencia
+                description: unit.description
+              };
+            });
+
             setCategoryParameters(transformedUnits);
           }
         } else {
@@ -221,35 +243,44 @@ const ParameterizationView = () => {
             ...parameterData,
             id: Date.now(),
           };
-          
+
           const updatedParameters = [...categoryParameters, newParameter];
           setCategoryParameters(updatedParameters);
-          
-          const updatedData = data.map(item => 
-            item.id === selectedCategory.id 
+
+          const updatedData = data.map(item =>
+            item.id === selectedCategory.id
               ? { ...item, parameters: updatedParameters }
               : item
           );
           setData(updatedData);
         }
       } else if (modalMode === "modify") {
-        // Si es modo modificar y hay mensaje de éxito, recargar datos
-        if (parameterData.success) {
-          console.log("✅ Unit updated successfully, reloading data...");
+        // Si es modo modificar y hay mensaje de éxito O cambio de estado, recargar datos
+        if (parameterData.success || parameterData.statusChanged) {
+          console.log("✅ Unit updated/status changed successfully, reloading data...");
           // Recargar la lista de parámetros desde la API
           if (selectedCategory) {
             const response = await getUnitsByCategory(selectedCategory.id);
             console.log("🔄 Reloaded units after update:", response);
+
+            console.log("🔍 Raw unit data from API:", response.data[0]); // ← Debug del primer elemento
             
-            const transformedUnits = response.data.map(unit => ({
-              id: unit.id_units,
-              unitName: unit.name,
-              symbol: unit.name.substring(0, 2).toLowerCase(),
-              value: unit.unit_type_name,
-              status: unit.statues_name,
-              description: unit.description
-            }));
+            const transformedUnits = response.data.map(unit => {
+              console.log("🔍 Individual unit from modify save:", unit); // ← Debug individual unit
+              return {
+                id: unit.id_units,
+                unitName: unit.name,
+                symbol: unit.symbol, // ← Cambiado para usar el symbol real del JSON
+                value: unit.unit_type_name,
+                unitType: unit.unit_type || unit.id_types || unit.unit_type_id || unit.id_unit_type, // ← unit_type es el correcto según logs
+                status: unit.statues_name, // ← Usar statues_name directamente del JSON
+                statusId: unit.id_statues, // ← Agregar el ID para referencia
+                description: unit.description
+              };
+            });
             
+            console.log("🔍 Transformed units:", transformedUnits[0]); // ← Debug del primer elemento transformado
+
             setCategoryParameters(transformedUnits);
           }
         } else {
@@ -258,9 +289,9 @@ const ParameterizationView = () => {
             param.id === selectedParameter.id ? { ...param, ...parameterData } : param
           );
           setCategoryParameters(updatedParameters);
-          
-          const updatedData = data.map(item => 
-            item.id === selectedCategory.id 
+
+          const updatedData = data.map(item =>
+            item.id === selectedCategory.id
               ? { ...item, parameters: updatedParameters }
               : item
           );
@@ -331,12 +362,11 @@ const ParameterizationView = () => {
         </div>
 
         {/* Filter Section */}
-        <div className="mb-4 md:mb-6 flex flex-col sm:flex-row gap-4 justify-between">
-          <button className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit">
-            <FiFilter className="filter-icon w-4 h-4" />
-            <span className="text-sm">Filter by</span>
-          </button>
-        </div>
+        <FilterSection
+          globalFilter={globalFilter}
+          setGlobalFilter={setGlobalFilter}
+          placeholder="Search categories..."
+        />
 
         {/* Navigation Menu */}
         <div className="mb-6 md:mb-8">
@@ -477,9 +507,8 @@ const ParameterizationView = () => {
                             <button
                               key={i}
                               onClick={() => table.setPageIndex(i - 1)}
-                              className={`parametrization-pagination-button inline-flex items-center justify-center w-10 h-10 text-sm font-medium transition-colors ${
-                                i === currentPage ? 'active' : ''
-                              }`}
+                              className={`parametrization-pagination-button inline-flex items-center justify-center w-10 h-10 text-sm font-medium transition-colors ${i === currentPage ? 'active' : ''
+                                }`}
                             >
                               {i}
                             </button>

@@ -155,7 +155,6 @@
   background-color: var(--color-primary);
   border-radius: var(--border-radius-md);
   color: #FFFFFF;
-  padding: 0.5rem 0.5rem;
 }
 
 .btn-primary:hover {
@@ -168,7 +167,6 @@
   border-radius: var(--border-radius-md);
   color: #FFFFFF;
   border-color: var(--color-border);
-  padding: 0.5rem 0.5rem;
 }
 
 .btn-secondary:hover {
