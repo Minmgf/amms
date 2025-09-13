@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { FiX, FiEdit3 } from 'react-icons/fi';
+import { toggleTypeStatus } from '@/services/parametrizationService';
+import { SuccessModal, ErrorModal } from '@/app/components/shared/SuccessErrorModal';
 
 const TypesModal = ({ 
   isOpen, 
@@ -10,10 +12,14 @@ const TypesModal = ({
   loading = false,
   onAddItem, 
   onEditItem,
-  onToggleStatus
+  onToggleStatus,
+  onReloadData
 }) => {
   const [modalData, setModalData] = useState([]);
   const [togglingId, setTogglingId] = useState(null);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
 
   useEffect(() => {
     if (isOpen) {
@@ -38,13 +44,46 @@ const TypesModal = ({
   };
 
   const handleToggleStatus = async (itemId) => {
-    if (!onToggleStatus) return;
-    
-    setTogglingId(itemId);
     try {
-      await onToggleStatus(itemId);
+      setTogglingId(itemId);
+      console.log(`🔄 Toggling status for parameter ID: ${itemId}`);
+      
+      const response = await toggleTypeStatus(itemId);
+      console.log('✅ Status toggled successfully:', response);
+      
+      // Mostrar mensaje de éxito usando la respuesta del servidor
+      setModalMessage(response.message);
+      setSuccessOpen(true);
+      
+      // Actualizar estado local inmediatamente con la lógica correcta
+      setModalData(prevData => 
+        prevData.map(item => {
+          if (item.id === itemId) {
+            const newStatusId = item.id_statues === 1 ? 2 : 1;
+            const newStatus = newStatusId === 1 ? 'Active' : 'Inactive';
+            
+            console.log(`🔄 Updating parameter ${itemId}: ${item.id_statues} -> ${newStatusId}, ${item.status} -> ${newStatus}`);
+            
+            return {
+              ...item,
+              id_statues: newStatusId,
+              status: newStatus,
+              isActive: newStatusId === 1
+            };
+          }
+          return item;
+        })
+      );
+      
+      // Recargar datos desde el componente padre si está disponible
+      if (onReloadData) {
+        await onReloadData();
+      }
+      
     } catch (error) {
-      console.error('Error toggling status:', error);
+      console.error('❌ Error toggling parameter status:', error);
+      setModalMessage(error.response?.data?.message || error.message || "Error changing status");
+      setErrorOpen(true);
     } finally {
       setTogglingId(null);
     }
@@ -140,7 +179,7 @@ const TypesModal = ({
                     </tr>
                   ) : (
                     modalData.map((item, index) => (
-                      <tr key={item.id || index} className="hover:bg-gray-50">
+                      <tr key={item.id || index} className="hover:bg-gray-50 group">
                         <td className="px-6 py-4 text-sm text-gray-900 border-r border-gray-200">
                           {item.typeName || item.name}
                         </td>
@@ -148,26 +187,24 @@ const TypesModal = ({
                           {item.description}
                         </td>
                         <td className="px-6 py-4 text-sm border-r border-gray-200">
-                          <div className="flex items-center space-x-3">
-                            {/* Status Badge */}
-                            <span 
-                              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                                item.id_statues === 1
-                                  ? 'bg-green-100 text-green-800'
-                                  : item.id_statues === 2
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-gray-100 text-gray-800'
-                              }`}
-                            >
-                              {item.status}
-                            </span>
-                            
-                          </div>
+                          <button
+                            onClick={() => handleToggleStatus(item.id)}
+                            disabled={togglingId === item.id}
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                              item.id_statues === 1
+                                ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                                : item.id_statues === 2
+                                ? 'bg-red-100 text-red-800 hover:bg-red-200'
+                                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                            } ${togglingId === item.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                          >
+                            {item.status}
+                          </button>
                         </td>
                         <td className="px-6 py-4 text-sm">
                           <button
                             onClick={() => handleEdit(item.id)}
-                            className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-md transition-colors"
+                            className="invisible group-hover:visible inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-md transition-colors"
                           >
                             <FiEdit3 className="w-3 h-3 mr-1.5" />
                             Edit
@@ -192,6 +229,20 @@ const TypesModal = ({
           </div>
         </div>
       </div>
+
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={successOpen}
+        onClose={() => setSuccessOpen(false)}
+        message={modalMessage}
+      />
+
+      {/* Error Modal */}
+      <ErrorModal
+        isOpen={errorOpen}
+        onClose={() => setErrorOpen(false)}
+        message={modalMessage}
+      />
     </div>
   );
 };

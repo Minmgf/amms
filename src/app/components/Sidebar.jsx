@@ -200,6 +200,14 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         </button>
       )}
 
+      {/* Overlay con desenfoque para móvil cuando el sidebar está abierto */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-30 lg:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
       <aside
         className={`sidebar-theme fixed top-0 left-0 h-screen overflow-y-auto flex flex-col transform transition-transform duration-300 z-40
         ${isOpen ? "translate-x-0 w-64" : "-translate-x-full w-64"}`}
