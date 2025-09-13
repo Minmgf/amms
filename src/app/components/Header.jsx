@@ -3,9 +3,10 @@ import { useState, useEffect, useRef } from "react";
 import { FiBell, FiUser, FiX } from "react-icons/fi";
 import { MdPalette } from "react-icons/md";
 import { getUserData } from "@/services/profileService";
-import { getNotifications, markAllNotAsRead, markOneNotAsRead } from "@/services/notificationService";
+import { markAllNotAsRead, markOneNotAsRead } from "@/services/notificationService";
 import { SuccessModal, ErrorModal } from "./shared/SuccessErrorModal";
 import { useTheme } from "@/contexts/ThemeContext";
+import useNotifications from "@/hooks/useNotifications";
 
 export default function Header() {
   const [userId, setUserId] = useState("");
@@ -14,9 +15,7 @@ export default function Header() {
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const [showNotis, setShowNotis] = useState(false);
-  const [notis, setNotis] = useState([]);
   const panelRef = useRef(null);
-  const unreadCount = notis.filter((n) => n.status === "unread").length;
   const [message, setMessage] = useState("");
   const [successOpen, setSuccessOpen] = useState(false);
   const [errorOpen, setErrorOpen] = useState(false);
@@ -30,6 +29,10 @@ export default function Header() {
     getThemeNames, 
     changeTheme 
   } = useTheme();
+
+  // Hook de notificaciones
+  const { notifications: notis, reload } = useNotifications();
+  const unreadCount = notis.filter(n => n.status === "unread").length;
 
   useEffect(() => {
     const storedUser = localStorage.getItem("userData");
@@ -78,38 +81,6 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    async function fetchNotifications() {
-      try {
-        const response = await getNotifications();
-        if (response.success && Array.isArray(response.data)) {
-          if (response.data.length === 0) {
-            setMessage("No notifications available.");
-            setNotis([]);
-          } else {
-            const mapped = response.data.map((n) => ({
-              id: n.id,
-              title: n.title,
-              body: n.message,
-              date: new Date(n.created_at).toLocaleDateString("es-CO"),
-              status: n.read ? "read" : "unread",
-              type: n.type,
-            }));
-            setNotis(mapped);
-            setMessage("");
-          }
-        } else {
-          setMessage("Unable to fetch notifications.");
-        }
-      } catch (err) {
-        console.error("Error fetching notifications:", err);
-        setMessage("Unable to fetch notifications.");
-      }
-    }
-
-    fetchNotifications();
-  }, []);
-
-  useEffect(() => {
     function handleClickOutside(e) {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setThemeMenuOpen(false);
@@ -143,12 +114,12 @@ export default function Header() {
     try {
       const response = await markAllNotAsRead();
       if (response.success) {
-        setNotis((prev) => prev.map((n) => ({ ...n, status: "read" })));
+        reload();
         setModalMessage(response.message);
         setSuccessOpen(true);
       }
     } catch (error) {
-      setModalMessage(error.response.data.detail);
+      setModalMessage(error.response?.data?.detail || "Error marking all as read");
       setErrorOpen(true);
     } finally {
       setLoading(false);
@@ -160,16 +131,13 @@ export default function Header() {
 
     const payload = {
       notification_ids: [id],
-      mark_all: false
+      mark_all: false,
     };
 
     try {
       const response = await markOneNotAsRead(payload);
-
       if (response.success) {
-        setNotis((prev) =>
-          prev.map((n) => (n.id === id ? { ...n, status: "read" } : n))
-        );
+        reload();
         setModalMessage(response.message);
         setSuccessOpen(true);
       }
@@ -372,13 +340,13 @@ export default function Header() {
       <SuccessModal
         isOpen={successOpen}
         onClose={() => setSuccessOpen(false)}
-        title="Login Successful"
+        title="Success"
         message={modalMessage}
       />
       <ErrorModal
         isOpen={errorOpen}
         onClose={() => setErrorOpen(false)}
-        title="Login Failed"
+        title="Error"
         message={modalMessage}
       />
     </>

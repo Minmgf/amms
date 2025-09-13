@@ -9,9 +9,11 @@ const TypesModal = ({
   data = [], 
   loading = false,
   onAddItem, 
-  onEditItem 
+  onEditItem,
+  onToggleStatus
 }) => {
   const [modalData, setModalData] = useState([]);
+  const [togglingId, setTogglingId] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -32,6 +34,19 @@ const TypesModal = ({
   const handleEdit = (itemId) => {
     if (onEditItem) {
       onEditItem(itemId);
+    }
+  };
+
+  const handleToggleStatus = async (itemId) => {
+    if (!onToggleStatus) return;
+    
+    setTogglingId(itemId);
+    try {
+      await onToggleStatus(itemId);
+    } catch (error) {
+      console.error('Error toggling status:', error);
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -70,11 +85,11 @@ const TypesModal = ({
       onClick={handleBackdropClick}
     >
       <div 
-        className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
+        className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
           <h2 className="text-xl font-semibold text-gray-900">
             <span className="text-gray-500">Category: </span>
             <span className="text-gray-900">{categoryName}</span>
@@ -89,7 +104,7 @@ const TypesModal = ({
         </div>
 
         {/* Modal Content */}
-        <div className="p-6">
+        <div className="p-6 flex-1 overflow-y-auto">
           {/* Table Container */}
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-6">
             <div className="overflow-x-auto">
@@ -133,18 +148,24 @@ const TypesModal = ({
                           {item.description}
                         </td>
                         <td className="px-6 py-4 text-sm border-r border-gray-200">
-                          <span 
-                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                              item.status === 'Active' 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-pink-100 text-pink-800'
-                            }`}
-                          >
-                            {item.status}
-                          </span>
+                          <div className="flex items-center space-x-3">
+                            {/* Status Badge */}
+                            <span 
+                              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                                item.id_statues === 1
+                                  ? 'bg-green-100 text-green-800'
+                                  : item.id_statues === 2
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}
+                            >
+                              {item.status}
+                            </span>
+                            
+                          </div>
                         </td>
                         <td className="px-6 py-4 text-sm">
-                                                    <button
+                          <button
                             onClick={() => handleEdit(item.id)}
                             className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-md transition-colors"
                           >
@@ -164,7 +185,7 @@ const TypesModal = ({
           <div className="flex justify-center">
             <button
               onClick={handleAddParameter}
-              className="px-8 py-3 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
+              className="btn-theme btn-primary"
             >
               Add Parameter
             </button>

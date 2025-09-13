@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { FiX, FiEdit3 } from 'react-icons/fi';
+import { toggleUnitStatus } from '@/services/parametrizationService';
+import { SuccessModal, ErrorModal } from '@/app/components/shared/SuccessErrorModal';
 
 const UnitListModal = ({ 
   isOpen, 
@@ -8,24 +10,20 @@ const UnitListModal = ({
   categoryName = 'Weight',
   data = [], // Lista de parámetros existentes
   onAddParameter,
-  onEditParameter
+  onEditParameter,
+  onReloadData // ← NUEVA PROP para recargar datos
 }) => {
   const [parameters, setParameters] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
 
   // Reset form cuando se abre/cierra el modal
   useEffect(() => {
     if (isOpen) {
-      // Cargar los parámetros existentes o datos de ejemplo
-      const mockParameters = data.length > 0 ? data : [
-        { 
-          id: 1, 
-          unitName: 'Ton', 
-          symbol: 'T', 
-          value: 'Decimal', 
-          status: 'Active' 
-        }
-      ];
-      setParameters(mockParameters);
+      // Usar solo los datos que vienen del props, sin fallback a datos mock
+      setParameters(data);
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
@@ -45,6 +43,53 @@ const UnitListModal = ({
   const handleEditParameter = (parameterId) => {
     if (onEditParameter) {
       onEditParameter(parameterId);
+    }
+  };
+
+  // ← NUEVA FUNCIÓN para toggle de estado
+  const handleToggleStatus = async (unitId) => {
+    try {
+      setLoading(true);
+      console.log(`🔄 Toggling status for unit ID: ${unitId}`);
+      
+      const response = await toggleUnitStatus(unitId);
+      console.log('✅ Status toggled successfully:', response);
+      console.log('📋 Response message:', response.message);
+      
+      // Mostrar mensaje de éxito usando la respuesta del servidor
+      setModalMessage(response.message);
+      setSuccessOpen(true);
+      
+      // Actualizar estado local inmediatamente con la lógica correcta
+      setParameters(prevParams => 
+        prevParams.map(param => {
+          if (param.id === unitId) {
+            const newStatusId = param.statusId === 1 ? 2 : 1;
+            const newStatus = newStatusId === 1 ? 'Activo' : 'Inactivo';
+            
+            console.log(`🔄 Updating unit ${unitId}: ${param.statusId} -> ${newStatusId}, ${param.status} -> ${newStatus}`);
+            
+            return {
+              ...param,
+              statusId: newStatusId,
+              status: newStatus
+            };
+          }
+          return param;
+        })
+      );
+      
+      // Recargar datos desde el componente padre si está disponible
+      if (onReloadData) {
+        await onReloadData();
+      }
+      
+    } catch (error) {
+      console.error('❌ Error toggling unit status:', error);
+      setModalMessage(error.response?.data?.message || error.message || "Error al cambiar estado");
+      setErrorOpen(true);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -133,13 +178,17 @@ const UnitListModal = ({
                           {parameter.value}
                         </td>
                         <td className="px-4 py-3 text-sm border-r border-gray-200">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            parameter.status === 'Active' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {parameter.status}
-                          </span>
+                          <button
+                            onClick={() => handleToggleStatus(parameter.id)}
+                            disabled={loading}
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                              parameter.statusId === 1 || parameter.status === 'Activo' // ← Usar statusId como prioridad
+                                ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                                : 'bg-red-100 text-red-800 hover:bg-red-200'
+                            } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                          >
+                            {parameter.status} {/* ← Mostrar statues_name real del JSON */}
+                          </button>
                         </td>
                         <td className="px-4 py-3 text-sm">
                           <button
@@ -166,13 +215,27 @@ const UnitListModal = ({
           <div className="flex justify-center">
             <button
               onClick={handleAddParameter}
-              className="px-8 py-3 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
+              className="btn-theme btn-primary relative"
             >
               Add Parameter
             </button>
           </div>
         </div>
       </div>
+
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={successOpen}
+        onClose={() => setSuccessOpen(false)}
+        message={modalMessage}
+      />
+
+      {/* Error Modal */}
+      <ErrorModal
+        isOpen={errorOpen}
+        onClose={() => setErrorOpen(false)}
+        message={modalMessage}
+      />
     </div>
   );
 };

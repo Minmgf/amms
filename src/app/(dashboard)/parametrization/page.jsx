@@ -1,12 +1,8 @@
-import React from 'react'
-import MainView from './mainView/page';
+import { redirect } from 'next/navigation'
 
 const page = () => {
-  return (
-    <div className='w-full h-full bg-gray-100 p-4'>
-      <MainView />
-    </div>
-  )
+  // Redirección inmediata del lado del servidor
+  redirect('/parametrization/mainView')
 }
 
 export default page
