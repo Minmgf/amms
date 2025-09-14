@@ -46,10 +46,8 @@ const TypesModal = ({
   const handleToggleStatus = async (itemId) => {
     try {
       setTogglingId(itemId);
-      console.log(`🔄 Toggling status for parameter ID: ${itemId}`);
       
       const response = await toggleTypeStatus(itemId);
-      console.log('✅ Status toggled successfully:', response);
       
       // Mostrar mensaje de éxito usando la respuesta del servidor
       setModalMessage(response.message);
@@ -60,14 +58,11 @@ const TypesModal = ({
         prevData.map(item => {
           if (item.id === itemId) {
             const newStatusId = item.id_statues === 1 ? 2 : 1;
-            const newStatus = newStatusId === 1 ? 'Active' : 'Inactive';
-            
-            console.log(`🔄 Updating parameter ${itemId}: ${item.id_statues} -> ${newStatusId}, ${item.status} -> ${newStatus}`);
             
             return {
               ...item,
               id_statues: newStatusId,
-              status: newStatus,
+              status: item.status,
               isActive: newStatusId === 1
             };
           }
@@ -81,7 +76,6 @@ const TypesModal = ({
       }
       
     } catch (error) {
-      console.error('❌ Error toggling parameter status:', error);
       setModalMessage(error.response?.data?.message || error.message || "Error changing status");
       setErrorOpen(true);
     } finally {

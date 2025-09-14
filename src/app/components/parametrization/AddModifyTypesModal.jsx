@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
+import { toggleTypeStatus } from '@/services/parametrizationService';
+import { SuccessModal, ErrorModal } from '@/app/components/shared/SuccessErrorModal';
 
 const AddModifyTypesModal = ({
   isOpen,
@@ -9,6 +11,7 @@ const AddModifyTypesModal = ({
   status = null,
   category = "Machinery Status",
   onSave,
+  existingNames = [], // Nueva prop para validación
 }) => {
   const [formData, setFormData] = useState({
     category: category,
@@ -18,6 +21,10 @@ const AddModifyTypesModal = ({
   });
   
   const [saving, setSaving] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+  const [nameError, setNameError] = useState("");
 
   useEffect(() => {
     if (mode === "modify" && status) {
@@ -25,7 +32,7 @@ const AddModifyTypesModal = ({
         category: category,
         typeName: status.typeName || "",
         description: status.description || "",
-        isActive: status.status === "Active" || status.isActive === true,
+        isActive: status.id_statues === 1 || status.status === "Active" || status.isActive === true,
       });
     } else {
       setFormData({
@@ -35,18 +42,79 @@ const AddModifyTypesModal = ({
         isActive: true,
       });
     }
+    setNameError("");
   }, [status, mode, category, isOpen]);
+
+  const validateTypeName = (name) => {
+    if (!name.trim()) {
+      setNameError("");
+      return false;
+    }
+
+    const normalizedName = name.trim().toLowerCase();
+    const isDuplicate = existingNames.some(existingName => {
+      if (mode === "modify" && status && existingName.toLowerCase() === status.typeName.toLowerCase()) {
+        return false; // Ignore current item name in edit mode
+      }
+      return existingName.toLowerCase() === normalizedName;
+    });
+
+    if (isDuplicate) {
+      setNameError("This type name already exist");
+      return false;
+    }
+
+    setNameError("");
+    return true;
+  };
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
+
+    if (field === "typeName") {
+      validateTypeName(value);
+    }
+  };
+
+  const handleToggleChange = async () => {
+    if (mode === "modify" && status?.id) {
+      try {
+        setSaving(true);
+        
+        const response = await toggleTypeStatus(status.id);
+        
+        setFormData(prev => ({
+          ...prev,
+          isActive: !prev.isActive
+        }));
+        
+        if (onSave) {
+          await onSave({ success: true, message: response.message, statusChanged: true });
+        }
+        
+      } catch (error) {
+        setModalMessage(error.response?.data?.message || error.message || "Error changing status");
+        setErrorOpen(true);
+      } finally {
+        setSaving(false);
+      }
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        isActive: !prev.isActive
+      }));
+    }
   };
 
   const handleSave = async () => {
-    // Validación básica
     if (!formData.typeName.trim()) {
+      return;
+    }
+
+    if (!validateTypeName(formData.typeName)) {
       return;
     }
 
@@ -54,7 +122,6 @@ const AddModifyTypesModal = ({
 
     try {
       if (mode === "modify") {
-        // Preparar datos para modificación
         const updatedData = {
           typeName: formData.typeName.trim(),
           description: formData.description.trim(),
@@ -65,7 +132,6 @@ const AddModifyTypesModal = ({
           await onSave(updatedData);
         }
       } else {
-        // Preparar datos para creación
         const newData = {
           typeName: formData.typeName.trim(),
           description: formData.description.trim(),
@@ -77,11 +143,8 @@ const AddModifyTypesModal = ({
         }
       }
 
-      // Solo cerrar el modal si todo salió bien
       onClose();
     } catch (err) {
-      console.error("Error saving type:", err);
-      // El manejo de errores se hace en el componente padre
       throw err;
     } finally {
       setSaving(false);
@@ -91,6 +154,8 @@ const AddModifyTypesModal = ({
   if (!isOpen) return null;
 
   const isAddMode = mode === "add";
+  const hasNameError = !!nameError;
+  const isFormValid = formData.typeName.trim() && !hasNameError;
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
@@ -141,9 +206,21 @@ const AddModifyTypesModal = ({
                     handleInputChange("typeName", e.target.value)
                   }
                   disabled={saving}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className={`w-full px-3 py-2 border rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${
+                    hasNameError ? 'border-red-300' : 'border-gray-300'
+                  }`}
                   placeholder="Enter type name"
                 />
+                {hasNameError && (
+                  <div className="flex items-center mt-1">
+                    <div className="flex items-center text-red-600 text-sm">
+                      <span className="inline-flex items-center justify-center w-4 h-4 mr-2 bg-red-600 rounded-full flex-shrink-0">
+                        <span className="text-white text-xs">!</span>
+                      </span>
+                      {nameError}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -171,9 +248,8 @@ const AddModifyTypesModal = ({
                 </label>
                 <div className="mt-1 sm:mt-0">
                   <button
-                    onClick={() =>
-                      handleInputChange("isActive", !formData.isActive)
-                    }
+                    type="button"
+                    onClick={handleToggleChange}
                     disabled={saving}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
                       formData.isActive ? "bg-red-500" : "bg-gray-200"
@@ -195,7 +271,7 @@ const AddModifyTypesModal = ({
         <div className="flex justify-center px-4 sm:px-6 py-4 border-t border-gray-200 bg-gray-50">
           <button
             onClick={handleSave}
-            disabled={saving || !formData.typeName.trim()}
+            disabled={saving || !isFormValid}
             className="btn-theme btn-primary not-disabled: w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? (
@@ -212,6 +288,20 @@ const AddModifyTypesModal = ({
           </button>
         </div>
       </div>
+
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={successOpen}
+        onClose={() => setSuccessOpen(false)}
+        message={modalMessage}
+      />
+
+      {/* Error Modal */}
+      <ErrorModal
+        isOpen={errorOpen}
+        onClose={() => setErrorOpen(false)}
+        message={modalMessage}
+      />
     </div>
   );
 };
