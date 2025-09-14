@@ -14,6 +14,7 @@ import { FaSearch, FaFilter, FaUserPlus, FaSort, FaSortUp, FaSortDown, FaExclama
 import { getUsersList, getUserInfo } from '../../../services/authService';
 import AddUserModal from './AddUserModal';
 import UserDetailsModal from './userDetailsModal';
+import PermissionGuard from '@/app/(auth)/PermissionGuard';
 
 const columnHelper = createColumnHelper();
 
@@ -244,11 +245,12 @@ export default function UserTable() {
             <FaFilter />
             Limpiar filtros
           </button>
-
+          <PermissionGuard permission="users.create">
           <button onClick={() => setIsCreateModalOpen(true)} className="parametrization-button flex items-center gap-2 px-4 py-2">
             <FaUserPlus />
             Add user
           </button>
+          </PermissionGuard>
         </div>
       </div>
 

@@ -11,6 +11,7 @@ import RoleFormModal from "@/app/components/rolesManagement/RoleFormModal";
 import TableList from "@/app/components/shared/TableList";
 import { createColumnHelper } from "@tanstack/react-table";
 import React from "react";
+import PermissionGuard from "@/app/(auth)/PermissionGuard";
 
 const page = () => {
   useTheme();
@@ -34,6 +35,7 @@ const page = () => {
 
   const [pendingStatusChange, setPendingStatusChange] = useState(null);
   const [confirmMessage, setConfirmMessage] = useState("");
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -296,14 +298,15 @@ const page = () => {
               <FiFilter className="filter-icon w-4 h-4" />
               <span className="text-sm">Filter by</span>
             </button>
-
-            <button
-              onClick={() => handleOpenRoleFormModal("add")}
-              className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit"
-            >
-              <FiUsers className="w-4 h-4" />
-              <span className="text-sm">Add Role</span>
-            </button>
+            <PermissionGuard permission="roles.create">
+              <button
+                onClick={() => handleOpenRoleFormModal("add")}
+                className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit"
+              >
+                <FiUsers className="w-4 h-4" />
+                <span className="text-sm">Add Role</span>
+              </button>
+            </PermissionGuard>
           </div>
 
           { /* Table */}
