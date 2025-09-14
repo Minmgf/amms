@@ -8,6 +8,7 @@ import LoginCard from "../../components/auth/LoginCard";
 import { login } from "@/services/authService";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
+import { usePermissions } from "@/contexts/PermissionsContext";
 import {
   SuccessModal,
   ErrorModal,
@@ -18,6 +19,7 @@ const Page = () => {
   const [successOpen, setSuccessOpen] = useState(false);
   const [errorOpen, setErrorOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
+  const { loginSuccess } = usePermissions();
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const {
@@ -51,17 +53,29 @@ const Page = () => {
     try {
       const response = await login(data, data.rememberMe);
       const payload = decodeToken(response.access_token);
+      
+      // Guardar en localStorage
       localStorage.setItem("userData", JSON.stringify(payload));
+      
+      // Mostrar mensaje de éxito
       setModalMessage("You have logged in successfully");
       setSuccessOpen(true);
-      setTimeout(() => {
-        setSuccessOpen(false);
+      
+      // Definir el redirect que se ejecutará después del procesamiento
+      const handleRedirect = () => {
+        setSuccessOpen(false);        
         if (payload.first_login_complete) {
           router.push("/home");
         } else {
           router.push("/editUser");
         }
-      }, 2000);
+      };
+      
+      // Procesar permisos Y pasar el callback para el redirect
+      setTimeout(() => {
+        loginSuccess(response.access_token, handleRedirect);
+      }, 1000); // Dar tiempo para que se vea el modal de éxito
+      
     } catch (error) {
       setModalMessage(error.response.data.detail || "Failed login");
       setErrorOpen(true);
