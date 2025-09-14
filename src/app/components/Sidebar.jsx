@@ -36,10 +36,11 @@ import {
   ConfirmModal,
 } from "./shared/SuccessErrorModal";
 import { useTheme } from "@/contexts/ThemeContext";
+import { usePermissions } from "@/contexts/PermissionsContext"; // 👈 Agregar import
 
 export default function Sidebar({ isOpen, setIsOpen }) {
   const [openMenus, setOpenMenus] = useState({});
-  const pathname = usePathname(); // 👈 detecta la ruta actual
+  const pathname = usePathname();
   const router = useRouter();
   const [successOpen, setSuccessOpen] = useState(false);
   const [errorOpen, setErrorOpen] = useState(false);
@@ -51,11 +52,42 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
   // Theme Context
   const { currentTheme } = useTheme();
+  
+  // Permissions Context 👈 Agregar hook de permisos
+  const { hasPermission, hasRole, clearPermissions } = usePermissions();
+
+  // Función para determinar si un menú debe mostrarse
+  const shouldShowMenuItem = (item) => {
+    // Si no tiene permisos definidos, siempre mostrar (como Home)
+    if (!item.permissions && !item.roles) {
+      return true;
+    }
+
+    // Verificar roles si están definidos
+    if (item.roles && item.roles.length > 0) {
+      const hasRequiredRole = item.roles.some(role => hasRole(role));
+      if (!hasRequiredRole) return false;
+    }
+
+    // Verificar permisos si están definidos
+    if (item.permissions && item.permissions.length > 0) {
+      return item.permissions.some(permission => hasPermission(permission));
+    }
+
+    return true;
+  };
+
+  // Función para verificar si al menos un submenú es visible
+  const hasVisibleSubItems = (subItems) => {
+    if (!subItems) return false;
+    return subItems.some(subItem => shouldShowMenuItem(subItem));
+  };
 
   const handleLogout = async () => {
     try {
       setLoading(true);
       const response = await logout();
+      clearPermissions(); // 👈 Limpiar permisos al hacer logout
       setModalMessage(response.message);
       setSuccessOpen(true);
       setTimeout(() => {
@@ -97,23 +129,39 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     }));
   };
 
+  // 👈 Definir menuItems con permisos asociados
   const menuItems = [
-    { name: "Home", icon: <FaHome />, path: "/home" },
-    { name: "Machinery", icon: <FaCogs />, path: "/machinery" },
+    { 
+      name: "Home", 
+      icon: <FaHome />, 
+      path: "/home"
+      // Sin permisos - siempre visible
+    },
+    { 
+      name: "Machinery", 
+      icon: <FaCogs />, 
+      path: "/machinery",
+      permissions: [],
+      module: "machinery"
+    },
     {
       name: "Maintenance",
       icon: <FaTools />,
       path: "/maintenance",
+      permissions: [],
+      module: "maintenance",
       sub: [
         {
           name: "Schedule Maintenance",
           icon: <FaCalendarCheck />,
           path: "/maintenance/scheduleMaintenance",
+          permissions: [],
         },
         {
           name: "Maintenance Requests",
           icon: <FaRegNewspaper />,
           path: "/maintenance/maintenanceRequest",
+          permissions: [],
         },
       ],
     },
@@ -121,17 +169,26 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       name: "Payroll",
       icon: <FaMoneyCheckAlt />,
       path: "/payroll",
+      permissions: [],
+      module: "payroll",
       sub: [
-        { name: "Reports", icon: <FaFileInvoice />, path: "/payroll/reports" },
+        { 
+          name: "Reports", 
+          icon: <FaFileInvoice />, 
+          path: "/payroll/reports",
+          permissions: [],
+        },
         {
           name: "Novelty",
           icon: <FaClipboardCheck />,
           path: "/payroll/novelty",
+          permissions: [],
         },
         {
           name: "Payrolls",
           icon: <FaClipboardList />,
           path: "/payroll/payrolls",
+          permissions: [],
         },
       ],
     },
@@ -139,12 +196,20 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       name: "Requests",
       icon: <FaClipboardList />,
       path: "/requests",
+      permissions: [],
+      module: "requests",
       sub: [
-        { name: "Clients", icon: <FaUsers />, path: "/requests/clients" },
+        { 
+          name: "Clients", 
+          icon: <FaUsers />, 
+          path: "/requests/clients",
+          permissions: [],
+        },
         {
           name: "Service Managements",
           icon: <FaTools />,
           path: "/requests/serviceManagement",
+          permissions: [],
         },
       ],
     },
@@ -152,16 +217,20 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       name: "User Management",
       icon: <FaUsers />,
       path: "/userManagement",
+      permissions: [],
+      module: "users",
       sub: [
         {
           name: "Role Management",
           icon: <FaUserShield />,
           path: "/userManagement/roleManagement",
+          permissions: ["roles.view"],
         },
         {
           name: "Audit Log",
           icon: <FaHistory />,
           path: "/userManagement/auditLog",
+          permissions: [],
         },
       ],
     },
@@ -169,16 +238,20 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       name: "Monitoring",
       icon: <FaBroadcastTower />,
       path: "/monitoring",
+      permissions: [],
+      module: "monitoring",
       sub: [
         {
           name: "Devices Management",
           icon: <FaDesktop />,
           path: "/monitoring/devicesManagement",
+          permissions: [],
         },
         {
           name: "Threshold",
           icon: <FaRssSquare />,
           path: "/monitoring/threshold",
+          permissions: [],
         },
       ],
     },
@@ -186,8 +259,22 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       name: "Parameterization",
       icon: <MdSettings />,
       path: "/parametrization",
+      permissions: [],
+      roles: [], // Solo administradores
     },
   ];
+
+  // Filtrar menús visibles
+  const visibleMenuItems = menuItems.filter(item => {
+    // Si tiene submenús, verificar si al menos uno es visible
+    if (item.sub) {
+      const hasVisibleSubs = hasVisibleSubItems(item.sub);
+      const canAccessParent = shouldShowMenuItem(item);
+      return canAccessParent || hasVisibleSubs;
+    }
+    
+    return shouldShowMenuItem(item);
+  });
 
   return (
     <>
@@ -221,7 +308,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         {/* MENÚ PRINCIPAL */}
         <div className="flex-1 overflow-y-auto py-4">
           <nav className="flex flex-col gap-1 px-2">
-            {menuItems.map((item) => {
+            {visibleMenuItems.map((item) => {
               const isActiveParent =
                 pathname === item.path || pathname.startsWith(item.path + "/");
 
@@ -230,8 +317,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                   {!item.sub ? (
                     <Link
                       href={item.path}
-                      className={`nav-item-theme flex justify-between items-center w-full p-2 rounded-theme-lg transition-colors ${isActiveParent ? "nav-item-active" : ""
-                        }`}
+                      className={`nav-item-theme flex justify-between items-center w-full p-2 rounded-theme-lg transition-colors ${
+                        isActiveParent ? "nav-item-active" : ""
+                      }`}
                     >
                       <span className="flex items-center gap-3">
                         {item.icon} {item.name}
@@ -244,8 +332,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                         onClick={() => {
                           toggleMenu(item.name);
                         }}
-                        className={`nav-item-theme flex justify-between items-center w-full p-2 rounded-theme-lg transition-colors ${isActiveParent ? "nav-item-active" : ""
-                          }`}
+                        className={`nav-item-theme flex justify-between items-center w-full p-2 rounded-theme-lg transition-colors ${
+                          isActiveParent ? "nav-item-active" : ""
+                        }`}
                       >
                         <span className="flex items-center gap-3">
                           {item.icon} {item.name}
@@ -259,22 +348,24 @@ export default function Sidebar({ isOpen, setIsOpen }) {
 
                       {openMenus[item.name] && (
                         <div className="w-full mt-1 flex flex-col gap-1 text-sm pl-6">
-                          {item.sub.map((sub) => {
-                            const isActiveSub = pathname === sub.path;
-                            return (
-                              <Link
-                                key={sub.name}
-                                href={sub.path}
-                                className={`nav-sub-item-theme p-2 rounded-theme-lg text-left flex items-center gap-3 transition-colors ${isActiveSub ? "nav-sub-item-active" : ""
+                          {item.sub
+                            .filter(subItem => shouldShowMenuItem(subItem)) // 👈 Filtrar submenús
+                            .map((sub) => {
+                              const isActiveSub = pathname === sub.path;
+                              return (
+                                <Link
+                                  key={sub.name}
+                                  href={sub.path}
+                                  className={`nav-sub-item-theme p-2 rounded-theme-lg text-left flex items-center gap-3 transition-colors ${
+                                    isActiveSub ? "nav-sub-item-active" : ""
                                   }`}
-                              >
-                                {sub.icon} {sub.name}
-                              </Link>
-                            );
-                          })}
+                                >
+                                  {sub.icon} {sub.name}
+                                </Link>
+                              );
+                            })}
                         </div>
                       )}
-
                     </>
                   )}
                 </div>
@@ -294,6 +385,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           </button>
         </div>
       </aside>
+      
       <SuccessModal
         isOpen={successOpen}
         onClose={() => setSuccessOpen(false)}
