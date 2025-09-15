@@ -29,7 +29,22 @@ const ChangePhotoModal = ({ isOpen, onClose, onSave }) => {
   const handleDrop = (event) => {
     event.preventDefault();
     const file = event.dataTransfer.files[0];
-    if (file && file.type.startsWith("image/")) {
+    
+    if (file) {
+      // Validar formato de imagen (JPG, PNG)
+      if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
+        setModalMessage("Only JPG and PNG formats are allowed");
+        setErrorOpen(true);
+        return;
+      }
+      
+      // Validar tamaño de archivo (5MB = 5 * 1024 * 1024 bytes)
+      if (file.size > 5 * 1024 * 1024) {
+        setModalMessage("The image size must be less than 5MB");
+        setErrorOpen(true);
+        return;
+      }
+      
       setValue("photo", file, { shouldValidate: true });
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
@@ -183,6 +198,24 @@ const ChangePhotoModal = ({ isOpen, onClose, onSave }) => {
                   onChange: (e) => {
                     const file = e.target.files?.[0];
                     if (file) {
+                      // Validar formato de imagen (JPG, PNG)
+                      if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
+                        setModalMessage("Only JPG and PNG formats are allowed");
+                        setErrorOpen(true);
+                        // Limpiar el input
+                        e.target.value = "";
+                        return;
+                      }
+                      
+                      // Validar tamaño de archivo (5MB = 5 * 1024 * 1024 bytes)
+                      if (file.size > 5 * 1024 * 1024) {
+                        setModalMessage("The image size must be less than 5MB");
+                        setErrorOpen(true);
+                        // Limpiar el input
+                        e.target.value = "";
+                        return;
+                      }
+                      
                       setValue("photo", file, { shouldValidate: true });
                       setPreviewUrl(URL.createObjectURL(file));
                     }
