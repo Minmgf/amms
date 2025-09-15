@@ -87,6 +87,13 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
     }
   }, [formData.role, formData.roles]);
 
+  const handleRemoveRole = React.useCallback((roleToRemove) => {
+    setFormData(prev => ({
+      ...prev,
+      roles: prev.roles.filter(role => role.value !== roleToRemove.value)
+    }));
+  }, []);
+
   // Función para hacer las opciones de select desde los datos de configuración
   const getDocumentTypeOptions = React.useCallback(() => {
     return documentTypes.map(type => ({ value: type.id, label: type.name }));
@@ -119,31 +126,53 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
     
     let date;
     
-    // Intentar diferentes formatos de fecha
-    if (typeof dateString === 'string') {
-      // Si la fecha ya está en formato ISO (YYYY-MM-DD), extraer solo la parte de la fecha
-      if (dateString.includes('T')) {
-        date = new Date(dateString);
-      } else if (dateString.includes('/')) {
-        // Formato DD/MM/YYYY o MM/DD/YYYY
-        date = new Date(dateString);
+    try {
+      // Intentar diferentes formatos de fecha
+      if (typeof dateString === 'string') {
+        // Si la fecha ya está en formato YYYY-MM-DD, usarla directamente
+        if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          return dateString;
+        }
+        // Si tiene formato ISO con tiempo, extraer solo la fecha
+        else if (dateString.includes('T')) {
+          return dateString.split('T')[0];
+        }
+        // Si tiene formato DD/MM/YYYY, convertir
+        else if (dateString.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+          const [day, month, year] = dateString.split('/');
+          return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+        // Si tiene formato MM/DD/YYYY, convertir  
+        else if (dateString.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
+          const parts = dateString.split('/');
+          if (parts.length === 3) {
+            const month = parts[0].padStart(2, '0');
+            const day = parts[1].padStart(2, '0');
+            const year = parts[2];
+            return `${year}-${month}-${day}`;
+          }
+        }
+        // Para otros formatos, intentar crear una fecha
+        else {
+          date = new Date(dateString);
+        }
       } else {
-        // Otros formatos
         date = new Date(dateString);
       }
-    } else {
-      date = new Date(dateString);
-    }
-    
-    // Verificar si la fecha es válida
-    if (isNaN(date.getTime())) {
+      
+      // Si llegamos aquí con una fecha válida, formatearla
+      if (date && !isNaN(date.getTime())) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+      
+      return '';
+    } catch (error) {
+      console.error('Error formateando fecha para input:', error, 'Fecha original:', dateString);
       return '';
     }
-    
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
   }, []);
 
   const handleEdit = React.useCallback((e) => {
@@ -289,13 +318,44 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
   const formatDate = React.useCallback((dateString) => {
     if (!dateString) return 'No disponible';
 
-    const date = new Date(dateString + 'T00:00:00');
-
-    return date.toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    let date;
+    
+    try {
+      // Intentar diferentes formatos de fecha
+      if (typeof dateString === 'string') {
+        // Si la fecha ya está en formato ISO (YYYY-MM-DD), parsear directamente
+        if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          // Formato YYYY-MM-DD
+          const [year, month, day] = dateString.split('-');
+          date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        } else if (dateString.includes('T')) {
+          // Formato ISO con tiempo
+          date = new Date(dateString);
+        } else if (dateString.includes('/')) {
+          // Formato DD/MM/YYYY o MM/DD/YYYY
+          date = new Date(dateString);
+        } else {
+          // Otros formatos
+          date = new Date(dateString);
+        }
+      } else {
+        date = new Date(dateString);
+      }
+      
+      // Verificar si la fecha es válida
+      if (isNaN(date.getTime())) {
+        return 'Fecha inválida';
+      }
+      
+      return date.toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (error) {
+      console.error('Error formateando fecha:', error, 'Fecha original:', dateString);
+      return 'Fecha inválida';
+    }
   }, []);
 
   // FormField con soporte para selects
@@ -673,43 +733,31 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
       <Dialog.Root open={isOpen} onOpenChange={onClose}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40" />
-          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-xl z-50 w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-xl z-50 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
           <Dialog.Title className="sr-only">
-            {isEditing ? 'Editar Usuario' : 'Detalles del Usuario'} - {getFullName()}
+            {isEditing ? 'Update User' : 'Detalles del Usuario'} - {getFullName()}
           </Dialog.Title>
 
-          <div className="p-6 card-theme">
+          <div className="bg-white">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6 card-secondary p-4">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <div className="flex items-center gap-3">
                 <button
                   onClick={onClose}
-                  className="p-2 btn-theme btn-secondary"
+                  className="text-gray-500 hover:text-gray-700 transition-colors"
                 >
-                  <FaArrowLeft className="text-primary" />
+                  <FaArrowLeft size={20} />
                 </button>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <FaUser className="text-accent text-xl" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-semibold text-primary">
-                      {isEditing ? 'Editar Usuario' : 'Detalles del Usuario'}
-                    </h2>
-                    <p className="text-sm text-secondary">
-                      {isEditing ? 'Modifique la información del usuario' : 'Información completa del usuario'}
-                    </p>
-                  </div>
-                </div>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {isEditing ? 'Update User' : 'Detalles del Usuario'}
+                </h2>
               </div>
-
-              {/* Estado del usuario en el header */}
-              <div className="flex items-center gap-2">
-                {getStatusIcon(userData.status_name)}
-                <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(userData.status_name)}`}>
-                  {userData.status_name}
-                </span>
-              </div>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                ×
+              </button>
             </div>
 
             {/* Loading inicial */}
@@ -728,251 +776,373 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
 
             {/* Formulario */}
             {!loading && (
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Columna Izquierda */}
-                  <div className="space-y-6">
-                    {/* Información Personal */}
-                    <FormSection title="Información Personal" icon={<FaUser />}>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          label="Nombre"
-                          value={formData.name}
-                          onChange={handleInputChange('name')}
-                          icon={<FaUser />}
-                          required={true}
-                          disabled={!isEditing}
+              <form onSubmit={handleSubmit} className="p-6">
+                <div className="space-y-6">
+                  {/* Primera fila: Tipo de documento, Número de documento, Género */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Identification type
+                      </label>
+                      {isEditing ? (
+                        <Select
+                          value={formData.type_document_id}
+                          onChange={handleSelectChange('type_document_id')}
+                          options={documentTypes.map(doc => ({ value: doc.id, label: doc.name }))}
+                          placeholder="C.C"
+                          className="text-sm"
+                          styles={{
+                            control: (base, state) => ({
+                              ...base,
+                              minHeight: '40px',
+                              borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                              boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                              '&:hover': {
+                                borderColor: '#9ca3af'
+                              }
+                            }),
+                            option: (base, state) => ({
+                              ...base,
+                              backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                              color: state.isSelected ? 'white' : '#374151'
+                            })
+                          }}
                         />
-                        <FormField
-                          label="Primer Apellido"
-                          value={formData.first_last_name}
-                          onChange={handleInputChange('first_last_name')}
-                          required={true}
-                          disabled={!isEditing}
-                        />
-                        <FormField
-                          label="Segundo Apellido"
-                          value={formData.second_last_name}
-                          onChange={handleInputChange('second_last_name')}
-                          disabled={!isEditing}
-                        />
-                        {isEditing ? (
-                          <div>
-                            <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                              <FaVenusMars className="text-blue-600" />
-                              Género *
-                            </label>
-                            <Select
-                              value={formData.gender_id}
-                              onChange={handleSelectChange('gender_id')}
-                              options={genderTypes.map(gender => ({ value: gender.id, label: gender.name }))}
-                              placeholder="Seleccionar género"
-                              className={`${!formData.gender_id ? 'border-red-500' : ''}`}
-                              isSearchable
-                              isClearable
-                            />
-                          </div>
-                        ) : (
-                          <FormField
-                            label="Género"
-                            value={formData.gender_id}
-                            icon={<FaVenusMars />}
-                            disabled={true}
-                          />
-                        )}
-                        <FormField
-                          label="Fecha de Nacimiento"
-                          value={formData.birthday}
-                          onChange={handleInputChange('birthday')}
-                          type="date"
-                          icon={<FaCalendarAlt />}
-                          className="md:col-span-2"
-                          disabled={!isEditing}
-                        />
-                      </div>
-
-                      {userData.status_description && (
-                        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                          <p className="text-sm text-blue-800">{userData.status_description}</p>
+                      ) : (
+                        <div className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 h-[40px] flex items-center">
+                          <span className="text-gray-900 text-sm">
+                            {userData.type_document_name || 'No disponible'}
+                          </span>
                         </div>
                       )}
-                    </FormSection>
-
-                    {/* Información de Contacto */}
-                    <FormSection title="Información de Contacto" icon={<FaEnvelope />}>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          label="Email"
-                          value={userData.email}
-                          icon={<FaEnvelope />}
-                          className="md:col-span-2"
-                          disabled={true}
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Identification number
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={formData.document_number || ''}
+                          onChange={handleInputChange('document_number')}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 h-[40px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                          placeholder="10765000002"
                         />
-                        <FormField
-                          label="Teléfono"
-                          value={userData.phone}
-                          icon={<FaPhone />}
-                          disabled={true}
+                      ) : (
+                        <div className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 h-[40px] flex items-center">
+                          <span className="text-gray-900 text-sm">
+                            {userData.document_number || 'No disponible'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Gender
+                      </label>
+                      {isEditing ? (
+                        <Select
+                          value={formData.gender_id}
+                          onChange={handleSelectChange('gender_id')}
+                          options={genderTypes.map(gender => ({ value: gender.id, label: gender.name }))}
+                          placeholder="Male"
+                          className="text-sm"
+                          styles={{
+                            control: (base, state) => ({
+                              ...base,
+                              minHeight: '40px',
+                              borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                              boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                              '&:hover': {
+                                borderColor: '#9ca3af'
+                              }
+                            }),
+                            option: (base, state) => ({
+                              ...base,
+                              backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                              color: state.isSelected ? 'white' : '#374151'
+                            })
+                          }}
                         />
-                        <FormField
-                          label="Dirección"
-                          value={userData.address}
-                          icon={<FaMapMarkerAlt />}
-                          className="md:col-span-2"
-                          disabled={true}
-                        />
-                      </div>
-                    </FormSection>
+                      ) : (
+                        <div className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 h-[40px] flex items-center">
+                          <span className="text-gray-900 text-sm">
+                            {userData.gender_name || 'No disponible'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Columna Derecha */}
-                  <div className="space-y-6">
-                    {/* Información de Documento */}
-                    <FormSection title="Información de Documento" icon={<FaIdCard />}>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {isEditing ? (
-                          <div>
-                            <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                              <FaIdCard className="text-blue-600" />
-                              Tipo de Documento *
-                            </label>
-                            <Select
-                              value={formData.type_document_id}
-                              onChange={handleSelectChange('type_document_id')}
-                              options={documentTypes.map(doc => ({ value: doc.id, label: doc.name }))}
-                              placeholder="Seleccionar tipo de documento"
-                              className={`${!formData.type_document_id ? 'border-red-500' : ''}`}
-                              isSearchable
-                              isClearable
-                            />
-                          </div>
-                        ) : (
-                          <FormField
-                            label="Tipo de Documento"
-                            value={userData.type_document_name}
-                            icon={<FaIdCard />}
-                          />
-                        )}
-                        <FormField
-                          label="Número de Documento"
-                          value={formData.document_number}
-                          onChange={handleInputChange('document_number')}
-                          required={true}
-                          disabled={!isEditing}
-                          className="md:col-span-2"
-                        />
-                        <FormField
-                          label="Fecha de Expedición"
-                          value={formData.date_issuance_document}
-                          onChange={handleInputChange('date_issuance_document')}
+                  {/* Segunda fila: Fecha de expedición, Fecha de nacimiento */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Expedition date
+                      </label>
+                      {isEditing ? (
+                        <input
                           type="date"
-                          icon={<FaCalendarAlt />}
-                          className="md:col-span-2"
-                          disabled={!isEditing}
+                          value={formData.date_issuance_document || ''}
+                          onChange={handleInputChange('date_issuance_document')}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 h-[40px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
                         />
-                      </div>
-                    </FormSection>
+                      ) : (
+                        <div className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 h-[40px] flex items-center">
+                          <span className="text-gray-900 text-sm">
+                            {formatDate(userData.date_issuance_document)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Birth date
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="date"
+                          value={formData.birthday || ''}
+                          onChange={handleInputChange('birthday')}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 h-[40px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        />
+                      ) : (
+                        <div className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 h-[40px] flex items-center">
+                          <span className="text-gray-900 text-sm">
+                            {formatDate(userData.birthday)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-                    {/* Roles y Permisos */}
-                    <FormSection title="Roles y Permisos" icon={<FaShieldAlt />}>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                            <FaShieldAlt className="text-blue-600" />
-                            Roles Asignados
-                          </label>
-                          {isEditing ? (
-                            <div className="space-y-3">
-                              <div className="flex gap-2">
-                                <div className="flex-1">
-                                  <Select
-                                    value={formData.role}
-                                    onChange={handleSelectChange('role')}
-                                    options={roleTypes.map(role => ({
-                                      value: role.role_id,
-                                      label: role.role_name,
-                                    }))}
-                                    placeholder="Seleccionar rol"
-                                    isSearchable
-                                    isClearable
-                                  />
-                                </div>
+                  {/* Tercera fila: Role y Add button */}
+                  <div className="grid grid-cols-4 gap-4 items-end">
+                    <div className="col-span-3 space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Role
+                      </label>
+                      {isEditing ? (
+                        <Select
+                          value={formData.role}
+                          onChange={handleSelectChange('role')}
+                          options={roleTypes.map(role => ({
+                            value: role.role_id,
+                            label: role.role_name,
+                          }))}
+                          placeholder="Employee"
+                          className="text-sm"
+                          styles={{
+                            control: (base, state) => ({
+                              ...base,
+                              minHeight: '40px',
+                              borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                              boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                              '&:hover': {
+                                borderColor: '#9ca3af'
+                              }
+                            }),
+                            option: (base, state) => ({
+                              ...base,
+                              backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                              color: state.isSelected ? 'white' : '#374151'
+                            })
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 h-[40px] flex items-center">
+                          <span className="text-gray-900 text-sm">
+                            {userData.roles && userData.roles.length > 0 ? userData.roles[0].name : 'No disponible'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {isEditing && (
+                      <div>
+                        <button
+                          type="button"
+                          onClick={handleAddRole}
+                          disabled={!formData.role}
+                          className="w-full bg-black text-white rounded-md px-4 py-2 h-[40px] hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Cuarta fila: Nombres y apellidos */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Name
+                        {isEditing && <span className="text-red-500 ml-1">*</span>}
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={formData.name || ''}
+                          onChange={handleInputChange('name')}
+                          className={`w-full border rounded-md px-3 py-2 h-[40px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm ${!formData.name && submitLoading ? 'border-red-500' : 'border-gray-300'}`}
+                          placeholder="example"
+                        />
+                      ) : (
+                        <div className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 h-[40px] flex items-center">
+                          <span className="text-gray-900 text-sm">
+                            {userData.name || 'No disponible'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">
+                        First Last Name
+                        {isEditing && <span className="text-red-500 ml-1">*</span>}
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={formData.first_last_name || ''}
+                          onChange={handleInputChange('first_last_name')}
+                          className={`w-full border rounded-md px-3 py-2 h-[40px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm ${!formData.first_last_name && submitLoading ? 'border-red-500' : 'border-gray-300'}`}
+                          placeholder="Espinosa"
+                        />
+                      ) : (
+                        <div className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 h-[40px] flex items-center">
+                          <span className="text-gray-900 text-sm">
+                            {userData.first_last_name || 'No disponible'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Second Last Name
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={formData.second_last_name || ''}
+                          onChange={handleInputChange('second_last_name')}
+                          className="w-full border border-gray-300 rounded-md px-3 py-2 h-[40px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                          placeholder="Segundo apellido"
+                        />
+                      ) : (
+                        <div className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 h-[40px] flex items-center">
+                          <span className="text-gray-900 text-sm">
+                            {userData.second_last_name || 'No disponible'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Selected roles */}
+                  {formData.roles && formData.roles.length > 0 && (
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-medium text-gray-700">Selected roles</h3>
+                      <div className="bg-gray-50 rounded-md p-3 border border-gray-200">
+                        <div className="flex flex-wrap gap-2">
+                          {formData.roles.map((role, index) => (
+                            <div key={index} className="flex items-center justify-between bg-white px-3 py-1 rounded border">
+                              <span className="text-sm text-gray-900">
+                                {role.label}
+                              </span>
+                              {isEditing && (
                                 <button
                                   type="button"
-                                  onClick={handleAddRole}
-                                  disabled={!formData.role}
-                                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                  onClick={() => handleRemoveRole(role)}
+                                  className="ml-2 text-gray-400 hover:text-red-500 transition-colors"
                                 >
-                                  <FaUserPlus size={14} />
+                                  <FaTrash size={12} />
                                 </button>
-                              </div>
-                              <div className="bg-gray-100 rounded-lg p-3 min-h-[60px]">
-                                {formData.roles.length === 0 ? (
-                                  <p className="text-gray-500 text-sm">
-                                    No se han agregado roles. Seleccione un rol del dropdown y haga clic en agregar.
-                                  </p>
-                                ) : (
-                                  <div className="flex flex-wrap gap-2">
-                                    {formData.roles.map((role, index) => (
-                                      <span
-                                        key={index}
-                                        className="px-3 py-1 bg-white text-gray-700 rounded-full text-sm flex items-center gap-2"
-                                      >
-                                        {role.label}
-                                        <button
-                                          type="button"
-                                          onClick={() => handleRemoveRole(role)}
-                                          className="text-red-500 hover:text-red-700"
-                                        >
-                                          ×
-                                        </button>
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex flex-wrap gap-2">
-                              {userData.roles && userData.roles.length > 0 ? (
-                                userData.roles.map((role, index) => (
-                                  <span
-                                    key={index}
-                                    className="px-3 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium border border-purple-200"
-                                  >
-                                    {role.name}
-                                  </span>
-                                ))
-                              ) : (
-                                <div className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg">
-                                  <span className="text-gray-500 text-sm">Sin roles asignados</span>
-                                </div>
                               )}
                             </div>
-                          )}
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <FormField
-                            label="Primer Login Completado"
-                            value={userData.first_login_complete ? 'Sí' : 'Pendiente'}
-                            icon={userData.first_login_complete ? <FaCheckCircle /> : <FaClock />}
-                            disabled={true}
-                          />
-                          <FormField
-                            label="ID de Usuario"
-                            value={userData.id}
-                            disabled={true}
-                          />
+                          ))}
                         </div>
                       </div>
-                    </FormSection>
+                    </div>
+                  )}
 
-                    {/* Foto de Perfil */}
-                    {userData.profile_picture && (
-                      <FormSection title="Foto de Perfil">
-                        <div className="flex justify-center">
-                          <div className="relative">
+                  {/* Información adicional en modo vista */}
+                  {!isEditing && (
+                    <div className="space-y-4 border-t border-gray-200 pt-6">
+                      <h3 className="text-lg font-semibold text-gray-900">Información Adicional</h3>
+                      
+                      {/* Información de contacto */}
+                      <div className="grid grid-cols-2 gap-4">
+
+
+                      <div className="space-y-1">
+                        <label className="block text-sm font-medium text-gray-700">Primer Login Completado</label>
+                        <div className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 h-[40px] flex items-center">
+                          <span className="text-gray-900 text-sm">
+                            {userData.first_login_complete ? 'Sí' : 'Pendiente'}
+                          </span>
+                        </div>
+                      </div>
+
+
+
+                      {/* Sección de Cambio de Estado */}
+                      {userData && getAvailableStatuses().length > 0 && (
+                        <div className="bg-gray-50 rounded-md p-4 border border-gray-200">
+                          <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                            <FaShieldAlt className="text-blue-600" />
+                            Cambiar Estado del Usuario
+                          </h4>
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-gray-700">Cambiar a:</span>
+                              <Select
+                                placeholder="Seleccionar nuevo estado"
+                                options={getAvailableStatuses()}
+                                onChange={(selectedOption) => {
+                                  if (selectedOption && !statusChangeLoading) {
+                                    handleStatusChange(selectedOption.value);
+                                  }
+                                }}
+                                isDisabled={statusChangeLoading}
+                                className="min-w-[200px]"
+                                isSearchable={false}
+                                styles={{
+                                  control: (base, state) => ({
+                                    ...base,
+                                    minHeight: '40px',
+                                    borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
+                                    boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                    '&:hover': {
+                                      borderColor: '#9ca3af'
+                                    }
+                                  }),
+                                  option: (base, state) => ({
+                                    ...base,
+                                    backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+                                    color: state.isSelected ? 'white' : '#374151'
+                                  })
+                                }}
+                              />
+                              {statusChangeLoading && (
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+
+                      {/* Foto de Perfil */}
+                      {userData.profile_picture && (
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-medium text-gray-700">Foto de Perfil</h4>
+                          <div className="flex justify-center">
                             <img
                               src={userData.profile_picture}
                               alt="Foto de perfil"
@@ -980,88 +1150,42 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                             />
                           </div>
                         </div>
-                      </FormSection>
-                    )}
-                  </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Mensaje de validación */}
+                  {isEditing && !isFormValid && submitLoading && (
+                    <div className="flex items-start gap-2 text-red-600 text-sm bg-red-50 border border-red-200 rounded-md p-3">
+                      <FaExclamationTriangle className="mt-0.5 flex-shrink-0" />
+                      <span>Please complete all required fields before submitting the form.</span>
+                    </div>
+                  )}
                 </div>
 
-                {/* Mensaje de validación */}
-                {isEditing && !isFormValid && (
-                  <div className="flex items-center gap-2 text-red-600 text-sm">
-                    <FaExclamationTriangle />
-                    Por favor complete todos los campos requeridos antes de enviar el formulario.
-                  </div>
-                )}
-
-                {/* Sección de Cambio de Estado */}
-                {!isEditing && userData && getAvailableStatuses().length > 0 && (
-                  <div className="card-secondary rounded-lg p-6 shadow-sm border border-primary">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                      <FaShieldAlt className="text-blue-600" />
-                      Cambiar Estado del Usuario
-                    </h3>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-700">Estado actual:</span>
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(userData.status_name)}`}>
-                          {userData.status_name}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-700">Cambiar a:</span>
-                        <Select
-                          placeholder="Seleccionar nuevo estado"
-                          options={getAvailableStatuses()}
-                          onChange={(selectedOption) => {
-                            if (selectedOption && !statusChangeLoading) {
-                              handleStatusChange(selectedOption.value);
-                            }
-                          }}
-                          isDisabled={statusChangeLoading}
-                          className="min-w-[200px]"
-                          isSearchable={false}
-                          styles={{
-                            control: (base) => ({
-                              ...base,
-                              minHeight: '40px',
-                            }),
-                          }}
-                        />
-                        {statusChangeLoading && (
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 {/* Botones de Acción */}
-                <div className="flex justify-end gap-3 pt-6 mt-6 card-secondary rounded-lg p-4 shadow-sm border border-primary">
+                <div className="flex justify-end gap-3 pt-6 mt-6 border-t border-gray-200">
                   {isEditing ? (
                     <>
                       <button
                         type="button"
                         onClick={handleCancel}
-                        className="btn-theme btn-secondary px-6 py-2 flex items-center gap-2"
+                        className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors text-sm font-medium"
                       >
-                        <FaArrowLeft />
-                        Cancelar
+                        Cancel
                       </button>
                       <button
                         type="submit"
                         disabled={!isFormValid || submitLoading}
-                        className="btn-theme btn-primary px-6 py-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="px-6 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium flex items-center gap-2"
                       >
                         {submitLoading ? (
                           <>
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            Actualizando...
+                            Submitting...
                           </>
                         ) : (
-                          <>
-                            <FaSave />
-                            Guardar Cambios
-                          </>
+                          'Submit'
                         )}
                       </button>
                     </>
@@ -1070,18 +1194,17 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                       <button
                         type="button"
                         onClick={onClose}
-                        className="btn-theme btn-secondary px-6 py-2 flex items-center gap-2"
+                        className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors text-sm font-medium"
                       >
-                        <FaArrowLeft />
-                        Cerrar
+                        Close
                       </button>
                       <button
                         type="button"
                         onClick={handleEdit}
-                        className="btn-theme btn-primary px-6 py-2 flex items-center gap-2"
+                        className="px-6 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors text-sm font-medium flex items-center gap-2"
                       >
                         <FaEdit />
-                        Editar Usuario
+                        Edit User
                       </button>
                     </>
                   )}
