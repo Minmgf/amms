@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
-import { FaArrowLeft, FaUser, FaIdCard, FaEnvelope, FaPhone, FaMapMarkerAlt, FaCalendarAlt, FaVenusMars, FaShieldAlt, FaCheckCircle, FaClock, FaTimesCircle, FaEdit, FaEye, FaSave, FaUserPlus, FaExclamationTriangle } from 'react-icons/fa';
+import { FaArrowLeft, FaUser, FaIdCard, FaEnvelope, FaPhone, FaMapMarkerAlt, FaCalendarAlt, FaVenusMars, FaShieldAlt, FaCheckCircle, FaClock, FaTimesCircle, FaEdit, FaEye, FaSave, FaUserPlus, FaExclamationTriangle, FaUserShield, FaTrash } from 'react-icons/fa';
 import * as Dialog from '@radix-ui/react-dialog';
 import Select from 'react-select';
 import { getDocumentTypes, getGenderTypes, getRoleTypes, editUser, changeUserStatus } from '../../../services/authService';
@@ -87,11 +87,30 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
     }
   }, [formData.role, formData.roles]);
 
-  const handleRemoveRole = React.useCallback((roleToRemove) => {
-    setFormData(prev => ({
-      ...prev,
-      roles: prev.roles.filter(role => role.value !== roleToRemove.value)
-    }));
+  // Función para hacer las opciones de select desde los datos de configuración
+  const getDocumentTypeOptions = React.useCallback(() => {
+    return documentTypes.map(type => ({ value: type.id, label: type.name }));
+  }, [documentTypes]);
+
+  const getGenderTypeOptions = React.useCallback(() => {
+    return genderTypes.map(type => ({ value: type.id, label: type.name }));
+  }, [genderTypes]);
+
+  const getRoleTypeOptions = React.useCallback(() => {
+    return roleTypes.map(type => ({ value: type.id, label: type.name }));
+  }, [roleTypes]);
+
+  // Función para mapear el ID del tipo de documento a su nombre
+  const getDocumentTypeName = React.useCallback((typeId) => {
+    const documentTypeMap = {
+      1: 'Cédula de Ciudadanía',
+      2: 'Tarjeta de Identidad', 
+      3: 'Cédula de Extranjería',
+      4: 'Pasaporte',
+      5: 'NIT'
+    };
+    
+    return documentTypeMap[typeId] || 'Tipo desconocido';
   }, []);
 
   // Función para convertir fecha a formato de input (YYYY-MM-DD)
@@ -150,7 +169,10 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
         name: userData.name || '',
         first_last_name: userData.first_last_name || '',
         second_last_name: userData.second_last_name || '',
-        type_document_id: userData.type_document_id ? { value: userData.type_document_id, label: userData.type_document_name } : null,
+        type_document_id: userData.type_document_id ? { 
+          value: userData.type_document_id, 
+          label: userData.type_document_name || getDocumentTypeName(userData.type_document_id)
+        } : null,
         document_number: userData.document_number || '',
         date_issuance_document: formattedIssuanceDate,
         birthday: formattedBirthday,
@@ -158,7 +180,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
         roles: userData.roles ? userData.roles.map(role => ({ value: role.id, label: role.name })) : []
       });
     }
-  }, [userData, formatDateForInput]);
+  }, [userData, formatDateForInput, getDocumentTypeName]);
 
   // Función para manejar el cambio de estado del usuario
   const handleStatusChange = React.useCallback(async (newStatus) => {
@@ -276,24 +298,52 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
     });
   }, []);
 
-  // Mover FormField fuera del render para evitar recreaciones
-  const FormField = React.useCallback(({ label, value, onChange, icon, type = 'text', className = '', required = false, disabled = false }) => (
-    <div className={`form-field ${className}`}>
-      <label className="text-sm font-semibold text-secondary mb-2 flex items-center gap-2">
-        {icon && <span className="text-accent">{icon}</span>}
-        {label} {required && <span className="text-error">*</span>}
-      </label>
-      <div className="relative">
+  // FormField con soporte para selects
+  const FormField = React.useCallback(({ label, value, onChange, icon, type = 'text', className = '', required = false, disabled = false, placeholder = '', options = [] }) => {
+    const showError = required && !value && submitLoading;
+    return (
+      <div className={`flex flex-col gap-1 ${className}`}>
+        <label className={`text-sm font-semibold mb-1 flex items-center gap-2 ${showError ? 'text-error' : 'text-primary'}`}>
+          {icon && <span className="text-accent">{icon}</span>}
+          {label} {required && <span className="text-error">*</span>}
+        </label>
         {isEditing ? (
-          <input
-            type={type}
-            value={value || ''}
-            onChange={onChange}
-            disabled={disabled}
-            className={`input-theme ${required && !value ? 'border-error' : ''} ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
-          />
+          type === 'select' ? (
+            <Select
+              value={value}
+              onChange={onChange}
+              options={options}
+              isDisabled={disabled}
+              placeholder={placeholder}
+              className="text-primary"
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  borderColor: showError ? '#ef4444' : '#d1d5db',
+                  minHeight: '40px',
+                  '&:hover': {
+                    borderColor: showError ? '#ef4444' : '#9ca3af'
+                  }
+                }),
+                option: (base, state) => ({
+                  ...base,
+                  backgroundColor: state.isSelected ? 'var(--accent-color)' : state.isFocused ? 'var(--surface-color)' : 'white',
+                  color: 'var(--primary-color)'
+                })
+              }}
+            />
+          ) : (
+            <input
+              type={type}
+              value={value || ''}
+              onChange={onChange}
+              disabled={disabled}
+              placeholder={placeholder}
+              className={`w-full rounded-md border px-3 py-2 bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent ${showError ? 'border-error' : 'border-neutral-300'} ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
+            />
+          )
         ) : (
-          <div className="w-full card-secondary">
+          <div className="w-full bg-neutral-100 rounded-md px-3 py-2 min-h-[40px] flex items-center">
             <span className="text-primary font-medium">
               {type === 'date' ? formatDate(value) :
                 typeof value === 'object' && value !== null ? value.label || 'No disponible' :
@@ -302,8 +352,8 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
           </div>
         )}
       </div>
-    </div>
-  ), [isEditing, formatDate]);
+    );
+  }, [isEditing, formatDate, submitLoading]);
 
   const FormSection = React.useCallback(({ title, icon, children, className = '' }) => (
     <div className={`card-theme ${className}`}>
@@ -361,7 +411,10 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
         name: userData.name || '',
         first_last_name: userData.first_last_name || '',
         second_last_name: userData.second_last_name || '',
-        type_document_id: userData.type_document_id ? { value: userData.type_document_id, label: userData.type_document_name } : null,
+        type_document_id: userData.type_document_id ? { 
+          value: userData.type_document_id, 
+          label: userData.type_document_name || getDocumentTypeName(userData.type_document_id)
+        } : null,
         document_number: userData.document_number || '',
         date_issuance_document: formattedIssuanceDate,
         birthday: formattedBirthday,
@@ -369,7 +422,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
         roles: userData.roles ? userData.roles.map(role => ({ value: role.id, label: role.name })) : []
       });
     }
-  }, [userData, formatDateForInput]);
+  }, [userData, formatDateForInput, getDocumentTypeName]);
 
   // Resetear estado cuando se cierra el modal
   useEffect(() => {
@@ -619,8 +672,8 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
 
       <Dialog.Root open={isOpen} onOpenChange={onClose}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-10" />
-          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-xl z-10 w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+          <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-xl z-50 w-full max-w-5xl max-h-[90vh] overflow-y-auto">
           <Dialog.Title className="sr-only">
             {isEditing ? 'Editar Usuario' : 'Detalles del Usuario'} - {getFullName()}
           </Dialog.Title>
