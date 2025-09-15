@@ -58,11 +58,14 @@ const TypesModal = ({
         prevData.map(item => {
           if (item.id === itemId) {
             const newStatusId = item.id_statues === 1 ? 2 : 1;
+            const newStatus = newStatusId === 1 ? 'Active' : 'Inactive';
+            console.log(`Item ID ${itemId} status changed to ${item.status}`);
+            console.log(`Updated item ${item.id_statues} and ${item.status}`);
             
             return {
               ...item,
               id_statues: newStatusId,
-              status: item.status,
+              status: newStatus,
               isActive: newStatusId === 1
             };
           }
