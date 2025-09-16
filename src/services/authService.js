@@ -28,12 +28,26 @@ export const login = async (payload, rememberMe = false) => {
 };
 
 export const logout = async () => {
-    const { data } = await apiUsers.post("/auth/logout");
+  try {
+    // obtener token actual antes de borrarlo
+    const token = getAuthToken();
+
+    // incluirlo en headers de la petición de logout
+    await apiUsers.post("/auth/logout", null, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  } catch (error) {
+    console.error("Error cerrando sesión:", error.response?.data || error.message);
+  } finally {
+    // limpiar en cliente SIEMPRE
     Cookies.remove("token");
     localStorage.removeItem("token");
-    sessionStorage.removeItem("token"); // También limpiar sessionStorage
-    return data;
+    sessionStorage.removeItem("token");
+    // opcional: limpiar axios headers
+    delete apiUsers.defaults.headers.common["Authorization"];
+  }
 };
+
 
 export const getTypeDocuments = async () => {
     const { data } = await apiUsers.get("/users/type-documents");
