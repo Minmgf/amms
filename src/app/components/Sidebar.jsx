@@ -132,33 +132,33 @@ export default function Sidebar({ isOpen, setIsOpen }) {
   // 👈 Definir menuItems con permisos asociados
   const menuItems = [
     { 
-      name: "Home", 
+      name: "Inicio", 
       icon: <FaHome />, 
       path: "/home"
       // Sin permisos - siempre visible
     },
     { 
-      name: "Machinery", 
+      name: "Maquinaria", 
       icon: <FaCogs />, 
       path: "/machinery",
       permissions: [],
       module: "machinery"
     },
     {
-      name: "Maintenance",
+      name: "Mantenimiento",
       icon: <FaTools />,
       path: "/maintenance",
       permissions: [],
       module: "maintenance",
       sub: [
         {
-          name: "Schedule Maintenance",
+          name: "Mantenimientos programados",
           icon: <FaCalendarCheck />,
           path: "/maintenance/scheduleMaintenance",
           permissions: [],
         },
         {
-          name: "Maintenance Requests",
+          name: "Solicitud de mantenimiento",
           icon: <FaRegNewspaper />,
           path: "/maintenance/maintenanceRequest",
           permissions: [],
@@ -166,26 +166,26 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       ],
     },
     {
-      name: "Payroll",
+      name: "Nomina",
       icon: <FaMoneyCheckAlt />,
       path: "/payroll",
       permissions: [],
       module: "payroll",
       sub: [
         { 
-          name: "Reports", 
+          name: "Reportes", 
           icon: <FaFileInvoice />, 
           path: "/payroll/reports",
           permissions: [],
         },
         {
-          name: "Novelty",
+          name: "Novedades",
           icon: <FaClipboardCheck />,
           path: "/payroll/novelty",
           permissions: [],
         },
         {
-          name: "Payrolls",
+          name: "Nominas",
           icon: <FaClipboardList />,
           path: "/payroll/payrolls",
           permissions: [],
@@ -193,20 +193,20 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       ],
     },
     {
-      name: "Requests",
+      name: "Solicitudes",
       icon: <FaClipboardList />,
       path: "/requests",
       permissions: [],
       module: "requests",
       sub: [
         { 
-          name: "Clients", 
+          name: "Clientes", 
           icon: <FaUsers />, 
           path: "/requests/clients",
           permissions: [],
         },
         {
-          name: "Service Managements",
+          name: "Gestión de servicios",
           icon: <FaTools />,
           path: "/requests/serviceManagement",
           permissions: [],
@@ -214,20 +214,20 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       ],
     },
     {
-      name: "User Management",
+      name: "Gestión de usuarios",
       icon: <FaUsers />,
       path: "/userManagement",
       permissions: [],
       module: "users",
       sub: [
         {
-          name: "Role Management",
+          name: "Gestión de roles",
           icon: <FaUserShield />,
           path: "/userManagement/roleManagement",
           permissions: ["roles.view"],
         },
         {
-          name: "Audit Log",
+          name: "Auditorías",
           icon: <FaHistory />,
           path: "/userManagement/auditLog",
           permissions: [],
@@ -235,20 +235,20 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       ],
     },
     {
-      name: "Monitoring",
+      name: "Monitoreo",
       icon: <FaBroadcastTower />,
       path: "/monitoring",
       permissions: [],
       module: "monitoring",
       sub: [
         {
-          name: "Devices Management",
+          name: "Gestión de dispositivos",
           icon: <FaDesktop />,
           path: "/monitoring/devicesManagement",
           permissions: [],
         },
         {
-          name: "Threshold",
+          name: "Umbrales",
           icon: <FaRssSquare />,
           path: "/monitoring/threshold",
           permissions: [],
@@ -256,7 +256,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       ],
     },
     {
-      name: "Parameterization",
+      name: "Parametrización",
       icon: <MdSettings />,
       path: "/parametrization",
       permissions: [],
@@ -410,10 +410,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         isOpen={confirmOpen}
         onClose={() => setConfirmOpen(false)}
         onConfirm={handleLogout}
-        title="Confirm Logout"
-        message="Are you sure you want to log out?"
-        confirmText="Confirm"
-        cancelText="Cancel"
+        title="Confirmar cierre de sesión"
+        message="Está seguro que quiere cerrar sesión?"
+        confirmText="Confirmar"
+        cancelText="Cancelar"
         confirmColor="bg-red-600 hover:bg-red-500 active:bg-red-700"
         cancelColor="bg-gray-600 hover:bg-gray-500"
       />

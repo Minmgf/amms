@@ -50,7 +50,7 @@ const Page = () => {
       }
       const response = await completePreregister({ ...data, token });
       setModalMessage(
-        response?.message || "Preregister completed successfully"
+        response?.message || "Preregistro completado exitosamente"
       );
       setSuccessOpen(true);
       localStorage.removeItem("validationToken");
@@ -63,7 +63,7 @@ const Page = () => {
       const message =
         error.response?.data?.detail ||
         error.message ||
-        "Something went wrong. Please try again.";
+        "Algo salió mal, intente de nuevo.";
       setModalMessage(message);
       setErrorOpen(true);
     } finally {
@@ -76,13 +76,13 @@ const Page = () => {
       <SuccessModal
         isOpen={successOpen}
         onClose={() => setSuccessOpen(false)}
-        title="Preregister Successful"
+        title="Preregistro Exitoso"
         message={modalMessage}
       />
       <ErrorModal
         isOpen={errorOpen}
         onClose={() => setErrorOpen(false)}
-        title="Preregister Failed"
+        title="Preregistro Fallido"
         message={modalMessage}
       />
       <div
@@ -95,25 +95,26 @@ const Page = () => {
             <Logo variant="desktop" />
           </div>
 
-          <LoginCard title="Sign Up">
+          <LoginCard title="Registrarse">
             <form onSubmit={handleSubmit(onSubmit)}>
               <div className="mb-4 relative">
                 <label
                   className="block text-white mb-3 text-md font-medium"
                   htmlFor="email"
                 >
-                  Email
+                  Correo electrónico
                 </label>
                 <input
                   id="email"
                   type="email"
+                  area-label="Email Input"
                   {...register("email", { required: true })}
                   className="py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
                   placeholder="sigma1999@email.com"
                 />
                 {errors.email && (
                   <span className="text-red-400 text-xs absolute left-0 -bottom-6">
-                    Este campo es requerido
+                    Este campo es obligatorio.
                   </span>
                 )}
               </div>
@@ -122,11 +123,12 @@ const Page = () => {
                   className="block text-white mb-3 text-md font-medium"
                   htmlFor="new-password"
                 >
-                  New password
+                  Contraseña
                 </label>
                 <input
                   id="new-password"
                   type="password"
+                  area-label="Password Input"
                   {...register("password", { required: true })}
                   className="py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
                   placeholder="Sigma1999"
@@ -145,11 +147,12 @@ const Page = () => {
                   className="block text-white mb-3 text-md font-medium"
                   htmlFor="confirm-password"
                 >
-                  Confirm new password
+                  Confirmar contraseña
                 </label>
                 <input
                   id="confirm-password"
                   type="password"
+                  area-label="Confirm Password Input"
                   {...register("password_confirmation", {
                     required: true,
                     validate: (value) => value === password,
@@ -170,47 +173,48 @@ const Page = () => {
               </div>
               <div className="text-sm text-white mb-6">
                 <p className="mb-2 font-semibold">
-                  For security reasons, your password must meet the following
-                  requirements:
+                  Por motivos de seguridad, su contraseña debe cumplir los siguientes
+                  requisitos:
                 </p>
                 <p
                   className={
                     validations.upper ? "text-green-400" : "text-red-400"
                   }
                 >
-                  ✔ Include at least one capital letter (A-Z).
+                  ✔ Debe incluir al menos una letra mayúscula (A-Z).
                 </p>
                 <p
                   className={
                     validations.lower ? "text-green-400" : "text-red-400"
                   }
                 >
-                  ✔ Include at least one lowercase letter (a-z).
+                  ✔ Debe uncluir al menos un aletra minúscula (a-z).
                 </p>
                 <p
                   className={
                     validations.number ? "text-green-400" : "text-red-400"
                   }
                 >
-                  ✔ Include at least one number (0-9).
+                  ✔ Debe incluir al menos un número (0-9).
                 </p>
                 <p
                   className={
                     validations.length ? "text-green-400" : "text-red-400"
                   }
                 >
-                  ✔ Have a minimum of 12 characters.
+                  ✔ Debe tener un mínimo de 12 caracteres.
                 </p>
               </div>
               <button
                 type="submit"
+                area-label="Send Button"
                 disabled={
                   loading ||
                   !(Object.values(validations).every(Boolean) && passwordsMatch)
                 }
                 className="w-full text-white py-2 mt-6 rounded-lg bg-red-600 text-lg font-semibold shadow hover:bg-red-500 active:bg-red-700 transition-colors"
               >
-                Send
+                Enviar
               </button>
             </form>
           </LoginCard>
