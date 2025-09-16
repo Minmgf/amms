@@ -14,7 +14,7 @@ export const useRoleForm = (isOpen, mode, roleData) => {
     // Inicializar formulario cuando se abre el modal
     useEffect(() => {
         if (isOpen) {
-            if (mode === "edit" && roleData) {
+            if ((mode === "edit" || mode === "view") && roleData) {
                 setFormData({
                     roleName: roleData.roleName || "",
                     description: roleData.description || "",

@@ -240,9 +240,9 @@ export default function Header() {
               >
                 <div className="flex items-center justify-between px-4 py-3 border-b border-primary bg-background">
                   <div className="flex items-center gap-2">
-                    <h2 className="font-semibold text-primary">Notifications</h2>
+                    <h2 className="font-semibold text-primary">Notificaciones</h2>
                     <span className="text-sm text-secondary">
-                      {unreadCount} {unreadCount === 1 ? "unread" : "unread"}
+                      {unreadCount} {unreadCount === 1 ? "sin leer" : "sin leer"}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
@@ -252,11 +252,11 @@ export default function Header() {
                         disabled={loading}
                         className="text-sm text-accent cursor-pointer hover:underline"
                       >
-                        Mark all as read
+                        Leer todo
                       </button>
                     ) : (
                       <span className="text-sm text-secondary">
-                        All notifications read
+                        Notificaciones leídas
                       </span>
                     )}
                     <button
@@ -303,7 +303,7 @@ export default function Header() {
                                 onClick={() => markOneAsRead(n.id)}
                                 className="text-xs text-accent cursor-pointer hover:underline"
                               >
-                                Mark as read
+                                Marcar Como leído
                               </button>
                             ) : (
                               <span className="text-xs text-secondary">Read</span>

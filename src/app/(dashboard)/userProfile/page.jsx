@@ -137,7 +137,7 @@ const ProfilePage = () => {
     <div className="parametrization-page grid place-items-center py-8 px-4">
       {/* Title outside container */}
       <div className="w-full max-w-5xl 2xl:max-w-none xl:w-8/9 2xl:w-9/10">
-        <h1 className="parametrization-header text-3xl font-bold mb-8">My profile</h1>
+        <h1 className="parametrization-header text-3xl font-bold mb-8">Perfil del usuario</h1>
 
         <div className="bg-surface rounded-2xl shadow p-6 md:p-10">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -198,29 +198,29 @@ const ProfilePage = () => {
             <div className="md:col-span-2 grid gap-6">
               {/* Personal info */}
               <h3 className="text-xl font-bold border-b pb-3 text-primary">
-                Personal information
+                Información personal
               </h3>
 
               <div className="grid grid-cols-2 gap-y-4 text-sm">
                 <p>
-                  <span className="font-semibold">Name: </span>
+                  <span className="font-semibold">Nombres: </span>
                   {userData.name}
                 </p>
                 <p>
-                  <span className="font-semibold">Last name: </span>
+                  <span className="font-semibold">Apellidos: </span>
                   {`${userData.first_last_name || ""} ${userData.second_last_name || ""
                     }`}
                 </p>
                 <p>
-                  <span className="font-semibold">Document type: </span>
+                  <span className="font-semibold">Tipo de identificación: </span>
                   {userData.type_document_name}
                 </p>
                 <p>
-                  <span className="font-semibold">Document number: </span>
+                  <span className="font-semibold">Número de identificación: </span>
                   {userData.document_number}
                 </p>
                 <p>
-                  <span className="font-semibold">Email: </span>
+                  <span className="font-semibold">Correo electrónico: </span>
                   {userData.email}
                 </p>
                 <p>
@@ -228,17 +228,17 @@ const ProfilePage = () => {
                   {userData.gender_name}
                 </p>
                 <p>
-                  <span className="font-semibold">Birth date: </span>
+                  <span className="font-semibold">Fecha de nacimiento: </span>
                   {userData.birthday?.split("T")[0]}
                 </p>
                 <p>
-                  <span className="font-semibold">Expedition date: </span>
+                  <span className="font-semibold">Fecha de expedición: </span>
                   {userData.date_issuance_document?.split("T")[0]}
                 </p>
               </div>
               
               <h3 className="text-xl font-bold border-b pb-3 text-primary">
-                Residencial information
+                Información de residencia y contacto
               </h3>
               <form
                 id="residenceForm"
@@ -249,20 +249,21 @@ const ProfilePage = () => {
                   {/* Country */}
                   <div>
                     <label className="block text-sm font-semibold text-secondary mb-2">
-                      Country
+                      País
                     </label>
                     <select
+                      area-label="Country Select"
                       {...register("country", { required: true })}
                       className="w-full border rounded-lg px-3 py-2 bg-surface"
                     >
-                      <option value="">Select...</option>
+                      <option value="">Seleccione...</option>
                       {countriesList.map((c) => (
                         <option key={c.iso2} value={c.iso2}>{c.name}</option>
                       ))}
                     </select>
                     {errors.country && (
                       <p className="text-red-500 text-xs mt-1">
-                        Country is required
+                        El país es obligatorio.
                       </p>
                     )}
                   </div>
@@ -270,20 +271,21 @@ const ProfilePage = () => {
                   {/* Region */}
                   <div>
                     <label className="block text-sm font-semibold text-secondary mb-2">
-                      Region
+                      Región
                     </label>
                     <select
+                      area-label="Region Select"
                       {...register("department", { required: true })} disabled={!statesList.length}
                       className="w-full border rounded-lg px-3 py-2 bg-surface"
                     >
-                      <option value="">Select...</option>
+                      <option value="">Seleccione...</option>
                       {statesList.map((s) => (
                         <option key={s.iso2} value={s.iso2}>{s.name}</option>
                       ))}
                     </select>
                     {errors.department && (
                       <p className="text-red-500 text-xs mt-1">
-                        Department is required
+                        La región es obligatoria.
                       </p>
                     )}
                   </div>
@@ -291,20 +293,21 @@ const ProfilePage = () => {
                   {/* City */}
                   <div>
                     <label className="block text-sm font-semibold text-secondary mb-2">
-                      City
+                      Ciudad
                     </label>
                     <select
+                      area-label="City Select"
                       {...register("city", { required: true })} disabled={!citiesList.length}
                       className="w-full border rounded-lg px-3 py-2 bg-surface"
                     >
-                      <option value="">Select...</option>
+                      <option value="">Seleccione...</option>
                       {citiesList.map((c) => (
                         <option key={c.id} value={c.id}>{c.name}</option>
                       ))}
                     </select>
                     {errors.city && (
                       <p className="text-red-500 text-xs mt-1">
-                        City is required
+                        La ciudad es obligatoria.
                       </p>
                     )}
                   </div>
@@ -314,15 +317,16 @@ const ProfilePage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-semibold text-secondary mb-2">
-                      Address
+                      Dirección de residencia
                     </label>
                     <input
+                      area-label="Address Input"
                       type="text"
                       {...register("address", {
-                        required: "Address is required",
+                        required: "La dirección de residencia es obligatoria",
                         minLength: {
                           value: 10,
-                          message: "At least 10 characters",
+                          message: "Al menos 10 caracteres",
                         },
                       })}
                       placeholder="Example..."
@@ -338,12 +342,13 @@ const ProfilePage = () => {
 
                   <div>
                     <label className="block text-sm font-semibold text-secondary mb-2">
-                      Phone number
+                      Número de teléfono
                     </label>
                     <input
+                      area-label="Phone Number Input"
                       type="text"
                       {...register("phoneNumber", {
-                        required: "Phone number is required",
+                        required: "El número de teléfono es obligatorio",
                         pattern: {
                           // permite dígitos, espacios, paréntesis, guiones y un + inicial
                           value: /^[0-9+\-() ]{7,15}$/,
@@ -367,16 +372,18 @@ const ProfilePage = () => {
               {/* Buttons */}
                 <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-center">
                 <button
+                  area-label="Change Password Button"
                   onClick={() => setIsChangePasswordModalOpen(true)}
                   className="parametrization-action-button font-semibold px-8 py-3 rounded-lg justify-self-center md:justify-self-start"
                 >
-                  Change Password
+                  Cambiar contraseña
                 </button>
                 <button
+                  area-label="Update Button"
                   type="submit"
                   form="residenceForm"
                   className="parametrization-action-button font-semibold px-8 py-3 rounded-lg">
-                  Update
+                  Actualizar
                 </button>
               </div>
             </div>
@@ -398,13 +405,13 @@ const ProfilePage = () => {
       <SuccessModal
         isOpen={successOpen}
         onClose={() => setSuccessOpen(false)}
-        title="Update Successful"
+        title="Actualización Exitosa"
         message={modalMessage}
       />
       <ErrorModal
         isOpen={errorOpen}
         onClose={() => setErrorOpen(false)}
-        title="Update Failed"
+        title="Actualización Fallida"
         message={modalMessage}
       />
     </div>

@@ -131,10 +131,10 @@ const page = () => {
   //---------------------------------------------//
   const handleOpenStatusConfirm = useCallback((roleId, currentStatusId) => {
     const role = data.find(r => r.id === roleId);
-    const actionText = currentStatusId === 1 ? "deactivate" : "activate";
+    const actionText = currentStatusId === 1 ? "desactivar" : "activar";
 
     setPendingStatusChange({ roleId, currentStatusId });
-    setConfirmMessage(`Are you sure you want to ${actionText} the role "${role?.roleName}"?`);
+    setConfirmMessage(`Esta seguro que quiere ${actionText} el rol "${role?.roleName}"?`);
     setConfirmModalOpen(true);
   }, [data]);
 
@@ -183,7 +183,7 @@ const page = () => {
   const columns = useMemo(
     () => [
       columnHelper.accessor("roleName", {
-        header: "Role name",
+        header: "Nombre Rol",
         cell: info => (
           <div className="text-primary">
             {info.getValue()}
@@ -191,7 +191,7 @@ const page = () => {
         ),
       }),
       columnHelper.accessor('description', {
-        header: 'Description',
+        header: 'Descripción',
         cell: info => (
           <div className="text-secondary">
             {info.getValue()}
@@ -199,7 +199,7 @@ const page = () => {
         ),
       }),
       columnHelper.accessor("quantityUsers", {
-        header: "Users",
+        header: "Usuarios",
         cell: info => (
           <div className="text-secondary">
             {info.getValue()}
@@ -208,7 +208,7 @@ const page = () => {
       }),
 
       columnHelper.accessor("statusId", {
-        header: "Status",
+        header: "Estado",
         cell: info => {
           const statusId = info.getValue();
           const statusName = info.row.original.status;
@@ -226,22 +226,32 @@ const page = () => {
         },
       }),
       columnHelper.accessor("id", {
-        header: "Actions",
+        header: "Acciones",
         cell: info => {
           const statusId = info.row.original.statusId;
           return (
             <div className="flex space-x-2">
               <button
+                area-label="Detail Button"
+                onClick={() => handleOpenRoleFormModal("view", info.getValue())}
+                className="p-2 hover:bg-gray-100 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                title="Ver detalles"
+              >
+                <FiEye className="text-secondary" />
+              </button>
+              <button
+                area-label="Edit Button"
                 onClick={() => handleOpenRoleFormModal("edit", info.getValue())}
                 className="p-2 hover:bg-gray-100 rounded-md transition-colors opacity-0 group-hover:opacity-100"
-                title="View details"
+                title="Editar"
               >
                 <FiEdit2 className="text-secondary" />
               </button>
               <button
+                area-label="Change Status Button"
                 onClick={() => handleOpenStatusConfirm(info.getValue(), statusId)}
                 className="p-2 hover:bg-gray-100 rounded-md transition-colors opacity-0 group-hover:opacity-100"
-                title={statusId === 1 ? "Inactivate" : "Activate"}
+                title={statusId === 1 ? "Inactivar" : "Activar"}
               >
                 {statusId === 1 ?
                   <FiXCircle className="text-secondary" />
@@ -272,7 +282,7 @@ const page = () => {
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6 md:mb-10">
-            <h1 className="parametrization-header text-2xl md:text-3xl font-bold">Role Management</h1>
+            <h1 className="parametrization-header text-2xl md:text-3xl font-bold">Gestión de Roles</h1>
           </div>
           {/* Filter, Search and Add */}
           <div className="mb-4 md:mb-6 flex flex-col sm:flex-row gap-4 justify-between lg:justify-start">
@@ -282,7 +292,7 @@ const page = () => {
                 <FiSearch className="text-secondary w-4 h-4 mr-2" />
                 <input
                   type="text"
-                  placeholder="Introduce a role name..."
+                  placeholder="Introduce el nombre de un rol..."
                   value={globalFilter}
                   onChange={(e) => setGlobalFilter(e.target.value)}
                   className="flex-1 outline-none"
@@ -296,7 +306,7 @@ const page = () => {
 
             >
               <FiFilter className="filter-icon w-4 h-4" />
-              <span className="text-sm">Filter by</span>
+              <span className="text-sm">Filtrar por</span>
             </button>
             <PermissionGuard permission="roles.create">
               <button
@@ -304,7 +314,7 @@ const page = () => {
                 className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit"
               >
                 <FiUsers className="w-4 h-4" />
-                <span className="text-sm">Add Role</span>
+                <span className="text-sm">Añadir Rol</span>
               </button>
             </PermissionGuard>
           </div>
@@ -332,9 +342,9 @@ const page = () => {
         isOpen={confirmModalOpen}
         onClose={handleCancelStatusChange}
         onConfirm={handleConfirmStatusChange}
-        title="Confirm Status Change"
+        title="Confirmar cambio de estado"
         message={confirmMessage}
-        confirmText={pendingStatusChange?.currentStatusId === 1 ? "Deactivate" : "Activate"}
+        confirmText={pendingStatusChange?.currentStatusId === 1 ? "Desactivar" : "Activar"}
         cancelText="Cancel"
       />
       <RoleManagementFilter
@@ -343,8 +353,8 @@ const page = () => {
         statusFilter={statusFilter}
         onApply={(newStatus) => setStatusFilter(newStatus)}
       />
-      <SuccessModal isOpen={successOpen} onClose={() => setSuccessOpen(false)} title="Successfull" message={modalMessage} />
-      <ErrorModal isOpen={errorOpen} onClose={() => setErrorOpen(false)} title="Failed" message={modalMessage} />
+      <SuccessModal isOpen={successOpen} onClose={() => setSuccessOpen(false)} title="Exitoso" message={modalMessage} />
+      <ErrorModal isOpen={errorOpen} onClose={() => setErrorOpen(false)} title="Fallido" message={modalMessage} />
     </>
   );
 };

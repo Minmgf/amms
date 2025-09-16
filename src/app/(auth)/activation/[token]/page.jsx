@@ -62,7 +62,7 @@ const page = () => {
             )}
 
             <h1 className="text-center font-bold text-xl text-white tracking-wide mb-4 mt-6">
-              {status === "success" ? "Email Confirmed!" : status === "error" ? "Error" : "Activating..."}
+              {status === "success" ? "Correo electrónico confirmado!" : status === "error" ? "Error" : "Activando..."}
             </h1>
 
             <div className="text-center px-7 flex flex-col gap-5 text-white">
@@ -72,18 +72,19 @@ const page = () => {
 
             {status === "success" && (
               <Link
+                area-label="Next"
                 href="/login"
                 className="w-3/4 text-center text-white py-2 mt-6 rounded-lg bg-red-600 text-lg font-semibold shadow hover:bg-red-500 active:bg-red-700 transition-colors"
               >
-                Next
+                Siguiente
               </Link>
             )}
             <div className="flex justify-center text-white text-md mt-7 mt-2 gap-2">
               <a href="" className="hover:underline">
-                Already have an account
+                Ya tiene una cuenta activa?
               </a>
-              <Link href="/login" className="hover:underline font-bold">
-                Log in here
+              <Link area-label="Login" href="/login" className="hover:underline font-bold">
+                Inicie sesión aquí
               </Link>
             </div>
           </div>
