@@ -246,13 +246,19 @@ export default function Header() {
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <button
-                      onClick={markAllAsRead}
-                      disabled={loading}
-                      className="text-sm text-accent cursor-pointer hover:underline"
-                    >
-                      Leer todo
-                    </button>
+                    {unreadCount > 0 ? (
+                      <button
+                        onClick={markAllAsRead}
+                        disabled={loading}
+                        className="text-sm text-accent cursor-pointer hover:underline"
+                      >
+                        Leer todo
+                      </button>
+                    ) : (
+                      <span className="text-sm text-secondary">
+                        Notificaciones leídas
+                      </span>
+                    )}
                     <button
                       onClick={() => setShowNotis(false)}
                       className="rounded-theme-md cursor-pointer hover:bg-hover p-1 transition-colors"
