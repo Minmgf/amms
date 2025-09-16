@@ -732,29 +732,29 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
 
       <Dialog.Root open={isOpen} onOpenChange={onClose}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40" />
+          <Dialog.Overlay className="modal-overlay" />
           <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-xl z-50 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
           <Dialog.Title className="sr-only">
             {isEditing ? 'Update User' : 'Detalles del Usuario'} - {getFullName()}
           </Dialog.Title>
 
-          <div className="bg-white">
+          <div className="parametrization-modal" style={{ width: 'auto', maxWidth: '64rem' }}>
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
               <div className="flex items-center gap-3">
                 <button
                   onClick={onClose}
-                  className="text-gray-500 hover:text-gray-700 transition-colors"
+                  className="parametrization-action-button p-2"
                 >
                   <FaArrowLeft size={20} />
                 </button>
-                <h2 className="text-xl font-semibold text-gray-900">
+                <h2 className="text-xl font-semibold" style={{ color: 'var(--color-text)' }}>
                   {isEditing ? 'Update User' : 'Detalles del Usuario'}
                 </h2>
               </div>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="parametrization-action-button p-2"
               >
                 ×
               </button>
@@ -762,9 +762,9 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
 
             {/* Loading inicial */}
             {loading && (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto"></div>
-                <p className="mt-4 text-secondary">Cargando configuración...</p>
+              <div className="text-center py-8 parametrization-loading">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto" style={{ borderColor: 'var(--color-accent)' }}></div>
+                <p className="mt-4" style={{ color: 'var(--color-text-secondary)' }}>Cargando configuración...</p>
               </div>
             )}
 
@@ -776,12 +776,12 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
 
             {/* Formulario */}
             {!loading && (
-              <form onSubmit={handleSubmit} className="p-6">
+              <form onSubmit={handleSubmit}>
                 <div className="space-y-6">
                   {/* Primera fila: Tipo de documento, Número de documento, Género */}
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium" style={{ color: 'var(--color-text)' }}>
                         Identification type
                       </label>
                       {isEditing ? (
@@ -795,22 +795,31 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                             control: (base, state) => ({
                               ...base,
                               minHeight: '40px',
-                              borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                              boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                              backgroundColor: 'var(--color-input-bg)',
+                              borderColor: state.isFocused ? 'var(--color-accent)' : 'var(--color-border)',
+                              boxShadow: state.isFocused ? '0 0 0 1px var(--color-accent)' : 'none',
                               '&:hover': {
-                                borderColor: '#9ca3af'
+                                borderColor: 'var(--color-border)'
                               }
                             }),
                             option: (base, state) => ({
                               ...base,
-                              backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                              color: state.isSelected ? 'white' : '#374151'
+                              backgroundColor: state.isSelected ? 'var(--color-accent)' : state.isFocused ? 'var(--color-hover)' : 'var(--color-background)',
+                              color: state.isSelected ? 'white' : 'var(--color-text)'
+                            }),
+                            singleValue: (base) => ({
+                              ...base,
+                              color: 'var(--color-text)'
+                            }),
+                            placeholder: (base) => ({
+                              ...base,
+                              color: 'var(--color-text-secondary)'
                             })
                           }}
                         />
                       ) : (
-                        <div className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 h-[40px] flex items-center">
-                          <span className="text-gray-900 text-sm">
+                        <div className="parametrization-input h-[40px] flex items-center">
+                          <span className="text-sm" style={{ color: 'var(--color-text)' }}>
                             {userData.type_document_name || 'No disponible'}
                           </span>
                         </div>
@@ -818,7 +827,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                     </div>
                     
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium" style={{ color: 'var(--color-text)' }}>
                         Identification number
                       </label>
                       {isEditing ? (
@@ -826,12 +835,12 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                           type="text"
                           value={formData.document_number || ''}
                           onChange={handleInputChange('document_number')}
-                          className="w-full border border-gray-300 rounded-md px-3 py-2 h-[40px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                          className="parametrization-input h-[40px] text-sm"
                           placeholder="10765000002"
                         />
                       ) : (
-                        <div className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 h-[40px] flex items-center">
-                          <span className="text-gray-900 text-sm">
+                        <div className="parametrization-input h-[40px] flex items-center">
+                          <span className="text-sm" style={{ color: 'var(--color-text)' }}>
                             {userData.document_number || 'No disponible'}
                           </span>
                         </div>
@@ -839,7 +848,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                     </div>
                     
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium" style={{ color: 'var(--color-text)' }}>
                         Gender
                       </label>
                       {isEditing ? (
@@ -853,22 +862,31 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                             control: (base, state) => ({
                               ...base,
                               minHeight: '40px',
-                              borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                              boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                              backgroundColor: 'var(--color-input-bg)',
+                              borderColor: state.isFocused ? 'var(--color-accent)' : 'var(--color-border)',
+                              boxShadow: state.isFocused ? '0 0 0 1px var(--color-accent)' : 'none',
                               '&:hover': {
-                                borderColor: '#9ca3af'
+                                borderColor: 'var(--color-border)'
                               }
                             }),
                             option: (base, state) => ({
                               ...base,
-                              backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                              color: state.isSelected ? 'white' : '#374151'
+                              backgroundColor: state.isSelected ? 'var(--color-accent)' : state.isFocused ? 'var(--color-hover)' : 'var(--color-background)',
+                              color: state.isSelected ? 'white' : 'var(--color-text)'
+                            }),
+                            singleValue: (base) => ({
+                              ...base,
+                              color: 'var(--color-text)'
+                            }),
+                            placeholder: (base) => ({
+                              ...base,
+                              color: 'var(--color-text-secondary)'
                             })
                           }}
                         />
                       ) : (
-                        <div className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 h-[40px] flex items-center">
-                          <span className="text-gray-900 text-sm">
+                        <div className="parametrization-input h-[40px] flex items-center">
+                          <span className="text-sm" style={{ color: 'var(--color-text)' }}>
                             {userData.gender_name || 'No disponible'}
                           </span>
                         </div>
@@ -879,7 +897,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                   {/* Segunda fila: Fecha de expedición, Fecha de nacimiento */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium" style={{ color: 'var(--color-text)' }}>
                         Expedition date
                       </label>
                       {isEditing ? (
@@ -887,11 +905,11 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                           type="date"
                           value={formData.date_issuance_document || ''}
                           onChange={handleInputChange('date_issuance_document')}
-                          className="w-full border border-gray-300 rounded-md px-3 py-2 h-[40px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                          className="parametrization-input h-[40px] text-sm"
                         />
                       ) : (
-                        <div className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 h-[40px] flex items-center">
-                          <span className="text-gray-900 text-sm">
+                        <div className="parametrization-input h-[40px] flex items-center">
+                          <span className="text-sm" style={{ color: 'var(--color-text)' }}>
                             {formatDate(userData.date_issuance_document)}
                           </span>
                         </div>
@@ -899,7 +917,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                     </div>
                     
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium" style={{ color: 'var(--color-text)' }}>
                         Birth date
                       </label>
                       {isEditing ? (
@@ -907,11 +925,11 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                           type="date"
                           value={formData.birthday || ''}
                           onChange={handleInputChange('birthday')}
-                          className="w-full border border-gray-300 rounded-md px-3 py-2 h-[40px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                          className="parametrization-input h-[40px] text-sm"
                         />
                       ) : (
-                        <div className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 h-[40px] flex items-center">
-                          <span className="text-gray-900 text-sm">
+                        <div className="parametrization-input h-[40px] flex items-center">
+                          <span className="text-sm" style={{ color: 'var(--color-text)' }}>
                             {formatDate(userData.birthday)}
                           </span>
                         </div>
@@ -922,7 +940,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                   {/* Tercera fila: Role y Add button */}
                   <div className="grid grid-cols-4 gap-4 items-end">
                     <div className="col-span-3 space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium" style={{ color: 'var(--color-text)' }}>
                         Role
                       </label>
                       {isEditing ? (
@@ -939,22 +957,31 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                             control: (base, state) => ({
                               ...base,
                               minHeight: '40px',
-                              borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                              boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                              backgroundColor: 'var(--color-input-bg)',
+                              borderColor: state.isFocused ? 'var(--color-accent)' : 'var(--color-border)',
+                              boxShadow: state.isFocused ? '0 0 0 1px var(--color-accent)' : 'none',
                               '&:hover': {
-                                borderColor: '#9ca3af'
+                                borderColor: 'var(--color-border)'
                               }
                             }),
                             option: (base, state) => ({
                               ...base,
-                              backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                              color: state.isSelected ? 'white' : '#374151'
+                              backgroundColor: state.isSelected ? 'var(--color-accent)' : state.isFocused ? 'var(--color-hover)' : 'var(--color-background)',
+                              color: state.isSelected ? 'white' : 'var(--color-text)'
+                            }),
+                            singleValue: (base) => ({
+                              ...base,
+                              color: 'var(--color-text)'
+                            }),
+                            placeholder: (base) => ({
+                              ...base,
+                              color: 'var(--color-text-secondary)'
                             })
                           }}
                         />
                       ) : (
-                        <div className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 h-[40px] flex items-center">
-                          <span className="text-gray-900 text-sm">
+                        <div className="parametrization-input h-[40px] flex items-center">
+                          <span className="text-sm" style={{ color: 'var(--color-text)' }}>
                             {userData.roles && userData.roles.length > 0 ? userData.roles[0].name : 'No disponible'}
                           </span>
                         </div>
@@ -967,7 +994,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                           type="button"
                           onClick={handleAddRole}
                           disabled={!formData.role}
-                          className="w-full bg-black text-white rounded-md px-4 py-2 h-[40px] hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                          className="btn-theme btn-primary w-full h-[40px] text-sm font-medium"
                         >
                           Add
                         </button>
@@ -978,21 +1005,21 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                   {/* Cuarta fila: Nombres y apellidos */}
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium" style={{ color: 'var(--color-text)' }}>
                         Name
-                        {isEditing && <span className="text-red-500 ml-1">*</span>}
+                        {isEditing && <span style={{ color: 'var(--color-error)' }} className="ml-1">*</span>}
                       </label>
                       {isEditing ? (
                         <input
                           type="text"
                           value={formData.name || ''}
                           onChange={handleInputChange('name')}
-                          className={`w-full border rounded-md px-3 py-2 h-[40px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm ${!formData.name && submitLoading ? 'border-red-500' : 'border-gray-300'}`}
+                          className={`parametrization-input h-[40px] text-sm ${!formData.name && submitLoading ? 'border-red-500' : ''}`}
                           placeholder="example"
                         />
                       ) : (
-                        <div className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 h-[40px] flex items-center">
-                          <span className="text-gray-900 text-sm">
+                        <div className="parametrization-input h-[40px] flex items-center">
+                          <span className="text-sm" style={{ color: 'var(--color-text)' }}>
                             {userData.name || 'No disponible'}
                           </span>
                         </div>
@@ -1000,21 +1027,21 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                     </div>
                     
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium" style={{ color: 'var(--color-text)' }}>
                         First Last Name
-                        {isEditing && <span className="text-red-500 ml-1">*</span>}
+                        {isEditing && <span style={{ color: 'var(--color-error)' }} className="ml-1">*</span>}
                       </label>
                       {isEditing ? (
                         <input
                           type="text"
                           value={formData.first_last_name || ''}
                           onChange={handleInputChange('first_last_name')}
-                          className={`w-full border rounded-md px-3 py-2 h-[40px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm ${!formData.first_last_name && submitLoading ? 'border-red-500' : 'border-gray-300'}`}
+                          className={`parametrization-input h-[40px] text-sm ${!formData.first_last_name && submitLoading ? 'border-red-500' : ''}`}
                           placeholder="Espinosa"
                         />
                       ) : (
-                        <div className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 h-[40px] flex items-center">
-                          <span className="text-gray-900 text-sm">
+                        <div className="parametrization-input h-[40px] flex items-center">
+                          <span className="text-sm" style={{ color: 'var(--color-text)' }}>
                             {userData.first_last_name || 'No disponible'}
                           </span>
                         </div>
@@ -1022,7 +1049,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                     </div>
 
                     <div className="space-y-1">
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium" style={{ color: 'var(--color-text)' }}>
                         Second Last Name
                       </label>
                       {isEditing ? (
@@ -1030,12 +1057,12 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                           type="text"
                           value={formData.second_last_name || ''}
                           onChange={handleInputChange('second_last_name')}
-                          className="w-full border border-gray-300 rounded-md px-3 py-2 h-[40px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                          className="parametrization-input h-[40px] text-sm"
                           placeholder="Segundo apellido"
                         />
                       ) : (
-                        <div className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 h-[40px] flex items-center">
-                          <span className="text-gray-900 text-sm">
+                        <div className="parametrization-input h-[40px] flex items-center">
+                          <span className="text-sm" style={{ color: 'var(--color-text)' }}>
                             {userData.second_last_name || 'No disponible'}
                           </span>
                         </div>
@@ -1046,19 +1073,19 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                   {/* Selected roles */}
                   {formData.roles && formData.roles.length > 0 && (
                     <div className="space-y-2">
-                      <h3 className="text-sm font-medium text-gray-700">Selected roles</h3>
-                      <div className="bg-gray-50 rounded-md p-3 border border-gray-200">
+                      <h3 className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>Selected roles</h3>
+                      <div className="parametrization-input p-3" style={{ backgroundColor: 'var(--color-surface)' }}>
                         <div className="flex flex-wrap gap-2">
                           {formData.roles.map((role, index) => (
-                            <div key={index} className="flex items-center justify-between bg-white px-3 py-1 rounded border">
-                              <span className="text-sm text-gray-900">
+                            <div key={index} className="flex items-center justify-between px-3 py-1 rounded border" style={{ backgroundColor: 'var(--color-background)', borderColor: 'var(--color-border)' }}>
+                              <span className="text-sm" style={{ color: 'var(--color-text)' }}>
                                 {role.label}
                               </span>
                               {isEditing && (
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveRole(role)}
-                                  className="ml-2 text-gray-400 hover:text-red-500 transition-colors"
+                                  className="ml-2 parametrization-action-button hover:text-red-500 transition-colors"
                                 >
                                   <FaTrash size={12} />
                                 </button>
@@ -1072,17 +1099,17 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
 
                   {/* Información adicional en modo vista */}
                   {!isEditing && (
-                    <div className="space-y-4 border-t border-gray-200 pt-6">
-                      <h3 className="text-lg font-semibold text-gray-900">Información Adicional</h3>
+                    <div className="space-y-4 border-t pt-6" style={{ borderColor: 'var(--color-border)' }}>
+                      <h3 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Información Adicional</h3>
                       
                       {/* Información de contacto */}
                       <div className="grid grid-cols-2 gap-4">
 
 
                       <div className="space-y-1">
-                        <label className="block text-sm font-medium text-gray-700">Primer Login Completado</label>
-                        <div className="w-full bg-gray-50 border border-gray-300 rounded-md px-3 py-2 h-[40px] flex items-center">
-                          <span className="text-gray-900 text-sm">
+                        <label className="block text-sm font-medium" style={{ color: 'var(--color-text)' }}>Primer Login Completado</label>
+                        <div className="parametrization-input h-[40px] flex items-center">
+                          <span className="text-sm" style={{ color: 'var(--color-text)' }}>
                             {userData.first_login_complete ? 'Sí' : 'Pendiente'}
                           </span>
                         </div>
@@ -1092,14 +1119,14 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
 
                       {/* Sección de Cambio de Estado */}
                       {userData && getAvailableStatuses().length > 0 && (
-                        <div className="bg-gray-50 rounded-md p-4 border border-gray-200">
-                          <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                            <FaShieldAlt className="text-blue-600" />
+                        <div className="p-4 rounded-md border" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+                          <h4 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+                            <FaShieldAlt style={{ color: 'var(--color-accent)' }} />
                             Cambiar Estado del Usuario
                           </h4>
                           <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-gray-700">Cambiar a:</span>
+                              <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>Cambiar a:</span>
                               <Select
                                 placeholder="Seleccionar nuevo estado"
                                 options={getAvailableStatuses()}
@@ -1115,21 +1142,30 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                                   control: (base, state) => ({
                                     ...base,
                                     minHeight: '40px',
-                                    borderColor: state.isFocused ? '#3b82f6' : '#d1d5db',
-                                    boxShadow: state.isFocused ? '0 0 0 1px #3b82f6' : 'none',
+                                    backgroundColor: 'var(--color-input-bg)',
+                                    borderColor: state.isFocused ? 'var(--color-accent)' : 'var(--color-border)',
+                                    boxShadow: state.isFocused ? '0 0 0 1px var(--color-accent)' : 'none',
                                     '&:hover': {
-                                      borderColor: '#9ca3af'
+                                      borderColor: 'var(--color-border)'
                                     }
                                   }),
                                   option: (base, state) => ({
                                     ...base,
-                                    backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                                    color: state.isSelected ? 'white' : '#374151'
+                                    backgroundColor: state.isSelected ? 'var(--color-accent)' : state.isFocused ? 'var(--color-hover)' : 'var(--color-background)',
+                                    color: state.isSelected ? 'white' : 'var(--color-text)'
+                                  }),
+                                  singleValue: (base) => ({
+                                    ...base,
+                                    color: 'var(--color-text)'
+                                  }),
+                                  placeholder: (base) => ({
+                                    ...base,
+                                    color: 'var(--color-text-secondary)'
                                   })
                                 }}
                               />
                               {statusChangeLoading && (
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2" style={{ borderColor: 'var(--color-accent)' }}></div>
                               )}
                             </div>
                           </div>
@@ -1138,25 +1174,12 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                     </div>
 
 
-                      {/* Foto de Perfil */}
-                      {userData.profile_picture && (
-                        <div className="space-y-2">
-                          <h4 className="text-sm font-medium text-gray-700">Foto de Perfil</h4>
-                          <div className="flex justify-center">
-                            <img
-                              src={userData.profile_picture}
-                              alt="Foto de perfil"
-                              className="w-32 h-32 rounded-full object-cover border-4 border-gray-200 shadow-lg"
-                            />
-                          </div>
-                        </div>
-                      )}
                     </div>
                   )}
 
                   {/* Mensaje de validación */}
                   {isEditing && !isFormValid && submitLoading && (
-                    <div className="flex items-start gap-2 text-red-600 text-sm bg-red-50 border border-red-200 rounded-md p-3">
+                    <div className="flex items-start gap-2 text-sm p-3 rounded-md border" style={{ color: 'var(--color-error)', backgroundColor: 'rgba(220, 38, 38, 0.1)', borderColor: 'var(--color-error)' }}>
                       <FaExclamationTriangle className="mt-0.5 flex-shrink-0" />
                       <span>Please complete all required fields before submitting the form.</span>
                     </div>
@@ -1164,20 +1187,20 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                 </div>
 
                 {/* Botones de Acción */}
-                <div className="flex justify-end gap-3 pt-6 mt-6 border-t border-gray-200">
+                <div className="flex justify-end gap-3 pt-6 mt-6 border-t" style={{ borderColor: 'var(--color-border)' }}>
                   {isEditing ? (
                     <>
                       <button
                         type="button"
                         onClick={handleCancel}
-                        className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors text-sm font-medium"
+                        className="btn-theme btn-secondary px-6 py-2 text-sm font-medium"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
                         disabled={!isFormValid || submitLoading}
-                        className="px-6 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium flex items-center gap-2"
+                        className="btn-theme btn-primary px-6 py-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium flex items-center gap-2"
                       >
                         {submitLoading ? (
                           <>
@@ -1194,14 +1217,14 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                       <button
                         type="button"
                         onClick={onClose}
-                        className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors text-sm font-medium"
+                        className="btn-theme btn-secondary px-6 py-2 text-sm font-medium"
                       >
                         Close
                       </button>
                       <button
                         type="button"
                         onClick={handleEdit}
-                        className="px-6 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors text-sm font-medium flex items-center gap-2"
+                        className="btn-theme btn-primary px-6 py-2 text-sm font-medium flex items-center gap-2"
                       >
                         <FaEdit />
                         Edit User

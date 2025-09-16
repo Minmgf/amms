@@ -22,7 +22,7 @@ const Page = () => {
     formState: { errors }
   } = useForm();
   const watchCountry = watch("country");
-  const watchState = watch("region");
+  const watchState = watch("department");
 
   useEffect(() => {
     const storedUser = localStorage.getItem("userData");
@@ -64,7 +64,7 @@ const Page = () => {
       const formData = new FormData();
       formData.append("user_id", id);
       formData.append("country", data.country);
-      formData.append("department", data.region);
+      formData.append("department", data.department);
       formData.append("city", data.city);
       formData.append("address", data.address);
       formData.append("phoneCode", data.phoneCode);

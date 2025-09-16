@@ -94,7 +94,7 @@ const UserInfo = ({ userData }) => {
                                 </div>
                                 <div>
                                     <div className="text-xs text-gray-500">Region</div>
-                                    <div className="font-medium">{userData.region || 'No disponible'}</div>
+                                    <div className="font-medium">{userData.department || 'No disponible'}</div>
                                 </div>
                                 <div>
                                     <div className="text-xs text-gray-500">City</div>
