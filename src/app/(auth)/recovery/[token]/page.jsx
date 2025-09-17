@@ -67,20 +67,22 @@ const Page = () => {
     >
       <div className="absolute inset-0 bg-black/50"></div>
       <div className="relative z-10 bg-black/60 text-white rounded-2xl shadow-2xl w-full max-w-3xl py-10 px-16 flex flex-col justify-center">
-        <h2 className="text-2xl font-bold text-center mb-10">Password Recovery</h2>
+        <h2 className="text-2xl font-bold text-center mb-10">Restablecer Contraseña</h2>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="mb-8 relative">
             <label className="block text-white mb-3 text-md font-medium" htmlFor="new-password">
-              New password
+              Nueva contraseña
             </label>
             <input
               id="new-password"
+              area-label="New Password Input"
               type={showPassword ? "text" : "password"}
               {...register("password", { required: true })}
               className="py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
               placeholder="Sigma1999"
             />
             <button
+              area-label="Show Password Button"
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-10 top-12 text-gray-600 hover:text-gray-800"
@@ -96,10 +98,11 @@ const Page = () => {
           </div>
           <div className="mb-8 relative">
             <label className="block text-white mb-3 text-md font-medium" htmlFor="confirm-password">
-              Confirm new password
+              Confirmar nueva contraseña
             </label>
             <input
               id="confirm-password"
+              area-label="Confirm New Password Input"
               type={showConfirmPassword ? "text" : "password"}
               {...register("confirmPassword", {
                 required: true,
@@ -110,6 +113,7 @@ const Page = () => {
             />
             <button
               type="button"
+              area-label="Show Confirm Password Button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               className="absolute right-10 top-12 text-gray-600 hover:text-gray-800"
             >
@@ -127,30 +131,31 @@ const Page = () => {
             )}
           </div>
           <div className="text-sm text-white mb-6">
-            <p className="mb-2 font-semibold">For security reasons, your password must meet the following requirements:</p>
-            <p className={validations.upper ? "text-green-400" : "text-red-400"}>✔ Include at least one capital letter (A-Z).</p>
-            <p className={validations.lower ? "text-green-400" : "text-red-400"}>✔ Include at least one lowercase letter (a-z).</p>
-            <p className={validations.number ? "text-green-400" : "text-red-400"}>✔ Include at least one number (0-9).</p>
-            <p className={validations.length ? "text-green-400" : "text-red-400"}>✔ Have a minimum of 12 characters.</p>
+            <p className="mb-2 font-semibold">Por motivos de seguridad, su contraseña debe cumplir los siguientes requisitos:</p>
+            <p className={validations.upper ? "text-green-400" : "text-red-400"}>✔ Debe incluir al menos una letra mayúscula (A-Z).</p>
+            <p className={validations.lower ? "text-green-400" : "text-red-400"}>✔ Debe incluir al menos una letra minúscula (a-z).</p>
+            <p className={validations.number ? "text-green-400" : "text-red-400"}>✔ Debe incluir al menos un número (0-9).</p>
+            <p className={validations.length ? "text-green-400" : "text-red-400"}>✔ Debe tener un mínimo de 12 caracteres.</p>
           </div>
           <button
+            area-label="Send Button"
             type="submit"
             disabled={!(Object.values(validations).every(Boolean) && passwordsMatch) || loading}
             className="w-full text-white py-2 mt-6 rounded-lg bg-red-600 text-lg font-semibold shadow hover:bg-red-500 active:bg-red-700 transition-colors"
           >
-            Send
+            Enviar
           </button>
         </form>
         <SuccessModal
           isOpen={successOpen}
           onClose={() => setSuccessOpen(false)}
-          title="Recovery Successful"
+          title="Restablecimiento exitoso"
           message={modalMessage}
         />
         <ErrorModal
           isOpen={errorOpen}
           onClose={() => setErrorOpen(false)}
-          title="Recovery Failed"
+          title="Restablecimiento Fallido"
           message={modalMessage}
         />
       </div>

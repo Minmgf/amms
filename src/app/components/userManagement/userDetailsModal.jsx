@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
-import { FaArrowLeft, FaUser, FaIdCard, FaEnvelope, FaPhone, FaMapMarkerAlt, FaCalendarAlt, FaVenusMars, FaShieldAlt, FaCheckCircle, FaClock, FaTimesCircle, FaEdit, FaEye, FaSave, FaUserPlus, FaExclamationTriangle } from 'react-icons/fa';
+import { FaArrowLeft, FaUser, FaIdCard, FaEnvelope, FaPhone, FaMapMarkerAlt, FaCalendarAlt, FaVenusMars, FaShieldAlt, FaCheckCircle, FaClock, FaTimesCircle, FaEdit, FaEye, FaSave, FaUserPlus, FaExclamationTriangle, FaUserShield, FaTrash } from 'react-icons/fa';
 import * as Dialog from '@radix-ui/react-dialog';
 import Select from 'react-select';
 import { getDocumentTypes, getGenderTypes, getRoleTypes, editUser, changeUserStatus } from '../../../services/authService';
@@ -94,37 +94,85 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
     }));
   }, []);
 
+  // Función para hacer las opciones de select desde los datos de configuración
+  const getDocumentTypeOptions = React.useCallback(() => {
+    return documentTypes.map(type => ({ value: type.id, label: type.name }));
+  }, [documentTypes]);
+
+  const getGenderTypeOptions = React.useCallback(() => {
+    return genderTypes.map(type => ({ value: type.id, label: type.name }));
+  }, [genderTypes]);
+
+  const getRoleTypeOptions = React.useCallback(() => {
+    return roleTypes.map(type => ({ value: type.id, label: type.name }));
+  }, [roleTypes]);
+
+  // Función para mapear el ID del tipo de documento a su nombre
+  const getDocumentTypeName = React.useCallback((typeId) => {
+    const documentTypeMap = {
+      1: 'Cédula de Ciudadanía',
+      2: 'Tarjeta de Identidad', 
+      3: 'Cédula de Extranjería',
+      4: 'Pasaporte',
+      5: 'NIT'
+    };
+    
+    return documentTypeMap[typeId] || 'Tipo desconocido';
+  }, []);
+
   // Función para convertir fecha a formato de input (YYYY-MM-DD)
   const formatDateForInput = React.useCallback((dateString) => {
     if (!dateString) return '';
     
     let date;
     
-    // Intentar diferentes formatos de fecha
-    if (typeof dateString === 'string') {
-      // Si la fecha ya está en formato ISO (YYYY-MM-DD), extraer solo la parte de la fecha
-      if (dateString.includes('T')) {
-        date = new Date(dateString);
-      } else if (dateString.includes('/')) {
-        // Formato DD/MM/YYYY o MM/DD/YYYY
-        date = new Date(dateString);
+    try {
+      // Intentar diferentes formatos de fecha
+      if (typeof dateString === 'string') {
+        // Si la fecha ya está en formato YYYY-MM-DD, usarla directamente
+        if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          return dateString;
+        }
+        // Si tiene formato ISO con tiempo, extraer solo la fecha
+        else if (dateString.includes('T')) {
+          return dateString.split('T')[0];
+        }
+        // Si tiene formato DD/MM/YYYY, convertir
+        else if (dateString.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+          const [day, month, year] = dateString.split('/');
+          return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+        // Si tiene formato MM/DD/YYYY, convertir  
+        else if (dateString.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
+          const parts = dateString.split('/');
+          if (parts.length === 3) {
+            const month = parts[0].padStart(2, '0');
+            const day = parts[1].padStart(2, '0');
+            const year = parts[2];
+            return `${year}-${month}-${day}`;
+          }
+        }
+        // Para otros formatos, intentar crear una fecha
+        else {
+          date = new Date(dateString);
+        }
       } else {
-        // Otros formatos
         date = new Date(dateString);
       }
-    } else {
-      date = new Date(dateString);
-    }
-    
-    // Verificar si la fecha es válida
-    if (isNaN(date.getTime())) {
+      
+      // Si llegamos aquí con una fecha válida, formatearla
+      if (date && !isNaN(date.getTime())) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+      
+      return '';
+    } catch (error) {
+      console.error('Error formateando fecha para input:', error, 'Fecha original:', dateString);
       return '';
     }
-    
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
   }, []);
 
   const handleEdit = React.useCallback((e) => {
@@ -150,7 +198,10 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
         name: userData.name || '',
         first_last_name: userData.first_last_name || '',
         second_last_name: userData.second_last_name || '',
-        type_document_id: userData.type_document_id ? { value: userData.type_document_id, label: userData.type_document_name } : null,
+        type_document_id: userData.type_document_id ? { 
+          value: userData.type_document_id, 
+          label: userData.type_document_name || getDocumentTypeName(userData.type_document_id)
+        } : null,
         document_number: userData.document_number || '',
         date_issuance_document: formattedIssuanceDate,
         birthday: formattedBirthday,
@@ -158,7 +209,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
         roles: userData.roles ? userData.roles.map(role => ({ value: role.id, label: role.name })) : []
       });
     }
-  }, [userData, formatDateForInput]);
+  }, [userData, formatDateForInput, getDocumentTypeName]);
 
   // Función para manejar el cambio de estado del usuario
   const handleStatusChange = React.useCallback(async (newStatus) => {
@@ -267,33 +318,92 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
   const formatDate = React.useCallback((dateString) => {
     if (!dateString) return 'No disponible';
 
-    const date = new Date(dateString + 'T00:00:00');
-
-    return date.toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    let date;
+    
+    try {
+      // Intentar diferentes formatos de fecha
+      if (typeof dateString === 'string') {
+        // Si la fecha ya está en formato ISO (YYYY-MM-DD), parsear directamente
+        if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          // Formato YYYY-MM-DD
+          const [year, month, day] = dateString.split('-');
+          date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        } else if (dateString.includes('T')) {
+          // Formato ISO con tiempo
+          date = new Date(dateString);
+        } else if (dateString.includes('/')) {
+          // Formato DD/MM/YYYY o MM/DD/YYYY
+          date = new Date(dateString);
+        } else {
+          // Otros formatos
+          date = new Date(dateString);
+        }
+      } else {
+        date = new Date(dateString);
+      }
+      
+      // Verificar si la fecha es válida
+      if (isNaN(date.getTime())) {
+        return 'Fecha inválida';
+      }
+      
+      return date.toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (error) {
+      console.error('Error formateando fecha:', error, 'Fecha original:', dateString);
+      return 'Fecha inválida';
+    }
   }, []);
 
-  // Mover FormField fuera del render para evitar recreaciones
-  const FormField = React.useCallback(({ label, value, onChange, icon, type = 'text', className = '', required = false, disabled = false }) => (
-    <div className={`form-field ${className}`}>
-      <label className="text-sm font-semibold text-secondary mb-2 flex items-center gap-2">
-        {icon && <span className="text-accent">{icon}</span>}
-        {label} {required && <span className="text-error">*</span>}
-      </label>
-      <div className="relative">
+  // FormField con soporte para selects
+  const FormField = React.useCallback(({ label, value, onChange, icon, type = 'text', className = '', required = false, disabled = false, placeholder = '', options = [] }) => {
+    const showError = required && !value && submitLoading;
+    return (
+      <div className={`flex flex-col gap-1 ${className}`}>
+        <label className={`text-sm font-semibold mb-1 flex items-center gap-2 ${showError ? 'text-error' : 'text-primary'}`}>
+          {icon && <span className="text-accent">{icon}</span>}
+          {label} {required && <span className="text-error">*</span>}
+        </label>
         {isEditing ? (
-          <input
-            type={type}
-            value={value || ''}
-            onChange={onChange}
-            disabled={disabled}
-            className={`input-theme ${required && !value ? 'border-error' : ''} ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
-          />
+          type === 'select' ? (
+            <Select
+              value={value}
+              onChange={onChange}
+              options={options}
+              isDisabled={disabled}
+              placeholder={placeholder}
+              className="text-primary"
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  borderColor: showError ? '#ef4444' : '#d1d5db',
+                  minHeight: '40px',
+                  '&:hover': {
+                    borderColor: showError ? '#ef4444' : '#9ca3af'
+                  }
+                }),
+                option: (base, state) => ({
+                  ...base,
+                  backgroundColor: state.isSelected ? 'var(--accent-color)' : state.isFocused ? 'var(--surface-color)' : 'white',
+                  color: 'var(--primary-color)'
+                })
+              }}
+            />
+          ) : (
+            <input
+              type={type}
+              value={value || ''}
+              onChange={onChange}
+              disabled={disabled}
+              placeholder={placeholder}
+              className={`w-full rounded-md border px-3 py-2 bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent ${showError ? 'border-error' : 'border-neutral-300'} ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
+            />
+          )
         ) : (
-          <div className="w-full card-secondary">
+          <div className="w-full bg-neutral-100 rounded-md px-3 py-2 min-h-[40px] flex items-center">
             <span className="text-primary font-medium">
               {type === 'date' ? formatDate(value) :
                 typeof value === 'object' && value !== null ? value.label || 'No disponible' :
@@ -302,8 +412,8 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
           </div>
         )}
       </div>
-    </div>
-  ), [isEditing, formatDate]);
+    );
+  }, [isEditing, formatDate, submitLoading]);
 
   const FormSection = React.useCallback(({ title, icon, children, className = '' }) => (
     <div className={`card-theme ${className}`}>
@@ -361,7 +471,10 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
         name: userData.name || '',
         first_last_name: userData.first_last_name || '',
         second_last_name: userData.second_last_name || '',
-        type_document_id: userData.type_document_id ? { value: userData.type_document_id, label: userData.type_document_name } : null,
+        type_document_id: userData.type_document_id ? { 
+          value: userData.type_document_id, 
+          label: userData.type_document_name || getDocumentTypeName(userData.type_document_id)
+        } : null,
         document_number: userData.document_number || '',
         date_issuance_document: formattedIssuanceDate,
         birthday: formattedBirthday,
@@ -369,7 +482,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
         roles: userData.roles ? userData.roles.map(role => ({ value: role.id, label: role.name })) : []
       });
     }
-  }, [userData, formatDateForInput]);
+  }, [userData, formatDateForInput, getDocumentTypeName]);
 
   // Resetear estado cuando se cierra el modal
   useEffect(() => {
@@ -619,51 +732,39 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
 
       <Dialog.Root open={isOpen} onOpenChange={onClose}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-10" />
-          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-xl z-10 w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+          <Dialog.Overlay className="modal-overlay" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-xl z-50 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
           <Dialog.Title className="sr-only">
-            {isEditing ? 'Editar Usuario' : 'Detalles del Usuario'} - {getFullName()}
+            {isEditing ? 'Update User' : 'Detalles del Usuario'} - {getFullName()}
           </Dialog.Title>
 
-          <div className="p-6 card-theme">
+          <div className="parametrization-modal" style={{ width: 'auto', maxWidth: '64rem' }}>
             {/* Header */}
-            <div className="flex items-center justify-between mb-6 card-secondary p-4">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
               <div className="flex items-center gap-3">
                 <button
                   onClick={onClose}
-                  className="p-2 btn-theme btn-secondary"
+                  className="parametrization-action-button p-2"
                 >
-                  <FaArrowLeft className="text-primary" />
+                  <FaArrowLeft size={20} />
                 </button>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <FaUser className="text-accent text-xl" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-semibold text-primary">
-                      {isEditing ? 'Editar Usuario' : 'Detalles del Usuario'}
-                    </h2>
-                    <p className="text-sm text-secondary">
-                      {isEditing ? 'Modifique la información del usuario' : 'Información completa del usuario'}
-                    </p>
-                  </div>
-                </div>
+                <h2 className="text-xl font-semibold" style={{ color: 'var(--color-text)' }}>
+                  {isEditing ? 'Update User' : 'Detalles del Usuario'}
+                </h2>
               </div>
-
-              {/* Estado del usuario en el header */}
-              <div className="flex items-center gap-2">
-                {getStatusIcon(userData.status_name)}
-                <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(userData.status_name)}`}>
-                  {userData.status_name}
-                </span>
-              </div>
+              <button
+                onClick={onClose}
+                className="parametrization-action-button p-2"
+              >
+                ×
+              </button>
             </div>
 
             {/* Loading inicial */}
             {loading && (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto"></div>
-                <p className="mt-4 text-secondary">Cargando configuración...</p>
+              <div className="text-center py-8 parametrization-loading">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto" style={{ borderColor: 'var(--color-accent)' }}></div>
+                <p className="mt-4" style={{ color: 'var(--color-text-secondary)' }}>Cargando configuración...</p>
               </div>
             )}
 
@@ -675,340 +776,439 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
 
             {/* Formulario */}
             {!loading && (
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Columna Izquierda */}
-                  <div className="space-y-6">
-                    {/* Información Personal */}
-                    <FormSection title="Información Personal" icon={<FaUser />}>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          label="Nombre"
-                          value={formData.name}
-                          onChange={handleInputChange('name')}
-                          icon={<FaUser />}
-                          required={true}
-                          disabled={!isEditing}
-                        />
-                        <FormField
-                          label="Primer Apellido"
-                          value={formData.first_last_name}
-                          onChange={handleInputChange('first_last_name')}
-                          required={true}
-                          disabled={!isEditing}
-                        />
-                        <FormField
-                          label="Segundo Apellido"
-                          value={formData.second_last_name}
-                          onChange={handleInputChange('second_last_name')}
-                          disabled={!isEditing}
-                        />
-                        {isEditing ? (
-                          <div>
-                            <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                              <FaVenusMars className="text-blue-600" />
-                              Género *
-                            </label>
-                            <Select
-                              value={formData.gender_id}
-                              onChange={handleSelectChange('gender_id')}
-                              options={genderTypes.map(gender => ({ value: gender.id, label: gender.name }))}
-                              placeholder="Seleccionar género"
-                              className={`${!formData.gender_id ? 'border-red-500' : ''}`}
-                              isSearchable
-                              isClearable
-                            />
-                          </div>
-                        ) : (
-                          <FormField
-                            label="Género"
-                            value={formData.gender_id}
-                            icon={<FaVenusMars />}
-                            disabled={true}
-                          />
-                        )}
-                        <FormField
-                          label="Fecha de Nacimiento"
-                          value={formData.birthday}
-                          onChange={handleInputChange('birthday')}
-                          type="date"
-                          icon={<FaCalendarAlt />}
-                          className="md:col-span-2"
-                          disabled={!isEditing}
-                        />
-                      </div>
-
-                      {userData.status_description && (
-                        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                          <p className="text-sm text-blue-800">{userData.status_description}</p>
-                        </div>
-                      )}
-                    </FormSection>
-
-                    {/* Información de Contacto */}
-                    <FormSection title="Información de Contacto" icon={<FaEnvelope />}>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          label="Email"
-                          value={userData.email}
-                          icon={<FaEnvelope />}
-                          className="md:col-span-2"
-                          disabled={true}
-                        />
-                        <FormField
-                          label="Teléfono"
-                          value={userData.phone}
-                          icon={<FaPhone />}
-                          disabled={true}
-                        />
-                        <FormField
-                          label="Dirección"
-                          value={userData.address}
-                          icon={<FaMapMarkerAlt />}
-                          className="md:col-span-2"
-                          disabled={true}
-                        />
-                      </div>
-                    </FormSection>
-                  </div>
-
-                  {/* Columna Derecha */}
-                  <div className="space-y-6">
-                    {/* Información de Documento */}
-                    <FormSection title="Información de Documento" icon={<FaIdCard />}>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {isEditing ? (
-                          <div>
-                            <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                              <FaIdCard className="text-blue-600" />
-                              Tipo de Documento *
-                            </label>
-                            <Select
-                              value={formData.type_document_id}
-                              onChange={handleSelectChange('type_document_id')}
-                              options={documentTypes.map(doc => ({ value: doc.id, label: doc.name }))}
-                              placeholder="Seleccionar tipo de documento"
-                              className={`${!formData.type_document_id ? 'border-red-500' : ''}`}
-                              isSearchable
-                              isClearable
-                            />
-                          </div>
-                        ) : (
-                          <FormField
-                            label="Tipo de Documento"
-                            value={userData.type_document_name}
-                            icon={<FaIdCard />}
-                          />
-                        )}
-                        <FormField
-                          label="Número de Documento"
-                          value={formData.document_number}
-                          onChange={handleInputChange('document_number')}
-                          required={true}
-                          disabled={!isEditing}
-                          className="md:col-span-2"
-                        />
-                        <FormField
-                          label="Fecha de Expedición"
-                          value={formData.date_issuance_document}
-                          onChange={handleInputChange('date_issuance_document')}
-                          type="date"
-                          icon={<FaCalendarAlt />}
-                          className="md:col-span-2"
-                          disabled={!isEditing}
-                        />
-                      </div>
-                    </FormSection>
-
-                    {/* Roles y Permisos */}
-                    <FormSection title="Roles y Permisos" icon={<FaShieldAlt />}>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                            <FaShieldAlt className="text-blue-600" />
-                            Roles Asignados
-                          </label>
-                          {isEditing ? (
-                            <div className="space-y-3">
-                              <div className="flex gap-2">
-                                <div className="flex-1">
-                                  <Select
-                                    value={formData.role}
-                                    onChange={handleSelectChange('role')}
-                                    options={roleTypes.map(role => ({
-                                      value: role.role_id,
-                                      label: role.role_name,
-                                    }))}
-                                    placeholder="Seleccionar rol"
-                                    isSearchable
-                                    isClearable
-                                  />
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={handleAddRole}
-                                  disabled={!formData.role}
-                                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  <FaUserPlus size={14} />
-                                </button>
-                              </div>
-                              <div className="bg-gray-100 rounded-lg p-3 min-h-[60px]">
-                                {formData.roles.length === 0 ? (
-                                  <p className="text-gray-500 text-sm">
-                                    No se han agregado roles. Seleccione un rol del dropdown y haga clic en agregar.
-                                  </p>
-                                ) : (
-                                  <div className="flex flex-wrap gap-2">
-                                    {formData.roles.map((role, index) => (
-                                      <span
-                                        key={index}
-                                        className="px-3 py-1 bg-white text-gray-700 rounded-full text-sm flex items-center gap-2"
-                                      >
-                                        {role.label}
-                                        <button
-                                          type="button"
-                                          onClick={() => handleRemoveRole(role)}
-                                          className="text-red-500 hover:text-red-700"
-                                        >
-                                          ×
-                                        </button>
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex flex-wrap gap-2">
-                              {userData.roles && userData.roles.length > 0 ? (
-                                userData.roles.map((role, index) => (
-                                  <span
-                                    key={index}
-                                    className="px-3 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium border border-purple-200"
-                                  >
-                                    {role.name}
-                                  </span>
-                                ))
-                              ) : (
-                                <div className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg">
-                                  <span className="text-gray-500 text-sm">Sin roles asignados</span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <FormField
-                            label="Primer Login Completado"
-                            value={userData.first_login_complete ? 'Sí' : 'Pendiente'}
-                            icon={userData.first_login_complete ? <FaCheckCircle /> : <FaClock />}
-                            disabled={true}
-                          />
-                          <FormField
-                            label="ID de Usuario"
-                            value={userData.id}
-                            disabled={true}
-                          />
-                        </div>
-                      </div>
-                    </FormSection>
-
-                    {/* Foto de Perfil */}
-                    {userData.profile_picture && (
-                      <FormSection title="Foto de Perfil">
-                        <div className="flex justify-center">
-                          <div className="relative">
-                            <img
-                              src={userData.profile_picture}
-                              alt="Foto de perfil"
-                              className="w-32 h-32 rounded-full object-cover border-4 border-gray-200 shadow-lg"
-                            />
-                          </div>
-                        </div>
-                      </FormSection>
-                    )}
-                  </div>
-                </div>
-
-                {/* Mensaje de validación */}
-                {isEditing && !isFormValid && (
-                  <div className="flex items-center gap-2 text-red-600 text-sm">
-                    <FaExclamationTriangle />
-                    Por favor complete todos los campos requeridos antes de enviar el formulario.
-                  </div>
-                )}
-
-                {/* Sección de Cambio de Estado */}
-                {!isEditing && userData && getAvailableStatuses().length > 0 && (
-                  <div className="card-secondary rounded-lg p-6 shadow-sm border border-primary">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                      <FaShieldAlt className="text-blue-600" />
-                      Cambiar Estado del Usuario
-                    </h3>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-700">Estado actual:</span>
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(userData.status_name)}`}>
-                          {userData.status_name}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-700">Cambiar a:</span>
+              <form onSubmit={handleSubmit}>
+                <div className="space-y-6">
+                  {/* Primera fila: Tipo de documento, Número de documento, Género */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                        Identification type
+                      </label>
+                      {isEditing ? (
                         <Select
-                          placeholder="Seleccionar nuevo estado"
-                          options={getAvailableStatuses()}
-                          onChange={(selectedOption) => {
-                            if (selectedOption && !statusChangeLoading) {
-                              handleStatusChange(selectedOption.value);
-                            }
-                          }}
-                          isDisabled={statusChangeLoading}
-                          className="min-w-[200px]"
-                          isSearchable={false}
+                          value={formData.type_document_id}
+                          onChange={handleSelectChange('type_document_id')}
+                          options={documentTypes.map(doc => ({ value: doc.id, label: doc.name }))}
+                          placeholder="C.C"
+                          className="text-sm"
                           styles={{
-                            control: (base) => ({
+                            control: (base, state) => ({
                               ...base,
                               minHeight: '40px',
+                              backgroundColor: 'var(--color-input-bg)',
+                              borderColor: state.isFocused ? 'var(--color-accent)' : 'var(--color-border)',
+                              boxShadow: state.isFocused ? '0 0 0 1px var(--color-accent)' : 'none',
+                              '&:hover': {
+                                borderColor: 'var(--color-border)'
+                              }
                             }),
+                            option: (base, state) => ({
+                              ...base,
+                              backgroundColor: state.isSelected ? 'var(--color-accent)' : state.isFocused ? 'var(--color-hover)' : 'var(--color-background)',
+                              color: state.isSelected ? 'white' : 'var(--color-text)'
+                            }),
+                            singleValue: (base) => ({
+                              ...base,
+                              color: 'var(--color-text)'
+                            }),
+                            placeholder: (base) => ({
+                              ...base,
+                              color: 'var(--color-text-secondary)'
+                            })
                           }}
                         />
-                        {statusChangeLoading && (
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                        )}
-                      </div>
+                      ) : (
+                        <div className="parametrization-input h-[40px] flex items-center">
+                          <span className="text-sm" style={{ color: 'var(--color-text)' }}>
+                            {userData.type_document_name || 'No disponible'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                        Identification number
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={formData.document_number || ''}
+                          onChange={handleInputChange('document_number')}
+                          className="parametrization-input h-[40px] text-sm"
+                          placeholder="10765000002"
+                        />
+                      ) : (
+                        <div className="parametrization-input h-[40px] flex items-center">
+                          <span className="text-sm" style={{ color: 'var(--color-text)' }}>
+                            {userData.document_number || 'No disponible'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                        Gender
+                      </label>
+                      {isEditing ? (
+                        <Select
+                          value={formData.gender_id}
+                          onChange={handleSelectChange('gender_id')}
+                          options={genderTypes.map(gender => ({ value: gender.id, label: gender.name }))}
+                          placeholder="Male"
+                          className="text-sm"
+                          styles={{
+                            control: (base, state) => ({
+                              ...base,
+                              minHeight: '40px',
+                              backgroundColor: 'var(--color-input-bg)',
+                              borderColor: state.isFocused ? 'var(--color-accent)' : 'var(--color-border)',
+                              boxShadow: state.isFocused ? '0 0 0 1px var(--color-accent)' : 'none',
+                              '&:hover': {
+                                borderColor: 'var(--color-border)'
+                              }
+                            }),
+                            option: (base, state) => ({
+                              ...base,
+                              backgroundColor: state.isSelected ? 'var(--color-accent)' : state.isFocused ? 'var(--color-hover)' : 'var(--color-background)',
+                              color: state.isSelected ? 'white' : 'var(--color-text)'
+                            }),
+                            singleValue: (base) => ({
+                              ...base,
+                              color: 'var(--color-text)'
+                            }),
+                            placeholder: (base) => ({
+                              ...base,
+                              color: 'var(--color-text-secondary)'
+                            })
+                          }}
+                        />
+                      ) : (
+                        <div className="parametrization-input h-[40px] flex items-center">
+                          <span className="text-sm" style={{ color: 'var(--color-text)' }}>
+                            {userData.gender_name || 'No disponible'}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
-                )}
+
+                  {/* Segunda fila: Fecha de expedición, Fecha de nacimiento */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                        Expedition date
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="date"
+                          value={formData.date_issuance_document || ''}
+                          onChange={handleInputChange('date_issuance_document')}
+                          className="parametrization-input h-[40px] text-sm"
+                        />
+                      ) : (
+                        <div className="parametrization-input h-[40px] flex items-center">
+                          <span className="text-sm" style={{ color: 'var(--color-text)' }}>
+                            {formatDate(userData.date_issuance_document)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                        Birth date
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="date"
+                          value={formData.birthday || ''}
+                          onChange={handleInputChange('birthday')}
+                          className="parametrization-input h-[40px] text-sm"
+                        />
+                      ) : (
+                        <div className="parametrization-input h-[40px] flex items-center">
+                          <span className="text-sm" style={{ color: 'var(--color-text)' }}>
+                            {formatDate(userData.birthday)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Tercera fila: Role y Add button */}
+                  <div className="grid grid-cols-4 gap-4 items-end">
+                    <div className="col-span-3 space-y-1">
+                      <label className="block text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                        Role
+                      </label>
+                      {isEditing ? (
+                        <Select
+                          value={formData.role}
+                          onChange={handleSelectChange('role')}
+                          options={roleTypes.map(role => ({
+                            value: role.role_id,
+                            label: role.role_name,
+                          }))}
+                          placeholder="Employee"
+                          className="text-sm"
+                          styles={{
+                            control: (base, state) => ({
+                              ...base,
+                              minHeight: '40px',
+                              backgroundColor: 'var(--color-input-bg)',
+                              borderColor: state.isFocused ? 'var(--color-accent)' : 'var(--color-border)',
+                              boxShadow: state.isFocused ? '0 0 0 1px var(--color-accent)' : 'none',
+                              '&:hover': {
+                                borderColor: 'var(--color-border)'
+                              }
+                            }),
+                            option: (base, state) => ({
+                              ...base,
+                              backgroundColor: state.isSelected ? 'var(--color-accent)' : state.isFocused ? 'var(--color-hover)' : 'var(--color-background)',
+                              color: state.isSelected ? 'white' : 'var(--color-text)'
+                            }),
+                            singleValue: (base) => ({
+                              ...base,
+                              color: 'var(--color-text)'
+                            }),
+                            placeholder: (base) => ({
+                              ...base,
+                              color: 'var(--color-text-secondary)'
+                            })
+                          }}
+                        />
+                      ) : (
+                        <div className="parametrization-input h-[40px] flex items-center">
+                          <span className="text-sm" style={{ color: 'var(--color-text)' }}>
+                            {userData.roles && userData.roles.length > 0 ? userData.roles[0].name : 'No disponible'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {isEditing && (
+                      <div>
+                        <button
+                          type="button"
+                          onClick={handleAddRole}
+                          disabled={!formData.role}
+                          className="btn-theme btn-primary w-full h-[40px] text-sm font-medium"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Cuarta fila: Nombres y apellidos */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                        Name
+                        {isEditing && <span style={{ color: 'var(--color-error)' }} className="ml-1">*</span>}
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={formData.name || ''}
+                          onChange={handleInputChange('name')}
+                          className={`parametrization-input h-[40px] text-sm ${!formData.name && submitLoading ? 'border-red-500' : ''}`}
+                          placeholder="example"
+                        />
+                      ) : (
+                        <div className="parametrization-input h-[40px] flex items-center">
+                          <span className="text-sm" style={{ color: 'var(--color-text)' }}>
+                            {userData.name || 'No disponible'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                        First Last Name
+                        {isEditing && <span style={{ color: 'var(--color-error)' }} className="ml-1">*</span>}
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={formData.first_last_name || ''}
+                          onChange={handleInputChange('first_last_name')}
+                          className={`parametrization-input h-[40px] text-sm ${!formData.first_last_name && submitLoading ? 'border-red-500' : ''}`}
+                          placeholder="Espinosa"
+                        />
+                      ) : (
+                        <div className="parametrization-input h-[40px] flex items-center">
+                          <span className="text-sm" style={{ color: 'var(--color-text)' }}>
+                            {userData.first_last_name || 'No disponible'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                        Second Last Name
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={formData.second_last_name || ''}
+                          onChange={handleInputChange('second_last_name')}
+                          className="parametrization-input h-[40px] text-sm"
+                          placeholder="Segundo apellido"
+                        />
+                      ) : (
+                        <div className="parametrization-input h-[40px] flex items-center">
+                          <span className="text-sm" style={{ color: 'var(--color-text)' }}>
+                            {userData.second_last_name || 'No disponible'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Selected roles */}
+                  {formData.roles && formData.roles.length > 0 && (
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>Selected roles</h3>
+                      <div className="parametrization-input p-3" style={{ backgroundColor: 'var(--color-surface)' }}>
+                        <div className="flex flex-wrap gap-2">
+                          {formData.roles.map((role, index) => (
+                            <div key={index} className="flex items-center justify-between px-3 py-1 rounded border" style={{ backgroundColor: 'var(--color-background)', borderColor: 'var(--color-border)' }}>
+                              <span className="text-sm" style={{ color: 'var(--color-text)' }}>
+                                {role.label}
+                              </span>
+                              {isEditing && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveRole(role)}
+                                  className="ml-2 parametrization-action-button hover:text-red-500 transition-colors"
+                                >
+                                  <FaTrash size={12} />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Información adicional en modo vista */}
+                  {!isEditing && (
+                    <div className="space-y-4 border-t pt-6" style={{ borderColor: 'var(--color-border)' }}>
+                      <h3 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Información Adicional</h3>
+                      
+                      {/* Información de contacto */}
+                      <div className="grid grid-cols-2 gap-4">
+
+
+                      <div className="space-y-1">
+                        <label className="block text-sm font-medium" style={{ color: 'var(--color-text)' }}>Primer Login Completado</label>
+                        <div className="parametrization-input h-[40px] flex items-center">
+                          <span className="text-sm" style={{ color: 'var(--color-text)' }}>
+                            {userData.first_login_complete ? 'Sí' : 'Pendiente'}
+                          </span>
+                        </div>
+                      </div>
+
+
+
+                      {/* Sección de Cambio de Estado */}
+                      {userData && getAvailableStatuses().length > 0 && (
+                        <div className="p-4 rounded-md border" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+                          <h4 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+                            <FaShieldAlt style={{ color: 'var(--color-accent)' }} />
+                            Cambiar Estado del Usuario
+                          </h4>
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>Cambiar a:</span>
+                              <Select
+                                placeholder="Seleccionar nuevo estado"
+                                options={getAvailableStatuses()}
+                                onChange={(selectedOption) => {
+                                  if (selectedOption && !statusChangeLoading) {
+                                    handleStatusChange(selectedOption.value);
+                                  }
+                                }}
+                                isDisabled={statusChangeLoading}
+                                className="min-w-[200px]"
+                                isSearchable={false}
+                                styles={{
+                                  control: (base, state) => ({
+                                    ...base,
+                                    minHeight: '40px',
+                                    backgroundColor: 'var(--color-input-bg)',
+                                    borderColor: state.isFocused ? 'var(--color-accent)' : 'var(--color-border)',
+                                    boxShadow: state.isFocused ? '0 0 0 1px var(--color-accent)' : 'none',
+                                    '&:hover': {
+                                      borderColor: 'var(--color-border)'
+                                    }
+                                  }),
+                                  option: (base, state) => ({
+                                    ...base,
+                                    backgroundColor: state.isSelected ? 'var(--color-accent)' : state.isFocused ? 'var(--color-hover)' : 'var(--color-background)',
+                                    color: state.isSelected ? 'white' : 'var(--color-text)'
+                                  }),
+                                  singleValue: (base) => ({
+                                    ...base,
+                                    color: 'var(--color-text)'
+                                  }),
+                                  placeholder: (base) => ({
+                                    ...base,
+                                    color: 'var(--color-text-secondary)'
+                                  })
+                                }}
+                              />
+                              {statusChangeLoading && (
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2" style={{ borderColor: 'var(--color-accent)' }}></div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+
+                    </div>
+                  )}
+
+                  {/* Mensaje de validación */}
+                  {isEditing && !isFormValid && submitLoading && (
+                    <div className="flex items-start gap-2 text-sm p-3 rounded-md border" style={{ color: 'var(--color-error)', backgroundColor: 'rgba(220, 38, 38, 0.1)', borderColor: 'var(--color-error)' }}>
+                      <FaExclamationTriangle className="mt-0.5 flex-shrink-0" />
+                      <span>Please complete all required fields before submitting the form.</span>
+                    </div>
+                  )}
+                </div>
 
                 {/* Botones de Acción */}
-                <div className="flex justify-end gap-3 pt-6 mt-6 card-secondary rounded-lg p-4 shadow-sm border border-primary">
+                <div className="flex justify-end gap-3 pt-6 mt-6 border-t" style={{ borderColor: 'var(--color-border)' }}>
                   {isEditing ? (
                     <>
                       <button
                         type="button"
                         onClick={handleCancel}
-                        className="btn-theme btn-secondary px-6 py-2 flex items-center gap-2"
+                        className="btn-theme btn-secondary px-6 py-2 text-sm font-medium"
                       >
-                        <FaArrowLeft />
-                        Cancelar
+                        Cancel
                       </button>
                       <button
                         type="submit"
                         disabled={!isFormValid || submitLoading}
-                        className="btn-theme btn-primary px-6 py-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="btn-theme btn-primary px-6 py-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium flex items-center gap-2"
                       >
                         {submitLoading ? (
                           <>
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            Actualizando...
+                            Submitting...
                           </>
                         ) : (
-                          <>
-                            <FaSave />
-                            Guardar Cambios
-                          </>
+                          'Submit'
                         )}
                       </button>
                     </>
@@ -1017,18 +1217,17 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
                       <button
                         type="button"
                         onClick={onClose}
-                        className="btn-theme btn-secondary px-6 py-2 flex items-center gap-2"
+                        className="btn-theme btn-secondary px-6 py-2 text-sm font-medium"
                       >
-                        <FaArrowLeft />
-                        Cerrar
+                        Close
                       </button>
                       <button
                         type="button"
                         onClick={handleEdit}
-                        className="btn-theme btn-primary px-6 py-2 flex items-center gap-2"
+                        className="btn-theme btn-primary px-6 py-2 text-sm font-medium flex items-center gap-2"
                       >
                         <FaEdit />
-                        Editar Usuario
+                        Edit User
                       </button>
                     </>
                   )}

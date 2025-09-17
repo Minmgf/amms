@@ -69,15 +69,16 @@ const Page = () => {
           <Logo variant="desktop" />
         </div>
 
-        <LoginCard title="Sign Up">
+        <LoginCard title="Registrarse">
           <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
             <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 w-full">
               <div className="w-full sm:w-auto">
                 <select
-                  {...register("selectedType", { required: "Select a document type" })}
+                  area-label="Identification Type Select"
+                  {...register("selectedType", { required: "Sleccione un tipo de identificación" })}
                   className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-2 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
                 >
-                  <option value="">Select identification type</option>
+                  <option value="">Seleccione un tipo</option>
                   {identificationTypes.map((doc) => (
                     <option key={doc.id} value={doc.id}>
                       {doc.name}
@@ -92,12 +93,13 @@ const Page = () => {
               <div className="w-full sm:w-auto">
                 <input
                   type="text"
-                  placeholder="Identification number"
+                  area-label="Identification Number Input"
+                  placeholder="Número de identificación"
                   {...register("identificationNumber", {
-                    required: "Identification number is required",
+                    required: "El número de identificación es obligatorio",
                     pattern: {
                       value: /^[0-9]+$/,
-                      message: "Identification number must be numeric",
+                      message: "El número de identificación debe ser numérico",
                     },
                   })}
                   className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black w-full outline-none shadow focus:ring-2 focus:ring-red-500"
@@ -113,16 +115,17 @@ const Page = () => {
                 htmlFor="issueDate"
                 className="text-sm font-medium text-white mb-1"
               >
-                Date of issue
+                Fecha de expedición
               </label>
               <input
                 id="issueDate"
+                area-label="Issue Date Input"
                 type="date"
                 {...register("issueDate", {
-                  required: "Date of issue is required",
+                  required: "La fecha de expedición es obligatoria",
                   validate: (value) =>
                     new Date(value) <= new Date() ||
-                    "Date of issue cannot be in the future",
+                    "La fecha de expedición no puede ser futura",
                 })}
                 className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
               />
@@ -132,33 +135,35 @@ const Page = () => {
             </div>
 
             <button
+              area-label="Continue Button"
               className="w-full text-white py-2 mt-6 rounded-lg bg-red-600 text-lg font-semibold shadow hover:bg-red-500 active:bg-red-700 transition-colors"
             >
-              Continue
+              Continuar
             </button>
           </form>
 
           <p className="text-sm text-gray-300 mt-6 text-center">
-            Already have an account?{" "}
+            Ya tiene una cuenta activa?{" "}
             <button
               type="button"
+              area-label="Login Button"
               onClick={() => router.push("/login")}
               className="text-white font-semibold hover:underline"
             >
-              Log in here
+              Inicie sesión aquí
             </button>
           </p>
         </LoginCard>
         <SuccessModal
           isOpen={successOpen}
           onClose={() => setSuccessOpen(false)}
-          title="Validation Successful"
+          title="Validación Exitosa"
           message={modalMessage}
         />
         <ErrorModal
           isOpen={errorOpen}
           onClose={() => setErrorOpen(false)}
-          title="Validation Failed"
+          title="Validación Fallida"
           message={modalMessage}
         />
       </div>

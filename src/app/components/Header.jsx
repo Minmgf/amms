@@ -240,19 +240,25 @@ export default function Header() {
               >
                 <div className="flex items-center justify-between px-4 py-3 border-b border-primary bg-background">
                   <div className="flex items-center gap-2">
-                    <h2 className="font-semibold text-primary">Notifications</h2>
+                    <h2 className="font-semibold text-primary">Notificaciones</h2>
                     <span className="text-sm text-secondary">
-                      {unreadCount} {unreadCount === 1 ? "unread" : "unread"}
+                      {unreadCount} {unreadCount === 1 ? "sin leer" : "sin leer"}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <button
-                      onClick={markAllAsRead}
-                      disabled={loading}
-                      className="text-sm text-accent cursor-pointer hover:underline"
-                    >
-                      Mark all as read
-                    </button>
+                    {unreadCount > 0 ? (
+                      <button
+                        onClick={markAllAsRead}
+                        disabled={loading}
+                        className="text-sm text-accent cursor-pointer hover:underline"
+                      >
+                        Leer todo
+                      </button>
+                    ) : (
+                      <span className="text-sm text-secondary">
+                        Notificaciones leídas
+                      </span>
+                    )}
                     <button
                       onClick={() => setShowNotis(false)}
                       className="rounded-theme-md cursor-pointer hover:bg-hover p-1 transition-colors"
@@ -297,7 +303,7 @@ export default function Header() {
                                 onClick={() => markOneAsRead(n.id)}
                                 className="text-xs text-accent cursor-pointer hover:underline"
                               >
-                                Mark as read
+                                Marcar Como leído
                               </button>
                             ) : (
                               <span className="text-xs text-secondary">Read</span>

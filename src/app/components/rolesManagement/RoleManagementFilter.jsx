@@ -26,34 +26,35 @@ export default function RoleManagementFilter({ isOpen, onClose, statusFilter, on
   };
 
   return (
-    <div className="modal-overlay">
+    <div id="role-filter-modal" className="modal-overlay">
       <div className="parametrization-modal card-theme w-96 p-6 relative">
 
-        <button onClick={onClose} className="absolute top-2 right-2 text-secondary hover:text-primary">
+        <button area-label="Close Button" onClick={onClose} className="absolute top-2 right-2 text-secondary hover:text-primary">
           <FiX size={18} />
         </button>
 
-        <h2 className="text-lg font-semibold mb-4 text-primary">Filters</h2>
+        <h2 className="text-lg font-semibold mb-4 text-primary">Filtro</h2>
 
         <div>
-          <label className="block text-sm font-medium mb-1 text-secondary">Status</label>
+          <label className="block text-sm font-medium mb-1 text-secondary">Estado</label>
           <select
+            area-label="Status Select"
             value={localStatus}
             onChange={(e) => setLocalStatus(e.target.value)}
             className="w-full parametrization-input"
           >
-            <option value="">All</option>
-            <option value="Activo">Active</option>
-            <option value="Inactivo">Inactive</option>
+            <option value="">Todo</option>
+            <option value="Activo">Activo</option>
+            <option value="Inactivo">Inactivo</option>
           </select>
         </div>
 
         <div className="flex gap-4 mt-6">
-          <button onClick={handleClean} className="btn-theme btn-secondary w-1/2 relative">
-            Clean
+          <button area-label="Clean Button" onClick={handleClean} className="btn-theme btn-secondary w-1/2 relative">
+            Limpiar
           </button>
-          <button onClick={handleApply} className="btn-theme btn-primary w-1/2 relative">
-            Apply
+          <button area-label="Apply Button" onClick={handleApply} className="btn-theme btn-primary w-1/2 relative">
+            Aplicar
           </button>
         </div>
       </div>

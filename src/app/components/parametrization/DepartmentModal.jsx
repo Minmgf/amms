@@ -150,6 +150,7 @@ const DepartmentModal = ({
   };
 
 
+
   const validateForm = () => {
     const newErrors = {};
 
@@ -159,7 +160,7 @@ const DepartmentModal = ({
     } else if (mode === 'add') {
       // Validación de unicidad para modo add
       const isDuplicate = existingDepartments.some(dept =>
-        dept.department.toLowerCase().trim() === formData.categoryName.toLowerCase().trim()
+        dept.department && dept.department.toLowerCase().trim() === formData.categoryName.toLowerCase().trim()
       );
       if (isDuplicate) {
         newErrors.categoryName = 'This department name already exist';
@@ -167,6 +168,7 @@ const DepartmentModal = ({
     } else if (mode === 'edit') {
       // Validación de unicidad para modo edit (excluir el departamento actual)
       const isDuplicate = existingDepartments.some(dept =>
+        dept.department && 
         dept.department.toLowerCase().trim() === formData.categoryName.toLowerCase().trim() &&
         dept.id !== departmentData.id
       );

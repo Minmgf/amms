@@ -80,7 +80,6 @@ const ParameterizationView = () => {
 
       setData(mappedData);
     } catch (err) {
-      console.error("❌ MainView: Error al cargar categorías:", err);
       const errorMsg = `Error loading Types categories: ${err.message}`;
       showErrorModal(errorMsg);
       setData([]);
@@ -119,6 +118,11 @@ const ParameterizationView = () => {
 
   // Función para validar nombres duplicados
   const validateDuplicateName = (name, excludeId = null) => {
+    // Validar que name no sea undefined o null
+    if (!name || typeof name !== 'string') {
+      return false;
+    }
+    
     const normalizedName = name.trim().toLowerCase();
     return parametersData.some(
       (param) =>
@@ -235,10 +239,7 @@ const ParameterizationView = () => {
               await toggleTypeStatus(newParameterId);
             }
           } catch (toggleError) {
-            console.warn(
-              "⚠️ MainView: Error al desactivar parámetro recién creado:",
-              toggleError
-            );
+            // Error handling sin console.log
           }
         }
 
@@ -251,40 +252,54 @@ const ParameterizationView = () => {
         );
       } else {
         // Actualizar parámetro existente
-        const updatePayload = {
-          name: parameterData.typeName,
-          description: parameterData.description,
-          responsible_user: 1, // TODO: Obtener del contexto de usuario
-        };
 
-        const updatedResponse = await updateTypeItem(
-          selectedParameter.id,
-          updatePayload
-        );
+        // Si hay cambio de estado desde el toggle, solo recargar datos
+        if (parameterData.statusChanged) {
+          // Recargar la lista de parámetros después del toggle
+          await fetchParametersByCategory(selectedCategory.id);
 
-        // CAMBIO PRINCIPAL: Comparar basado en isActive en lugar del texto del estado
-        // Si el estado cambió, hacer toggle
-        if (parameterData.isActive !== selectedParameter.isActive) {
-          try {
-            await toggleTypeStatus(selectedParameter.id);
-          } catch (toggleError) {
-            console.warn("⚠️ MainView: Error al cambiar estado:", toggleError);
+          // Mostrar mensaje de éxito si viene de la respuesta
+          if (parameterData.message) {
+            showSuccessModal(parameterData.message);
           }
+        } else {
+          // Actualización normal de datos del formulario
+          const updatePayload = {
+            name: parameterData.typeName,
+            description: parameterData.description,
+            responsible_user: 1, // TODO: Obtener del contexto de usuario
+          };
+
+          const updatedResponse = await updateTypeItem(
+            selectedParameter.id,
+            updatePayload
+          );
+
+          // Comparar basado en isActive en lugar del texto del estado
+          // Si el estado cambió, hacer toggle
+          if (parameterData.isActive !== selectedParameter.isActive) {
+            try {
+              await toggleTypeStatus(selectedParameter.id);
+            } catch (toggleError) {
+              // Error handling sin console.log
+            }
+          }
+
+          // Recargar la lista de parámetros después de actualizar
+          await fetchParametersByCategory(selectedCategory.id);
+
+          // Mostrar mensaje de éxito
+          showSuccessModal(
+            `Parameter "${parameterData.typeName}" has been updated successfully.`
+          );
         }
-
-        // Recargar la lista de parámetros después de actualizar
-        await fetchParametersByCategory(selectedCategory.id);
-
-        // Mostrar mensaje de éxito
-        showSuccessModal(
-          `Parameter "${parameterData.typeName}" has been updated successfully.`
-        );
       }
 
-      // Cerrar el modal
-      handleCloseFormModal();
+      // Cerrar el modal solo si no es un cambio de estado
+      if (!parameterData.statusChanged) {
+        handleCloseFormModal();
+      }
     } catch (err) {
-      console.error("❌ MainView: Error al guardar parámetro:", err);
       const errorMsg = `Error ${
         formMode === "add" ? "creating" : "updating"
       } parameter: ${err.message}`;
@@ -292,8 +307,10 @@ const ParameterizationView = () => {
       // Mostrar modal de error
       showErrorModal(errorMsg);
 
-      // Re-lanzar el error para que lo maneje el modal
-      throw new Error(errorMsg);
+      // Re-lanzar el error para que lo maneje el modal solo si no es un cambio de estado
+      if (!parameterData.statusChanged) {
+        throw new Error(errorMsg);
+      }
     }
   };
 
@@ -305,7 +322,9 @@ const ParameterizationView = () => {
     () => [
       columnHelper.accessor("name", {
         header: "Category name",
-        cell: (info) => <div className="font-medium text-primary">{info.getValue()}</div>,
+        cell: (info) => (
+          <div className="font-medium text-primary">{info.getValue()}</div>
+        ),
       }),
       columnHelper.accessor("description", {
         header: "Description",
@@ -316,7 +335,7 @@ const ParameterizationView = () => {
         cell: (info) => (
           <button
             onClick={() => handleViewDetails(info.getValue())}
-            className="parametrization-action-button p-2 transition-colors opacity-0 group-hover:opacity-100"
+            className="parametrization-action-button p-2 transition-colors lg:opacity-0 group-hover:opacity-100"
             title="View details"
           >
             <FiEye className="w-4 h-4" />
@@ -326,6 +345,9 @@ const ParameterizationView = () => {
     ],
     [data]
   );
+
+  // Crear array de nombres existentes para validación
+  const existingNames = parametersData.map(param => param.typeName);
 
   return (
     <div className="parametrization-page p-4 md:p-8">
@@ -381,6 +403,7 @@ const ParameterizationView = () => {
         status={selectedParameter}
         category={selectedCategory?.name || ""}
         onSave={handleSaveParameter}
+        existingNames={existingNames}
       />
 
       {/* Success Modal */}

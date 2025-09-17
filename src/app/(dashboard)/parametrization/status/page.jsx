@@ -255,7 +255,7 @@ const StatusParameterizationView = () => {
         cell: (info) => (
           <button
             onClick={() => handleViewDetails(info.getValue())}
-            className="parametrization-action-button p-2 transition-colors opacity-0 group-hover:opacity-100"
+            className="parametrization-action-button p-2 transition-colors lg:opacity-0 group-hover:opacity-100"
             title="View details"
           >
             <FiEye className="w-4 h-4" />
