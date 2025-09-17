@@ -4,12 +4,10 @@ import axios from "axios";
 const getAuthToken = () => {
   // Primero intentar localStorage
   let token = localStorage.getItem('token');
-  
   // Si no está en localStorage, intentar sessionStorage
   if (!token) {
     token = sessionStorage.getItem('token');
   }
-  
   return token;
 };
 
@@ -31,11 +29,10 @@ export const apiMain = axios.create({
   },
 });
 
-
 export const apiLocation = axios.create({
   baseURL: process.env.NEXT_PUBLIC_BASE_URL_LOCATION,
   headers: {
-    "X-CSCAPI-KEY": process.env.NEXT_PUBLIC_CSC_API_KEY, // tu API key
+    "X-CSCAPI-KEY": process.env.NEXT_PUBLIC_CSC_API_KEY,
   },
 });
 
@@ -57,8 +54,36 @@ const addInterceptors = (instance) => {
   instance.interceptors.response.use(
     (response) => response,
     (error) => {
+      // Solo redirigir al login si es un 401 Y no es una petición de login
       if (error.response?.status === 401) {
-        console.error("No autorizado, redirigiendo al login...");
+        // Si es una petición de login, dejar que el componente maneje el error
+        if (error.config?.url?.includes('/auth/login')) {
+          // No hacer nada, dejar que el componente maneje el error de login
+          return Promise.reject(error);
+        }
+        
+        // Para otras peticiones 401, verificar si hay token
+        const token = getAuthToken();
+        
+        // Si no hay token o el token es inválido, redirigir al login
+        if (!token) {
+          console.error("No hay token, redirigiendo al login...");
+          // Solo redirigir si estamos en el cliente
+          if (typeof window !== 'undefined') {
+            window.location.href = '/login';
+          }
+        } else {
+          console.error("Token inválido o expirado, redirigiendo al login...");
+          // Limpiar tokens inválidos
+          localStorage.removeItem('token');
+          sessionStorage.removeItem('token');
+          localStorage.removeItem('userData');
+          
+          // Redirigir al login
+          if (typeof window !== 'undefined') {
+            window.location.href = '/login';
+          }
+        }
       }
       return Promise.reject(error);
     }

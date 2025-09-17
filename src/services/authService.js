@@ -28,10 +28,24 @@ export const login = async (payload, rememberMe = false) => {
 };
 
 export const logout = async () => {
-    const { data } = await apiUsers.post("/auth/logout");
-    Cookies.remove("token");
-    localStorage.removeItem("token");
-    sessionStorage.removeItem("token"); // También limpiar sessionStorage
+    try {
+        const { data } = await apiUsers.post("/auth/logout");
+        return data;
+    } catch (error) {
+        // Si falla el logout en el servidor, continuamos con la limpieza local
+        console.error("Error en logout del servidor:", error);
+    } finally {
+        // Siempre limpiar los tokens locales
+        Cookies.remove("token");
+        localStorage.removeItem("token");
+        sessionStorage.removeItem("token");
+        localStorage.removeItem("userData");
+    }
+};
+
+// Nueva función para reenviar correo de activación
+export const resendActivationEmail = async (email) => {
+    const { data } = await apiUsers.post("/auth/resend-activation", { email });
     return data;
 };
 

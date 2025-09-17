@@ -19,6 +19,9 @@ const Page = () => {
   const [successOpen, setSuccessOpen] = useState(false);
   const [errorOpen, setErrorOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
+  const [showResendActivation, setShowResendActivation] = useState(false);
+  const [resendEmail, setResendEmail] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
   const { loginSuccess } = usePermissions();
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -32,7 +35,7 @@ const Page = () => {
     try {
       const arrayToken = token.split(".");
       const tokenPayload = JSON.parse(atob(arrayToken[1]));
-      return tokenPayload; // Aquí vienen todos los datos del token (claims)
+      return tokenPayload;
     } catch (error) {
       console.error("Token inválido", error);
       return null;
@@ -48,36 +51,126 @@ const Page = () => {
     }
   }, [router]);
 
+  // Timer para cooldown del reenvío
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => {
+        setResendCooldown(resendCooldown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
+
+  const handleResendActivation = async () => {
+    if (resendCooldown > 0) return;
+
+    try {
+      // Aquí deberías llamar a tu endpoint de reenvío de activación
+      // Por ejemplo: await resendActivationEmail({ email: resendEmail });
+
+      setModalMessage(
+        "Se ha reenviado el correo de activación. Por favor revisa tu bandeja de entrada."
+      );
+      setSuccessOpen(true);
+      setResendCooldown(60); // 60 segundos de cooldown
+      setShowResendActivation(false);
+    } catch (error) {
+      setModalMessage("Error al reenviar el correo de activación.");
+      setErrorOpen(true);
+    }
+  };
+
   const onSubmit = async (data) => {
     setLoading(true);
     try {
       const response = await login(data, data.rememberMe);
       const payload = decodeToken(response.access_token);
-      
+
       // Guardar en localStorage
       localStorage.setItem("userData", JSON.stringify(payload));
-      
+
       // Mostrar mensaje de éxito
       setModalMessage("Ha iniciado sesión correctamente.");
       setSuccessOpen(true);
-      
+
       // Definir el redirect que se ejecutará después del procesamiento
       const handleRedirect = () => {
-        setSuccessOpen(false);        
+        setSuccessOpen(false);
         if (payload.first_login_complete) {
           router.push("/home");
         } else {
           router.push("/editUser");
         }
       };
-      
+
       // Procesar permisos Y pasar el callback para el redirect
       setTimeout(() => {
         loginSuccess(response.access_token, handleRedirect);
-      }, 1000); // Dar tiempo para que se vea el modal de éxito
-      
+      }, 1000);
     } catch (error) {
-      setModalMessage(error.response.data.detail || "Error al iniciar sesión");
+      const errorData = error.response?.data;
+      const statusCode = error.response?.status;
+
+      // Extraer el mensaje de error correctamente
+      let errorMessage = "Error al iniciar sesión";
+
+      if (errorData) {
+        // Si errorData.detail existe y es un objeto con message
+        if (
+          errorData.detail &&
+          typeof errorData.detail === "object" &&
+          errorData.detail.message
+        ) {
+          errorMessage = errorData.detail.message;
+        }
+        // Si errorData.detail es un string
+        else if (errorData.detail && typeof errorData.detail === "string") {
+          errorMessage = errorData.detail;
+        }
+        // Si errorData es un string directamente
+        else if (typeof errorData === "string") {
+          errorMessage = errorData;
+        }
+        // Si hay message en el nivel superior
+        else if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+        // Fallback para otros casos
+        else if (typeof errorData === "object") {
+          errorMessage = errorData.error || JSON.stringify(errorData);
+        }
+      }
+
+      // Convertir errorMessage a string si no lo es
+      const errorString =
+        typeof errorMessage === "string" ? errorMessage : String(errorMessage);
+
+      // Manejar específicamente el caso de cuenta no activada
+      if (statusCode === 401) {
+        const lowerErrorString = errorString.toLowerCase();
+
+        if (
+          lowerErrorString.includes("activada") ||
+          lowerErrorString.includes("activation")
+        ) {
+          setModalMessage(errorString); // Usar el mensaje exacto del servidor
+          setResendEmail(data.email);
+          setShowResendActivation(true);
+        } else if (lowerErrorString.includes("pendiente")) {
+          setModalMessage(
+            "Tu cuenta está pendiente de activación. Por favor revisa tu correo electrónico."
+          );
+          setResendEmail(data.email);
+          setShowResendActivation(true);
+        } else {
+          setModalMessage(errorString);
+          setShowResendActivation(false);
+        }
+      } else {
+        setModalMessage(errorString);
+        setShowResendActivation(false);
+      }
+
       setErrorOpen(true);
     } finally {
       setLoading(false);
@@ -112,7 +205,7 @@ const Page = () => {
                       required: "El correo electrónico es obligatorio",
                       pattern: {
                         value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                        message: "Invalid email format",
+                        message: "Formato de correo inválido",
                       },
                     })}
                     className="w-full rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 pl-12 pr-4 py-2 outline-none shadow focus:ring-2 focus:ring-red-500"
@@ -166,7 +259,7 @@ const Page = () => {
                   {...register("rememberMe")}
                   className="h-4 w-4 rounded border-white/30 bg-black/30 accent-red-600"
                 />
-                <span className="text-white/90">Recuerdame</span>
+                <span className="text-white/90">Recuérdame</span>
               </label>
 
               <button
@@ -174,13 +267,14 @@ const Page = () => {
                 area-label="Login Button"
                 disabled={loading}
                 className={`w-full text-white py-2 mt-6 rounded-lg text-lg font-semibold shadow transition-colors
-                  ${loading
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-red-600 hover:bg-red-500 active:bg-red-700"
+                  ${
+                    loading
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-red-600 hover:bg-red-500 active:bg-red-700"
                   }
                 `}
               >
-                Iniciar sesión
+                {loading ? "Iniciando sesión..." : "Iniciar sesión"}
               </button>
 
               <div className="text-center mt-3">
@@ -189,13 +283,13 @@ const Page = () => {
                   href="/passwordRecovery"
                   className="text-white/80 hover:text-white underline-offset-4 hover:underline"
                 >
-                  Olvidaste la contraseña?
+                  ¿Olvidaste la contraseña?
                 </Link>
               </div>
             </form>
 
             <div className="flex justify-center mt-6 gap-2 text-sm">
-              <span className="text-white/80">Nuevo aquí?</span>
+              <span className="text-white/80">¿Nuevo aquí?</span>
               <Link
                 area-label="Signup"
                 href="/preregister"
@@ -207,17 +301,42 @@ const Page = () => {
           </LoginCard>
         </div>
       </div>
+
       <SuccessModal
         isOpen={successOpen}
         onClose={() => setSuccessOpen(false)}
         title="¡Bienvenido!"
         message={modalMessage}
       />
+
       <ErrorModal
         isOpen={errorOpen}
-        onClose={() => setErrorOpen(false)}
+        onClose={() => {
+          setErrorOpen(false);
+        }}
         title="Autenticación Fallida"
         message={modalMessage}
+        footer={
+          showResendActivation && (
+            <div className="mt-4 text-center">
+              <button
+                onClick={handleResendActivation}
+                disabled={resendCooldown > 0}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors
+                  ${
+                    resendCooldown > 0
+                      ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                      : "bg-blue-600 text-white hover:bg-blue-500"
+                  }
+                `}
+              >
+                {resendCooldown > 0
+                  ? `Reenviar en ${resendCooldown}s`
+                  : "Reenviar correo de activación"}
+              </button>
+            </div>
+          )
+        }
       />
     </>
   );
