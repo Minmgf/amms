@@ -147,8 +147,8 @@ export const PermissionsProvider = ({ children }) => {
     setIsProcessingLogin(false);
   };
 
-  const hasPermission = (permissionName) => {
-    return permissions.some(permission => permission.name === permissionName);
+  const hasPermission = (permissionId) => {
+    return permissions.some(permission => permission.id === permissionId);
   };
 
   const hasRole = (roleName) => {
@@ -168,14 +168,14 @@ export const PermissionsProvider = ({ children }) => {
   };
 
   const hasAnyPermission = (permissionsList) => {
-    return permissionsList.some(permissionName =>
-      permissions.some(permission => permission.name === permissionName)
+    return permissionsList.some(permissionId =>
+      permissions.some(permission => permission.id === permissionId)
     );
   };
 
   const hasAllPermissions = (permissionsList) => {
-    return permissionsList.every(permissionName =>
-      permissions.some(permission => permission.name === permissionName)
+    return permissionsList.every(permissionId =>
+      permissions.some(permission => permission.id === permissionId)
     );
   };
 
@@ -194,7 +194,7 @@ export const PermissionsProvider = ({ children }) => {
     refreshPermissions,
     clearPermissions,
     loginSuccess,
-    permissionNames: permissions.map(p => p.name),
+    permissionNames: permissions.map(p => p.id),
     roleNames: userRoles.map(r => r.name),
     userId: userData?.id,
     userName: userData?.name,
