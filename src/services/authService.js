@@ -7,6 +7,9 @@ const getAuthToken = () => {
     if (!token) {
         token = sessionStorage.getItem("token");
     }
+    if (!token) {
+        token = Cookies.get("token");
+    }
     return token;
 };
 
@@ -66,6 +69,7 @@ export const getGenders = async () => {
     return data;
 };
 
+// Esta función NO requiere autenticación
 export const validateDocument = async (payload) => {
     const { data } = await apiUsers.post("/users/pre-register/validate", payload);
     return data;
@@ -81,6 +85,7 @@ export const activateAccount = async (token) => {
     return data;
 };
 
+// Esta función NO requiere autenticación - solo necesita el token de validación
 export const completePreregister = async (payload) => {
     const { data } = await apiUsers.post("/users/pre-register/complete", payload);
     return data;

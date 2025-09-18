@@ -15,6 +15,7 @@ const Page = () => {
   const [successOpen, setSuccessOpen] = useState(false);
   const [errorOpen, setErrorOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const {
@@ -29,32 +30,65 @@ const Page = () => {
         const response = await getTypeDocuments();
         setIdentificationTypes(response.data);
       } catch (error) {
-        console.error("Error:", error);
+        console.error("Error al cargar tipos de documento:", error);
+        setModalMessage("Error al cargar los tipos de documento. Intente recargar la página.");
+        setErrorOpen(true);
       }
     };
     fetchDocumentTypes();
   }, []);
 
   const onSubmit = async (data) => {
+    setLoading(true);
+    
     try {
       const payload = {
-        document_type_id: data.selectedType,
+        document_type_id: parseInt(data.selectedType), // Asegurar que sea un número
         document_number: data.identificationNumber,
         date_issuance_document: data.issueDate,
       };
 
+      console.log("Enviando payload de validación:", payload);
+
       const response = await validateDocument(payload);
+      
+      // Guardar el token de validación
       localStorage.setItem("validationToken", response.token);
-      setModalMessage(response.message);
+      
+      setModalMessage(response.message || "Documento validado exitosamente");
       setSuccessOpen(true);
+      
+      // Redirigir después de un breve delay
       setTimeout(() => {
         setSuccessOpen(false);
         router.push("/completeRegister");
-      }, 3000);
+      }, 2000);
 
     } catch (error) {
-      setModalMessage(error.response.data.detail || "Error al validar documento");
+      console.error("Error al validar documento:", error);
+      
+      let errorMessage = "Error al validar documento";
+      
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        if (typeof errorData.detail === "string") {
+          errorMessage = errorData.detail;
+        } else if (errorData.detail?.message) {
+          errorMessage = errorData.detail.message;
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (typeof errorData === "string") {
+          errorMessage = errorData;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setModalMessage(errorMessage);
       setErrorOpen(true);
+      
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -75,8 +109,9 @@ const Page = () => {
               <div className="w-full sm:w-auto">
                 <select
                   area-label="Identification Type Select"
-                  {...register("selectedType", { required: "Sleccione un tipo de identificación" })}
+                  {...register("selectedType", { required: "Seleccione un tipo de identificación" })}
                   className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-2 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
+                  disabled={loading}
                 >
                   <option value="">Seleccione un tipo</option>
                   {identificationTypes.map((doc) => (
@@ -86,7 +121,7 @@ const Page = () => {
                   ))}
                 </select>
                 {errors.selectedType && (
-                  <p className="text-red-500 text-sm">{errors.selectedType.message}</p>
+                  <p className="text-red-500 text-sm mt-1">{errors.selectedType.message}</p>
                 )}
               </div>
 
@@ -95,17 +130,22 @@ const Page = () => {
                   type="text"
                   area-label="Identification Number Input"
                   placeholder="Número de identificación"
+                  disabled={loading}
                   {...register("identificationNumber", {
                     required: "El número de identificación es obligatorio",
                     pattern: {
                       value: /^[0-9]+$/,
                       message: "El número de identificación debe ser numérico",
                     },
+                    minLength: {
+                      value: 6,
+                      message: "El número debe tener al menos 6 dígitos"
+                    }
                   })}
-                  className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black w-full outline-none shadow focus:ring-2 focus:ring-red-500"
+                  className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black w-full outline-none shadow focus:ring-2 focus:ring-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
                 {errors.identificationNumber && (
-                  <p className="text-red-500 text-sm">{errors.identificationNumber.message}</p>
+                  <p className="text-red-500 text-sm mt-1">{errors.identificationNumber.message}</p>
                 )}
               </div>
             </div>
@@ -113,7 +153,7 @@ const Page = () => {
             <div>
               <label
                 htmlFor="issueDate"
-                className="text-sm font-medium text-white mb-1"
+                className="block text-sm font-medium text-white mb-1"
               >
                 Fecha de expedición
               </label>
@@ -121,13 +161,26 @@ const Page = () => {
                 id="issueDate"
                 area-label="Issue Date Input"
                 type="date"
+                disabled={loading}
                 {...register("issueDate", {
                   required: "La fecha de expedición es obligatoria",
-                  validate: (value) =>
-                    new Date(value) <= new Date() ||
-                    "La fecha de expedición no puede ser futura",
+                  validate: (value) => {
+                    const selectedDate = new Date(value);
+                    const today = new Date();
+                    const minDate = new Date();
+                    minDate.setFullYear(minDate.getFullYear() - 100); // Hace 100 años
+                    
+                    if (selectedDate > today) {
+                      return "La fecha de expedición no puede ser futura";
+                    }
+                    if (selectedDate < minDate) {
+                      return "La fecha de expedición no puede ser tan antigua";
+                    }
+                    return true;
+                  },
                 })}
-                className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
+                max={new Date().toISOString().split('T')[0]} // Prevenir fechas futuras
+                className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 w-full outline-none shadow focus:ring-2 focus:ring-red-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
               />
               {errors.issueDate && (
                 <p className="text-red-500 text-sm">{errors.issueDate.message}</p>
@@ -136,14 +189,22 @@ const Page = () => {
 
             <button
               area-label="Continue Button"
-              className="w-full text-white py-2 mt-6 rounded-lg bg-red-600 text-lg font-semibold shadow hover:bg-red-500 active:bg-red-700 transition-colors"
+              type="submit"
+              disabled={loading}
+              className={`w-full text-white py-2 mt-6 rounded-lg text-lg font-semibold shadow transition-colors
+                ${
+                  loading
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-red-600 hover:bg-red-500 active:bg-red-700"
+                }
+              `}
             >
-              Continuar
+              {loading ? "Validando..." : "Continuar"}
             </button>
           </form>
 
           <p className="text-sm text-gray-300 mt-6 text-center">
-            Ya tiene una cuenta activa?{" "}
+            ¿Ya tiene una cuenta activa?{" "}
             <button
               type="button"
               area-label="Login Button"
@@ -154,6 +215,7 @@ const Page = () => {
             </button>
           </p>
         </LoginCard>
+        
         <SuccessModal
           isOpen={successOpen}
           onClose={() => setSuccessOpen(false)}

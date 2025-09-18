@@ -63,10 +63,33 @@ export const apiLocation = axios.create({
   },
 });
 
+// Lista de endpoints que NO requieren autenticación
+const PUBLIC_ENDPOINTS = [
+  '/auth/login/',
+  '/auth/request-reset-password',
+  '/auth/reset-password',
+  '/auth/resend-activation',
+  '/users/pre-register/validate',
+  '/users/pre-register/complete',
+  '/users/activate-account',
+  '/users/type-documents',
+  '/users/genders'
+];
+
+// Función para verificar si un endpoint es público
+const isPublicEndpoint = (url) => {
+  return PUBLIC_ENDPOINTS.some(endpoint => url.includes(endpoint));
+};
+
 // Función para agregar interceptores
 const addInterceptors = (instance) => {
   instance.interceptors.request.use(
     (config) => {
+      // Si es un endpoint público, no agregar token
+      if (isPublicEndpoint(config.url)) {
+        return config;
+      }
+
       const token = getAuthToken();
       
       if (token) {
@@ -90,7 +113,7 @@ const addInterceptors = (instance) => {
         
         // Si no hay token y no estamos en rutas públicas, redirigir al login
         if (typeof window !== 'undefined') {
-          const publicPaths = ['/sigma/login', '/sigma/preregister', '/sigma/passwordRecovery', '/sigma/activate'];
+          const publicPaths = ['/sigma/login', '/sigma/preregister', '/sigma/passwordRecovery', '/sigma/activate', '/sigma/completeRegister'];
           const isPublicPath = publicPaths.some(path => window.location.pathname.includes(path));
           
           if (!isPublicPath && !window.location.pathname.includes('/login')) {
@@ -113,10 +136,10 @@ const addInterceptors = (instance) => {
         return Promise.reject(error);
       }
       
-      // Solo redirigir al login si es un 401 Y no es una petición de login
+      // Solo redirigir al login si es un 401 Y no es una petición pública
       if (error.response?.status === 401) {
-        // Si es una petición de login, dejar que el componente maneje el error
-        if (error.config?.url?.includes('/auth/login')) {
+        // Si es una petición de endpoints públicos, dejar que el componente maneje el error
+        if (isPublicEndpoint(error.config?.url)) {
           return Promise.reject(error);
         }
         

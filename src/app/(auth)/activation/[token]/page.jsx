@@ -5,12 +5,15 @@ import Logo from "../../../components/auth/Logo";
 import { useParams } from "next/navigation";
 import { activateAccount } from "@/services/authService";
 import { AiOutlineCloseCircle } from "react-icons/ai";
+import { useRouter } from "next/navigation";
+
 
 const page = () => {
   const { token } = useParams();
   const [status, setStatus] = useState("loading"); // loading, success, error
   const [message, setMessage] = useState("");
   const hasCalled = useRef(false);
+  const router = useRouter();
 
   useEffect(() => {
     if (!token || hasCalled.current) return;
@@ -73,17 +76,20 @@ const page = () => {
             {status === "success" && (
               <Link
                 area-label="Next"
-                href="/login"
+                onClick={() => router.push("/login")}
                 className="w-3/4 text-center text-white py-2 mt-6 rounded-lg bg-red-600 text-lg font-semibold shadow hover:bg-red-500 active:bg-red-700 transition-colors"
               >
                 Siguiente
               </Link>
             )}
-            <div className="flex justify-center text-white text-md mt-7 mt-2 gap-2">
+            <div className="flex justify-center text-white text-md mt-7 gap-2">
               <a href="" className="hover:underline">
                 Ya tiene una cuenta activa?
               </a>
-              <Link area-label="Login" href="/login" className="hover:underline font-bold">
+              <Link
+                area-label="Login"
+                onClick={() => router.push("/login")}
+                className="hover:underline font-bold">
                 Inicie sesión aquí
               </Link>
             </div>
