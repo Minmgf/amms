@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { useState, useEffect } from "react";
 import { FaCheck } from "react-icons/fa";
 import { completePreregister } from "@/services/authService";
+import Link from "next/link";
 import {
   SuccessModal,
   ErrorModal,
@@ -294,13 +295,13 @@ const Page = () => {
             
             <div className="flex justify-center mt-6 gap-2 text-sm">
               <span className="text-white/80">¿Ya tienes una cuenta?</span>
-              <button
-                type="button"
-                onClick={() => router.push("/login")}
+              <Link
+                href="/login"
+                area-label="Login Button"
                 className="hover:underline font-bold text-white"
               >
                 Inicia sesión
-              </button>
+              </Link>
             </div>
           </LoginCard>
         </div>

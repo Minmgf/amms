@@ -1,11 +1,11 @@
 "use client";
-import Link from "next/link";
 import React, { useRef, useEffect, useState } from "react";
 import Logo from "../../../components/auth/Logo";
 import { useParams } from "next/navigation";
 import { activateAccount } from "@/services/authService";
 import { AiOutlineCloseCircle } from "react-icons/ai";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 
 const page = () => {
@@ -75,8 +75,8 @@ const page = () => {
 
             {status === "success" && (
               <Link
+                href="/login"
                 area-label="Next"
-                onClick={() => router.push("/login")}
                 className="w-3/4 text-center text-white py-2 mt-6 rounded-lg bg-red-600 text-lg font-semibold shadow hover:bg-red-500 active:bg-red-700 transition-colors"
               >
                 Siguiente
@@ -87,8 +87,8 @@ const page = () => {
                 Ya tiene una cuenta activa?
               </a>
               <Link
+                href="/login"
                 area-label="Login"
-                onClick={() => router.push("/login")}
                 className="hover:underline font-bold">
                 Inicie sesión aquí
               </Link>

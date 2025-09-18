@@ -9,6 +9,7 @@ import LoginCard from "../../components/auth/LoginCard";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { validateDocument, getTypeDocuments } from "@/services/authService";
+import Link from "next/link";
 
 const Page = () => {
   const [identificationTypes, setIdentificationTypes] = useState([]);
@@ -205,14 +206,13 @@ const Page = () => {
 
           <p className="text-sm text-gray-300 mt-6 text-center">
             ¿Ya tiene una cuenta activa?{" "}
-            <button
-              type="button"
+            <Link
               area-label="Login Button"
-              onClick={() => router.push("/login")}
-              className="text-white font-semibold hover:underline"
+              href="/login"
+              className="hover:underline font-bold text-white"
             >
               Inicie sesión aquí
-            </button>
+            </Link>
           </p>
         </LoginCard>
         
