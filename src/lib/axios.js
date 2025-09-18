@@ -1,4 +1,5 @@
 import axios from "axios";
+import Cookies from "js-cookie";
 
 // Función helper para obtener el token desde localStorage o sessionStorage
 const getAuthToken = () => {
@@ -8,7 +9,33 @@ const getAuthToken = () => {
   if (!token) {
     token = sessionStorage.getItem('token');
   }
+  // Si tampoco está en storage, intentar cookies
+  if (!token) {
+    token = Cookies.get('token');
+  }
   return token;
+};
+
+// Función para verificar si el token está expirado
+const isTokenExpired = (token) => {
+  if (!token) return true;
+  
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    const currentTime = Math.floor(Date.now() / 1000);
+    return payload.exp < currentTime;
+  } catch (error) {
+    console.error("Error al decodificar token:", error);
+    return true;
+  }
+};
+
+// Función para limpiar todos los tokens
+const clearAllTokens = () => {
+  localStorage.removeItem('token');
+  sessionStorage.removeItem('token');
+  localStorage.removeItem('userData');
+  Cookies.remove('token');
 };
 
 // Instancia para el microservicio de usuarios
@@ -40,12 +67,39 @@ export const apiLocation = axios.create({
 const addInterceptors = (instance) => {
   instance.interceptors.request.use(
     (config) => {
-      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+      const token = getAuthToken();
+      
       if (token) {
+        // Verificar si el token está expirado antes de usarlo
+        if (isTokenExpired(token)) {
+          console.warn('Token expirado, limpiando storage...');
+          clearAllTokens();
+          
+          // Redirigir al login solo si no estamos ya en la página de login
+          if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+            window.location.href = '/sigma/login';
+          }
+          
+          // Cancelar la petición
+          return Promise.reject(new axios.Cancel('Token expirado'));
+        }
+        
         config.headers.Authorization = `Bearer ${token}`;
       } else {
-        console.warn('No se encontró token en localStorage ni sessionStorage');
+        console.warn('No se encontró token en localStorage, sessionStorage ni cookies');
+        
+        // Si no hay token y no estamos en rutas públicas, redirigir al login
+        if (typeof window !== 'undefined') {
+          const publicPaths = ['/sigma/login', '/sigma/preregister', '/sigma/passwordRecovery', '/sigma/activate'];
+          const isPublicPath = publicPaths.some(path => window.location.pathname.includes(path));
+          
+          if (!isPublicPath && !window.location.pathname.includes('/login')) {
+            window.location.href = '/sigma/login';
+            return Promise.reject(new axios.Cancel('No hay token disponible'));
+          }
+        }
       }
+      
       return config;
     },
     (error) => Promise.reject(error)
@@ -54,37 +108,28 @@ const addInterceptors = (instance) => {
   instance.interceptors.response.use(
     (response) => response,
     (error) => {
+      // Si la petición fue cancelada por nosotros, no hacer nada más
+      if (axios.isCancel(error)) {
+        return Promise.reject(error);
+      }
+      
       // Solo redirigir al login si es un 401 Y no es una petición de login
       if (error.response?.status === 401) {
         // Si es una petición de login, dejar que el componente maneje el error
         if (error.config?.url?.includes('/auth/login')) {
-          // No hacer nada, dejar que el componente maneje el error de login
           return Promise.reject(error);
         }
         
-        // Para otras peticiones 401, verificar si hay token
-        const token = getAuthToken();
+        // Para otras peticiones 401, limpiar tokens y redirigir
+        console.error("Error 401: Token inválido o expirado, redirigiendo al login...");
+        clearAllTokens();
         
-        // Si no hay token o el token es inválido, redirigir al login
-        if (!token) {
-          console.error("No hay token, redirigiendo al login...");
-          // Solo redirigir si estamos en el cliente
-          if (typeof window !== 'undefined') {
-            window.location.href = '/login';
-          }
-        } else {
-          console.error("Token inválido o expirado, redirigiendo al login...");
-          // Limpiar tokens inválidos
-          localStorage.removeItem('token');
-          sessionStorage.removeItem('token');
-          localStorage.removeItem('userData');
-          
-          // Redirigir al login
-          if (typeof window !== 'undefined') {
-            window.location.href = '/login';
-          }
+        // Redirigir al login con el prefijo correcto
+        if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+          window.location.href = '/sigma/login';
         }
       }
+      
       return Promise.reject(error);
     }
   );

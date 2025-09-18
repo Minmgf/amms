@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import Cookies from "js-cookie";
 import React, { useState, useEffect } from "react";
 import { FaLock, FaUser, FaEye, FaEyeSlash } from "react-icons/fa";
 import Logo from "../../components/auth/Logo";
@@ -13,6 +12,7 @@ import {
   SuccessModal,
   ErrorModal,
 } from "@/app/components/shared/SuccessErrorModal";
+import Cookies from "js-cookie";
 
 const Page = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -42,13 +42,46 @@ const Page = () => {
     }
   }
 
-  useEffect(() => {
-    const token = Cookies.get("token");
-    if (token) {
-      router.replace("/home");
-    } else {
-      setLoading(false);
+  // Función helper para obtener el token desde localStorage o sessionStorage
+  const getAuthToken = () => {
+    let token = localStorage.getItem("token");
+    if (!token) {
+      token = sessionStorage.getItem("token");
     }
+    // También verificar cookies
+    if (!token) {
+      token = Cookies.get("token");
+    }
+    return token;
+  };
+
+  useEffect(() => {
+    // Usar la misma lógica que usa el interceptor de axios
+    const token = getAuthToken();
+    if (token) {
+      // Verificar si el token es válido antes de redirigir
+      try {
+        const payload = decodeToken(token);
+        if (payload && payload.exp) {
+          const currentTime = Math.floor(Date.now() / 1000);
+          if (payload.exp > currentTime) {
+            // Token válido, redirigir a home con el prefijo correcto
+            router.replace("/home");
+            return;
+          }
+        }
+      } catch (error) {
+        console.error("Error al verificar token:", error);
+      }
+      
+      // Si llegamos aquí, el token no es válido, limpiarlo
+      localStorage.removeItem("token");
+      sessionStorage.removeItem("token");
+      localStorage.removeItem("userData");
+      Cookies.remove("token");
+    }
+    
+    setLoading(false);
   }, [router]);
 
   // Timer para cooldown del reenvío

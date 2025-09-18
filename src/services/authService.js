@@ -13,13 +13,20 @@ const getAuthToken = () => {
 export const login = async (payload, rememberMe = false) => {
     const { data } = await apiUsers.post("/auth/login/", payload);
 
-    // Guardar siempre en cookie (ejemplo: expira en 1 hora)
-    Cookies.set("token", data.access_token, { expires: 1 / 24 });
+    // Guardar siempre en cookie para mantener consistencia
+    // La cookie expira en 7 días si rememberMe es true, sino en 1 día
+    const cookieExpiry = rememberMe ? 7 : 1;
+    Cookies.set("token", data.access_token, { expires: cookieExpiry });
 
+    // También guardar en localStorage o sessionStorage según preferencia
     if (rememberMe) {
         localStorage.setItem("token", data.access_token);
+        // Limpiar sessionStorage si existe
+        sessionStorage.removeItem("token");
     } else {
         sessionStorage.setItem("token", data.access_token);
+        // Limpiar localStorage si existe
+        localStorage.removeItem("token");
     }
 
     console.log("Token desde helper:", getAuthToken());
