@@ -19,7 +19,7 @@ const AddModifyTypesModal = ({
     description: "",
     isActive: true,
   });
-  
+
   const [saving, setSaving] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
   const [errorOpen, setErrorOpen] = useState(false);
@@ -83,18 +83,18 @@ const AddModifyTypesModal = ({
     if (mode === "modify" && status?.id) {
       try {
         setSaving(true);
-        
+
         const response = await toggleTypeStatus(status.id);
-        
+
         setFormData(prev => ({
           ...prev,
           isActive: !prev.isActive
         }));
-        
+
         if (onSave) {
           await onSave({ success: true, message: response.message, statusChanged: true });
         }
-        
+
       } catch (error) {
         setModalMessage(error.response?.data?.message || error.message || "Error changing status");
         setErrorOpen(true);
@@ -206,9 +206,8 @@ const AddModifyTypesModal = ({
                     handleInputChange("typeName", e.target.value)
                   }
                   disabled={saving}
-                  className={`w-full px-3 py-2 border rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${
-                    hasNameError ? 'border-red-300' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${hasNameError ? 'border-red-300' : 'border-gray-300'
+                    }`}
                   placeholder="Enter type name"
                 />
                 {hasNameError && (
@@ -230,8 +229,10 @@ const AddModifyTypesModal = ({
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Description
                 </label>
-                <input
-                  type="text"
+                <textarea
+                  cols={30}
+                  rows={1}
+                  maxLength={200} // Límite de 200 caracteres
                   value={formData.description}
                   onChange={(e) =>
                     handleInputChange("description", e.target.value)
@@ -251,14 +252,12 @@ const AddModifyTypesModal = ({
                     type="button"
                     onClick={handleToggleChange}
                     disabled={saving}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
-                      formData.isActive ? "bg-red-500" : "bg-gray-200"
-                    }`}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${formData.isActive ? "bg-red-500" : "bg-gray-200"
+                      }`}
                   >
                     <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        formData.isActive ? "translate-x-6" : "translate-x-1"
-                      }`}
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.isActive ? "translate-x-6" : "translate-x-1"
+                        }`}
                     />
                   </button>
                 </div>

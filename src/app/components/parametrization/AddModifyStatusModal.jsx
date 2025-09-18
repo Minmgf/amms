@@ -136,8 +136,10 @@ const AddModifyStatusModal = ({
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Description
                 </label>
-                <input
-                  type="text"
+                <textarea
+                  cols={30}
+                  rows={1}
+                  maxLength={200} // Límite de 200 caracteres
                   value={formData.description}
                   onChange={(e) =>
                     handleInputChange("description", e.target.value)
