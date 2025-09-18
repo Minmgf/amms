@@ -115,8 +115,8 @@ export default function Header() {
       const response = await markAllNotAsRead();
       if (response.success) {
         reload();
-        setModalMessage(response.message);
-        setSuccessOpen(true);
+        //setModalMessage(response.message);
+        //setSuccessOpen(true);
       }
     } catch (error) {
       setModalMessage(error.response?.data?.detail || "Error marking all as read");
@@ -138,8 +138,8 @@ export default function Header() {
       const response = await markOneNotAsRead(payload);
       if (response.success) {
         reload();
-        setModalMessage(response.message);
-        setSuccessOpen(true);
+        //setModalMessage(response.message);
+        //setSuccessOpen(true);
       }
     } catch (error) {
       setModalMessage(error.response?.data?.detail || "Error marking notification as read");
