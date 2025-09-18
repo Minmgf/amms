@@ -1,190 +1,225 @@
 "use client";
-import AuditLogFilter from "@/app/components/auditLog/filters/AuditLogFilter";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import TableList from "@/app/components/shared/TableList";
+import { useTheme } from "@/contexts/ThemeContext";
+import { createColumnHelper } from "@tanstack/react-table";
 import { FiSearch, FiFilter } from "react-icons/fi";
-
-const badgeColors = [
-    'parametrization-badge parametrization-badge-1',
-    'parametrization-badge parametrization-badge-2',
-    'parametrization-badge parametrization-badge-3',
-    'parametrization-badge parametrization-badge-4',
-    'parametrization-badge parametrization-badge-5',
-    'parametrization-badge parametrization-badge-6',
-    'parametrization-badge parametrization-badge-7',
-    'parametrization-badge parametrization-badge-8',
-    'parametrization-badge parametrization-badge-9',
-    'parametrization-badge parametrization-badge-10',
-];
-
-// 🔄 Función para asignar siempre el mismo color a cada acción
-const getRandomColor = (action) => {
-    const index =
-        action
-            .split("")
-            .reduce((acc, char) => acc + char.charCodeAt(0), 0) % badgeColors.length;
-    return badgeColors[index];
-};
+import { getAudit } from "@/services/auditService";
+import { getUserInfo } from "@/services/authService";
+import { getPermissions } from "@/services/roleService";
+import AuditLogFilter from "@/app/components/auditLog/filters/AuditLogFilter";
 
 const page = () => {
-    const [search, setSearch] = useState("");
+    useTheme();
+    const [globalFilter, setGlobalFilter] = useState("");
     const [data, setData] = useState([]);
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10;
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [userCache, setUserCache] = useState({}); // Cache de usuarios
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [filters, setFilters] = useState({});
 
-    useEffect(() => {
-        fetch("https://api.tu-backend.com/audit-log")
-            .then((res) => res.json())
-            .then((resData) => setData(resData))
-            .catch(() => {
-                setData([
-                    {
-                        date: "2024-01-15 14:30:25",
-                        user: "Torres Hernán Darío",
-                        action: "Edit",
-                        description: "Edited personal information",
-                    },
-                    {
-                        date: "2024-01-15 13:45:12",
-                        user: "María Elena Rodríguez",
-                        action: "Change password",
-                        description: "Example",
-                    },
-                    {
-                        date: "2024-01-15 12:20:08",
-                        user: "Carlos Alberto Mendez",
-                        action: "Deactivate account",
-                        description: "Example",
-                    },
-                    {
-                        date: "2024-01-15 11:15:33",
-                        user: "Ana Patricia Silva",
-                        action: "Assign role",
-                        description: "Example",
-                    },
-                ]);
-            });
-    }, []);
-
-    const filteredData = data.filter((item) =>
-        item.user.toLowerCase().includes(search.toLowerCase())
-    );
-
-    const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const currentData = filteredData.slice(
-        startIndex,
-        startIndex + itemsPerPage
-    );
-
-    const goToPage = (page) => {
-        if (page >= 1 && page <= totalPages) setCurrentPage(page);
+    const handleApplyFilters = (newFilters) => {
+        setFilters(newFilters);
+        // aquí decides: si llamas al backend con query params o filtras data en frontend
     };
 
-    return (
-        <div className="parametrization-page p-6 w-full min-h-screen">
-            <h1 className="parametrization-header text-2xl font-bold mb-6">Access and Audit Log</h1>
+    const handleCleanFilters = () => {
+        setFilters({});
+        // recargar todo o quitar filtros
+    };
 
-            <div className="flex items-center gap-3 mb-6">
-                <div className="relative flex-1 min-w-0 sm:flex-none sm:w-72">
-                    <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary" />
-                    <input
-                        type="text"
-                        placeholder="Introduce a name..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="parametrization-input w-full pl-10 pr-4 py-2"
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                // Traer auditorías
+                const audits = await getAudit();
+                // Traer todos los permisos
+                const perms = await getPermissions();
+                // Enriquecer datos
+                const enriched = await Promise.all(
+                    audits.map(async (item) => {
+                        // usuario: usar actor_id o sino object_id
+                        const userId = item.actor_id ?? item.object_id;
+                        const dateObj = new Date(item.ts);
+                        const rawDate = dateObj.toISOString().split("T")[0]; // YYYY-MM-DD
+                        let userName = "Desconocido";
+
+                        if (userId) {
+                            // si ya lo tenemos en cache, usarlo
+                            if (userCache[userId]) {
+                                userName = userCache[userId];
+                            } else {
+                                try {
+                                    const userResp = await getUserInfo(userId);
+                                    // tu endpoint devuelve data: [ { ... } ]
+                                    const user = userResp?.data?.[0];
+                                    if (user) {
+                                        userName = user.name;
+                                        setUserCache((prev) => ({ ...prev, [userId]: userName }));
+                                    }
+                                } catch {
+                                    userName = `ID: ${userId}`;
+                                }
+                            }
+                        }
+
+                        // permiso: buscar por id
+                        const permDesc =
+                            perms.find((p) => p.id === item.permission_id)?.description ||
+                            (item.permission_id ? `ID: ${item.permission_id}` : "N/A");
+
+                        return {
+                            ts: formatDate(item.ts),
+                            rawDate,
+                            actor: userName,
+                            actorRole: item.actor_role ?? "N/A",
+                            feature: item.feature,
+                            operation: item.operation,
+                            permission: permDesc,
+                            change: Object.entries(item.diff?.changed || {})
+                                .map(
+                                    ([field, { from, to }]) =>
+                                        `${field}: ${from ?? "null"} → ${to ?? "null"}`
+                                )
+                                .join(", "),
+                        };
+                    })
+                );
+
+                setData(enriched);
+            } catch (error) {
+                console.error("Error cargando auditorías:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
+
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleString("es-CO", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+        });
+    };
+
+    const columnHelper = createColumnHelper();
+    const columns = useMemo(
+        () => [
+            columnHelper.accessor("ts", {
+                header: "Fecha y Hora",
+                cell: (info) => <div className="text-primary">{info.getValue()}</div>,
+            }),
+            columnHelper.accessor("actor", {
+                header: "Usuario",
+                cell: (info) => <div className="text-secondary">{info.getValue()}</div>,
+            }),
+            columnHelper.accessor("actorRole", {
+                header: "Rol",
+                cell: (info) => <div className="text-secondary">{info.getValue()}</div>,
+            }),
+            columnHelper.accessor("feature", {
+                header: "Funcionalidad",
+                cell: (info) => <div className="text-secondary">{info.getValue()}</div>,
+            }),
+            columnHelper.accessor("permission", {
+                header: "Permiso",
+                cell: (info) => <div className="text-secondary">{info.getValue()}</div>,
+            }),
+            columnHelper.accessor("operation", {
+                header: "Operación",
+                cell: (info) => <div className="text-secondary">{info.getValue()}</div>,
+            }),
+            columnHelper.accessor("change", {
+                header: "Cambios",
+                cell: (info) => <div className="text-secondary">{info.getValue()}</div>,
+            }),
+        ],
+        []
+    );
+
+    const filteredData = useMemo(() => {
+        return data.filter((item) => {
+            const matchesGlobal =
+                item.actor?.toLowerCase().includes(globalFilter.toLowerCase()) ||
+                item.feature?.toLowerCase().includes(globalFilter.toLowerCase()) ||
+                item.operation?.toLowerCase().includes(globalFilter.toLowerCase());
+
+            const matchesDate = filters.date
+                ? item.rawDate === filters.date // ✅ comparar con rawDate
+                : true;
+
+            const matchesAction =
+                filters.actionType ? item.operation === filters.actionType : true;
+
+            const matchesUser = filters.user
+                ? item.actor?.toLowerCase().includes(filters.user.toLowerCase())
+                : true;
+
+            return matchesGlobal && matchesDate && matchesAction && matchesUser;
+        });
+    }, [data, globalFilter, filters]);
+
+    return (
+        <>
+            <div className="parametrization-page p-4 md:p-8">
+                <div className="max-w-6xl mx-auto">
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-6 md:mb-10">
+                        <h1 className="parametrization-header text-2xl md:text-3xl font-bold">
+                            Registro de acceso y Auditoría
+                        </h1>
+                    </div>
+
+                    {/* Filter & Search */}
+                    <div className="mb-4 md:mb-6 flex flex-col sm:flex-row gap-4 justify-between lg:justify-start">
+                        <div className="relative flex-1 max-w-md">
+                            <div className="flex items-center parametrization-input rounded-md px-3 py-2 w-72">
+                                <FiSearch className="text-secondary w-4 h-4 mr-2" />
+                                <input
+                                    type="text"
+                                    placeholder="Buscar por usuario, funcionalidad u operación"
+                                    value={globalFilter}
+                                    onChange={(e) => setGlobalFilter(e.target.value)}
+                                    className="flex-1 outline-none"
+                                />
+                            </div>
+                        </div>
+
+                        <button
+                            className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit"
+                            onClick={() => setIsFilterOpen(true)}
+                        >
+                            <FiFilter className="filter-icon w-4 h-4" />
+                            <span className="text-sm">Filtrar por</span>
+                        </button>
+                    </div>
+
+                    {/* Table */}
+                    <TableList
+                        columns={columns}
+                        data={filteredData}
+                        loading={loading}
+                        globalFilter={globalFilter}
+                        onGlobalFilterChange={setGlobalFilter}
                     />
                 </div>
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="parametrization-filter-button flex items-center justify-center gap-2 px-4 py-2"
-                >
-                    <FiFilter /> Filter by
-                </button>
-                <AuditLogFilter
-                    isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
-                />
             </div>
+            <AuditLogFilter
+                isOpen={isFilterOpen}
+                onClose={() => setIsFilterOpen(false)}
+                onApply={handleApplyFilters}
+                onClean={handleCleanFilters}
+            />
+        </>
+    );
+};
 
-            <div className="overflow-x-auto parametrization-table shadow rounded-xl">
-                <table className="w-full text-left">
-                    <thead className="parametrization-table-header text-sm">
-                        <tr>
-                            <th className="px-6 py-3">Date</th>
-                            <th className="px-6 py-3">User name</th>
-                            <th className="px-6 py-3">Action type</th>
-                            <th className="px-6 py-3">Description</th>
-                        </tr>
-                    </thead>
-                    <tbody className="parametrization-table-body text-sm">
-                        {currentData.map((item, index) => (
-                            <tr key={index} className="parametrization-table-row">
-                                <td className="px-6 py-3 whitespace-nowrap text-secondary">{item.date}</td>
-                                <td className="px-6 py-3 text-primary">{item.user}</td>
-                                <td className="px-6 py-3">
-                                    <span
-                                        className={`px-3 py-1 rounded-full text-xs font-medium ${getRandomColor(
-                                            item.action
-                                        )}`}
-                                    >
-                                        {item.action}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-3 text-secondary">{item.description}</td>
-                            </tr>
-                        ))}
-
-                        {currentData.length === 0 && (
-                            <tr>
-                                <td
-                                    colSpan="4"
-                                    className="text-center parametrization-empty py-6"
-                                >
-                                    No results found
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
-
-            <div className="flex items-center justify-between mt-6 text-sm">
-                <button
-                    onClick={() => goToPage(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="parametrization-pagination-button flex items-center gap-1 px-3 py-1"
-                >
-                    ← Previous
-                </button>
-
-                <div className="flex items-center gap-2">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1)
-                        .slice(0, 5)
-                        .map((pageNum) => (
-                            <button
-                                key={pageNum}
-                                onClick={() => goToPage(pageNum)}
-                                className={`parametrization-pagination-button px-3 py-1 rounded-lg ${currentPage === pageNum ? 'active' : ''}`}
-                            >
-                                {pageNum}
-                            </button>
-                        ))}
-
-                    {totalPages > 5 && <span className="text-secondary">...</span>}
-                </div>
-
-                <button
-                    onClick={() => goToPage(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="parametrization-pagination-button flex items-center gap-1 px-3 py-1"
-                >
-                    Next →
-                </button>
-            </div>
-        </div>
-    )
-}
-
-export default page
+export default page;

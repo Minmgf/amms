@@ -231,14 +231,16 @@ const page = () => {
           const statusId = info.row.original.statusId;
           return (
             <div className="flex space-x-2">
-              <button
-                area-label="Detail Button"
-                onClick={() => handleOpenRoleFormModal("view", info.getValue())}
-                className="p-2 hover:bg-gray-100 rounded-md transition-colors opacity-0 group-hover:opacity-100"
-                title="Ver detalles"
-              >
-                <FiEye className="text-secondary" />
-              </button>
+              <PermissionGuard permission={17}>
+                <button
+                  area-label="Detail Button"
+                  onClick={() => handleOpenRoleFormModal("view", info.getValue())}
+                  className="p-2 hover:bg-gray-100 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                  title="Ver detalles"
+                >
+                  <FiEye className="text-secondary" />
+                </button>
+              </PermissionGuard>
               <button
                 area-label="Edit Button"
                 onClick={() => handleOpenRoleFormModal("edit", info.getValue())}
@@ -308,7 +310,7 @@ const page = () => {
               <FiFilter className="filter-icon w-4 h-4" />
               <span className="text-sm">Filtrar por</span>
             </button>
-            <PermissionGuard permission="roles.create">
+            <PermissionGuard permission={14}>
               <button
                 onClick={() => handleOpenRoleFormModal("add")}
                 className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit"

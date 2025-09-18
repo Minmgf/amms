@@ -224,7 +224,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           name: "Gestión de roles",
           icon: <FaUserShield />,
           path: "/userManagement/roleManagement",
-          permissions: ["roles.view"],
+          permissions: [],
         },
         {
           name: "Auditorías",
