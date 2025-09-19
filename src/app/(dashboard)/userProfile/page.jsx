@@ -8,6 +8,8 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { getUserData, updateBasicInformation } from "@/services/profileService";
 import { getCountries, getStates, getCities } from "@/services/locationService";
 import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
+import PermissionGuard from "@/app/(auth)/PermissionGuard";
+import { usePermissions } from "@/contexts/PermissionsContext";
 
 const ProfilePage = () => {
   const { currentTheme } = useTheme();
@@ -23,6 +25,8 @@ const ProfilePage = () => {
   const [successOpen, setSuccessOpen] = useState(false);
   const [errorOpen, setErrorOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
+  const { hasPermission } = usePermissions();
+  const canChangePhoto = hasPermission(9);
 
   const {
     register,
@@ -33,7 +37,7 @@ const ProfilePage = () => {
   } = useForm();
   const watchCountry = watch("country");
   const watchState = watch("department");
-
+  
   useEffect(() => {
     getCountries().then((data) => setCountriesList(data)).catch(console.error);
   }, []);
@@ -146,7 +150,7 @@ const ProfilePage = () => {
               {/* Avatar */}
               <div
                 className="w-40 h-40 rounded-full parametrization-avatar relative cursor-pointer overflow-hidden flex items-center justify-center hadow-md transition-all duration-300 ease-in-out"
-                onClick={() => setIsChangePhotoModalOpen(true)}
+                onClick={canChangePhoto ? () => setIsChangePhotoModalOpen(true) : undefined}
               >
                 {profilePhoto ? (
                   <>
@@ -371,20 +375,24 @@ const ProfilePage = () => {
 
               {/* Buttons */}
                 <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-center">
-                <button
-                  area-label="Change Password Button"
-                  onClick={() => setIsChangePasswordModalOpen(true)}
-                  className="parametrization-action-button font-semibold px-8 py-3 rounded-lg justify-self-center md:justify-self-start"
-                >
-                  Cambiar contraseña
-                </button>
-                <button
-                  area-label="Update Button"
-                  type="submit"
-                  form="residenceForm"
-                  className="parametrization-action-button font-semibold px-8 py-3 rounded-lg">
-                  Actualizar
-                </button>
+                <PermissionGuard permission={11}>
+                  <button
+                    area-label="Change Password Button"
+                    onClick={() => setIsChangePasswordModalOpen(true)}
+                    className="parametrization-action-button font-semibold px-8 py-3 rounded-lg justify-self-center md:justify-self-start"
+                  >
+                    Cambiar contraseña
+                  </button>
+                </PermissionGuard>
+                <PermissionGuard permission={8}>
+                  <button
+                    area-label="Update Button"
+                    type="submit"
+                    form="residenceForm"
+                    className="parametrization-action-button font-semibold px-8 py-3 rounded-lg">
+                    Actualizar
+                  </button>
+                </PermissionGuard>                
               </div>
             </div>
           </div>

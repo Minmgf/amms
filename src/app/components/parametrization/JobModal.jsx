@@ -38,7 +38,7 @@ const JobModal = ({
         department: departmentName || "Department X",
         jobTitle: jobData.name || "",
         description: jobData.description || "",
-        isActive: jobData.status === "Active",
+        isActive: jobData.idStatues === 1,
       });
     } else {
       // Reset form for add mode
