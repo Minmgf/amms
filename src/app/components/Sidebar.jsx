@@ -214,7 +214,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       ],
     },
     {
-      name: "Gestión de usuarios",
+      name: "Gestión de roles y usuarios",
       icon: <FaUsers />,
       path: "/userManagement",
       permissions: [],
