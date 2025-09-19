@@ -8,6 +8,7 @@ import PermissionGuard from '@/app/(auth)/PermissionGuard'
 import * as Dialog from '@radix-ui/react-dialog'
 import UserInfo from '@/app/components/userManagement/UserInfoModal'
 import UserEditModal from '@/app/components/userManagement/UserEditModal'
+import AddUserModal from '@/app/components/userManagement/AddUserModal'
 
 const UserManagementMainView = () => {
   // Estado para el filtro global
@@ -268,6 +269,14 @@ const UserManagementMainView = () => {
     setSelectedUserForEdit(null)
   }
 
+  const handleOpenAddUserModal = () => {
+    setIsCreateModalOpen(true)
+  }
+
+  const handleCloseAddUserModal = () => {
+    setIsCreateModalOpen(false)
+  }
+
   const handleUserUpdated = async () => {
     // Recargar los datos cuando se actualiza un usuario
     console.log('Reloading user data after update...')
@@ -278,7 +287,7 @@ const UserManagementMainView = () => {
   const handleStatusToggle = async (user) => {
     // Mapear el status numérico a string para el API
     const currentStatusIsActive = user.status === 1
-    const newStatusString = currentStatusIsActive ? 'inactive' : 'active'
+    const newStatusString = currentStatusIsActive ? '2' : '1'
     
     try {
       setLoading(true)
@@ -371,7 +380,7 @@ const UserManagementMainView = () => {
           allowedPermissions={["users.create"]}
         >
           <button
-            onClick={() => setIsCreateModalOpen(true)}
+            onClick={handleOpenAddUserModal}
             className="parametrization-filter-button"
           >
             <FaUserPlus className="w-4 h-4" />
@@ -480,6 +489,13 @@ const UserManagementMainView = () => {
         onClose={handleCloseUserEditModal}
         userData={selectedUserForEdit}
         onUserUpdated={handleUserUpdated}
+      />
+
+      {/* Modal de agregar usuario */}
+      <AddUserModal
+        isOpen={isCreateModalOpen}
+        onClose={handleCloseAddUserModal}
+        onUserCreated={handleUserUpdated}
       />
     </div>
 
