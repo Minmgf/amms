@@ -107,7 +107,7 @@ export default function UserEditModal({ isOpen, onClose, userData, onUserUpdated
   }, [genderTypes]);
 
   const getRoleTypeOptions = React.useCallback(() => {
-    return roleTypes.map(type => ({ value: type.id, label: type.name }));
+    return roleTypes.map(type => ({ value: type.role_id, label: type.role_name }));
   }, [roleTypes]);
 
   // Función para mapear el ID del tipo de documento a su nombre
@@ -198,7 +198,10 @@ export default function UserEditModal({ isOpen, onClose, userData, onUserUpdated
           value: genderOption.id, 
           label: genderOption.name 
         } : null,
-        roles: userData.roles ? userData.roles.map(role => ({ value: role.id, label: role.name })) : []
+        roles: userData.roles ? userData.roles.map(role => ({ 
+          value: role.role_id || role.id, 
+          label: role.role_name || role.name 
+        })) : []
       });
     }
   }, [userData, formatDateForInput, documentTypes, genderTypes]);
@@ -355,7 +358,10 @@ export default function UserEditModal({ isOpen, onClose, userData, onUserUpdated
           value: genderOption.id, 
           label: genderOption.name 
         } : null,
-        roles: userData.roles ? userData.roles.map(role => ({ value: role.id, label: role.name })) : []
+        roles: userData.roles ? userData.roles.map(role => ({ 
+          value: role.role_id || role.id, 
+          label: role.role_name || role.name 
+        })) : []
       });
     }
   }, [userData, formatDateForInput, documentTypes, genderTypes]);
@@ -465,7 +471,7 @@ export default function UserEditModal({ isOpen, onClose, userData, onUserUpdated
           <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-xl z-50 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
             <div className="p-8 card-theme rounded-2xl">
               <div className="flex justify-between items-center mb-8">
-                <Dialog.Title className="text-2xl font-bold text-primary">Update User</Dialog.Title>
+                <Dialog.Title className="text-2xl font-bold text-primary">Editar Usuario</Dialog.Title>
               </div>
               {loading ? (
                 <div className="text-center py-8">
@@ -476,17 +482,17 @@ export default function UserEditModal({ isOpen, onClose, userData, onUserUpdated
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
                     <FormField
-                      label="Identification type"
+                      label="Tipo de identificación"
                       value={formData.type_document_id}
                       onChange={handleSelectChange('type_document_id')}
                       type="select"
                       options={getDocumentTypeOptions()}
                       required
                       disabled={!isEditing}
-                      placeholder="Select document type"
+                      placeholder="Selecciona tipo de identificación"
                     />
                     <FormField
-                      label="Identification number"
+                      label="Número de identificación"
                       value={formData.document_number}
                       onChange={handleInputChange('document_number')}
                       required
@@ -500,19 +506,19 @@ export default function UserEditModal({ isOpen, onClose, userData, onUserUpdated
                       options={getGenderTypeOptions()}
                       required
                       disabled={!isEditing}
-                      placeholder="Select gender"
+                      placeholder="Selecciona género"
                     />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
                     <FormField
-                      label="Expedition date"
+                      label="Fecha de expedición"
                       value={formData.date_issuance_document}
                       onChange={handleInputChange('date_issuance_document')}
                       type="date"
                       disabled={!isEditing}
                     />
                     <FormField
-                      label="Birth date"
+                      label="Fecha de nacimiento"
                       value={formData.birthday}
                       onChange={handleInputChange('birthday')}
                       type="date"
@@ -521,13 +527,13 @@ export default function UserEditModal({ isOpen, onClose, userData, onUserUpdated
                     <div className="flex gap-2 items-end">
                       <div className="flex-1">
                         <FormField
-                          label="Role"
+                          label="Rol"
                           value={formData.role}
                           onChange={handleSelectChange('role')}
                           type="select"
                           options={getRoleTypeOptions()}
                           disabled={!isEditing}
-                          placeholder="Select role"
+                          placeholder="Selecciona rol"
                         />
                       </div>
                       <button
@@ -536,21 +542,21 @@ export default function UserEditModal({ isOpen, onClose, userData, onUserUpdated
                         onClick={handleAddRole}
                         disabled={!isEditing || !formData.role}
                       >
-                        Add
+                        Agregar
                       </button>
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                     <FormField
-                      label="Name"
+                      label="Nombre"
                       value={formData.name}
                       onChange={handleInputChange('name')}
                       required
                       disabled={!isEditing}
-                      placeholder="example"
+                      placeholder="Iván Andrés"
                     />
                     <FormField
-                      label="Last Name"
+                      label="Apellido"
                       value={formData.first_last_name}
                       onChange={handleInputChange('first_last_name')}
                       required
@@ -559,10 +565,10 @@ export default function UserEditModal({ isOpen, onClose, userData, onUserUpdated
                     />
                   </div>
                   <div className="mb-8">
-                    <div className="bg-neutral-100 rounded-t-md px-4 py-2 font-semibold text-primary border-b border-neutral-300">Selected roles</div>
+                    <div className="bg-neutral-100 rounded-t-md px-4 py-2 font-semibold text-primary border-b border-neutral-300">Roles seleccionados</div>
                     <div className="bg-white rounded-b-md px-4 py-2 min-h-[60px] border border-neutral-300 border-t-0">
                       {formData.roles && formData.roles.length === 0 ? (
-                        <div className="text-neutral-400">No roles selected</div>
+                        <div className="text-neutral-400">No hay roles seleccionados</div>
                       ) : (
                         <ul>
                           {formData.roles && formData.roles.map((role, idx) => (
@@ -601,14 +607,14 @@ export default function UserEditModal({ isOpen, onClose, userData, onUserUpdated
                         className="bg-white border border-error text-error px-8 py-2 rounded-md font-semibold hover:bg-error/10"
                         onClick={handleCancel}
                       >
-                        Cancel
+                        Cancelar
                       </button>
                       <button
                         type="submit"
                         className="bg-primary text-white px-8 py-2 rounded-md font-semibold hover:bg-accent disabled:opacity-50"
                         disabled={submitLoading}
                       >
-                        {submitLoading ? 'Submitting...' : 'Submit'}
+                        {submitLoading ? 'Enviando...' : 'Enviar'}
                       </button>
                     </div>
                   )}

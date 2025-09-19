@@ -138,7 +138,7 @@ const UserManagementMainView = () => {
   const columns = useMemo(() => [
     {
       accessorKey: 'name',
-      header: 'Full Name',
+      header: 'Nombre Completo',
       cell: ({ row }) => {
         const user = row.original
         const fullName = `${user.name || ''} ${user.first_last_name || ''} ${user.second_last_name || ''}`.trim()
@@ -151,7 +151,7 @@ const UserManagementMainView = () => {
     },
     {
       accessorKey: 'type_document_name',
-      header: 'Document Type',
+      header: 'Tipo de Documento',
       cell: ({ row }) => (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
           {row.getValue('type_document_name') || 'N/A'}
@@ -160,7 +160,7 @@ const UserManagementMainView = () => {
     },
     {
       accessorKey: 'document_number',
-      header: 'Document Number',
+      header: 'Número de Documento',
       cell: ({ row }) => (
         <div className="text-sm text-gray-900 font-mono">
           {row.getValue('document_number') || 'N/A'}
@@ -178,7 +178,7 @@ const UserManagementMainView = () => {
     },
     {
       accessorKey: 'roles',
-      header: 'Roles',
+      header: 'Rol',
       cell: ({ row }) => {
         const roles = row.getValue('roles')
         return (
@@ -201,7 +201,7 @@ const UserManagementMainView = () => {
     },
     {
       accessorKey: 'status_name',
-      header: 'Status',
+      header: 'Estado',
       cell: ({ row }) => {
         const statusName = row.getValue('status_name')
         const statusColors = {
@@ -220,26 +220,26 @@ const UserManagementMainView = () => {
     },
     {
       id: 'actions',
-      header: 'Actions',
+      header: 'Acciones',
       cell: ({ row }) => (
         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <button
             onClick={() => handleEdit(row.original)}
             className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black "
           >
-            <FaPen /> Edit
+            <FaPen /> Editar
           </button>
           <button
             onClick={() => handleView(row.original)}
             className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black "
           >
-            <FaEye /> View
+            <FaEye /> Ver
           </button>
           <button
             onClick={() => handleStatusToggle(row.original)}
             className="inline-flex items-center px-2.5 py-1.5 border text-xs font-medium rounded border-black "
           >
-            {row.original.status === 1 ? 'Deactivate' : 'Activate'}
+            {row.original.status === 1 ? 'Desactivar' : 'Activar'}
           </button>
         </div> 
       )
@@ -321,7 +321,7 @@ const UserManagementMainView = () => {
     <div className="p-6">
       <div className="mb-6">
         <div className="flex justify-between items-center mb-2">
-          <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Gestion de Usuarios y Roles</h1>
           {/* <button
             onClick={handleRefresh}
             disabled={loading}
@@ -362,7 +362,7 @@ const UserManagementMainView = () => {
           <input
             id="search"
             type="text"
-            placeholder="Search by name, email, document..."
+            placeholder="Buscar por nombre, email, tipo o número de documento..."
             value={globalFilter || ''}
             onChange={(e) => setGlobalFilter(e.target.value)}
             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
@@ -373,7 +373,7 @@ const UserManagementMainView = () => {
           className="parametrization-filter-button"
         >
           <CiFilter className="w-4 h-4" />
-          Filter by
+          Filtrar por
         </button>
         <PermissionGuard
           allowedRoles={["Administrator", "HR Manager"]}
@@ -384,7 +384,7 @@ const UserManagementMainView = () => {
             className="parametrization-filter-button"
           >
             <FaUserPlus className="w-4 h-4" />
-            Add User
+            Agregar Usuario
           </button>
         </PermissionGuard>
       </div>

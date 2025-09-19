@@ -212,7 +212,7 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
             <div>
               <div className="text-xs text-gray-400 mb-1">users / new-user</div>
               <Dialog.Title asChild>
-                <h2 className="text-2xl font-bold text-black">Register User</h2>
+                <h2 className="text-2xl font-bold text-black">Registro de Usuario</h2>
               </Dialog.Title>
             </div>
             <button onClick={onClose} className="text-black text-2xl font-bold hover:text-red-500">&times;</button>
@@ -222,7 +222,7 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
             <div className="grid grid-cols-3 gap-4 mb-4">
               {/* Tipo de documento */}
               <div>
-                <label className="block text-sm font-semibold text-black mb-1">Identification type</label>
+                <label className="block text-sm font-semibold text-black mb-1">Tipo de Documento</label>
                 <Select
                   value={formData.type_document_id}
                   onChange={(option) => setFormData(prev => ({ ...prev, type_document_id: option }))}
@@ -244,7 +244,7 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
               </div>
               {/* Número de documento */}
               <div>
-                <label className="block text-sm font-semibold text-black mb-1">Identification number</label>
+                <label className="block text-sm font-semibold text-black mb-1">Número de Documento</label>
                 <input
                   type="text"
                   value={formData.document_number}
@@ -255,7 +255,7 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
               </div>
               {/* Género */}
               <div>
-                <label className="block text-sm font-semibold text-black mb-1">Gender</label>
+                <label className="block text-sm font-semibold text-black mb-1">Género</label>
                 <Select
                   value={formData.gender_id}
                   onChange={(option) => setFormData(prev => ({ ...prev, gender_id: option }))}
@@ -280,7 +280,7 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
             <div className="grid grid-cols-3 gap-4 mb-4">
               {/* Fecha de expedición */}
               <div>
-                <label className="block text-sm font-semibold text-black mb-1">Expedition date</label>
+                <label className="block text-sm font-semibold text-black mb-1">Fecha de Expedición</label>
                 <input
                   type="date"
                   value={formData.date_issuance_document}
@@ -290,7 +290,7 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
               </div>
               {/* Fecha de nacimiento */}
               <div>
-                <label className="block text-sm font-semibold text-black mb-1">Birth date</label>
+                <label className="block text-sm font-semibold text-black mb-1">Fecha de Nacimiento</label>
                 <input
                   type="date"
                   value={formData.birthday}
@@ -300,7 +300,7 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
               </div>
               {/* Rol */}
               <div>
-                <label className="block text-sm font-semibold text-black mb-1">Role</label>
+                <label className="block text-sm font-semibold text-black mb-1">Rol</label>
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <Select
@@ -339,17 +339,17 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
                     disabled={!formData.role}
                     className="bg-black text-white px-4 py-2 rounded font-semibold hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Add
+                    Agregar
                   </button>
                 </div>
               </div>
             </div>
             {/* Roles seleccionados */}
             <div className="mb-6">
-              <div className="bg-gray-100 rounded-t px-4 py-2 font-semibold text-black border-b border-gray-300">Selected roles</div>
+              <div className="bg-gray-100 rounded-t px-4 py-2 font-semibold text-black border-b border-gray-300">Roles Seleccionados</div>
               <div className="bg-gray-100 rounded-b px-4 py-4 min-h-[60px]">
                 {formData.roles.length === 0 ? (
-                  <p className="text-gray-500 text-sm">No roles added yet. Select an item from the dropdown above and click "Add".</p>
+                  <p className="text-gray-500 text-sm">No se han agregado roles aún. Selecciona un elemento del menú desplegable anterior y haz clic en "Agregar".</p>
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {formData.roles.map((role, index) => (
@@ -371,7 +371,7 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
             {/* Nombre y Apellido */}
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-semibold text-black mb-1">Name</label>
+                <label className="block text-sm font-semibold text-black mb-1">Nombre</label>
                 <input
                   type="text"
                   value={formData.name}
@@ -381,7 +381,7 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-black mb-1">Last Name</label>
+                <label className="block text-sm font-semibold text-black mb-1">Apellido</label>
                 <input
                   type="text"
                   value={formData.first_last_name}
@@ -405,14 +405,14 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
                 onClick={onClose}
                 className="bg-red-600 text-white px-6 py-2 rounded font-semibold hover:bg-red-700"
               >
-                Cancel
+                Cancelar
               </button>
               <button
                 type="submit"
                 disabled={!isFormValid || submitLoading}
                 className="bg-black text-white px-6 py-2 rounded font-semibold hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {submitLoading ? 'Submitting...' : 'Submit'}
+                {submitLoading ? 'Enviando...' : 'Enviar'}
               </button>
             </div>
           </form>
