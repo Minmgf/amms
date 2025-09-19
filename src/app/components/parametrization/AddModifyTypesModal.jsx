@@ -1,8 +1,11 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
-import { toggleTypeStatus } from '@/services/parametrizationService';
-import { SuccessModal, ErrorModal } from '@/app/components/shared/SuccessErrorModal';
+import { toggleTypeStatus } from "@/services/parametrizationService";
+import {
+  SuccessModal,
+  ErrorModal,
+} from "@/app/components/shared/SuccessErrorModal";
 
 const AddModifyTypesModal = ({
   isOpen,
@@ -19,7 +22,7 @@ const AddModifyTypesModal = ({
     description: "",
     isActive: true,
   });
-  
+
   const [saving, setSaving] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
   const [errorOpen, setErrorOpen] = useState(false);
@@ -32,7 +35,10 @@ const AddModifyTypesModal = ({
         category: category,
         typeName: status.typeName || "",
         description: status.description || "",
-        isActive: status.id_statues === 1 || status.status === "Active" || status.isActive === true,
+        isActive:
+          status.id_statues === 1 ||
+          status.status === "Active" ||
+          status.isActive === true,
       });
     } else {
       setFormData({
@@ -52,8 +58,12 @@ const AddModifyTypesModal = ({
     }
 
     const normalizedName = name.trim().toLowerCase();
-    const isDuplicate = existingNames.some(existingName => {
-      if (mode === "modify" && status && existingName.toLowerCase() === status.typeName.toLowerCase()) {
+    const isDuplicate = existingNames.some((existingName) => {
+      if (
+        mode === "modify" &&
+        status &&
+        existingName.toLowerCase() === status.typeName.toLowerCase()
+      ) {
         return false; // Ignore current item name in edit mode
       }
       return existingName.toLowerCase() === normalizedName;
@@ -83,28 +93,35 @@ const AddModifyTypesModal = ({
     if (mode === "modify" && status?.id) {
       try {
         setSaving(true);
-        
+
         const response = await toggleTypeStatus(status.id);
-        
-        setFormData(prev => ({
+
+        setFormData((prev) => ({
           ...prev,
-          isActive: !prev.isActive
+          isActive: !prev.isActive,
         }));
-        
+
         if (onSave) {
-          await onSave({ success: true, message: response.message, statusChanged: true });
+          await onSave({
+            success: true,
+            message: response.message,
+            statusChanged: true,
+          });
         }
-        
       } catch (error) {
-        setModalMessage(error.response?.data?.message || error.message || "Error changing status");
+        setModalMessage(
+          error.response?.data?.message ||
+            error.message ||
+            "Error changing status"
+        );
         setErrorOpen(true);
       } finally {
         setSaving(false);
       }
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        isActive: !prev.isActive
+        isActive: !prev.isActive,
       }));
     }
   };
@@ -206,9 +223,7 @@ const AddModifyTypesModal = ({
                     handleInputChange("typeName", e.target.value)
                   }
                   disabled={saving}
-                  className={`w-full px-3 py-2 border rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${
-                    hasNameError ? 'border-red-300' : 'border-gray-300'
-                  }`}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   placeholder="Ingrese el nombre de un tipo"
                 />
                 {hasNameError && (
@@ -231,7 +246,9 @@ const AddModifyTypesModal = ({
                   Descripción
                 </label>
                 <textarea
-                  type="text"
+                  cols={30}
+                  rows={4}
+                  maxLength={200} // Límite de 200 caracteres
                   value={formData.description}
                   onChange={(e) =>
                     handleInputChange("description", e.target.value)
@@ -276,14 +293,32 @@ const AddModifyTypesModal = ({
           >
             {saving ? (
               <span className="flex items-center justify-center">
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
                 </svg>
                 {isAddMode ? "Guardando..." : "Actualizando..."}
               </span>
+            ) : isAddMode ? (
+              "Guardar"
             ) : (
-              isAddMode ? "Guardar" : "Actualizar"
+              "Actualizar"
             )}
           </button>
         </div>

@@ -2,7 +2,10 @@
 import { changeJobStatus } from "@/services/parametrizationService";
 import React, { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
-import { SuccessModal, ErrorModal } from '@/app/components/shared/SuccessErrorModal';
+import {
+  SuccessModal,
+  ErrorModal,
+} from "@/app/components/shared/SuccessErrorModal";
 
 const JobModal = ({
   isOpen,
@@ -14,7 +17,7 @@ const JobModal = ({
   departmentName = "Department X",
   onSave,
   existingJobs = [], // Array de jobs existentes para validar unicidad
-  onStatusChange
+  onStatusChange,
 }) => {
   const [formData, setFormData] = useState({
     department: "",
@@ -78,9 +81,9 @@ const JobModal = ({
       const response = await changeJobStatus(jobData.id);
       setModalMessage(response.message);
       setSuccessOpen(true);
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        isActive: !prev.isActive
+        isActive: !prev.isActive,
       }));
       if (onStatusChange) {
         onStatusChange(departmentId);
@@ -174,8 +177,9 @@ const JobModal = ({
 
                 <div>
                   <label
-                    className={`block text-sm font-medium mb-2 ${errors.jobTitle ? "text-red-500" : "text-gray-700"
-                      }`}
+                    className={`block text-sm font-medium mb-2 ${
+                      errors.jobTitle ? "text-red-500" : "text-gray-700"
+                    }`}
                   >
                     Puesto de trabajo
                   </label>
@@ -186,10 +190,11 @@ const JobModal = ({
                       handleInputChange("jobTitle", e.target.value)
                     }
                     placeholder={isAddMode ? "" : ""}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errors.jobTitle
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                      errors.jobTitle
                         ? "border-red-500 focus:border-red-500 focus:ring-red-500"
                         : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                      }`}
+                    }`}
                   />
                   {errors.jobTitle && (
                     <div className="flex items-center mt-1 text-red-500 text-xs">
@@ -217,16 +222,19 @@ const JobModal = ({
                     Descripción
                   </label>
                   <textarea
-                    type="text"
+                    cols={30}
+                    rows={4}
+                    maxLength={200} // Límite de 200 caracteres
                     value={formData.description}
                     onChange={(e) =>
                       handleInputChange("description", e.target.value)
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    placeholder="Enter description"
                   />
                 </div>
 
-                {departmentMode !== 'add' && !isAddMode && (
+                {departmentMode !== "add" && !isAddMode && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Activar/Desactivar
@@ -234,18 +242,21 @@ const JobModal = ({
                     <div className="mt-1 sm:mt-0">
                       <button
                         onClick={() => handleToggleStatus()}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${formData.isActive ? "bg-red-500" : "bg-gray-200"
-                          }`}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                          formData.isActive ? "bg-red-500" : "bg-gray-200"
+                        }`}
                       >
                         <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.isActive ? "translate-x-6" : "translate-x-1"
-                            }`}
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            formData.isActive
+                              ? "translate-x-6"
+                              : "translate-x-1"
+                          }`}
                         />
                       </button>
                     </div>
                   </div>
                 )}
-
               </div>
             </div>
           </div>

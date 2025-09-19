@@ -15,8 +15,47 @@ export const useAuth = () => {
     loginSuccess
   } = usePermissions();
 
+  // Helper para obtener el token desde cualquier storage
+  const getAuthToken = () => {
+    let token = localStorage.getItem("token");
+    if (!token) {
+      token = sessionStorage.getItem("token");
+    }
+    if (!token) {
+      token = Cookies.get("token");
+    }
+    return token;
+  };
+
+  // Función para verificar si el token está expirado
+  const isTokenExpired = (token) => {
+    if (!token) return true;
+    
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      const currentTime = Math.floor(Date.now() / 1000);
+      return payload.exp < currentTime;
+    } catch (error) {
+      console.error("Error al decodificar token:", error);
+      return true;
+    }
+  };
+
   const isAuthenticated = () => {
-    return !!Cookies.get('token');
+    const token = getAuthToken();
+    if (!token) return false;
+    
+    // Verificar si el token no está expirado
+    if (isTokenExpired(token)) {
+      // Limpiar tokens expirados
+      Cookies.remove('token');
+      localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
+      localStorage.removeItem('userData');
+      return false;
+    }
+    
+    return true;
   };
 
   // Función corregida para el login
@@ -36,10 +75,15 @@ export const useAuth = () => {
   };
 
   const logout = () => {
+    // Limpiar todos los storages
     Cookies.remove('token');
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
     localStorage.removeItem('userData');
     clearPermissions();
-    router.push('/login');
+    
+    // Redirigir al login con el prefijo correcto
+    router.push('/sigma/login');
   };
 
   const isUserValid = () => {
