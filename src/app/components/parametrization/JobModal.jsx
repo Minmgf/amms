@@ -141,7 +141,7 @@ const JobModal = ({
           {/* Header */}
           <div className="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-6 border-b border-gray-200">
             <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
-              {isAddMode ? "Add Job" : "Modify Job"}
+              {isAddMode ? "Añadir puesto" : "Modificar puesto"}
             </h2>
             <button
               onClick={onClose}
@@ -159,7 +159,7 @@ const JobModal = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Department
+                    Departamento
                   </label>
                   <input
                     type="text"
@@ -177,7 +177,7 @@ const JobModal = ({
                     className={`block text-sm font-medium mb-2 ${errors.jobTitle ? "text-red-500" : "text-gray-700"
                       }`}
                   >
-                    Job Title
+                    Puesto de trabajo
                   </label>
                   <input
                     type="text"
@@ -214,9 +214,9 @@ const JobModal = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description
+                    Descripción
                   </label>
-                  <input
+                  <textarea
                     type="text"
                     value={formData.description}
                     onChange={(e) =>
@@ -229,7 +229,7 @@ const JobModal = ({
                 {departmentMode !== 'add' && !isAddMode && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Activate/Deactivate
+                      Activar/Desactivar
                     </label>
                     <div className="mt-1 sm:mt-0">
                       <button
@@ -256,7 +256,7 @@ const JobModal = ({
               onClick={handleSave}
               className="btn-theme btn-primary not-disabled: w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isAddMode ? "Save" : "Update"}
+              {isAddMode ? "Guardar" : "Actualizar"}
             </button>
           </div>
         </div>

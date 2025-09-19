@@ -114,6 +114,11 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
         setSuccess(true);
         setModalMessage('Usuario creado exitosamente');
         setShowSuccessModal(true);
+        
+        // Recargar datos inmediatamente después del éxito
+        if (onUserCreated) {
+          onUserCreated();
+        }
       } else {
         setError(response.message || ' ');
         setModalMessage(response.message || ' ');
@@ -177,8 +182,14 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
 
   const handleSuccessClose = () => {
     setShowSuccessModal(false);
+    
+    // Recargar datos antes de cerrar el modal
+    if (onUserCreated) {
+      onUserCreated();
+    }
+    
+    // Cerrar el modal principal
     onClose();
-    if (onUserCreated) onUserCreated();
   };
 
   const handleErrorClose = () => {

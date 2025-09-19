@@ -128,7 +128,7 @@ const UnitListModal = ({
         {/* Modal Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">
-            <span className="font-normal text-gray-600">Category:</span> {categoryName}
+            <span className="font-normal text-gray-600">Categoría:</span> {categoryName}
           </h2>
           <button
             onClick={onClose}
@@ -149,19 +149,19 @@ const UnitListModal = ({
                   <thead className="bg-gray-100 border-b border-gray-200">
                     <tr>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
-                        Unit name
+                        Nombre unidad
                       </th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
-                        Symbol
+                        Símbolo
                       </th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
-                        Value
+                        Valor
                       </th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
-                        Status
+                        Estado
                       </th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                        Actions
+                        Acciones
                       </th>
                     </tr>
                   </thead>
@@ -196,7 +196,7 @@ const UnitListModal = ({
                             className="invisible group-hover:visible inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md transition-colors"
                           >
                             <FiEdit3 className="w-3 h-3 mr-1.5" />
-                            Edit
+                            Editar
                           </button>
                         </td>
                       </tr>
@@ -206,7 +206,7 @@ const UnitListModal = ({
               </div>
             ) : (
               <div className="p-8 text-center text-gray-500">
-                No parameters added yet
+                Aún no se han añadido parámetros
               </div>
             )}
           </div>
@@ -217,7 +217,7 @@ const UnitListModal = ({
               onClick={handleAddParameter}
               className="btn-theme btn-primary relative"
             >
-              Add Parameter
+              Añadir parámetro
             </button>
           </div>
         </div>

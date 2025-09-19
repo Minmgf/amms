@@ -127,7 +127,7 @@ const TypesModal = ({
         {/* Modal Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
           <h2 className="text-xl font-semibold text-gray-900">
-            <span className="text-gray-500">Category: </span>
+            <span className="text-gray-500">Categoría: </span>
             <span className="text-gray-900">{categoryName}</span>
           </h2>
           <button
@@ -148,16 +148,16 @@ const TypesModal = ({
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
-                      Type name
+                      Tipo
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
-                      Description
+                      Descripción
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
-                      Status
+                      Estado
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                      Actions
+                      Acciones
                     </th>
                   </tr>
                 </thead>
@@ -165,13 +165,13 @@ const TypesModal = ({
                   {loading ? (
                     <tr>
                       <td colSpan="4" className="px-6 py-8 text-center text-gray-500">
-                        Loading...
+                        Cargando...
                       </td>
                     </tr>
                   ) : modalData.length === 0 ? (
                     <tr>
                       <td colSpan="4" className="px-6 py-8 text-center text-gray-500">
-                        No data available
+                        Datos no disponibles
                       </td>
                     </tr>
                   ) : (
@@ -204,7 +204,7 @@ const TypesModal = ({
                             className="invisible group-hover:visible inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-md transition-colors"
                           >
                             <FiEdit3 className="w-3 h-3 mr-1.5" />
-                            Edit
+                            Editar
                           </button>
                         </td>
                       </tr>
@@ -221,7 +221,7 @@ const TypesModal = ({
               onClick={handleAddParameter}
               className="btn-theme btn-primary"
             >
-              Add Parameter
+              Añadir parámetro
             </button>
           </div>
         </div>

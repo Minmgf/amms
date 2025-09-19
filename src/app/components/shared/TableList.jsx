@@ -6,6 +6,7 @@ const TableList = ({
     loading,
     globalFilter,
     onGlobalFilterChange,
+    globalFilterFn,
     pageSizeOptions = [10, 20, 30, 40, 50],
 }) => {
     const table = useReactTable({
@@ -17,6 +18,7 @@ const TableList = ({
         getFilteredRowModel: getFilteredRowModel(),
         state: { globalFilter },
         onGlobalFilterChange,
+        globalFilterFn: globalFilterFn,
         initialState: { pagination: { pageSize: pageSizeOptions[0] } },
     });
 
