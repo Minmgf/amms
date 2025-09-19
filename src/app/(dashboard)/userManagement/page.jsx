@@ -1,15 +1,8 @@
-import React from 'react'
-import UserTable from '../../components/userManagement/UserTable'
-import PermissionGuard from '@/app/(auth)/PermissionGuard'
+import { redirect } from 'next/navigation'
 
 const page = () => {
-  return (
-    <PermissionGuard permission="users.view">
-    <div className='w-full h-full bg-surface p-4 parametrization-page'>
-      <UserTable />
-    </div>
-    </PermissionGuard>
-  )
+  // Redirección inmediata del lado del servidor
+  redirect('/userManagement/mainView')
 }
 
 export default page
