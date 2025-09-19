@@ -221,7 +221,7 @@ const AddModifyUnitModal = ({ isOpen, onClose, mode = 'add', unit = null, catego
         {/* Header */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg sm:text-xl font-medium text-gray-900">
-            {mode === 'modify' ? 'Modify Unit' : 'Add Unit'}
+            {mode === 'modify' ? 'Modificar unidad' : 'Añadir unidad'}
           </h2>
           <button
             onClick={onClose}
@@ -237,7 +237,7 @@ const AddModifyUnitModal = ({ isOpen, onClose, mode = 'add', unit = null, catego
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Category
+                Categoría
               </label>
               <input
                 type="text"
@@ -250,7 +250,7 @@ const AddModifyUnitModal = ({ isOpen, onClose, mode = 'add', unit = null, catego
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Type name
+                Nombre unidad
               </label>
               <input
                 type="text"
@@ -268,7 +268,7 @@ const AddModifyUnitModal = ({ isOpen, onClose, mode = 'add', unit = null, catego
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Symbol
+                Símbolo
               </label>
               <input
                 type="text"
@@ -282,11 +282,11 @@ const AddModifyUnitModal = ({ isOpen, onClose, mode = 'add', unit = null, catego
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Value (Type)
+                Valor (Tipo)
               </label>
               {loading ? (
                 <div className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm text-gray-500">
-                  Loading types...
+                  Cargando tipos...
                 </div>
               ) : (
                 <select
@@ -317,7 +317,7 @@ const AddModifyUnitModal = ({ isOpen, onClose, mode = 'add', unit = null, catego
           {/* Row 3: Toggle */}
           <div className='flex justify-center items-center space-x-4 mb-6'>
             <span className="text-sm font-medium text-gray-700">
-              Activate/Deactivate
+              Activar/Desactivar
             </span>
             <button
               type="button"
@@ -340,7 +340,7 @@ const AddModifyUnitModal = ({ isOpen, onClose, mode = 'add', unit = null, catego
               type="submit"
             className="btn-theme btn-primary not-disabled: w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {mode === 'modify' ? 'Update' : 'Save'}
+              {mode === 'modify' ? 'Actualizar' : 'Guardar'}
             </button>
           </div>
         </form>
