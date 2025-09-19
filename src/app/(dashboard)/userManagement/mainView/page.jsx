@@ -223,24 +223,28 @@ const UserManagementMainView = () => {
       header: 'Acciones',
       cell: ({ row }) => (
         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          <button
-            onClick={() => handleEdit(row.original)}
-            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black "
-          >
-            <FaPen /> Editar
-          </button>
+          <PermissionGuard permission={4}>
+            <button
+              onClick={() => handleEdit(row.original)}
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black "
+            >
+              <FaPen /> Editar
+            </button>
+          </PermissionGuard>
           <button
             onClick={() => handleView(row.original)}
             className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black "
           >
             <FaEye /> Ver
           </button>
-          <button
-            onClick={() => handleStatusToggle(row.original)}
-            className="inline-flex items-center px-2.5 py-1.5 border text-xs font-medium rounded border-black "
-          >
-            {row.original.status === 1 ? 'Desactivar' : 'Activar'}
-          </button>
+          <PermissionGuard permission={10}>
+            <button
+              onClick={() => handleStatusToggle(row.original)}
+              className="inline-flex items-center px-2.5 py-1.5 border text-xs font-medium rounded border-black "
+            >
+              {row.original.status === 1 ? 'Desactivar' : 'Activar'}
+            </button>
+          </PermissionGuard>
         </div> 
       )
     }
@@ -375,10 +379,7 @@ const UserManagementMainView = () => {
           <CiFilter className="w-4 h-4" />
           Filtrar por
         </button>
-        <PermissionGuard
-          allowedRoles={["Administrator", "HR Manager"]}
-          allowedPermissions={["users.create"]}
-        >
+        <PermissionGuard permission={3}>
           <button
             onClick={handleOpenAddUserModal}
             className="parametrization-filter-button"
@@ -390,15 +391,17 @@ const UserManagementMainView = () => {
       </div>
 
       {/* Tabla de usuarios */}
-      <TableList
-        columns={columns}
-        data={filteredData.length > 0 || statusFilter || roleFilter ? filteredData : userData}
-        loading={loading}
-        globalFilter={globalFilter}
-        onGlobalFilterChange={setGlobalFilter}
-        globalFilterFn={globalFilterFn}
-        pageSizeOptions={[10, 20, 30, 50]}
-      />
+      <PermissionGuard permission={2}>
+        <TableList
+          columns={columns}
+          data={filteredData.length > 0 || statusFilter || roleFilter ? filteredData : userData}
+          loading={loading}
+          globalFilter={globalFilter}
+          onGlobalFilterChange={setGlobalFilter}
+          globalFilterFn={globalFilterFn}
+          pageSizeOptions={[10, 20, 30, 50]}
+        />
+      </PermissionGuard>
 
       {/* Modal de filtros */}
       <Dialog.Root open={isFilterModalOpen} onOpenChange={setIsFilterModalOpen}>
