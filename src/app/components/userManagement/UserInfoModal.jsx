@@ -28,7 +28,7 @@ const UserInfo = ({ userData, isOpen, onClose }) => {
                 <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-lg z-50 max-w-4xl w-full max-h-[90vh] overflow-auto">
                     <div className="flex items-center justify-between p-6 border-b">
                         <Dialog.Title className="text-xl font-semibold">
-                            User Information
+                            Informacion del Usuario
                         </Dialog.Title>
                         <Dialog.Close asChild>
                             <button className="p-2 hover:bg-gray-100 rounded-lg">
@@ -62,24 +62,24 @@ const UserInfo = ({ userData, isOpen, onClose }) => {
                                     <h3 className="text-xl font-semibold mb-4">Personal information</h3>
                                     <div className="grid grid-cols-4 gap-4 text-sm mb-6">
                                         <div>
-                                            <div className="text-xs text-gray-500">Name</div>
+                                            <div className="text-xs text-gray-500">Nombres</div>
                                             <div className="font-medium">{userData.name || 'No disponible'}</div>
                                         </div>
                                         <div>
-                                            <div className="text-xs text-gray-500">Last name</div>
+                                            <div className="text-xs text-gray-500">Apellidos</div>
                                             <div className="font-medium">{userData.first_last_name || 'No disponible'}</div>
                                         </div>
                                         <div>
-                                            <div className="text-xs text-gray-500">Document type</div>
+                                            <div className="text-xs text-gray-500">Tipo de Documento</div>
                                             <div className="font-medium">{userData.type_document_name || userData.type_document_id || 'No disponible'}</div>
                                         </div>
                                         <div>
-                                            <div className="text-xs text-gray-500">Document number</div>
+                                            <div className="text-xs text-gray-500">Número de Documento</div>
                                             <div className="font-medium">{userData.document_number || 'No disponible'}</div>
                                         </div>
 
                                         <div>
-                                            <div className="text-xs text-gray-500">Telephone number</div>
+                                            <div className="text-xs text-gray-500">Número de Teléfono</div>
                                             <div className="font-medium">{userData.phone || userData.telephone || 'No disponible'}</div>
                                         </div>
                                         <div>
@@ -93,11 +93,11 @@ const UserInfo = ({ userData, isOpen, onClose }) => {
                                         <div />
 
                                         <div>
-                                            <div className="text-xs text-gray-500">Birth date</div>
+                                            <div className="text-xs text-gray-500">Fecha de Nacimiento</div>
                                             <div className="font-medium">{formatDate(userData.birthday)}</div>
                                         </div>
                                         <div>
-                                            <div className="text-xs text-gray-500">Expedition date</div>
+                                            <div className="text-xs text-gray-500">Fecha de Expedición</div>
                                             <div className="font-medium">{formatDate(userData.date_issuance_document)}</div>
                                         </div>
                                     </div>
@@ -106,21 +106,21 @@ const UserInfo = ({ userData, isOpen, onClose }) => {
                                     <div className="border-t pt-4">
                                         <div className="grid grid-cols-3 gap-4 text-sm">
                                             <div>
-                                                <div className="text-xs text-gray-500">Country</div>
+                                                <div className="text-xs text-gray-500">País</div>
                                                 <div className="font-medium">{userData.country || 'No disponible'}</div>
                                             </div>
                                             <div>
-                                                <div className="text-xs text-gray-500">Region</div>
+                                                <div className="text-xs text-gray-500">Región</div>
                                                 <div className="font-medium">{userData.department || 'No disponible'}</div>
                                             </div>
                                             <div>
-                                                <div className="text-xs text-gray-500">City</div>
+                                                <div className="text-xs text-gray-500">Ciudad</div>
                                                 <div className="font-medium">{userData.city || 'No disponible'}</div>
                                             </div>
                                         </div>
 
                                         <div className="mt-4">
-                                            <div className="text-xs text-gray-500">Address</div>
+                                            <div className="text-xs text-gray-500">Dirección</div>
                                             <div className="font-medium">{userData.address || 'No disponible'}</div>
                                         </div>
                                     </div>
