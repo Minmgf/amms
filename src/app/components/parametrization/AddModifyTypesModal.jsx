@@ -199,8 +199,10 @@ const AddModifyTypesModal = ({
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Nombre tipo *
                 </label>
-                <input
-                  type="text"
+                <textarea
+                  cols={30}
+                  rows={1}
+                  maxLength={200} // Límite de 200 caracteres
                   value={formData.typeName}
                   onChange={(e) =>
                     handleInputChange("typeName", e.target.value)
