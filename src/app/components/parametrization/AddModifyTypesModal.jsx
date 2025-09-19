@@ -60,7 +60,7 @@ const AddModifyTypesModal = ({
     });
 
     if (isDuplicate) {
-      setNameError("This type name already exist");
+      setNameError("El nombre de este tipo ya existe");
       return false;
     }
 
@@ -163,7 +163,7 @@ const AddModifyTypesModal = ({
         {/* Header */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-6 border-b border-gray-200">
           <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
-            {isAddMode ? "Add parameter" : "Modify parameter"}
+            {isAddMode ? "Añadir parámetro" : "Modificar parámetro"}
           </h2>
           <button
             onClick={onClose}
@@ -182,7 +182,7 @@ const AddModifyTypesModal = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category
+                  Categoría
                 </label>
                 <input
                   type="text"
@@ -197,7 +197,7 @@ const AddModifyTypesModal = ({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Type name *
+                  Nombre tipo *
                 </label>
                 <input
                   type="text"
@@ -209,7 +209,7 @@ const AddModifyTypesModal = ({
                   className={`w-full px-3 py-2 border rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${
                     hasNameError ? 'border-red-300' : 'border-gray-300'
                   }`}
-                  placeholder="Enter type name"
+                  placeholder="Ingrese el nombre de un tipo"
                 />
                 {hasNameError && (
                   <div className="flex items-center mt-1">
@@ -228,9 +228,9 @@ const AddModifyTypesModal = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
+                  Descripción
                 </label>
-                <input
+                <textarea
                   type="text"
                   value={formData.description}
                   onChange={(e) =>
@@ -244,7 +244,7 @@ const AddModifyTypesModal = ({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Activate/Deactivate
+                  Activar/Desactivar
                 </label>
                 <div className="mt-1 sm:mt-0">
                   <button
@@ -280,10 +280,10 @@ const AddModifyTypesModal = ({
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                {isAddMode ? "Saving..." : "Updating..."}
+                {isAddMode ? "Guardando..." : "Actualizando..."}
               </span>
             ) : (
-              isAddMode ? "Save" : "Update"
+              isAddMode ? "Guardar" : "Actualizar"
             )}
           </button>
         </div>

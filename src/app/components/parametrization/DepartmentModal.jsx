@@ -294,7 +294,7 @@ const DepartmentModal = ({
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-900">
-              {isAddMode ? 'Add department' : 'Modify Department'}
+              {isAddMode ? 'Añadir departamento' : 'Modificar departamento'}
             </h2>
             <button
               onClick={onClose}
@@ -311,7 +311,7 @@ const DepartmentModal = ({
               <div>
                 <label className={`block text-sm font-medium mb-2 ${errors.categoryName ? 'text-red-500' : 'text-gray-700'
                   }`}>
-                  Department name
+                  Nombre departamento
                 </label>
                 <input
                   type="text"
@@ -335,14 +335,14 @@ const DepartmentModal = ({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
+                  Descripción
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   placeholder=""
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             </div>
@@ -351,7 +351,7 @@ const DepartmentModal = ({
             {!isAddMode && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Activate/Deactivate
+                  Activar/Desactivar
                 </label>
                 <button
                   onClick={() => handleToggleStatus()}
@@ -373,17 +373,17 @@ const DepartmentModal = ({
             {/* Jobs Titles List Section */}
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">
-                Jobs Titles List
+                Lista de puestos de trabajo
               </h3>
 
               <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
                 {/* Table Header */}
                 <div className="bg-gray-50 border-b border-gray-200">
                   <div className="grid grid-cols-4 gap-4 px-4 py-3">
-                    <div className="text-sm font-medium text-gray-700">Job name</div>
-                    <div className="text-sm font-medium text-gray-700">Description</div>
-                    <div className="text-sm font-medium text-gray-700">Status</div>
-                    <div className="text-sm font-medium text-gray-700">Actions</div>
+                    <div className="text-sm font-medium text-gray-700">Nombre puesto</div>
+                    <div className="text-sm font-medium text-gray-700">Descripción</div>
+                    <div className="text-sm font-medium text-gray-700">Estado</div>
+                    <div className="text-sm font-medium text-gray-700">Acciones</div>
                   </div>
                 </div>
 
@@ -411,7 +411,7 @@ const DepartmentModal = ({
                             className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md transition-colors"
                           >
                             <FiEdit3 className="w-3 h-3 mr-1.5" />
-                            Edit
+                            Editar
                           </button>
                         </div>
                       </div>
@@ -419,7 +419,7 @@ const DepartmentModal = ({
                   ) : (
                     <div className="flex items-center justify-center h-32">
                       <p className="text-sm text-gray-500">
-                        There are no positions registered for this department.
+                        No hay puestos registrados para este departamento
                       </p>
                     </div>
                   )}
@@ -431,7 +431,7 @@ const DepartmentModal = ({
                 onClick={handleAddJob}
                 className="px-6 py-2 btn-theme btn-secondary text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
               >
-                Add Job
+                Añadir puesto
               </button>
             </div>
           </div>
@@ -442,7 +442,7 @@ const DepartmentModal = ({
               onClick={handleSave}
               className="px-8 py-3 btn-theme btn-primary text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              Save
+              Guardar
             </button>
           </div>
         </div>

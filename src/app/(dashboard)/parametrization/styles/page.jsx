@@ -38,7 +38,7 @@ const SelectField = ({ value, onChange, options, label }) => (
 
 // Main Component
 const StylesParameterizationView = () => {
-  const [activeMenuItem, setActiveMenuItem] = useState('Styles');
+  const [activeMenuItem, setActiveMenuItem] = useState('Estilos');
   
   // Usar el contexto de tema global
   const {
@@ -323,7 +323,7 @@ const StylesParameterizationView = () => {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6 md:mb-10">
-            <h1 className="text-2xl md:text-3xl font-bold text-primary">Parameterization</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-primary">Parametrización</h1>
             <div className="text-sm bg-surface p-2 rounded-theme-md border border-primary">
               <span className="text-secondary">Tema actual: </span>
               <span className="font-semibold text-accent">{getAllThemes()[currentTheme]?.name || 'Cargando...'}</span>

@@ -3,16 +3,16 @@ import React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
 const NavigationMenu = ({
-  items = ['Type...', 'Status', 'Brands', 'Units', 'Styles', 'Job Titles'],
+  items = ['Tipos', 'Estados', 'Marcas', 'Unidades', 'Estilos', 'Cargos'],
   onItemClick = () => {},
   // Mapeo de elementos a rutas
   routeMap = {
-    'Type...': '/parametrization/mainView',
-    'Status': '/parametrization/status', 
-    'Brands': '/parametrization/brands',
-    'Units': '/parametrization/units',
-    'Styles': '/parametrization/styles',
-    'Job Titles': '/parametrization/jobTitles'
+    'Tipos': '/parametrization/mainView',
+    'Estados': '/parametrization/status', 
+    'Marcas': '/parametrization/brands',
+    'Unidades': '/parametrization/units',
+    'Estilos': '/parametrization/styles',
+    'Cargos': '/parametrization/jobTitles'
   }
 }) => {
   const router = useRouter();

@@ -27,7 +27,7 @@ import {
 const ParameterizationView = () => {
   const { currentTheme } = useTheme();
   const [id, setId] = useState("");
-  const [activeMenuItem, setActiveMenuItem] = useState("Brands");
+  const [activeMenuItem, setActiveMenuItem] = useState("Marcas");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [data, setData] = useState([]);
@@ -64,7 +64,7 @@ const ParameterizationView = () => {
   }, []);
 
   // Función para obtener datos del backend
-  const fetchData = async (menuItem = "Brands") => {
+  const fetchData = async (menuItem = "Marcas") => {
     setLoading(true);
     setError(null);
 
@@ -98,8 +98,9 @@ const ParameterizationView = () => {
           name: b.name,
           description: b.description,
           idStatues: b.id_statues,
+          idStatues: b.id_statues,
           status: b.estado,
-          isActive: b.estado === "Activo",
+          isActive: b.id_statues === 1,
           models: b.models || [],
         };
       });
@@ -123,13 +124,19 @@ const ParameterizationView = () => {
       prev.map((b) =>
         b.id === brandId
           ? {
-              ...b,
-              isActive: !b.isActive,
-              status: !b.isActive ? "Activo" : "Inactivo",
-            }
+            ...b,
+            isActive: !b.isActive,
+            idStatues: b.isActive ? 2 : 1,
+            status: b.isActive ? "Inactivo" : "Habilitado"
+          }
           : b
       )
     );
+    setTimeout(() => {
+      if (selectedCategory?.id) {
+        fetchBrandsByCategory(selectedCategory.id);
+      }
+    }, 500);
   };
 
   // ==================== HANDLERS PARA CategoryModal ====================
@@ -172,7 +179,9 @@ const ParameterizationView = () => {
         id_model: m.id_model,
         modelName: m.name, // <-- mapear 'name' → 'modelName'
         description: m.description,
-        isActive: m.estado === "Activo",
+        isActive: m.id_statues === 1,
+        id_statues: m.id_statues,
+        estado: m.estado
       }));
 
       const brandToEdit = {
@@ -180,6 +189,8 @@ const ParameterizationView = () => {
         brandName: brand.name,
         description: brand.description,
         isActive: brand.isActive,
+        idStatues: brand.idStatues,
+        status: brand.status,
         models: normalizedModels,
       };
 
@@ -253,18 +264,35 @@ const ParameterizationView = () => {
 
   // ==================== HANDLERS PARA AddModifyModelModal ====================
 
-  // Abrir AddModifyModelModal en modo ADD (desde botón "Add model" del BrandFormModal)
-  const handleAddModel = () => {
+  // Handler para actualizar los datos de la marca desde el BrandFormModal
+  const handleBrandDataChange = (updatedBrandData) => {
+    setSelectedBrand(updatedBrandData);
+  };
+
+  // Modificar el handler handleAddModel para pasar los datos actuales del formulario
+  const handleAddModel = (currentBrandData) => {
+    // Si se pasan datos actuales del formulario, usarlos en lugar del selectedBrand
+    if (currentBrandData) {
+      setSelectedBrand(currentBrandData);
+    }
+
     setModelModalMode("add");
     setSelectedModelData(null);
     setIsModelModalOpen(true);
   };
 
-  // Abrir AddModifyModelModal en modo EDIT (desde botón "Edit" de la tabla del BrandFormModal)
-  const handleEditModel = (modelId) => {
-    // Buscar el modelo en los datos del brand seleccionado
-    const model = selectedBrand?.models?.find((m) => m.id_model === modelId);
+  // Modificar el handler handleEditModel para pasar los datos actuales del formulario  
+  const handleEditModel = (modelId, currentBrandData) => {
+    // Si se pasan datos actuales del formulario, usarlos
+    const brandData = currentBrandData || selectedBrand;
+
+    const model = brandData?.models?.find((m) => m.id_model === modelId);
     if (model) {
+      // Actualizar selectedBrand si se pasaron datos actuales
+      if (currentBrandData) {
+        setSelectedBrand(currentBrandData);
+      }
+
       setModelModalMode("edit");
       setSelectedModelData(model);
       setIsModelModalOpen(true);
@@ -305,7 +333,6 @@ const ParameterizationView = () => {
         const payload = {
           name: modelData.modelName,
           description: modelData.description,
-          estado: modelData.isActive ? "Activo" : "Inactivo",
           responsible_user: id,
           brand: selectedBrand.id, // 👈 necesario
         };
@@ -319,7 +346,7 @@ const ParameterizationView = () => {
           id_model: m.id_model,
           modelName: m.name,
           description: m.description,
-          isActive: m.estado === "Activo",
+          isActive: m.estado === "1",
         }));
 
         setSelectedBrand((prev) => ({
@@ -368,7 +395,7 @@ const ParameterizationView = () => {
           id_model: m.id_model,
           modelName: m.name,
           description: m.description,
-          isActive: m.estado === "Activo",
+          isActive: m.estado === "1",
         }));
 
         setSelectedBrand((prev) => ({
@@ -395,22 +422,22 @@ const ParameterizationView = () => {
   const columns = useMemo(
     () => [
       columnHelper.accessor("name", {
-        header: "Category name",
+        header: "Nombre categoría",
         cell: (info) => (
           <div className="font-medium text-primary">{info.getValue()}</div>
         ),
       }),
       columnHelper.accessor("description", {
-        header: "Description",
+        header: "Descripción",
         cell: (info) => <div className="text-secondary">{info.getValue()}</div>,
       }),
       columnHelper.accessor("id", {
-        header: "Details",
+        header: "Detalles",
         cell: (info) => (
           <button
             onClick={() => handleViewDetails(info.getValue())}
             className="parametrization-action-button p-2 transition-colors lg:opacity-0 group-hover:opacity-100"
-            title="View details"
+            title="Ver detalles"
           >
             <FiEye className="w-4 h-4" />
           </button>
@@ -426,7 +453,7 @@ const ParameterizationView = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6 md:mb-10">
           <h1 className="parametrization-header text-2xl md:text-3xl font-bold">
-            Parameterization
+            Parametrización
           </h1>
         </div>
 
@@ -479,6 +506,7 @@ const ParameterizationView = () => {
         onAddModel={handleAddModel} // Se ejecuta cuando se presiona "Add model"
         onEditModel={handleEditModel} // Se ejecuta cuando se presiona "Edit" en la tabla de modelos
         onStatusChanged={handleStatusChanged}
+        onBrandDataChange={handleBrandDataChange} // Nuevo prop para sincronizar datos
       />
 
       {/* AddModifyModelModal - Modal para agregar/editar model */}

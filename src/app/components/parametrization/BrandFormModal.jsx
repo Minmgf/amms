@@ -7,14 +7,15 @@ import { SuccessModal, ErrorModal } from '../shared/SuccessErrorModal';
 const BrandFormModal = ({
     isOpen,
     onClose,
-    mode = 'add', // 'add' or 'edit'
+    mode = 'add',
     categoryName = '',
-    brandData = null, // Para modo edit
+    brandData = null,
     onSave,
     onUpdate,
-    onAddModel, // Nueva prop para agregar modelo
-    onEditModel, // Nueva prop para editar modelo
-    onStatusChanged
+    onAddModel,
+    onEditModel,
+    onStatusChanged,
+    onBrandDataChange // ✅ nuevo prop para sincronizar datos
 }) => {
     const [formData, setFormData] = useState({
         brandName: '',
@@ -31,45 +32,97 @@ const BrandFormModal = ({
     const [errorOpen, setErrorOpen] = useState(false);
     const [modalMessage, setModalMessage] = useState("");
 
+    // ✅ notificar al padre cada vez que cambie algo
+    const notifyDataChange = (updatedData) => {
+        if (onBrandDataChange) {
+            onBrandDataChange(updatedData);
+        }
+    };
+
     useEffect(() => {
         if (!isOpen) {
-            // cada vez que se cierra, reseteamos el flag
             setHasInitialized(false);
             return;
         }
 
         if (mode === "edit" && brandData) {
-            setFormData({
+            const initialData = {
                 id: brandData.id,
                 brandName: brandData.brandName || "",
                 description: brandData.description || "",
                 isActive: !!brandData.isActive,
-            });
+            };
+            setFormData(initialData);
             setModels(brandData.models || []);
             setHasInitialized(true);
         }
 
         if (mode === "add" && !hasInitialized) {
-            // solo la primera vez que abro en add
-            setFormData({
+            const initialData = {
                 brandName: "",
                 description: "",
                 isActive: true,
-            });
+            };
+            setFormData(initialData);
             setModels([]);
             setHasInitialized(true);
         }
     }, [isOpen, mode, brandData, hasInitialized]);
 
-
-
-
-    // Actualizar lista de modelos cuando brandData cambie (para reflejar cambios desde ModelFormModal)
     useEffect(() => {
         if (brandData && brandData.models) {
             setModels(brandData.models);
         }
     }, [brandData]);
+
+    const handleInputChange = (field, value) => {
+        const updatedData = {
+            ...formData,
+            [field]: value
+        };
+        setFormData(updatedData);
+        notifyDataChange({ ...updatedData, models }); // ✅ sincronizar
+
+        if (errors[field]) {
+            setErrors(prev => ({
+                ...prev,
+                [field]: ''
+            }));
+        }
+    };
+
+    const handleToggleStatus = async () => {
+        if (!formData.id) return;
+        try {
+            const response = await toggleStatusBrand(formData.id);
+            setModalMessage(response.message || "Estado actualizado exitosamente");
+            setSuccessOpen(true);
+
+            const updatedData = {
+                ...formData,
+                isActive: !formData.isActive,
+            };
+            setFormData(updatedData);
+            notifyDataChange({ ...updatedData, models }); // ✅ sincronizar
+
+            onStatusChanged(formData.id);
+        } catch (error) {
+            setModalMessage(error.response.data.detail || "Error al actualizar el estado");
+            setErrorOpen(true);
+        }
+    };
+
+    const handleAddModel = () => {
+        if (onAddModel) {
+            onAddModel({ ...formData, models }); // ✅ pasar los datos actuales
+        }
+    };
+
+    const handleEditModel = (modelId) => {
+        if (onEditModel) {
+            onEditModel(modelId, { ...formData, models }); // ✅ pasar los datos actuales
+        }
+    };
 
     // Validación de nombre existente
     useEffect(() => {
@@ -81,39 +134,6 @@ const BrandFormModal = ({
 
         setBrandNameExists(exists);
     }, [formData.brandName, brandData]);
-
-    const handleInputChange = (field, value) => {
-        setFormData(prev => ({
-            ...prev,
-            [field]: value
-        }));
-
-        // Limpiar error del campo cuando el usuario empiece a escribir
-        if (errors[field]) {
-            setErrors(prev => ({
-                ...prev,
-                [field]: ''
-            }));
-        }
-    };
-
-    const handleToggleStatus = async () => {
-        if (!formData.id) return;
-
-        try {
-            const response = await toggleStatusBrand(formData.id);
-            setModalMessage(response.message || "Estado actualizado exitosamente");
-            setSuccessOpen(true);
-            setFormData((prev) => ({
-                ...prev,
-                isActive: !prev.isActive,
-            }));
-            onStatusChanged(formData.id);
-        } catch (error) {
-            setModalMessage(error.response.data.detail || "Error al actualizar el estado");
-            setErrorOpen(true);
-        }
-    };
 
     const validateForm = () => {
         const newErrors = {};
@@ -145,18 +165,6 @@ const BrandFormModal = ({
 
         // Cerrar modal después de enviar
         onClose();
-    };
-
-    const handleAddModel = () => {
-        if (onAddModel) {
-            onAddModel();
-        }
-    };
-
-    const handleEditModel = (modelId) => {
-        if (onEditModel) {
-            onEditModel(modelId);
-        }
     };
 
     const handleBackdropClick = (e) => {
@@ -212,7 +220,7 @@ const BrandFormModal = ({
                         {/* Category */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Category
+                                Categoría
                             </label>
                             <input
                                 type="text"
@@ -225,7 +233,7 @@ const BrandFormModal = ({
                         {/* Brand Name */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                <span className="text-red-500">*</span> Brand name
+                                <span className="text-red-500">*</span> Nombre marca
                             </label>
                             <input
                                 type="text"
@@ -254,9 +262,9 @@ const BrandFormModal = ({
                         {/* Description */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Description
+                                Descripción
                             </label>
-                            <input
+                            <textarea
                                 type="text"
                                 value={formData.description}
                                 onChange={(e) => handleInputChange('description', e.target.value)}
@@ -269,7 +277,7 @@ const BrandFormModal = ({
                         {mode === "edit" && (
                             <div className="flex items-center justify-between">
                                 <label className="block text-sm font-medium text-gray-700">
-                                    Activate/Deactivate
+                                    Activar/Desactivar
                                 </label>
                                 <div className="relative">
                                     <button
@@ -290,7 +298,7 @@ const BrandFormModal = ({
 
                     {/* Model List Section */}
                     <div className="mb-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Model list</h3>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Lista de modelos</h3>
 
                         {/* Model Table */}
                         <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden mb-4">
@@ -300,13 +308,13 @@ const BrandFormModal = ({
                                         <thead className="bg-gray-100 border-b border-gray-200">
                                             <tr>
                                                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
-                                                    Model
+                                                    Modelo
                                                 </th>
                                                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
-                                                    Description
+                                                    Descripción
                                                 </th>
                                                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                                                    Actions
+                                                    Acciones
                                                 </th>
                                             </tr>
                                         </thead>
@@ -325,7 +333,7 @@ const BrandFormModal = ({
                                                             className="invisible group-hover:visible inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md transition-colors"
                                                         >
                                                             <FiEdit3 className="w-3 h-3 mr-1.5" />
-                                                            Edit
+                                                            Editar
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -335,7 +343,7 @@ const BrandFormModal = ({
                                 </div>
                             ) : (
                                 <div className="p-8 text-center text-gray-500">
-                                    No models added yet
+                                    No se han agregado modelos aún
                                 </div>
                             )}
                         </div>
@@ -345,7 +353,7 @@ const BrandFormModal = ({
                             onClick={handleAddModel}
                             className="px-6 py-2 btn-theme btn-secondary text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
                         >
-                            Add model
+                            Añadir modelo
                         </button>
                     </div>
 
@@ -356,7 +364,7 @@ const BrandFormModal = ({
                             disabled={!formData.brandName.trim() || brandNameExists}
                             className="px-8 py-3 btn-theme btn-primary text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                         >
-                            {mode === 'edit' ? 'Update' : 'Save'}
+                            {mode === 'edit' ? 'Actualizar' : 'Guardar'}
                         </button>
                     </div>
                 </div>

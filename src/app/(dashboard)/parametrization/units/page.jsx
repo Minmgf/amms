@@ -16,7 +16,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 // Componente principal
 const ParameterizationView = () => {
   const { currentTheme } = useTheme();
-  const [activeMenuItem, setActiveMenuItem] = useState("Units");
+  const [activeMenuItem, setActiveMenuItem] = useState("Unidades");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [data, setData] = useState([]);
@@ -329,22 +329,22 @@ const ParameterizationView = () => {
   const columns = useMemo(
     () => [
       columnHelper.accessor("name", {
-        header: "Category name",
+        header: "Nombre categoría",
         cell: (info) => (
           <div className="font-medium text-primary">{info.getValue()}</div>
         ),
       }),
       columnHelper.accessor("description", {
-        header: "Description",
+        header: "Descripción",
         cell: (info) => <div className="text-secondary">{info.getValue()}</div>,
       }),
       columnHelper.accessor("id", {
-        header: "Details",
+        header: "Detalles",
         cell: (info) => (
           <button
             onClick={() => handleViewDetails(info.getValue())}
             className="parametrization-action-button p-2 transition-colors lg:opacity-0 group-hover:opacity-100"
-            title="View details"
+            title="Ver detalles"
           >
             <FiEye className="w-4 h-4" />
           </button>
@@ -360,7 +360,7 @@ const ParameterizationView = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6 md:mb-10">
           <h1 className="parametrization-header text-2xl md:text-3xl font-bold">
-            Parameterization
+            Parametrización
           </h1>
         </div>
 
