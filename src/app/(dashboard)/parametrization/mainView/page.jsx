@@ -355,7 +355,7 @@ const ParameterizationView = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6 md:mb-10">
           <h1 className="parametrization-header text-2xl md:text-3xl font-bold">
-            Parameterization
+            Parametrización
           </h1>
         </div>
 
