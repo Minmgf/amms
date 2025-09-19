@@ -58,7 +58,7 @@ const DepartmentModal = ({
         department: departmentData.department || departmentData.name || '',
         categoryName: departmentData.department || departmentData.name || '',
         description: departmentData.description || '',
-        isActive: departmentData.status === 'Activo',
+        isActive: departmentData.idStatues === 1,
         jobTitles: departmentData.jobTitles || []
       });
 
@@ -221,7 +221,7 @@ const DepartmentModal = ({
           id: jobTitles.length > 0 ? Math.max(...jobTitles.map(j => j.id)) + 1 : 1,
           name: jobData.jobTitle,
           description: jobData.description,
-          status: jobData.isActive ? 'Active' : 'Inactive'
+          status: jobData.isActive ? 'Activo' : 'Inactivo'
         };
         setJobTitles(prev => [...prev, newJob]);
       } else {
@@ -254,7 +254,7 @@ const DepartmentModal = ({
               ...job,
               name: jobData.jobTitle,
               description: jobData.description,
-              status: jobData.isActive ? 'Active' : 'Inactive'
+              status: jobData.isActive ? 'Activo' : 'Inactivo'
             }
             : job
         ));

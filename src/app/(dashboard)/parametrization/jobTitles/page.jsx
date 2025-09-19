@@ -16,6 +16,7 @@ import {
   SuccessModal,
   ErrorModal,
 } from "@/app/components/shared/SuccessErrorModal";
+import { InfoIcon } from "lucide-react";
 
 // Componente principal
 const ParameterizationView = () => {
@@ -181,6 +182,26 @@ const ParameterizationView = () => {
         header: "Descripción",
         cell: (info) => <div className="text-secondary">{info.getValue()}</div>,
       }),
+      columnHelper.accessor("status", {
+        header: "Estado",
+        cell: (info) => {
+          const row = info.row.original; // aquí tienes idStatues y todos los datos
+          return (
+            <div
+              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                row.idStatues === 1
+                  ? "bg-green-100 text-green-800"
+                  : row.idStatues === 2
+                  ? "bg-red-100 text-red-800"
+                  : "bg-gray-100 text-gray-800"
+              }`}
+            >
+              {info.getValue()}
+            </div>
+          );
+        },
+      }),
+
       columnHelper.accessor("id", {
         header: "Detalles",
         cell: (info) => (
