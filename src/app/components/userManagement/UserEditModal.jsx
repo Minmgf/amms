@@ -20,9 +20,10 @@ const getAuthToken = () => {
   return token;
 };
 
-export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpdated }) {
+
+export default function UserEditModal({ isOpen, onClose, userData, onUserUpdated }) {
   useTheme();
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(true); // Comenzar en modo edición
   const [loading, setLoading] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -96,11 +97,13 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
 
   // Función para hacer las opciones de select desde los datos de configuración
   const getDocumentTypeOptions = React.useCallback(() => {
-    return documentTypes.map(type => ({ value: type.id, label: type.name }));
+    const options = documentTypes.map(type => ({ value: type.id, label: type.name }));
+    return options;
   }, [documentTypes]);
 
   const getGenderTypeOptions = React.useCallback(() => {
-    return genderTypes.map(type => ({ value: type.id, label: type.name }));
+    const options = genderTypes.map(type => ({ value: type.id, label: type.name }));
+    return options;
   }, [genderTypes]);
 
   const getRoleTypeOptions = React.useCallback(() => {
@@ -168,35 +171,50 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
     setError(null);
     setSuccess(false);
     // Restaurar datos originales
-    if (userData) {
+    if (userData && documentTypes.length > 0 && genderTypes.length > 0) {
       const formattedBirthday = formatDateForInput(userData.birthday);
       const formattedIssuanceDate = formatDateForInput(userData.date_issuance_document);
+      
+      // Mapear correctamente los IDs desde los datos del usuario
+      const documentTypeId = userData.type_document_id || userData.type_document;
+      const genderId = userData.gender_id || userData.gender;
+
+      // Buscar las opciones correspondientes en los arrays cargados
+      const documentTypeOption = documentTypes.find(type => type.id === documentTypeId);
+      const genderOption = genderTypes.find(type => type.id === genderId);
       
       setFormData({
         name: userData.name || '',
         first_last_name: userData.first_last_name || '',
         second_last_name: userData.second_last_name || '',
-        type_document_id: userData.type_document_id ? { 
-          value: userData.type_document_id, 
-          label: userData.type_document_name || getDocumentTypeName(userData.type_document_id)
+        type_document_id: documentTypeOption ? { 
+          value: documentTypeOption.id, 
+          label: documentTypeOption.name
         } : null,
         document_number: userData.document_number || '',
         date_issuance_document: formattedIssuanceDate,
         birthday: formattedBirthday,
-        gender_id: userData.gender_id ? { value: userData.gender_id, label: userData.gender_name } : null,
+        gender_id: genderOption ? { 
+          value: genderOption.id, 
+          label: genderOption.name 
+        } : null,
         roles: userData.roles ? userData.roles.map(role => ({ value: role.id, label: role.name })) : []
       });
     }
-  }, [userData, formatDateForInput, getDocumentTypeName]);
+  }, [userData, formatDateForInput, documentTypes, genderTypes]);
 
   // Funciones para manejar los modales
   const handleSuccessClose = () => {
     setShowSuccessModal(false);
-    setIsEditing(false);
-    onClose(); // Cerrar el modal principal cuando se cierra el de éxito
+    setIsEditing(true);
+    
+    // Recargar datos antes de cerrar el modal
     if (onUserUpdated) {
       onUserUpdated();
     }
+    
+    // Cerrar el modal principal
+    onClose();
   };
 
   const handleErrorClose = () => {
@@ -290,6 +308,7 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
           setDocumentTypes(docTypesResponse.data);
           setGenderTypes(genderTypesResponse.data);
           setRoleTypes(roleTypesResponse.data);
+          
         } else {
           setError('Error al cargar los datos de configuración');
         }
@@ -307,31 +326,44 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
 
   // Inicializar formulario con datos del usuario
   useEffect(() => {
-    if (userData) {
+    if (userData && documentTypes.length > 0 && genderTypes.length > 0) {
       const formattedBirthday = formatDateForInput(userData.birthday);
       const formattedIssuanceDate = formatDateForInput(userData.date_issuance_document);
+
+
+      // Mapear correctamente los IDs desde los datos del usuario
+      const documentTypeId = userData.type_document_id || userData.type_document;
+      const genderId = userData.gender_id || userData.gender;
+
+      // Buscar las opciones correspondientes en los arrays cargados
+      const documentTypeOption = documentTypes.find(type => type.id === documentTypeId);
+      const genderOption = genderTypes.find(type => type.id === genderId);
+
 
       setFormData({
         name: userData.name || '',
         first_last_name: userData.first_last_name || '',
         second_last_name: userData.second_last_name || '',
-        type_document_id: userData.type_document_id ? { 
-          value: userData.type_document_id, 
-          label: userData.type_document_name || getDocumentTypeName(userData.type_document_id)
+        type_document_id: documentTypeOption ? { 
+          value: documentTypeOption.id, 
+          label: documentTypeOption.name
         } : null,
         document_number: userData.document_number || '',
         date_issuance_document: formattedIssuanceDate,
         birthday: formattedBirthday,
-        gender_id: userData.gender_id ? { value: userData.gender_id, label: userData.gender_name } : null,
+        gender_id: genderOption ? { 
+          value: genderOption.id, 
+          label: genderOption.name 
+        } : null,
         roles: userData.roles ? userData.roles.map(role => ({ value: role.id, label: role.name })) : []
       });
     }
-  }, [userData, formatDateForInput, getDocumentTypeName]);
+  }, [userData, formatDateForInput, documentTypes, genderTypes]);
 
   // Resetear estado cuando se cierra el modal
   useEffect(() => {
     if (!isOpen) {
-      setIsEditing(false);
+      setIsEditing(true); // Comenzar en modo edición cuando se abra de nuevo
       setError(null);
       setSuccess(false);
       setShowSuccessModal(false);
@@ -377,6 +409,12 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
         setSuccess(true);
         setModalMessage('Usuario actualizado exitosamente');
         setShowSuccessModal(true);
+        
+        // Recargar datos inmediatamente después del éxito
+        if (onUserUpdated) {
+          onUserUpdated();
+        }
+        
         // El modal se encargará de cerrar la edición
       } else {
         setError(response.message || 'Error al actualizar el usuario');
@@ -428,16 +466,6 @@ export default function UserDetailsModal({ isOpen, onClose, userData, onUserUpda
             <div className="p-8 card-theme rounded-2xl">
               <div className="flex justify-between items-center mb-8">
                 <Dialog.Title className="text-2xl font-bold text-primary">Update User</Dialog.Title>
-                {!isEditing && (
-                  <button
-                    type="button"
-                    className="bg-primary text-white px-6 py-2 rounded-md font-semibold hover:bg-accent flex items-center gap-2"
-                    onClick={handleEdit}
-                  >
-                    <FaEdit />
-                    Edit
-                  </button>
-                )}
               </div>
               {loading ? (
                 <div className="text-center py-8">

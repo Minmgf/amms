@@ -6,6 +6,8 @@ import { CiFilter } from 'react-icons/ci'
 import { FaEye, FaPen, FaUserPlus, FaTimes } from 'react-icons/fa'
 import PermissionGuard from '@/app/(auth)/PermissionGuard'
 import * as Dialog from '@radix-ui/react-dialog'
+import UserInfo from '@/app/components/userManagement/UserInfoModal'
+import UserEditModal from '@/app/components/userManagement/UserEditModal'
 
 const UserManagementMainView = () => {
   // Estado para el filtro global
@@ -22,6 +24,14 @@ const UserManagementMainView = () => {
   const [statusFilter, setStatusFilter] = useState('')
   const [roleFilter, setRoleFilter] = useState('')
   const [filteredData, setFilteredData] = useState([])
+
+  // Estados para el modal de detalles de usuario
+  const [isUserDetailsModalOpen, setIsUserDetailsModalOpen] = useState(false)
+  const [selectedUser, setSelectedUser] = useState(null)
+
+  // Estados para el modal de edición de usuario
+  const [isUserEditModalOpen, setIsUserEditModalOpen] = useState(false)
+  const [selectedUserForEdit, setSelectedUserForEdit] = useState(null)
 
   // Cargar datos al montar el componente
   useEffect(() => {
@@ -87,6 +97,28 @@ const UserManagementMainView = () => {
 
     setFilteredData(filtered)
   }
+
+  // Función personalizada de filtrado global
+  const globalFilterFn = useMemo(() => {
+    return (row, columnId, filterValue) => {
+      if (!filterValue) return true
+      
+      const searchTerm = filterValue.toLowerCase()
+      const user = row.original
+      
+      // Crear texto completo para buscar
+      const fullName = `${user.name || ''} ${user.first_last_name || ''} ${user.second_last_name || ''}`.trim().toLowerCase()
+      const email = (user.email || '').toLowerCase()
+      const documentNumber = (user.document_number || '').toString().toLowerCase()
+      const documentType = (user.type_document_name || '').toLowerCase()
+      
+      // Buscar en cualquier parte de los campos
+      return fullName.includes(searchTerm) ||
+             email.includes(searchTerm) ||
+             documentNumber.includes(searchTerm) ||
+             documentType.includes(searchTerm)
+    }
+  }, [])
 
   // Handlers para filtros
   const handleApplyFilters = () => {
@@ -216,14 +248,31 @@ const UserManagementMainView = () => {
   // Handlers para las acciones
   const handleEdit = (user) => {
     console.log('Editing user:', user)
-    // Aquí implementarías la lógica para editar el usuario
-    // Podrías navegar a una página de edición o abrir un modal
+    setSelectedUserForEdit(user)
+    setIsUserEditModalOpen(true)
   }
 
   const handleView = (user) => {
     console.log('Viewing user:', user)
-    // Aquí implementarías la lógica para ver el usuario
-    // Podrías navegar a una página de detalle o abrir un modal
+    setSelectedUser(user)
+    setIsUserDetailsModalOpen(true)
+  }
+
+  const handleCloseUserDetailsModal = () => {
+    setIsUserDetailsModalOpen(false)
+    setSelectedUser(null)
+  }
+
+  const handleCloseUserEditModal = () => {
+    setIsUserEditModalOpen(false)
+    setSelectedUserForEdit(null)
+  }
+
+  const handleUserUpdated = async () => {
+    // Recargar los datos cuando se actualiza un usuario
+    console.log('Reloading user data after update...')
+    await loadInitialData()
+    // Los filtros se aplicarán automáticamente por el useEffect que escucha cambios en userData
   }
 
   const handleStatusToggle = async (user) => {
@@ -338,6 +387,7 @@ const UserManagementMainView = () => {
         loading={loading}
         globalFilter={globalFilter}
         onGlobalFilterChange={setGlobalFilter}
+        globalFilterFn={globalFilterFn}
         pageSizeOptions={[10, 20, 30, 50]}
       />
 
@@ -416,6 +466,21 @@ const UserManagementMainView = () => {
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
+
+      {/* Modal de detalles de usuario */}
+      <UserInfo
+        isOpen={isUserDetailsModalOpen}
+        onClose={handleCloseUserDetailsModal}
+        userData={selectedUser}
+      />
+
+      {/* Modal de edición de usuario */}
+      <UserEditModal
+        isOpen={isUserEditModalOpen}
+        onClose={handleCloseUserEditModal}
+        userData={selectedUserForEdit}
+        onUserUpdated={handleUserUpdated}
+      />
     </div>
 
     
