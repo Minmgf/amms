@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getUserInfo } from '../../../../services/authService';
-import UserInfo from '@/app/components/userManagement/UserInfo';
+import UserInfo from '@/app/components/userManagement/UserInfoModal';
 
 export default function UserDetailsPage() {
     const params = useParams();

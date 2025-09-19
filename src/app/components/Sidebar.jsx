@@ -214,12 +214,18 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       ],
     },
     {
-      name: "Gestión de usuarios",
+      name: "Gestión de roles y usuarios",
       icon: <FaUsers />,
       path: "/userManagement",
       permissions: [],
       module: "users",
       sub: [
+        {
+          name: "Gestión de usuarios",
+          icon: <FaUsers />,
+          path: "/userManagement/mainView",
+          permissions: [],
+        },
         {
           name: "Gestión de roles",
           icon: <FaUserShield />,
