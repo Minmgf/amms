@@ -3,8 +3,9 @@ import TableList from '@/app/components/shared/TableList'
 import React, { useState, useMemo, useEffect } from 'react'
 import { getUsersList, changeUserStatus } from '@/services/authService'
 import { CiFilter } from 'react-icons/ci'
-import { FaEye, FaPen, FaUserPlus } from 'react-icons/fa'
+import { FaEye, FaPen, FaUserPlus, FaTimes } from 'react-icons/fa'
 import PermissionGuard from '@/app/(auth)/PermissionGuard'
+import * as Dialog from '@radix-ui/react-dialog'
 
 const UserManagementMainView = () => {
   // Estado para el filtro global
@@ -15,10 +16,22 @@ const UserManagementMainView = () => {
   const [userData, setUserData] = useState([])
   const [error, setError] = useState(null)
 
+  // Estados para el modal de filtros
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [statusFilter, setStatusFilter] = useState('')
+  const [roleFilter, setRoleFilter] = useState('')
+  const [filteredData, setFilteredData] = useState([])
+
   // Cargar datos al montar el componente
   useEffect(() => {
     loadInitialData()
   }, [])
+
+  // Aplicar filtros cuando cambien los datos o los filtros
+  useEffect(() => {
+    applyFilters()
+  }, [userData, statusFilter, roleFilter])
 
   const loadInitialData = async () => {
     setLoading(true)
@@ -43,6 +56,49 @@ const UserManagementMainView = () => {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Obtener valores únicos para los filtros
+  const uniqueStatuses = useMemo(() => {
+    const statuses = userData.map(user => user.status_name).filter(Boolean)
+    return [...new Set(statuses)]
+  }, [userData])
+
+  const uniqueRoles = useMemo(() => {
+    const roles = userData.flatMap(user => 
+      user.roles?.map(role => role.name) || []
+    ).filter(Boolean)
+    return [...new Set(roles)]
+  }, [userData])
+
+  // Aplicar filtros
+  const applyFilters = () => {
+    let filtered = userData
+
+    if (statusFilter) {
+      filtered = filtered.filter(user => user.status_name === statusFilter)
+    }
+
+    if (roleFilter) {
+      filtered = filtered.filter(user => 
+        user.roles?.some(role => role.name === roleFilter)
+      )
+    }
+
+    setFilteredData(filtered)
+  }
+
+  // Handlers para filtros
+  const handleApplyFilters = () => {
+    applyFilters()
+    setIsFilterModalOpen(false)
+  }
+
+  const handleClearFilters = () => {
+    setStatusFilter('')
+    setRoleFilter('')
+    setFilteredData(userData)
+    setIsFilterModalOpen(false)
   }
 
   // Definición de columnas para TanStack Table
@@ -278,13 +334,91 @@ const UserManagementMainView = () => {
       {/* Tabla de usuarios */}
       <TableList
         columns={columns}
-        data={userData}
+        data={filteredData.length > 0 || statusFilter || roleFilter ? filteredData : userData}
         loading={loading}
         globalFilter={globalFilter}
         onGlobalFilterChange={setGlobalFilter}
         pageSizeOptions={[10, 20, 30, 50]}
       />
+
+      {/* Modal de filtros */}
+      <Dialog.Root open={isFilterModalOpen} onOpenChange={setIsFilterModalOpen}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-xl z-50 w-full max-w-md">
+            <div className="p-6 card-theme rounded-2xl">
+              <div className="flex justify-between items-center mb-6">
+                <Dialog.Title className="text-theme-xl font-theme-bold text-primary">Filters</Dialog.Title>
+                <button
+                  onClick={() => setIsFilterModalOpen(false)}
+                  className="text-secondary hover:text-primary"
+                >
+                  <FaTimes className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* Status Filter */}
+                <div>
+                  <label className="block text-theme-sm font-theme-medium text-secondary mb-2">
+                    Status
+                  </label>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="input-theme w-full"
+                  >
+                    <option value="">All statuses</option>
+                    {uniqueStatuses.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Role Filter */}
+                <div>
+                  <label className="block text-theme-sm font-theme-medium text-secondary mb-2">
+                    Role
+                  </label>
+                  <select
+                    value={roleFilter}
+                    onChange={(e) => setRoleFilter(e.target.value)}
+                    className="input-theme w-full"
+                  >
+                    <option value="">All roles</option>
+                    {uniqueRoles.map((role) => (
+                      <option key={role} value={role}>
+                        {role}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={handleClearFilters}
+                  className="btn-theme btn-error flex-1"
+                >
+                  Clean
+                </button>
+                <button
+                  onClick={handleApplyFilters}
+                  className="btn-theme btn-primary flex-1"
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
+
+    
   )
 }
 
