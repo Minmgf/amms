@@ -6,6 +6,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import Select from 'react-select';
 import { getDocumentTypes, getGenderTypes, getRoleTypes, editUser, changeUserStatus } from '../../../services/authService';
 import { SuccessModal, ErrorModal } from '../shared/SuccessErrorModal';
+import PermissionGuard from '@/app/(auth)/PermissionGuard';
 
 // Función helper para obtener el token desde localStorage o sessionStorage
 const getAuthToken = () => {
@@ -524,27 +525,29 @@ export default function UserEditModal({ isOpen, onClose, userData, onUserUpdated
                       type="date"
                       disabled={!isEditing}
                     />
-                    <div className="flex gap-2 items-end">
-                      <div className="flex-1">
-                        <FormField
-                          label="Rol"
-                          value={formData.role}
-                          onChange={handleSelectChange('role')}
-                          type="select"
-                          options={getRoleTypeOptions()}
-                          disabled={!isEditing}
-                          placeholder="Selecciona rol"
-                        />
+                    <PermissionGuard permission={7}>
+                      <div className="flex gap-2 items-end">
+                        <div className="flex-1">
+                          <FormField
+                            label="Rol"
+                            value={formData.role}
+                            onChange={handleSelectChange('role')}
+                            type="select"
+                            options={getRoleTypeOptions()}
+                            disabled={!isEditing}
+                            placeholder="Selecciona rol"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          className="bg-primary text-white px-5 py-2 rounded-md font-semibold hover:bg-accent disabled:opacity-50"
+                          onClick={handleAddRole}
+                          disabled={!isEditing || !formData.role}
+                        >
+                          Agregar
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        className="bg-primary text-white px-5 py-2 rounded-md font-semibold hover:bg-accent disabled:opacity-50"
-                        onClick={handleAddRole}
-                        disabled={!isEditing || !formData.role}
-                      >
-                        Agregar
-                      </button>
-                    </div>
+                    </PermissionGuard>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                     <FormField
