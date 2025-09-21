@@ -135,7 +135,7 @@ const Page = () => {
               <label className="block mb-2 text-sm font-medium">Región</label>
               <select
                 area-label="Region Select"
-                {...register("region", { required: "La región es obligatoria" })} disabled={!statesList.length}
+                {...register("department", { required: "La región es obligatoria" })} disabled={!statesList.length}
                 className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
               >
                 <option value="">Seleccione...</option>

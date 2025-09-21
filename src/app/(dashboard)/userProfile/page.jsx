@@ -92,7 +92,7 @@ const ProfilePage = () => {
           }
 
           // Prefill form values
-          setValue("country", data.country || "Colombia");
+          setValue("country", data.country || "");
           setValue("department", data.department || "");
           setValue("address", data.address || "");
           setValue("phoneNumber", data.phone || "");
