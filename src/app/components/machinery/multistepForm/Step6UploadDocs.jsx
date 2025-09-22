@@ -51,7 +51,7 @@ export default function Step6UploadDocs() {
   return (
     <div>
       {/* Título */}
-      <h3 className="text-lg md:text-xl font-semibold mb-4 md:mb-6 text-black">
+      <h3 className="text-lg font-semibold mb-4 text-black">
         Subir Documentación
       </h3>
 
@@ -60,7 +60,7 @@ export default function Step6UploadDocs() {
         <div className="space-y-4">
           {/* Nombre del documento */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm text-gray-600 mb-1">
               Nombre del documento
             </label>
             <input
@@ -73,7 +73,7 @@ export default function Step6UploadDocs() {
 
           {/* Selector de archivo */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm text-gray-600 mb-1">
               Archivo
             </label>
             <div className="w-full border-2 border-dashed border-gray-300 rounded-md p-4 md:p-6 
@@ -119,7 +119,7 @@ export default function Step6UploadDocs() {
 
         {/* Columna derecha */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-4">
+          <label className="block text-sm text-gray-600 mb-1">
             Documentos existentes
           </label>
           <div className="space-y-3">

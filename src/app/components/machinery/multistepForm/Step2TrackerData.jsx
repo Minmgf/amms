@@ -24,7 +24,7 @@ export default function Step2TrackerData() {
   return (
     <div>
       {/* Título */}
-      <h3 className="text-lg md:text-xl font-semibold mb-2 md:mb-4 text-black">Ficha de Tracker</h3>
+      <h3 className="text-lg font-semibold mb-4 text-black">Ficha de Tracker</h3>
 
        {/* Grid responsive de 2 columnas */}
        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mt-6">
@@ -32,7 +32,7 @@ export default function Step2TrackerData() {
         <div className="space-y-4">
           {/* Número de serie del terminal */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm text-gray-600 mb-1">
               Número de serie del terminal <span className="text-red-500">*</span>
             </label>
             <input
@@ -58,7 +58,7 @@ export default function Step2TrackerData() {
 
           {/* Número de serie del dispositivo GPS */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm text-gray-600 mb-1">
               Número de serie del dispositivo GPS
             </label>
             <input
@@ -86,7 +86,7 @@ export default function Step2TrackerData() {
         <div className="space-y-4">
           {/* Número de chasis */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm text-gray-600 mb-1">
               Número de chasis
             </label>
             <input
@@ -111,7 +111,7 @@ export default function Step2TrackerData() {
 
           {/* Número de motor */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm text-gray-600 mb-1">
               Número de motor
             </label>
             <input
