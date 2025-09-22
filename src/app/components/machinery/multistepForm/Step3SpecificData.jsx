@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function Step3SpecificData() {
   const {
     register,
     formState: { errors },
   } = useFormContext();
+
+  const { getCurrentTheme } = useTheme();
 
   // Estado para controlar qué secciones están expandidas
   const [expandedSections, setExpandedSections] = useState({
@@ -29,64 +32,111 @@ export default function Step3SpecificData() {
     <button
       type="button"
       onClick={() => toggleSection(sectionKey)}
-      className="w-full grid grid-cols-[1fr_auto] items-center p-4 bg-gray-50 hover:bg-gray-100 transition-colors rounded-lg border border-gray-200"
+      className="w-full grid grid-cols-[1fr_auto] items-center p-4 transition-colors rounded-theme-lg"
+      style={{
+        backgroundColor: "var(--color-surface)",
+        borderRadius: "var(--border-radius-lg)",
+        border: `1px solid var(--color-border)`,
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = "var(--color-hover)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = "var(--color-surface)";
+      }}
+      aria-label={`${isExpanded ? "Collapse" : "Expand"} ${title} Section`}
     >
-      <span className="font-medium text-gray-800 text-left">{title}</span>
+      <span
+        className="font-theme-medium text-left"
+        style={{ color: "var(--color-text)" }}
+      >
+        {title}
+      </span>
       {isExpanded ? (
-        <FaChevronUp className="w-5 h-5 text-gray-600" />
+        <FaChevronUp
+          className="w-5 h-5"
+          style={{ color: "var(--color-text-secondary)" }}
+        />
       ) : (
-        <FaChevronDown className="w-5 h-5 text-gray-600" />
+        <FaChevronDown
+          className="w-5 h-5"
+          style={{ color: "var(--color-text-secondary)" }}
+        />
       )}
     </button>
   );
 
   return (
-    <div className="space-y-4">
+    <div className="step-3-specific-data space-y-4">
       <div>
-        <h3 className="text-lg font-semibold mb-2 text-black">
+        <h3
+          className="text-theme-lg font-theme-semibold mb-2"
+          style={{ color: "var(--color-text)" }}
+        >
           Ficha Técnica Específica
         </h3>
-        <p className="text-sm text-gray-600 mb-4">
-          Ingrese las especificaciones técnicas y datos de rendimiento de la maquinaria.
+        <p
+          className="text-theme-sm mb-4"
+          style={{ color: "var(--color-text-secondary)" }}
+        >
+          Ingrese las especificaciones técnicas y datos de rendimiento de la
+          maquinaria.
         </p>
       </div>
 
       {/* Motor y Transmisión */}
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <div
+        className="rounded-theme-lg overflow-hidden"
+        style={{ border: `1px solid var(--color-border)` }}
+      >
         <SectionHeader
           title="Motor y Transmisión"
           sectionKey="engineTransmission"
           isExpanded={expandedSections.engineTransmission}
         />
         {expandedSections.engineTransmission && (
-          <div className="p-4 space-y-4 bg-white">
+          <div
+            className="p-4 space-y-4"
+            style={{ backgroundColor: "var(--color-background)" }}
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Potencia del motor */}
               <div className="grid grid-cols-[1fr_auto] gap-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     Potencia del Motor *
                   </label>
                   <input
+                    aria-label="Engine Power Input"
                     type="number"
                     step="0.1"
                     {...register("enginePower", { required: "Requerido" })}
                     placeholder="Valor"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   />
                   {errors.enginePower && (
-                    <span className="text-red-500 text-xs mt-1">
+                    <span
+                      className="text-theme-xs mt-1 block"
+                      style={{ color: "var(--color-error)" }}
+                    >
                       {errors.enginePower.message}
                     </span>
                   )}
                 </div>
                 <div className="w-24">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     &nbsp;
                   </label>
                   <select
+                    aria-label="Engine Power Unit Select"
                     {...register("enginePowerUnit", { required: "Requerido" })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   >
                     <option value="HP">HP</option>
                     <option value="CV">CV</option>
@@ -97,12 +147,16 @@ export default function Step3SpecificData() {
 
               {/* Tipo de motor */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  className="block text-theme-sm font-theme-medium mb-1"
+                  style={{ color: "var(--color-text-secondary)" }}
+                >
                   Tipo de Motor *
                 </label>
                 <select
+                  aria-label="Engine Type Select"
                   {...register("engineType", { required: "Requerido" })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="parametrization-input"
                 >
                   <option value="">Seleccionar tipo</option>
                   <option value="diesel">Diésel</option>
@@ -114,7 +168,10 @@ export default function Step3SpecificData() {
                   <option value="other">Otro</option>
                 </select>
                 {errors.engineType && (
-                  <span className="text-red-500 text-xs mt-1">
+                  <span
+                    className="text-theme-xs mt-1 block"
+                    style={{ color: "var(--color-error)" }}
+                  >
                     {errors.engineType.message}
                   </span>
                 )}
@@ -123,31 +180,42 @@ export default function Step3SpecificData() {
               {/* Cilindraje */}
               <div className="grid grid-cols-[1fr_auto] gap-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     Cilindraje *
                   </label>
                   <input
+                    aria-label="Cylinder Capacity Input"
                     type="number"
                     step="1"
                     {...register("cylinderCapacity", { required: "Requerido" })}
                     placeholder="Valor"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   />
                   {errors.cylinderCapacity && (
-                    <span className="text-red-500 text-xs mt-1">
+                    <span
+                      className="text-theme-xs mt-1 block"
+                      style={{ color: "var(--color-error)" }}
+                    >
                       {errors.cylinderCapacity.message}
                     </span>
                   )}
                 </div>
                 <div className="w-20">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     &nbsp;
                   </label>
                   <select
+                    aria-label="Cylinder Capacity Unit Select"
                     {...register("cylinderCapacityUnit", {
                       required: "Requerido",
                     })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   >
                     <option value="cc">cc</option>
                     <option value="ci">ci</option>
@@ -157,17 +225,24 @@ export default function Step3SpecificData() {
 
               {/* Número de cilindros */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  className="block text-theme-sm font-theme-medium mb-1"
+                  style={{ color: "var(--color-text-secondary)" }}
+                >
                   Número de Cilindros *
                 </label>
                 <input
+                  aria-label="Cylinders Number Input"
                   type="number"
                   {...register("cylindersNumber", { required: "Requerido" })}
                   placeholder="Número"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="parametrization-input"
                 />
                 {errors.cylindersNumber && (
-                  <span className="text-red-500 text-xs mt-1">
+                  <span
+                    className="text-theme-xs mt-1 block"
+                    style={{ color: "var(--color-error)" }}
+                  >
                     {errors.cylindersNumber.message}
                   </span>
                 )}
@@ -175,12 +250,16 @@ export default function Step3SpecificData() {
 
               {/* Disposición */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  className="block text-theme-sm font-theme-medium mb-1"
+                  style={{ color: "var(--color-text-secondary)" }}
+                >
                   Disposición *
                 </label>
                 <select
+                  aria-label="Arrangement Select"
                   {...register("arrangement", { required: "Requerido" })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="parametrization-input"
                 >
                   <option value="">Seleccionar disposición</option>
                   <option value="L">L (En línea)</option>
@@ -190,7 +269,10 @@ export default function Step3SpecificData() {
                   <option value="E">E</option>
                 </select>
                 {errors.arrangement && (
-                  <span className="text-red-500 text-xs mt-1">
+                  <span
+                    className="text-theme-xs mt-1 block"
+                    style={{ color: "var(--color-error)" }}
+                  >
                     {errors.arrangement.message}
                   </span>
                 )}
@@ -198,12 +280,16 @@ export default function Step3SpecificData() {
 
               {/* Tracción */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  className="block text-theme-sm font-theme-medium mb-1"
+                  style={{ color: "var(--color-text-secondary)" }}
+                >
                   Tracción
                 </label>
                 <select
+                  aria-label="Traction Select"
                   {...register("traction")}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="parametrization-input"
                 >
                   <option value="">Seleccionar tracción</option>
                   <option value="4x2">4x2</option>
@@ -217,31 +303,42 @@ export default function Step3SpecificData() {
               {/* Consumo de combustible */}
               <div className="grid grid-cols-[1fr_auto] gap-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     Consumo de Combustible *
                   </label>
                   <input
+                    aria-label="Fuel Consumption Input"
                     type="number"
                     step="0.1"
                     {...register("fuelConsumption", { required: "Requerido" })}
                     placeholder="Valor"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   />
                   {errors.fuelConsumption && (
-                    <span className="text-red-500 text-xs mt-1">
+                    <span
+                      className="text-theme-xs mt-1 block"
+                      style={{ color: "var(--color-error)" }}
+                    >
                       {errors.fuelConsumption.message}
                     </span>
                   )}
                 </div>
                 <div className="w-24">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     &nbsp;
                   </label>
                   <select
+                    aria-label="Fuel Consumption Unit Select"
                     {...register("fuelConsumptionUnit", {
                       required: "Requerido",
                     })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   >
                     <option value="L/h">L/h</option>
                     <option value="km/L">km/L</option>
@@ -252,12 +349,16 @@ export default function Step3SpecificData() {
 
               {/* Sistema de transmisión */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  className="block text-theme-sm font-theme-medium mb-1"
+                  style={{ color: "var(--color-text-secondary)" }}
+                >
                   Sistema de Transmisión *
                 </label>
                 <select
+                  aria-label="Transmission System Select"
                   {...register("transmissionSystem", { required: "Requerido" })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="parametrization-input"
                 >
                   <option value="">Seleccionar transmisión</option>
                   <option value="manual">Manual</option>
@@ -267,7 +368,10 @@ export default function Step3SpecificData() {
                   <option value="other">Otro</option>
                 </select>
                 {errors.transmissionSystem && (
-                  <span className="text-red-500 text-xs mt-1">
+                  <span
+                    className="text-theme-xs mt-1 block"
+                    style={{ color: "var(--color-error)" }}
+                  >
                     {errors.transmissionSystem.message}
                   </span>
                 )}
@@ -278,36 +382,50 @@ export default function Step3SpecificData() {
       </div>
 
       {/* Capacidad y Rendimiento */}
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <div
+        className="rounded-theme-lg overflow-hidden"
+        style={{ border: `1px solid var(--color-border)` }}
+      >
         <SectionHeader
           title="Capacidad y Rendimiento"
           sectionKey="capacityPerformance"
           isExpanded={expandedSections.capacityPerformance}
         />
         {expandedSections.capacityPerformance && (
-          <div className="p-4 space-y-4 bg-white">
+          <div
+            className="p-4 space-y-4"
+            style={{ backgroundColor: "var(--color-background)" }}
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Capacidad del tanque */}
               <div className="grid grid-cols-[1fr_auto] gap-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     Capacidad del Tanque
                   </label>
                   <input
+                    aria-label="Tank Capacity Input"
                     type="number"
                     step="0.1"
                     {...register("tankCapacity")}
                     placeholder="Valor"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   />
                 </div>
                 <div className="w-24">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     &nbsp;
                   </label>
                   <select
+                    aria-label="Tank Capacity Unit Select"
                     {...register("tankCapacityUnit")}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   >
                     <option value="L">L</option>
                     <option value="gal">Gal</option>
@@ -318,24 +436,32 @@ export default function Step3SpecificData() {
               {/* Capacidad de carga */}
               <div className="grid grid-cols-[1fr_auto] gap-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     Capacidad de Carga
                   </label>
                   <input
+                    aria-label="Carrying Capacity Input"
                     type="number"
                     step="0.1"
                     {...register("carryingCapacity")}
                     placeholder="Valor"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   />
                 </div>
                 <div className="w-24">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     &nbsp;
                   </label>
                   <select
+                    aria-label="Carrying Capacity Unit Select"
                     {...register("carryingCapacityUnit")}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   >
                     <option value="ton">Ton</option>
                     <option value="kg">Kg</option>
@@ -347,24 +473,32 @@ export default function Step3SpecificData() {
               {/* Fuerza de tiro */}
               <div className="grid grid-cols-[1fr_auto] gap-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     Fuerza de Tiro
                   </label>
                   <input
+                    aria-label="Draft Force Input"
                     type="number"
                     step="0.1"
                     {...register("draftForce")}
                     placeholder="Valor"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   />
                 </div>
                 <div className="w-24">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     &nbsp;
                   </label>
                   <select
+                    aria-label="Draft Force Unit Select"
                     {...register("draftForceUnit")}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   >
                     <option value="kN">kN</option>
                     <option value="lbf">lbf</option>
@@ -375,31 +509,42 @@ export default function Step3SpecificData() {
               {/* Peso operativo */}
               <div className="grid grid-cols-[1fr_auto] gap-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     Peso Operativo *
                   </label>
                   <input
+                    aria-label="Operating Weight Input"
                     type="number"
                     step="0.1"
                     {...register("operatingWeight", { required: "Requerido" })}
                     placeholder="Valor"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   />
                   {errors.operatingWeight && (
-                    <span className="text-red-500 text-xs mt-1">
+                    <span
+                      className="text-theme-xs mt-1 block"
+                      style={{ color: "var(--color-error)" }}
+                    >
                       {errors.operatingWeight.message}
                     </span>
                   )}
                 </div>
                 <div className="w-24">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     &nbsp;
                   </label>
                   <select
+                    aria-label="Operating Weight Unit Select"
                     {...register("operatingWeightUnit", {
                       required: "Requerido",
                     })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   >
                     <option value="kg">Kg</option>
                     <option value="ton">Ton</option>
@@ -411,29 +556,40 @@ export default function Step3SpecificData() {
               {/* Velocidad máxima */}
               <div className="grid grid-cols-[1fr_auto] gap-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     Velocidad Máxima *
                   </label>
                   <input
+                    aria-label="Max Speed Input"
                     type="number"
                     step="0.1"
                     {...register("maxSpeed", { required: "Requerido" })}
                     placeholder="Valor"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   />
                   {errors.maxSpeed && (
-                    <span className="text-red-500 text-xs mt-1">
+                    <span
+                      className="text-theme-xs mt-1 block"
+                      style={{ color: "var(--color-error)" }}
+                    >
                       {errors.maxSpeed.message}
                     </span>
                   )}
                 </div>
                 <div className="w-28">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     &nbsp;
                   </label>
                   <select
+                    aria-label="Max Speed Unit Select"
                     {...register("maxSpeedUnit", { required: "Requerido" })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   >
                     <option value="km/h">Km/h</option>
                     <option value="mph">mph</option>
@@ -444,23 +600,31 @@ export default function Step3SpecificData() {
               {/* Altitud máxima */}
               <div className="grid grid-cols-[1fr_auto] gap-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     Altitud Máxima de Operación
                   </label>
                   <input
+                    aria-label="Max Operating Altitude Input"
                     type="number"
                     {...register("maxOperatingAltitude")}
                     placeholder="Valor"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   />
                 </div>
                 <div className="w-28">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     &nbsp;
                   </label>
                   <select
+                    aria-label="Max Operating Altitude Unit Select"
                     {...register("maxOperatingAltitudeUnit")}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   >
                     <option value="msnm">msnm</option>
                     <option value="ft">ft</option>
@@ -470,23 +634,38 @@ export default function Step3SpecificData() {
 
               {/* Rendimiento RPM */}
               <div className="col-span-full">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  className="block text-theme-sm font-theme-medium mb-1"
+                  style={{ color: "var(--color-text-secondary)" }}
+                >
                   Rendimiento (RPM)
                 </label>
                 <div className="grid grid-cols-[auto_1fr_auto_1fr] gap-4 items-center">
-                  <span className="text-sm text-gray-600">Mín:</span>
+                  <span
+                    className="text-theme-sm"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
+                    Mín:
+                  </span>
                   <input
+                    aria-label="Performance Min Input"
                     type="number"
                     {...register("performanceMin")}
                     placeholder="Valor"
-                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   />
-                  <span className="text-sm text-gray-600">Máx:</span>
+                  <span
+                    className="text-theme-sm"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
+                    Máx:
+                  </span>
                   <input
+                    aria-label="Performance Max Input"
                     type="number"
                     {...register("performanceMax")}
                     placeholder="Valor"
-                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   />
                 </div>
               </div>
@@ -496,29 +675,42 @@ export default function Step3SpecificData() {
       </div>
 
       {/* Dimensiones y Peso */}
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <div
+        className="rounded-theme-lg overflow-hidden"
+        style={{ border: `1px solid var(--color-border)` }}
+      >
         <SectionHeader
           title="Dimensiones y Peso"
           sectionKey="dimensionsWeight"
           isExpanded={expandedSections.dimensionsWeight}
         />
         {expandedSections.dimensionsWeight && (
-          <div className="p-4 space-y-4 bg-white">
+          <div
+            className="p-4 space-y-4"
+            style={{ backgroundColor: "var(--color-background)" }}
+          >
             <div className="space-y-4">
               {/* Unidad de dimensiones */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  className="block text-theme-sm font-theme-medium mb-1"
+                  style={{ color: "var(--color-text-secondary)" }}
+                >
                   Unidad de Dimensiones *
                 </label>
                 <select
+                  aria-label="Dimensions Unit Select"
                   {...register("dimensionsUnit", { required: "Requerido" })}
-                  className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="parametrization-input w-32"
                 >
                   <option value="m">m</option>
                   <option value="ft">ft</option>
                 </select>
                 {errors.dimensionsUnit && (
-                  <span className="text-red-500 text-xs mt-1">
+                  <span
+                    className="text-theme-xs mt-1 block"
+                    style={{ color: "var(--color-error)" }}
+                  >
                     {errors.dimensionsUnit.message}
                   </span>
                 )}
@@ -527,54 +719,75 @@ export default function Step3SpecificData() {
               {/* Dimensiones */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     Ancho *
                   </label>
                   <input
+                    aria-label="Width Input"
                     type="number"
                     step="0.01"
                     {...register("width", { required: "Requerido" })}
                     placeholder="Valor"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   />
                   {errors.width && (
-                    <span className="text-red-500 text-xs mt-1">
+                    <span
+                      className="text-theme-xs mt-1 block"
+                      style={{ color: "var(--color-error)" }}
+                    >
                       {errors.width.message}
                     </span>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     Largo *
                   </label>
                   <input
+                    aria-label="Length Input"
                     type="number"
                     step="0.01"
                     {...register("length", { required: "Requerido" })}
                     placeholder="Valor"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   />
                   {errors.length && (
-                    <span className="text-red-500 text-xs mt-1">
+                    <span
+                      className="text-theme-xs mt-1 block"
+                      style={{ color: "var(--color-error)" }}
+                    >
                       {errors.length.message}
                     </span>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     Alto *
                   </label>
                   <input
+                    aria-label="Height Input"
                     type="number"
                     step="0.01"
                     {...register("height", { required: "Requerido" })}
                     placeholder="Valor"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   />
                   {errors.height && (
-                    <span className="text-red-500 text-xs mt-1">
+                    <span
+                      className="text-theme-xs mt-1 block"
+                      style={{ color: "var(--color-error)" }}
+                    >
                       {errors.height.message}
                     </span>
                   )}
@@ -584,29 +797,40 @@ export default function Step3SpecificData() {
               {/* Peso neto */}
               <div className="grid grid-cols-[1fr_auto] gap-2 max-w-sm">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     Peso Neto *
                   </label>
                   <input
+                    aria-label="Net Weight Input"
                     type="number"
                     step="0.1"
                     {...register("netWeight", { required: "Requerido" })}
                     placeholder="Valor"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   />
                   {errors.netWeight && (
-                    <span className="text-red-500 text-xs mt-1">
+                    <span
+                      className="text-theme-xs mt-1 block"
+                      style={{ color: "var(--color-error)" }}
+                    >
                       {errors.netWeight.message}
                     </span>
                   )}
                 </div>
                 <div className="w-24">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     &nbsp;
                   </label>
                   <select
+                    aria-label="Net Weight Unit Select"
                     {...register("netWeightUnit", { required: "Requerido" })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   >
                     <option value="kg">Kg</option>
                     <option value="ton">Ton</option>
@@ -620,23 +844,33 @@ export default function Step3SpecificData() {
       </div>
 
       {/* Sistemas Auxiliares e Hidráulicos */}
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <div
+        className="rounded-theme-lg overflow-hidden"
+        style={{ border: `1px solid var(--color-border)` }}
+      >
         <SectionHeader
           title="Sistemas Auxiliares e Hidráulicos"
           sectionKey="auxiliaryHydraulic"
           isExpanded={expandedSections.auxiliaryHydraulic}
         />
         {expandedSections.auxiliaryHydraulic && (
-          <div className="p-4 space-y-4 bg-white">
+          <div
+            className="p-4 space-y-4"
+            style={{ backgroundColor: "var(--color-background)" }}
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Climatización */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  className="block text-theme-sm font-theme-medium mb-1"
+                  style={{ color: "var(--color-text-secondary)" }}
+                >
                   Climatización
                 </label>
                 <select
+                  aria-label="Air Conditioning Select"
                   {...register("airConditioning")}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="parametrization-input"
                 >
                   <option value="">Seleccionar tipo</option>
                   <option value="heating">Calefacción</option>
@@ -649,24 +883,32 @@ export default function Step3SpecificData() {
               {/* Consumo climatización */}
               <div className="grid grid-cols-[1fr_auto] gap-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     Consumo de Climatización
                   </label>
                   <input
+                    aria-label="Air Conditioning Consumption Input"
                     type="number"
                     step="0.1"
                     {...register("airConditioningConsumption")}
                     placeholder="Valor"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   />
                 </div>
                 <div className="w-28">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     &nbsp;
                   </label>
                   <select
+                    aria-label="Air Conditioning Consumption Unit Select"
                     {...register("airConditioningConsumptionUnit")}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   >
                     <option value="kWh">kWh</option>
                     <option value="L/h">L/h</option>
@@ -678,24 +920,32 @@ export default function Step3SpecificData() {
               {/* Presión hidráulica */}
               <div className="grid grid-cols-[1fr_auto] gap-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     Presión Hidráulica Máxima
                   </label>
                   <input
+                    aria-label="Max Hydraulic Pressure Input"
                     type="number"
                     step="0.1"
                     {...register("maxHydraulicPressure")}
                     placeholder="Valor"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   />
                 </div>
                 <div className="w-24">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     &nbsp;
                   </label>
                   <select
+                    aria-label="Max Hydraulic Pressure Unit Select"
                     {...register("maxHydraulicPressureUnit")}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   >
                     <option value="bar">bar</option>
                     <option value="psi">psi</option>
@@ -707,24 +957,32 @@ export default function Step3SpecificData() {
               {/* Caudal bomba hidráulica */}
               <div className="grid grid-cols-[1fr_auto] gap-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     Caudal de Bomba Hidráulica
                   </label>
                   <input
+                    aria-label="Hydraulic Pump Flow Rate Input"
                     type="number"
                     step="0.1"
                     {...register("hydraulicPumpFlowRate")}
                     placeholder="Valor"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   />
                 </div>
                 <div className="w-28">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     &nbsp;
                   </label>
                   <select
+                    aria-label="Hydraulic Pump Flow Rate Unit Select"
                     {...register("hydraulicPumpFlowRateUnit")}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   >
                     <option value="L/min">L/min</option>
                     <option value="gal/min">gal/min</option>
@@ -735,24 +993,32 @@ export default function Step3SpecificData() {
               {/* Capacidad depósito hidráulico */}
               <div className="grid grid-cols-[1fr_auto] gap-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     Capacidad del Depósito Hidráulico
                   </label>
                   <input
+                    aria-label="Hydraulic Reservoir Capacity Input"
                     type="number"
                     step="0.1"
                     {...register("hydraulicReservoirCapacity")}
                     placeholder="Valor"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   />
                 </div>
                 <div className="w-24">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    className="block text-theme-sm font-theme-medium mb-1"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
                     &nbsp;
                   </label>
                   <select
+                    aria-label="Hydraulic Reservoir Capacity Unit Select"
                     {...register("hydraulicReservoirCapacityUnit")}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="parametrization-input"
                   >
                     <option value="L">L</option>
                     <option value="gal">Gal</option>
@@ -765,23 +1031,33 @@ export default function Step3SpecificData() {
       </div>
 
       {/* Normatividad y Seguridad */}
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <div
+        className="rounded-theme-lg overflow-hidden"
+        style={{ border: `1px solid var(--color-border)` }}
+      >
         <SectionHeader
           title="Normatividad y Seguridad"
           sectionKey="regulationsSafety"
           isExpanded={expandedSections.regulationsSafety}
         />
         {expandedSections.regulationsSafety && (
-          <div className="p-4 space-y-4 bg-white">
+          <div
+            className="p-4 space-y-4"
+            style={{ backgroundColor: "var(--color-background)" }}
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Nivel de emisiones */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  className="block text-theme-sm font-theme-medium mb-1"
+                  style={{ color: "var(--color-text-secondary)" }}
+                >
                   Nivel de Emisiones
                 </label>
                 <select
+                  aria-label="Emission Level Select"
                   {...register("emissionLevel")}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="parametrization-input"
                 >
                   <option value="">Seleccionar nivel</option>
                   <option value="euro1">Euro 1</option>
@@ -801,12 +1077,16 @@ export default function Step3SpecificData() {
 
               {/* Tipo de cabina */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  className="block text-theme-sm font-theme-medium mb-1"
+                  style={{ color: "var(--color-text-secondary)" }}
+                >
                   Tipo de Cabina
                 </label>
                 <select
+                  aria-label="Cabin Type Select"
                   {...register("cabinType")}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="parametrization-input"
                 >
                   <option value="">Seleccionar tipo</option>
                   <option value="open">Abierta</option>
