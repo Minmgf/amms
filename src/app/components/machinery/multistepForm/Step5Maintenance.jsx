@@ -27,7 +27,7 @@ export default function Step5Maintenance() {
   };
 
   return (
-    <div>
+    <div id="step-5-maintenance">
       <h3 className="text-lg font-semibold mb-4 text-black">
         Mantenimiento Periódico
       </h3>
@@ -37,6 +37,7 @@ export default function Step5Maintenance() {
         <div>
           <label className="block text-sm text-gray-600 mb-1">Mantenimiento</label>
           <select
+            aria-label="Maintenance Type Select"
             {...register("maintenance", {
               required: "Debe seleccionar un tipo de mantenimiento",
             })}
@@ -60,6 +61,7 @@ export default function Step5Maintenance() {
           <label className="block text-sm text-gray-600 mb-1">Horas de Uso</label>
           <input
             type="number"
+            aria-label="Usage Hours Input"
             {...register("usageHours", {
               required: "Las horas de uso son requeridas",
               min: { value: 1, message: "Must be greater than 0" },
@@ -76,6 +78,7 @@ export default function Step5Maintenance() {
 
       <button
         type="button"
+        aria-label="Add Button"
         onClick={handleAdd}
         className="px-4 py-1 bg-gray-200 text-gray-700 rounded"
       >
@@ -90,6 +93,7 @@ export default function Step5Maintenance() {
             </span>
             <button
               type="button"
+              aria-label="Delete Button"
               onClick={() => handleDelete(index)}
               className="text-red-500"
             >
