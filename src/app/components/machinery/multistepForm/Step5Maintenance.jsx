@@ -28,20 +28,25 @@ export default function Step5Maintenance() {
 
   return (
     <div id="step-5-maintenance">
-      <h3 className="text-lg font-semibold mb-4 text-black">
+      <h3 className="text-theme-lg font-theme-semibold mb-theme-md text-primary">
         Mantenimiento Periódico
       </h3>
 
       <div className="grid grid-cols-2 gap-6 mb-4">
         {/* Maintenance */}
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Mantenimiento</label>
+          <label 
+            className="block text-theme-sm text-secondary mb-1"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Mantenimiento
+          </label>
           <select
             aria-label="Maintenance Type Select"
             {...register("maintenance", {
               required: "Debe seleccionar un tipo de mantenimiento",
             })}
-            className="w-full border border-gray-300 p-2 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="parametrization-input"
           >
             <option value="">Seleccione un tipo de mantenimiento</option>
             <option value="Oil change">Cambio de Aceite</option>
@@ -50,28 +55,39 @@ export default function Step5Maintenance() {
             <option value="Inspection">Inspección</option>
           </select>
           {errors.maintenance && (
-            <p className="text-red-500 text-sm mt-1">
+            <span 
+              className="text-theme-xs mt-1 block" 
+              style={{ color: 'var(--color-error)' }}
+            >
               {errors.maintenance.message}
-            </p>
+            </span>
           )}
         </div>
 
         {/* Usage Hours */}
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Horas de Uso</label>
+          <label 
+            className="block text-theme-sm text-secondary mb-1"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Horas de Uso
+          </label>
           <input
             type="number"
+            placeholder="Digite el número de horas de uso"
             aria-label="Usage Hours Input"
             {...register("usageHours", {
               required: "Las horas de uso son requeridas",
-              min: { value: 1, message: "Must be greater than 0" },
             })}
-            className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="parametrization-input"
           />
           {errors.usageHours && (
-            <p className="text-red-500 text-sm mt-1">
+            <span 
+              className="text-theme-xs mt-1 block" 
+              style={{ color: 'var(--color-error)' }}
+            >
               {errors.usageHours.message}
-            </p>
+            </span>
           )}
         </div>
       </div>
@@ -80,22 +96,41 @@ export default function Step5Maintenance() {
         type="button"
         aria-label="Add Button"
         onClick={handleAdd}
-        className="px-4 py-1 bg-gray-200 text-gray-700 rounded"
+        className="btn-theme btn-secondary text-theme-sm px-theme-md py-theme-sm rounded-theme-md transition-all duration-200 hover:shadow-md"
+        style={{
+          backgroundColor: 'var(--color-secondary)',
+          color: 'white',
+          border: 'none'
+        }}
       >
         Añadir
       </button>
 
       <div className="mt-4 space-y-2">
         {items.map((item, index) => (
-          <div key={index} className="flex justify-between items-center">
-            <span>
+          <div 
+            key={index} 
+            className="flex justify-between items-center p-theme-sm rounded-theme-md border"
+            style={{
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'var(--color-surface)'
+            }}
+          >
+            <span 
+              className="font-theme text-secondary"
+            >
               {item.maintenance} – {item.usageHours} horas
             </span>
             <button
               type="button"
               aria-label="Delete Button"
               onClick={() => handleDelete(index)}
-              className="text-red-500"
+              className="btn-theme btn-error text-theme-sm px-theme-md py-theme-sm rounded-theme-md transition-all duration-200 hover:shadow-md"
+              style={{
+                backgroundColor: 'var(--color-error)',
+                color: 'white',
+                border: 'none'
+              }}
             >
               Borrar
             </button>
