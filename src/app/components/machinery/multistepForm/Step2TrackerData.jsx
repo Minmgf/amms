@@ -1,10 +1,12 @@
 // Step2TrackerData.jsx
 import { useFormContext } from "react-hook-form";
 import { useState } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function Step2TrackerData() {
   const { register, formState: { errors }, trigger } = useFormContext();
   const [checking, setChecking] = useState(false);
+  const { getCurrentTheme } = useTheme();
 
   // Validación asíncrona contra la BD simulando un endpoint
   const validateDuplicate = async (field, value) => {
@@ -124,8 +126,7 @@ export default function Step2TrackerData() {
               })}
               onBlur={() => trigger("engineNumber")}
               placeholder="Ingrese el número de motor"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none 
-                         focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              className="parametrization-input"
             />
             {errors.engineNumber && (
               <span className="text-red-500 text-xs mt-1">

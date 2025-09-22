@@ -1,5 +1,6 @@
 import { useFormContext } from "react-hook-form";
 import { useState, useRef } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function Step1GeneralData({ 
   countriesList = [], 
@@ -13,6 +14,7 @@ export default function Step1GeneralData({
   const [fileName, setFileName] = useState("");
   const [fileSize, setFileSize] = useState("");
   const fileInputRef = useRef(null);
+  const { getCurrentTheme } = useTheme();
   
   const watchedPhoto = watch("photo");
 
@@ -56,25 +58,44 @@ export default function Step1GeneralData({
 
   return (
     <div id="step-1-genereal-data">
-      <h3 className="text-lg font-semibold mb-4 text-black">Ficha técnica general</h3>
+      <h3 className="text-theme-lg font-theme-semibold mb-theme-md text-primary">
+        Ficha técnica general
+      </h3>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Nombre</label>
+          <label 
+            className="block text-theme-sm text-secondary mb-1"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Nombre
+          </label>
           <input
-            area-label="Name Input"
+            aria-label="Name Input"
             {...register("name")}
-            className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="parametrization-input"
           />
-          {errors.name && <span className="text-red-500 text-xs">{errors.name.message}</span>}
+          {errors.name && (
+            <span 
+              className="text-theme-xs mt-1 block" 
+              style={{ color: 'var(--color-error)' }}
+            >
+              {errors.name.message}
+            </span>
+          )}
         </div>
 
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Año de fabricación</label>
+          <label 
+            className="block text-theme-sm text-secondary mb-1"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Año de fabricación
+          </label>
           <select
-            area-label="Manufacture Year Select"
+            aria-label="Manufacture Year Select"
             {...register("manufactureYear")}
-            className="w-full border border-gray-300 p-2 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="parametrization-input"
           >
             <option value="">Seleccione año...</option>
             {Array.from({ length: 30 }, (_, i) => {
@@ -86,25 +107,49 @@ export default function Step1GeneralData({
               );
             })}
           </select>
-          {errors.manufactureYear && <span className="text-red-500 text-xs">{errors.manufactureYear.message}</span>}
+          {errors.manufactureYear && (
+            <span 
+              className="text-theme-xs mt-1 block" 
+              style={{ color: 'var(--color-error)' }}
+            >
+              {errors.manufactureYear.message}
+            </span>
+          )}
         </div>
 
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Número de serie</label>
+          <label 
+            className="block text-theme-sm text-secondary mb-1"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Número de serie
+          </label>
           <input
-            area-label="Serial Number Input"
+            aria-label="Serial Number Input"
             {...register("serialNumber")}
-            className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="parametrization-input"
           />
-          {errors.serialNumber && <span className="text-red-500 text-xs">{errors.serialNumber.message}</span>}
+          {errors.serialNumber && (
+            <span 
+              className="text-theme-xs mt-1 block" 
+              style={{ color: 'var(--color-error)' }}
+            >
+              {errors.serialNumber.message}
+            </span>
+          )}
         </div>
 
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Tipo de maquinaria</label>
+          <label 
+            className="block text-theme-sm text-secondary mb-1"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Tipo de maquinaria
+          </label>
           <select
-            area-label="Machinery Type Select"
+            aria-label="Machinery Type Select"
             {...register("machineryType")}
-            className="w-full border border-gray-300 p-2 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="parametrization-input"
           >
             <option value="">Seleccione un tipo...</option>
             <option value="tractor">Tractor</option>
@@ -114,15 +159,27 @@ export default function Step1GeneralData({
             <option value="loader">Loader</option>
             <option value="grader">Grader</option>
           </select>
-          {errors.machineryType && <span className="text-red-500 text-xs">{errors.machineryType.message}</span>}
+          {errors.machineryType && (
+            <span 
+              className="text-theme-xs mt-1 block" 
+              style={{ color: 'var(--color-error)' }}
+            >
+              {errors.machineryType.message}
+            </span>
+          )}
         </div>
 
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Marca</label>
+          <label 
+            className="block text-theme-sm text-secondary mb-1"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Marca
+          </label>
           <select
-            area-label="Brand Select"
+            aria-label="Brand Select"
             {...register("brand")}
-            className="w-full border border-gray-300 p-2 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="parametrization-input"
           >
             <option value="">Seleccione marca...</option>
             <option value="caterpillar">Caterpillar</option>
@@ -132,51 +189,99 @@ export default function Step1GeneralData({
             <option value="case">Case</option>
             <option value="new-holland">New Holland</option>
           </select>
-          {errors.brand && <span className="text-red-500 text-xs">{errors.brand.message}</span>}
+          {errors.brand && (
+            <span 
+              className="text-theme-xs mt-1 block" 
+              style={{ color: 'var(--color-error)' }}
+            >
+              {errors.brand.message}
+            </span>
+          )}
         </div>
 
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Modelo</label>
+          <label 
+            className="block text-theme-sm text-secondary mb-1"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Modelo
+          </label>
           <input
-            area-label="Model Input"
+            aria-label="Model Input"
             {...register("model")}
             placeholder="Enter model"
-            className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="parametrization-input"
           />
-          {errors.model && <span className="text-red-500 text-xs">{errors.model.message}</span>}
+          {errors.model && (
+            <span 
+              className="text-theme-xs mt-1 block" 
+              style={{ color: 'var(--color-error)' }}
+            >
+              {errors.model.message}
+            </span>
+          )}
         </div>
 
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Subpartida arancelaria</label>
+          <label 
+            className="block text-theme-sm text-secondary mb-1"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Subpartida arancelaria
+          </label>
           <input
-            area-label="Tariff Input"
+            aria-label="Tariff Input"
             {...register("tariff")}
-            className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="parametrization-input"
           />
-          {errors.tariff && <span className="text-red-500 text-xs">{errors.tariff.message}</span>}
+          {errors.tariff && (
+            <span 
+              className="text-theme-xs mt-1 block" 
+              style={{ color: 'var(--color-error)' }}
+            >
+              {errors.tariff.message}
+            </span>
+          )}
         </div>
 
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Categoría de maquinaria</label>
+          <label 
+            className="block text-theme-sm text-secondary mb-1"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Categoría de maquinaria
+          </label>
           <select
-            area-label="Machinery Category Select"
+            aria-label="Machinery Category Select"
             {...register("category")}
-            className="w-full border border-gray-300 p-2 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="parametrization-input"
           >
             <option value="">Seleccione categoría...</option>
             <option value="heavy">Heavy</option>
             <option value="light">Light</option>
             <option value="medium">Medium</option>
           </select>
-          {errors.category && <span className="text-red-500 text-xs">{errors.category.message}</span>}
+          {errors.category && (
+            <span 
+              className="text-theme-xs mt-1 block" 
+              style={{ color: 'var(--color-error)' }}
+            >
+              {errors.category.message}
+            </span>
+          )}
         </div>
 
         <div>
-          <label className="block text-sm text-gray-600 mb-1">País</label>
+          <label 
+            className="block text-theme-sm text-secondary mb-1"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            País
+          </label>
           <select
-            area-label="Country Select"
+            aria-label="Country Select"
             {...register("country")}
-            className="w-full border border-gray-300 p-2 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="parametrization-input"
           >
             <option value="">Seleccione un país...</option>
             {countriesList.map((country) => (
@@ -185,16 +290,32 @@ export default function Step1GeneralData({
               </option>
             ))}
           </select>
-          {errors.country && <span className="text-red-500 text-xs">{errors.country.message}</span>}
+          {errors.country && (
+            <span 
+              className="text-theme-xs mt-1 block" 
+              style={{ color: 'var(--color-error)' }}
+            >
+              {errors.country.message}
+            </span>
+          )}
         </div>
 
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Región</label>
+          <label 
+            className="block text-theme-sm text-secondary mb-1"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Región
+          </label>
           <select
-            area-label="Department Select"
+            aria-label="Department Select"
             {...register("department")}
             disabled={isLoadingStates || statesList.length === 0}
-            className="w-full border border-gray-300 p-2 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className="parametrization-input disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              opacity: (isLoadingStates || statesList.length === 0) ? 0.5 : 1,
+              cursor: (isLoadingStates || statesList.length === 0) ? 'not-allowed' : 'default'
+            }}
           >
             <option value="">
               {isLoadingStates 
@@ -210,16 +331,32 @@ export default function Step1GeneralData({
               </option>
             ))}
           </select>
-          {errors.department && <span className="text-red-500 text-xs">{errors.department.message}</span>}
+          {errors.department && (
+            <span 
+              className="text-theme-xs mt-1 block" 
+              style={{ color: 'var(--color-error)' }}
+            >
+              {errors.department.message}
+            </span>
+          )}
         </div>
 
         <div>
-          <label className="block text-sm text-gray-600 mb-1">City</label>
+          <label 
+            className="block text-theme-sm text-secondary mb-1"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            City
+          </label>
           <select
-            area-label="City Select"
+            aria-label="City Select"
             {...register("city")}
             disabled={isLoadingCities || citiesList.length === 0}
-            className="w-full border border-gray-300 p-2 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className="parametrization-input disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              opacity: (isLoadingCities || citiesList.length === 0) ? 0.5 : 1,
+              cursor: (isLoadingCities || citiesList.length === 0) ? 'not-allowed' : 'default'
+            }}
           >
             <option value="">
               {isLoadingCities 
@@ -235,33 +372,57 @@ export default function Step1GeneralData({
               </option>
             ))}
           </select>
-          {errors.city && <span className="text-red-500 text-xs">{errors.city.message}</span>}
+          {errors.city && (
+            <span 
+              className="text-theme-xs mt-1 block" 
+              style={{ color: 'var(--color-error)' }}
+            >
+              {errors.city.message}
+            </span>
+          )}
         </div>
 
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Telemetría</label>
+          <label 
+            className="block text-theme-sm text-secondary mb-1"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Telemetría
+          </label>
           <select
-            area-label="Telemetry Select"
+            aria-label="Telemetry Select"
             {...register("telemetry")}
-            className="w-full border border-gray-300 p-2 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="parametrization-input"
           >
             <option value="">Selecciona...</option>
             <option value="yes">Yes</option>
             <option value="no">No</option>
           </select>
-          {errors.telemetry && <span className="text-red-500 text-xs">{errors.telemetry.message}</span>}
+          {errors.telemetry && (
+            <span 
+              className="text-theme-xs mt-1 block" 
+              style={{ color: 'var(--color-error)' }}
+            >
+              {errors.telemetry.message}
+            </span>
+          )}
         </div>
       </div>
 
       {/* File Upload */}
-      <div className="mt-6">
-        <label className="block text-sm text-gray-600 mb-2">Foto</label>
+      <div className="mt-theme-lg">
+        <label 
+          className="block text-theme-sm text-secondary mb-2"
+          style={{ color: 'var(--color-text-secondary)' }}
+        >
+          Foto
+        </label>
         
         {!fileName ? (
           // Mostrar zona de drop cuando no hay archivo
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-500 bg-gray-50 hover:bg-gray-100 transition-colors">
+          <div className="group">
             <input
-              area-label="Photo Input"
+              aria-label="Photo Input"
               type="file"
               ref={fileInputRef}
               onChange={handleFileChange}
@@ -269,27 +430,65 @@ export default function Step1GeneralData({
               className="hidden"
               id="photoUpload"
             />
-            <label htmlFor="photoUpload" className="cursor-pointer flex flex-col items-center">
-              <div className="mb-4">
-                <svg className="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                  />
-                </svg>
-              </div>
-              <div>
-                <span className="text-gray-600 font-medium">Sube un archivo o arrastra y suelta</span>
-                <br />
-                <span className="text-sm text-gray-400">PNG, JPG, GIF hasta 10 MB</span>
+            <label 
+              htmlFor="photoUpload" 
+              className="block border-2 border-dashed rounded-theme-lg p-theme-xl text-center transition-all duration-300 cursor-pointer hover:shadow-md"
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text-secondary)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--color-hover)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--color-surface)';
+              }}
+            >
+              <div className="flex flex-col items-center">
+                <div className="mb-theme-md">
+                  <svg 
+                    className="w-12 h-12" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                    style={{ color: 'var(--color-border)' }}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <span 
+                    className="font-theme-medium"
+                    style={{ color: 'var(--color-text)' }}
+                  >
+                    Sube un archivo o arrastra y suelta
+                  </span>
+                  <br />
+                  <span 
+                    className="text-theme-sm"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    PNG, JPG, GIF hasta 10 MB
+                  </span>
+                </div>
               </div>
             </label>
           </div>
         ) : (
           // Mostrar archivo cargado
-          <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+          <div 
+            className="border rounded-theme-lg p-theme-md"
+            style={{
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'var(--color-surface)'
+            }}
+          >
             <div className="flex items-start space-x-4">
               {/* Preview de la imagen */}
               {previewImage && (
@@ -297,7 +496,8 @@ export default function Step1GeneralData({
                   <img 
                     src={previewImage} 
                     alt="Preview" 
-                    className="w-16 h-16 object-cover rounded border"
+                    className="w-16 h-16 object-cover rounded-theme-md border"
+                    style={{ borderColor: 'var(--color-border)' }}
                   />
                 </div>
               )}
@@ -306,10 +506,16 @@ export default function Step1GeneralData({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-900 truncate">
+                    <p 
+                      className="text-theme-sm font-theme-medium truncate"
+                      style={{ color: 'var(--color-text)' }}
+                    >
                       {fileName}
                     </p>
-                    <p className="text-sm text-gray-500">
+                    <p 
+                      className="text-theme-sm"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
                       {fileSize} MB
                     </p>
                   </div>
@@ -317,37 +523,58 @@ export default function Step1GeneralData({
                   {/* Botones de acción */}
                   <div className="flex items-center space-x-2">
                     <button
-                      area-label="Change Button"
+                      aria-label="Change Button"
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      className="btn-theme btn-secondary text-theme-sm px-theme-md py-theme-sm rounded-theme-md transition-all duration-200 hover:shadow-md"
+                      style={{
+                        backgroundColor: 'var(--color-secondary)',
+                        color: 'white',
+                        border: 'none'
+                      }}
                     >
                       Cambiar
                     </button>
                     <button
-                      area-label="Remove Button"
+                      aria-label="Remove Button"
                       type="button"
                       onClick={removeFile}
-                      className="text-red-600 hover:text-red-800 text-sm font-medium"
+                      className="btn-theme btn-error text-theme-sm px-theme-md py-theme-sm rounded-theme-md transition-all duration-200 hover:shadow-md"
+                      style={{
+                        backgroundColor: 'var(--color-error)',
+                        color: 'white',
+                        border: 'none'
+                      }}
                     >
                       Eliminar
                     </button>
                   </div>
                 </div>
                 
-                {/* Barra de progreso (opcional - siempre completa ya que el archivo se carga instantáneamente) */}
+                {/* Barra de progreso */}
                 <div className="mt-2">
-                  <div className="bg-green-100 rounded-full h-1.5">
-                    <div className="bg-green-500 h-1.5 rounded-full w-full"></div>
+                  <div 
+                    className="rounded-full h-1.5"
+                    style={{ backgroundColor: 'var(--color-surface)' }}
+                  >
+                    <div 
+                      className="h-1.5 rounded-full w-full transition-all duration-300"
+                      style={{ backgroundColor: 'var(--color-success)' }}
+                    ></div>
                   </div>
-                  <p className="text-xs text-green-600 mt-1">Carga completada</p>
+                  <p 
+                    className="text-theme-xs mt-1"
+                    style={{ color: 'var(--color-success)' }}
+                  >
+                    Carga completada
+                  </p>
                 </div>
               </div>
             </div>
 
             {/* Input oculto para cambiar archivo */}
             <input
-              area-label="Hidden File Input"
+              aria-label="Hidden File Input"
               type="file"
               ref={fileInputRef}
               onChange={handleFileChange}
@@ -357,7 +584,14 @@ export default function Step1GeneralData({
           </div>
         )}
         
-        {errors.photo && <span className="text-red-500 text-xs">{errors.photo.message}</span>}
+        {errors.photo && (
+          <span 
+            className="text-theme-xs mt-1 block" 
+            style={{ color: 'var(--color-error)' }}
+          >
+            {errors.photo.message}
+          </span>
+        )}
       </div>
     </div>
   );
