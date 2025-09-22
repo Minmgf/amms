@@ -225,8 +225,9 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
 
   // Step Indicator Component con clases temáticas
   const StepIndicator = ({ steps, currentStep }) => (
-    <div className="mb-8">
-      <div className="flex items-center justify-between">
+    <div className="mb-4 sm:mb-6 md:mb-8">
+      {/* Vista desktop y tablet - horizontal */}
+      <div className="hidden sm:flex items-center justify-between">
         {steps.map((stepItem, index) => {
           const isCompleted = completedSteps.includes(index);
           const isActive = currentStep === index;
@@ -247,7 +248,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
               type="button" 
                   onClick={() => goToStep(index)}
                   disabled={!isCompleted && index !== 0}
-                  className={`w-8 h-8 flex items-center justify-center rounded-full text-theme-sm font-theme-bold border-2 transition-all duration-300 ${
+                  className={`w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-xs sm:text-theme-sm font-theme-bold border-2 transition-all duration-300 ${
                     isActive
                       ? "bg-accent text-white" 
                       : isCompleted
@@ -261,7 +262,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
                   }}
                 >
                   {isCompleted && !isActive ? (
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 20 20">
                       <path
                         fillRule="evenodd"
                         d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -273,9 +274,9 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
                   )}
                 </button>
 
-                <div className="mt-2 text-center">
+                <div className="mt-1 sm:mt-2 text-center max-w-20 sm:max-w-none">
                   <div
-                    className={`text-theme-xs font-theme-medium ${
+                    className={`text-xs sm:text-theme-xs font-theme-medium ${
                       status === "En progreso"
                         ? "text-accent"
                         : status === "Completo"
@@ -290,10 +291,11 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
                           : 'var(--color-text-secondary)'
                     }}
                   >
-                    {stepItem.name}
+                    <span className="hidden md:block">{stepItem.name}</span>
+                    <span className="block md:hidden text-center leading-tight">{stepItem.name.split(' ').slice(0, 2).join(' ')}</span>
                   </div>
                   <div
-                    className={`text-theme-xs mt-1 ${
+                    className={`text-xs sm:text-theme-xs mt-0.5 sm:mt-1 ${
                       status === "En progreso"
                         ? "text-accent"
                         : status === "Completo"
@@ -315,7 +317,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
 
               {index < steps.length - 1 && (
                 <div
-                  className="h-0.5 w-16 mx-4 transition-colors duration-300"
+                  className="h-0.5 w-8 sm:w-12 md:w-16 mx-2 sm:mx-4 transition-colors duration-300"
                   style={{
                     backgroundColor: isCompleted ? 'var(--color-success)' : 'var(--color-border)'
                   }}
@@ -325,6 +327,66 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
           );
         })}
       </div>
+
+      {/* Vista móvil - simplificada */}
+      <div className="block sm:hidden">
+        <div className="flex items-center justify-center space-x-1">
+          {steps.map((stepItem, index) => {
+            const isCompleted = completedSteps.includes(index);
+            const isActive = currentStep === index;
+
+            return (
+              <div key={stepItem.id} className="flex items-center">
+                <button
+                  type="button"
+                  onClick={() => goToStep(index)}
+                  disabled={!isCompleted && index !== 0}
+                  className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-theme-bold border-2 transition-all duration-300 ${
+                    isActive
+                      ? "bg-accent text-white" 
+                      : isCompleted
+                        ? "bg-success text-white border-success" 
+                        : "bg-surface text-secondary border-primary"
+                    } ${!isCompleted && index !== 0 ? "cursor-not-allowed opacity-50" : ""}`}
+                  style={{
+                    backgroundColor: isActive ? 'var(--color-accent)' : isCompleted ? 'var(--color-success)' : 'var(--color-surface)',
+                    borderColor: isActive ? 'var(--color-accent)' : isCompleted ? 'var(--color-success)' : 'var(--color-border)',
+                    color: isActive || isCompleted ? 'white' : 'var(--color-text-secondary)'
+                  }}
+                >
+                  {isCompleted && !isActive ? (
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  ) : (
+                    stepItem.id
+                  )}
+                </button>
+                {index < steps.length - 1 && (
+                  <div
+                    className="h-0.5 w-4 mx-1 transition-colors duration-300"
+                    style={{
+                      backgroundColor: isCompleted ? 'var(--color-success)' : 'var(--color-border)'
+                    }}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <div className="text-center mt-2">
+          <div className="text-sm font-theme-medium text-primary">
+            {steps[currentStep].name}
+          </div>
+          <div className="text-xs text-secondary mt-1">
+            Paso {currentStep + 1} de {steps.length}
+          </div>
+        </div>
+      </div>
     </div>
   );
 
@@ -333,12 +395,12 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
   const isLastStep = step === steps.length - 1;
 
   return (
-    <div className="modal-overlay" style={{ padding: 'var(--spacing-lg)' }}>
+    <div className="modal-overlay" style={{ padding: 'var(--spacing-sm)' }}>
       <div 
         className="modal-theme" 
         style={{ 
-          width: 'auto',
-          minWidth: '800px',
+          width: '100%',
+          minWidth: '280px',
           maxWidth: 'min(95vw, 1200px)', 
           maxHeight: 'min(95vh, 900px)', 
           overflowY: 'auto',
@@ -346,19 +408,18 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
         }}
       >
         <FormProvider {...methods}>
-          <form onSubmit={methods.handleSubmit(onSubmit)} className="p-theme-xl">
+          <form onSubmit={methods.handleSubmit(onSubmit)} className="p-3 sm:p-6 md:p-8 lg:p-theme-xl">
             {/* Header */}
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-theme-xl font-theme-semibold text-primary">
+            <div className="flex justify-between items-center mb-4 sm:mb-6 md:mb-8">
+              <h2 className="text-lg sm:text-xl md:text-theme-xl font-theme-semibold text-primary">
                 Add Machinery
               </h2>
               <button
                 type="button"
                 onClick={onClose}
-                className="text-secondary hover:text-primary transition-colors duration-200 text-theme-2xl font-theme-bold w-8 h-8 flex items-center justify-center rounded-theme-md hover:bg-hover"
+                className="text-secondary hover:text-primary transition-colors duration-200 text-xl sm:text-theme-2xl font-theme-bold w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-theme-md hover:bg-hover"
                 style={{ 
                   color: 'var(--color-text-secondary)',
-                  fontSize: 'var(--font-size-2xl)' 
                 }}
                 onMouseEnter={(e) => {
                   e.target.style.color = 'var(--color-text)';
@@ -369,7 +430,8 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
                   e.target.style.backgroundColor = 'transparent';
                 }}
               >
-                <FiX size={18} />
+                <FiX size={16} className="sm:hidden" />
+                <FiX size={18} className="hidden sm:block" />
               </button>
           </div>
 
@@ -377,7 +439,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
             <StepIndicator steps={steps} currentStep={step} />
 
             {/* Step Content */}
-            <div style={{ minHeight: '400px' }}>
+            <div style={{ minHeight: '300px' }} className="sm:min-h-[400px]">
               {step === 0 && 
                 <Step1GeneralData 
                   countriesList={countriesList}
@@ -396,19 +458,19 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
 
           {/* Navigation */}
             <div 
-              className="flex justify-between mt-theme-xl pt-theme-lg"
+              className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0 mt-6 sm:mt-theme-xl pt-4 sm:pt-theme-lg"
               style={{ 
-                marginTop: 'var(--spacing-xl)', 
-                paddingTop: 'var(--spacing-lg)',
+                marginTop: 'var(--spacing-lg)', 
+                paddingTop: 'var(--spacing-md)',
                 borderTop: `1px solid var(--color-border)`
               }}
             >
-            <button
-              type="button"
-              onClick={prevStep}
-              disabled={step === 0}
+              <button
+                type="button"
+                onClick={prevStep}
+                disabled={step === 0}
                 className={`btn-theme px-theme-lg py-theme-sm rounded-theme-md font-theme-medium transition-all duration-200 ${
-                step === 0 
+                  step === 0
                     ? "opacity-50 cursor-not-allowed"
                     : "btn-secondary hover:shadow-md"
               }`}
@@ -417,19 +479,19 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
                   color: step === 0 ? 'var(--color-text-secondary)' : 'white',
                   cursor: step === 0 ? 'not-allowed' : 'pointer'
                 }}
-            >
-              Previous
-            </button>
-            
+              >
+                Previous
+              </button>
+
               <div className="flex space-x-3">
                 {isLastStep ? (
               <button
                     type="submit"
-                    className="btn-theme btn-primary px-theme-xl py-theme-sm rounded-theme-md font-theme-medium hover:shadow-md transition-all duration-200"
+                    className="btn-theme btn-success px-theme-xl py-theme-sm rounded-theme-md font-theme-medium hover:shadow-md transition-all duration-200"
                     style={{
                       backgroundColor: 'var(--color-primary)',
                       color: 'white',
-                      padding: 'var(--spacing-sm) var(--spacing-xl)'
+                      padding: 'var(--spacing-sm) var(--spacing-lg)'
                     }}
                   >
                     Save
@@ -438,11 +500,11 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
               <button
                     type="button"
                     onClick={handleNext}
-                    className="btn-theme btn-primary px-theme-xl py-theme-sm rounded-theme-md font-theme-medium hover:shadow-md transition-all duration-200"
+                    className="btn-theme btn-primary px-6 sm:px-theme-xl py-2 sm:py-theme-sm rounded-theme-md font-theme-medium hover:shadow-md transition-all duration-200 w-full sm:w-auto"
                     style={{
                       backgroundColor: 'var(--color-primary)',
                       color: 'white',
-                      padding: 'var(--spacing-sm) var(--spacing-xl)'
+                      padding: 'var(--spacing-sm) var(--spacing-lg)'
                     }}
                   >
                     Next
