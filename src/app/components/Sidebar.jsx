@@ -142,7 +142,15 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       icon: <FaCogs />, 
       path: "/machinery",
       permissions: [],
-      module: "machinery"
+      module: "machinery",
+      sub: [
+        {
+          name: "Gestion de maquinaria",
+          icon: <FaCogs />,
+          path: "/machinery/mainView",
+          permissions: [],
+        }
+      ]
     },
     {
       name: "Mantenimiento",
