@@ -29,24 +29,24 @@ export default function Step5Maintenance() {
   return (
     <div>
       <h3 className="text-lg font-semibold mb-4 text-black">
-        Periodic Maintenance
+        Mantenimiento Periódico
       </h3>
 
       <div className="grid grid-cols-2 gap-6 mb-4">
         {/* Maintenance */}
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Maintenance</label>
+          <label className="block text-sm text-gray-600 mb-1">Mantenimiento</label>
           <select
             {...register("maintenance", {
-              required: "Select a maintenance type",
+              required: "Debe seleccionar un tipo de mantenimiento",
             })}
             className="w-full border border-gray-300 p-2 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
-            <option value="">Select</option>
-            <option value="Oil change">Oil change</option>
-            <option value="Filter replacement">Filter replacement</option>
-            <option value="Hydraulic service">Hydraulic service</option>
-            <option value="Inspection">Inspection</option>
+            <option value="">Seleccione un tipo de mantenimiento</option>
+            <option value="Oil change">Cambio de Aceite</option>
+            <option value="Filter replacement">Reemplazo de filtros</option>
+            <option value="Hydraulic service">Servicio Hidraúlico</option>
+            <option value="Inspection">Inspección</option>
           </select>
           {errors.maintenance && (
             <p className="text-red-500 text-sm mt-1">
@@ -57,11 +57,11 @@ export default function Step5Maintenance() {
 
         {/* Usage Hours */}
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Usage hours</label>
+          <label className="block text-sm text-gray-600 mb-1">Horas de Uso</label>
           <input
             type="number"
             {...register("usageHours", {
-              required: "Usage hours are required",
+              required: "Las horas de uso son requeridas",
               min: { value: 1, message: "Must be greater than 0" },
             })}
             className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -79,21 +79,21 @@ export default function Step5Maintenance() {
         onClick={handleAdd}
         className="px-4 py-1 bg-gray-200 text-gray-700 rounded"
       >
-        Add
+        Añadir
       </button>
 
       <div className="mt-4 space-y-2">
         {items.map((item, index) => (
           <div key={index} className="flex justify-between items-center">
             <span>
-              {item.maintenance} – {item.usageHours} hours
+              {item.maintenance} – {item.usageHours} horas
             </span>
             <button
               type="button"
               onClick={() => handleDelete(index)}
               className="text-red-500"
             >
-              Delete
+              Borrar
             </button>
           </div>
         ))}
