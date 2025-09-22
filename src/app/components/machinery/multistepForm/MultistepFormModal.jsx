@@ -30,67 +30,71 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       photo: null,
 
       // Step 2 - Tracker Data
-      trackerId: "",
-      gpsProvider: "",
-      updateFrequency: "",
-      installationDate: "",
-      technician: "",
-      trackerStatus: "",
-      trackerNotes: "",
+      terminalSerial: "",
+      chasisNumber: "",
+      gpsSerial: "",
+      engineNumber: "",
 
       // Step 3 - Specific Data
       enginePower: "",
+      enginePowerUnit: "",
       engineType: "",
-      fuelCapacity: "",
-      cylinders: "",
-      length: "",
-      width: "",
-      height: "",
-      weight: "",
+      cylinderCapacity: "",
+      cylinderCapacityUnit: "",
+      cylindersNumber: "",
+      arrangement: "",
+      traction: "",
+      fuelConsumption: "",
+      fuelConsumptionUnit: "",
+      transmissionSystem: "",
+      tankCapacity: "",
+      tankCapacityUnit: "",
+      carryingCapacity: "",
+      carryingCapacityUnit: "",
+      darftForce: "",
+      darftForceUnit: "",
+      operatingWeight: "",
+      operatingWeightUnit: "",
       maxSpeed: "",
-      liftingCapacity: "",
-      operatingTemp: "",
+      maxSpeedUnit: "",
+      maxOperatingAltitud: "",
+      maxOperatingAltitudUnit: "",
+      performanceUnit: "",
+      performanceMin: "",
+      performanceMax: "",
+      dimensionsUnit: "",
+      width: "",
+      lenght: "",
+      height: "",
+      netWeight: "",
+      netWeightUnit: "",
+      airConditioning: "",
+      airConditioningConsumption: "",
+      airConditioningConsumptionUnit: "",
+      maximumOperatingHydraulicPressure: "",
+      maximumOperatingHydraulicPressureUnit: "",
+      hydraulicPumpFlowRate: "",
+      hydraulicPumpFlowRateUnit: "",
+      hydraulicReservoryCapacity: "",
+      hydraulicReservoryCapacityUnit: "",
+      emissionLevel: "",
+      cabinType: "",
 
       // Step 4 - Usage Information
-      primaryUsage: "",
-      hoursPerDay: "",
-      daysPerWeek: "",
-      terrainType: "",
-      weatherExposure: "",
-      primaryOperator: "",
-      operatorExperience: "",
-      certificationLevel: "",
-      specialConditions: "",
+      acquisitionDate: "",
+      usageStatus: "",
+      usedHours: "",
+      mileage: "",
+      mileageUnit: "",
+      tenure: "",
 
       // Step 5 - Maintenance Data
-      lastServiceDate: "",
-      serviceInterval: "",
-      nextServiceDate: "",
-      serviceCompany: "",
-      contactPerson: "",
-      servicePhone: "",
-      serviceEmail: "",
-      oilChangeInterval: "",
-      filterInterval: "",
-      hydraulicInterval: "",
-      annualInspection: "",
-      warrantyStatus: "",
-      warrantyExpiry: "",
-      warrantyProvider: "",
-      maintenanceNotes: "",
+      maintenace: "",
+      usageHours: "",
 
       // Step 6 - Documentation
-      ownersManual: null,
-      registrationCert: null,
-      insuranceDocs: null,
-      techSpecs: null,
-      wiringDiagrams: null,
-      partsCatalog: null,
-      serviceHistory: null,
-      inspectionCerts: null,
-      trainingMaterials: null,
-      additionalPhotos: null,
-      otherDocs: null,
+      documentName: "",
+      file: "",
     },
   });
 
@@ -128,6 +132,12 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
     methods.reset();
     setStep(0);
     setCompletedSteps([]);
+  };
+
+  // Función separada para manejar el evento de Next
+  const handleNext = (e) => {
+    e.preventDefault(); // Prevenir el submit del formulario
+    nextStep();
   };
 
   // Step Indicator Component
@@ -217,6 +227,8 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
+  const isLastStep = step === steps.length - 1; // Esto debería ser step === 5
+
   return (
     <div className="fixed inset-0  bg-black/60 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-2xl w-[900px] max-w-[90vw] max-h-[90vh] overflow-y-auto">
@@ -263,7 +275,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
               </button>
 
               <div className="flex space-x-3">
-                {step === steps.length - 1 ? (
+                {isLastStep ? (
                   <button
                     type="submit"
                     className="px-8 py-2 bg-green-600 text-white rounded font-medium hover:bg-green-700"
@@ -273,7 +285,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
                 ) : (
                   <button
                     type="button"
-                    onClick={nextStep}
+                    onClick={handleNext}
                     className="px-8 py-2 bg-black text-white rounded font-medium hover:bg-gray-800"
                   >
                     Next
