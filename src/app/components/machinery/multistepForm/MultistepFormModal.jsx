@@ -240,11 +240,11 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
             status = "Completo";
           }
 
-          return (
+  return (
             <div key={stepItem.id} className="flex items-center">
               <div className="flex flex-col items-center">
-                <button
-                  type="button"
+            <button 
+              type="button" 
                   onClick={() => goToStep(index)}
                   disabled={!isCompleted && index !== 0}
                   className={`w-8 h-8 flex items-center justify-center rounded-full text-theme-sm font-theme-bold border-2 transition-all duration-300 ${
@@ -371,7 +371,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
               >
                 <FiX size={18} />
               </button>
-            </div>
+          </div>
 
             {/* Progress Bar */}
             <StepIndicator steps={steps} currentStep={step} />
@@ -392,9 +392,9 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
               {step === 3 && <Step4UsageInfo />}
               {step === 4 && <Step5Maintenance />}
               {step === 5 && <Step6UploadDocs />}
-            </div>
+          </div>
 
-            {/* Navigation */}
+          {/* Navigation */}
             <div 
               className="flex justify-between mt-theme-xl pt-theme-lg"
               style={{ 
@@ -403,39 +403,39 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
                 borderTop: `1px solid var(--color-border)`
               }}
             >
-              <button
-                type="button"
-                onClick={prevStep}
-                disabled={step === 0}
+            <button
+              type="button"
+              onClick={prevStep}
+              disabled={step === 0}
                 className={`btn-theme px-theme-lg py-theme-sm rounded-theme-md font-theme-medium transition-all duration-200 ${
-                  step === 0
+                step === 0 
                     ? "opacity-50 cursor-not-allowed"
                     : "btn-secondary hover:shadow-md"
-                }`}
+              }`}
                 style={{
                   backgroundColor: step === 0 ? 'var(--color-surface)' : 'var(--color-secondary)',
                   color: step === 0 ? 'var(--color-text-secondary)' : 'white',
                   cursor: step === 0 ? 'not-allowed' : 'pointer'
                 }}
-              >
-                Previous
-              </button>
-
+            >
+              Previous
+            </button>
+            
               <div className="flex space-x-3">
                 {isLastStep ? (
-                  <button
+              <button
                     type="submit"
-                    className="btn-theme btn-success px-theme-xl py-theme-sm rounded-theme-md font-theme-medium hover:shadow-md transition-all duration-200"
+                    className="btn-theme btn-primary px-theme-xl py-theme-sm rounded-theme-md font-theme-medium hover:shadow-md transition-all duration-200"
                     style={{
-                      backgroundColor: 'var(--color-success)',
+                      backgroundColor: 'var(--color-primary)',
                       color: 'white',
                       padding: 'var(--spacing-sm) var(--spacing-xl)'
                     }}
                   >
                     Save
-                  </button>
-                ) : (
-                  <button
+              </button>
+            ) : (
+              <button
                     type="button"
                     onClick={handleNext}
                     className="btn-theme btn-primary px-theme-xl py-theme-sm rounded-theme-md font-theme-medium hover:shadow-md transition-all duration-200"
@@ -446,12 +446,12 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
                     }}
                   >
                     Next
-                  </button>
-                )}
+              </button>
+            )}
               </div>
-            </div>
-          </form>
-        </FormProvider>
+          </div>
+        </form>
+      </FormProvider>
       </div>
     </div>
   );

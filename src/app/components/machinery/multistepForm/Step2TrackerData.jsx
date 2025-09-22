@@ -24,9 +24,8 @@ export default function Step2TrackerData() {
   };
 
   return (
-    <div>
-      {/* Título */}
-      <h3 className="text-lg font-semibold mb-4 text-black">Ficha de Tracker</h3>
+    <div id="step-6-upload-docs">
+      <h3 className="text-lg md:text-xl font-semibold mb-4 text-primary">Ficha de Tracker</h3>
 
        {/* Grid responsive de 2 columnas */}
        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mt-6">
@@ -34,7 +33,7 @@ export default function Step2TrackerData() {
         <div className="space-y-4">
           {/* Número de serie del terminal */}
           <div>
-            <label className="block text-sm text-gray-600 mb-1">
+            <label className="block text-sm text-secondary mb-1">
               Número de serie del terminal <span className="text-red-500">*</span>
             </label>
             <input
@@ -48,8 +47,7 @@ export default function Step2TrackerData() {
               })}
               onBlur={() => trigger("terminalSerial")}
               placeholder="Ingrese el número de serie del terminal"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none 
-                         focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              className="parametrization-input"
             />
             {errors.terminalSerial && (
               <span className="text-red-500 text-xs mt-1">
@@ -60,7 +58,7 @@ export default function Step2TrackerData() {
 
           {/* Número de serie del dispositivo GPS */}
           <div>
-            <label className="block text-sm text-gray-600 mb-1">
+            <label className="block text-sm text-secondary mb-1">
               Número de serie del dispositivo GPS
             </label>
             <input
@@ -73,8 +71,7 @@ export default function Step2TrackerData() {
               })}
               onBlur={() => trigger("gpsSerial")}
               placeholder="Ingrese el número de serie del dispositivo GPS"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none 
-                         focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              className="parametrization-input"
             />
             {errors.gpsSerial && (
               <span className="text-red-500 text-xs mt-1">
@@ -88,7 +85,7 @@ export default function Step2TrackerData() {
         <div className="space-y-4">
           {/* Número de chasis */}
           <div>
-            <label className="block text-sm text-gray-600 mb-1">
+            <label className="block text-sm text-secondary mb-1">
               Número de chasis
             </label>
             <input
@@ -101,8 +98,7 @@ export default function Step2TrackerData() {
               })}
               onBlur={() => trigger("chasisNumber")}
               placeholder="Ingrese el número de chasis"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none 
-                         focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              className="parametrization-input"
             />
             {errors.chasisNumber && (
               <span className="text-red-500 text-xs mt-1">
@@ -113,7 +109,7 @@ export default function Step2TrackerData() {
 
           {/* Número de motor */}
           <div>
-            <label className="block text-sm text-gray-600 mb-1">
+            <label className="block text-sm text-secondary mb-1">
               Número de motor
             </label>
             <input
