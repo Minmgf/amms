@@ -1,100 +1,144 @@
+// Step2TrackerData.jsx
 import { useFormContext } from "react-hook-form";
+import { useState } from "react";
 
 export default function Step2TrackerData() {
-  const { register, formState: { errors } } = useFormContext();
+  const { register, formState: { errors }, trigger } = useFormContext();
+  const [checking, setChecking] = useState(false);
+
+  // Validación asíncrona contra la BD simulando un endpoint
+  const validateDuplicate = async (field, value) => {
+    if (!value) return true;
+    try {
+      setChecking(true);
+      const res = await fetch(`/api/check-serial?field=${field}&value=${value}`);
+      const data = await res.json();
+      return data.exists ? `El ${field} ya está registrado en la base de datos` : true;
+    } catch (error) {
+      return "Error al validar en la base de datos";
+    } finally {
+      setChecking(false);
+    }
+  };
+
   return (
     <div>
-      <h3 className="text-lg font-semibold mb-4 text-black">Tracker Data Sheet</h3>
-      <p className="text-gray-600 mb-6">Configure tracking and monitoring settings for this machinery.</p>
+      {/* Título */}
+      <h3 className="text-lg md:text-xl font-semibold mb-2 md:mb-4 text-black">Ficha de Tracker</h3>
 
-      <div className="grid grid-cols-3 gap-4">
-        <div>
-          <label className="block text-sm text-gray-600 mb-1">Tracker ID</label>
-          <input
-            {...register("trackerId")}
-            placeholder="Enter tracker ID"
-            className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-          {errors.trackerId && <span className="text-red-500 text-xs">{errors.trackerId.message}</span>}
-        </div>
-        
-        <div>
-          <label className="block text-sm text-gray-600 mb-1">GPS Provider</label>
-          <select
-            {...register("gpsProvider")}
-            className="w-full border border-gray-300 p-2 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="">Select provider</option>
-            <option value="garmin">Garmin</option>
-            <option value="tomtom">TomTom</option>
-            <option value="trimble">Trimble</option>
-            <option value="gps-insight">GPS Insight</option>
-          </select>
-          {errors.gpsProvider && <span className="text-red-500 text-xs">{errors.gpsProvider.message}</span>}
-        </div>
-        
-        <div>
-          <label className="block text-sm text-gray-600 mb-1">Update Frequency</label>
-          <select
-            {...register("updateFrequency")}
-            className="w-full border border-gray-300 p-2 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="">Select frequency</option>
-            <option value="real-time">Real-time</option>
-            <option value="5min">Every 5 minutes</option>
-            <option value="15min">Every 15 minutes</option>
-            <option value="30min">Every 30 minutes</option>
-            <option value="1hour">Every hour</option>
-          </select>
-          {errors.updateFrequency && <span className="text-red-500 text-xs">{errors.updateFrequency.message}</span>}
+       {/* Grid responsive de 2 columnas */}
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mt-6">
+        {/* Columna izquierda */}
+        <div className="space-y-4">
+          {/* Número de serie del terminal */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Número de serie del terminal <span className="text-red-500">*</span>
+            </label>
+            <input
+              {...register("terminalSerial", {
+                required: "El número de serie del terminal es obligatorio",
+                minLength: {
+                  value: 3,
+                  message: "Debe tener al menos 3 caracteres"
+                },
+                validate: (value) => validateDuplicate("número de serie del terminal", value)
+              })}
+              onBlur={() => trigger("terminalSerial")}
+              placeholder="Ingrese el número de serie del terminal"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none 
+                         focus:ring-2 focus:ring-red-500 focus:border-transparent"
+            />
+            {errors.terminalSerial && (
+              <span className="text-red-500 text-xs mt-1">
+                {errors.terminalSerial.message}
+              </span>
+            )}
+          </div>
+
+          {/* Número de serie del dispositivo GPS */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Número de serie del dispositivo GPS
+            </label>
+            <input
+              {...register("gpsSerial", {
+                minLength: {
+                  value: 3,
+                  message: "Debe tener al menos 3 caracteres"
+                },
+                validate: (value) => validateDuplicate("número de serie del dispositivo GPS", value)
+              })}
+              onBlur={() => trigger("gpsSerial")}
+              placeholder="Ingrese el número de serie del dispositivo GPS"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none 
+                         focus:ring-2 focus:ring-red-500 focus:border-transparent"
+            />
+            {errors.gpsSerial && (
+              <span className="text-red-500 text-xs mt-1">
+                {errors.gpsSerial.message}
+              </span>
+            )}
+          </div>
         </div>
 
-        <div>
-          <label className="block text-sm text-gray-600 mb-1">Installation Date</label>
-          <input
-            type="date"
-            {...register("installationDate")}
-            className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-          {errors.installationDate && <span className="text-red-500 text-xs">{errors.installationDate.message}</span>}
-        </div>
-        
-        <div>
-          <label className="block text-sm text-gray-600 mb-1">Technician</label>
-          <input
-            {...register("technician")}
-            placeholder="Technician name"
-            className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-          {errors.technician && <span className="text-red-500 text-xs">{errors.technician.message}</span>}
-        </div>
-        
-        <div>
-          <label className="block text-sm text-gray-600 mb-1">Status</label>
-          <select
-            {...register("trackerStatus")}
-            className="w-full border border-gray-300 p-2 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="">Select status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="maintenance">Under Maintenance</option>
-            <option value="testing">Testing</option>
-          </select>
-          {errors.trackerStatus && <span className="text-red-500 text-xs">{errors.trackerStatus.message}</span>}
+        {/* Columna derecha */}
+        <div className="space-y-4">
+          {/* Número de chasis */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Número de chasis
+            </label>
+            <input
+              {...register("chasisNumber", {
+                minLength: {
+                  value: 3,
+                  message: "Debe tener al menos 3 caracteres"
+                },
+                validate: (value) => validateDuplicate("número de chasis", value)
+              })}
+              onBlur={() => trigger("chasisNumber")}
+              placeholder="Ingrese el número de chasis"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none 
+                         focus:ring-2 focus:ring-red-500 focus:border-transparent"
+            />
+            {errors.chasisNumber && (
+              <span className="text-red-500 text-xs mt-1">
+                {errors.chasisNumber.message}
+              </span>
+            )}
+          </div>
+
+          {/* Número de motor */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Número de motor
+            </label>
+            <input
+              {...register("engineNumber", {
+                minLength: {
+                  value: 3,
+                  message: "Debe tener al menos 3 caracteres"
+                },
+                validate: (value) => validateDuplicate("número de motor", value)
+              })}
+              onBlur={() => trigger("engineNumber")}
+              placeholder="Ingrese el número de motor"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none 
+                         focus:ring-2 focus:ring-red-500 focus:border-transparent"
+            />
+            {errors.engineNumber && (
+              <span className="text-red-500 text-xs mt-1">
+                {errors.engineNumber.message}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="mt-6">
-        <label className="block text-sm text-gray-600 mb-1">Additional Notes</label>
-        <textarea
-          {...register("trackerNotes")}
-          rows={3}
-          placeholder="Any additional information about the tracker setup..."
-          className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
-        {errors.trackerNotes && <span className="text-red-500 text-xs">{errors.trackerNotes.message}</span>}
-      </div>
+      {checking && (
+        <p className="text-xs text-gray-500 mt-4">Validando datos en la base de datos...</p>
+      )}
     </div>
   );
 }
