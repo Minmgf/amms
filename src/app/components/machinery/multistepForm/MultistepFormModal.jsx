@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import Step1GeneralData from "./Step1GeneralData";
 import Step2TrackerData from "./Step2TrackerData";
@@ -7,10 +7,16 @@ import Step3SpecificData from "./Step3SpecificData";
 import Step4UsageInfo from "./Step4UsageInfo";
 import Step5Maintenance from "./Step5Maintenance";
 import Step6UploadDocs from "./Step6UploadDocs";
+import { getCountries, getStates, getCities } from "@/services/locationService";
 
 export default function MultiStepFormModal({ isOpen, onClose }) {
   const [step, setStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState([]);
+  const [countriesList, setCountriesList] = useState([]);
+  const [statesList, setStatesList] = useState([]);
+  const [citiesList, setCitiesList] = useState([]);
+  const [isLoadingStates, setIsLoadingStates] = useState(false);
+  const [isLoadingCities, setIsLoadingCities] = useState(false);
 
   const methods = useForm({
     defaultValues: {
@@ -24,7 +30,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       tariff: "",
       category: "",
       country: "",
-      region: "",
+      department: "",
       city: "",
       telemetry: "",
       photo: null,
@@ -98,13 +104,85 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
     },
   });
 
+  const watchCountry = methods.watch("country");
+  const watchState = methods.watch("department");
+
+  // Cargar países al montar el componente
+  useEffect(() => {
+    const loadCountries = async () => {
+      try {
+        const countries = await getCountries();
+        setCountriesList(countries);
+      } catch (error) {
+        console.error("Error loading countries:", error);
+      }
+    };
+
+    if (isOpen) {
+      loadCountries();
+    }
+  }, [isOpen]);
+
+  // Cuando cambia el país, carga los estados/departamentos
+  useEffect(() => {
+    const loadStates = async () => {
+      if (!watchCountry) {
+        setStatesList([]);
+        setCitiesList([]);
+        return;
+      }
+
+      setIsLoadingStates(true);
+      try {
+        const states = await getStates(watchCountry);
+        setStatesList(states);
+        setCitiesList([]);
+        // Resetear los campos dependientes
+        methods.setValue("department", "");
+        methods.setValue("city", "");
+      } catch (error) {
+        console.error("Error loading states:", error);
+        setStatesList([]);
+      } finally {
+        setIsLoadingStates(false);
+      }
+    };
+
+    loadStates();
+  }, [watchCountry, methods]);
+
+  // Cuando cambia el estado/departamento, carga las ciudades
+  useEffect(() => {
+    const loadCities = async () => {
+      if (!watchCountry || !watchState) {
+        setCitiesList([]);
+        return;
+      }
+
+      setIsLoadingCities(true);
+      try {
+        const cities = await getCities(watchCountry, watchState);
+        setCitiesList(cities);
+        // Resetear el campo de ciudad
+        methods.setValue("city", "");
+      } catch (error) {
+        console.error("Error loading cities:", error);
+        setCitiesList([]);
+      } finally {
+        setIsLoadingCities(false);
+      }
+    };
+
+    loadCities();
+  }, [watchCountry, watchState, methods]);
+
   const steps = [
-    { id: 1, name: "General Data Sheet" },
-    { id: 2, name: "Tracker Data Sheet" },
-    { id: 3, name: "Specific Data Sheet" },
-    { id: 4, name: "Usage Information" },
-    { id: 5, name: "Periodic Maintenance" },
-    { id: 6, name: "Upload Documentation" }
+    { id: 1, name: "Ficha técnica general" },
+    { id: 2, name: "Ficha técnica del rastreador" },
+    { id: 3, name: "Ficha técnica específica" },
+    { id: 4, name: "Información de uso" },
+    { id: 5, name: "Mantenimiento periódico" },
+    { id: 6, name: "Subir documentación" }
   ];
 
   const nextStep = () => {
@@ -148,13 +226,13 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
           const isCompleted = completedSteps.includes(index);
           const isActive = currentStep === index;
 
-          let status = "Pending";
+          let status = "Pendiente";
           if (isCompleted && !isActive) {
-            status = "Complete";
+            status = "Completo";
           } else if (isActive && !isCompleted) {
-            status = "In Progress";
+            status = "En progreso";
           } else if (isActive && isCompleted) {
-            status = "Complete";
+            status = "Completo";
           }
 
           return (
@@ -164,13 +242,12 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
                   type="button"
                   onClick={() => goToStep(index)}
                   disabled={!isCompleted && index !== 0}
-                  className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold border-2 transition ${
-                    isActive
+                  className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold border-2 transition ${isActive
                       ? "bg-red-500 text-white border-red-500"
                       : isCompleted
-                      ? "bg-green-500 text-white border-green-500"
-                      : "bg-white text-gray-400 border-gray-300"
-                  } ${!isCompleted && index !== 0 ? "cursor-not-allowed" : ""}`}
+                        ? "bg-green-500 text-white border-green-500"
+                        : "bg-white text-gray-400 border-gray-300"
+                    } ${!isCompleted && index !== 0 ? "cursor-not-allowed" : ""}`}
                 >
                   {isCompleted && !isActive ? (
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -187,24 +264,22 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
 
                 <div className="mt-2 text-center">
                   <div
-                    className={`text-xs font-medium ${
-                      status === "In Progress"
+                    className={`text-xs font-medium ${status === "En progreso"
                         ? "text-red-500"
-                        : status === "Complete"
-                        ? "text-green-600"
-                        : "text-gray-400"
-                    }`}
+                        : status === "Completo"
+                          ? "text-green-600"
+                          : "text-gray-400"
+                      }`}
                   >
                     {stepItem.name}
                   </div>
                   <div
-                    className={`text-xs mt-1 ${
-                      status === "In Progress"
+                    className={`text-xs mt-1 ${status === "En progreso"
                         ? "text-red-500"
-                        : status === "Complete"
-                        ? "text-green-600"
-                        : "text-gray-400"
-                    }`}
+                        : status === "Completo"
+                          ? "text-green-600"
+                          : "text-gray-400"
+                      }`}
                   >
                     {status}
                   </div>
@@ -213,9 +288,8 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
 
               {index < steps.length - 1 && (
                 <div
-                  className={`h-0.5 w-16 mx-4 ${
-                    isCompleted ? "bg-green-500" : "bg-gray-300"
-                  }`}
+                  className={`h-0.5 w-16 mx-4 ${isCompleted ? "bg-green-500" : "bg-gray-300"
+                    }`}
                 />
               )}
             </div>
@@ -251,7 +325,15 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
 
             {/* Step Content */}
             <div className="min-h-[400px]">
-              {step === 0 && <Step1GeneralData />}
+              {step === 0 && 
+              <Step1GeneralData 
+                  countriesList={countriesList}
+                  statesList={statesList}
+                  citiesList={citiesList}
+                  isLoadingStates={isLoadingStates}
+                  isLoadingCities={isLoadingCities}
+                />
+              }
               {step === 1 && <Step2TrackerData />}
               {step === 2 && <Step3SpecificData />}
               {step === 3 && <Step4UsageInfo />}
@@ -265,11 +347,10 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
                 type="button"
                 onClick={prevStep}
                 disabled={step === 0}
-                className={`px-6 py-2 rounded font-medium ${
-                  step === 0
+                className={`px-6 py-2 rounded font-medium ${step === 0
                     ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                     : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                }`}
+                  }`}
               >
                 Previous
               </button>
