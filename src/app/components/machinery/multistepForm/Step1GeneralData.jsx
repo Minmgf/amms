@@ -72,6 +72,7 @@ export default function Step1GeneralData({
           </label>
           <input
             aria-label="Name Input"
+            placeholder="Ej: Tractor agrícola"
             {...register("name")}
             className="parametrization-input"
           />
@@ -126,6 +127,7 @@ export default function Step1GeneralData({
           </label>
           <input
             aria-label="Serial Number Input"
+            placeholder="Ej: SN-12345-XYZ"
             {...register("serialNumber")}
             className="parametrization-input"
           />
@@ -208,8 +210,8 @@ export default function Step1GeneralData({
           </label>
           <input
             aria-label="Model Input"
+            placeholder="Ej: D6R"
             {...register("model")}
-            placeholder="Enter model"
             className="parametrization-input"
           />
           {errors.model && (
@@ -231,6 +233,7 @@ export default function Step1GeneralData({
           </label>
           <input
             aria-label="Tariff Input"
+            placeholder="Ej: 8429.11.00"
             {...register("tariff")}
             className="parametrization-input"
           />

@@ -1,89 +1,131 @@
 import { useFormContext } from "react-hook-form";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function Step4UsageInfo() {
   const { register, formState: { errors } } = useFormContext();
+  const { getCurrentTheme } = useTheme();
 
   return (
     <div id="step-4-usage-info">
-      <h3 className="text-lg font-semibold mb-4 text-black">Información de uso</h3>
+      <h3 className="text-theme-lg font-theme-semibold mb-theme-md text-primary">
+        Información de uso
+      </h3>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Acquisition Date */}
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Fecha de adquisición</label>
+          <label 
+            className="block text-theme-sm mb-1"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Fecha de adquisición
+          </label>
           <input
-            area-label="Acquisition Date Input"
+            aria-label="Acquisition Date Input"
             type="date"
             {...register("acquisitionDate")}
-            className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="parametrization-input"
           />
           {errors.acquisitionDate && (
-            <span className="text-red-500 text-xs">{errors.acquisitionDate.message}</span>
+            <span 
+              className="text-theme-xs mt-1 block" 
+              style={{ color: 'var(--color-error)' }}
+            >
+              {errors.acquisitionDate.message}
+            </span>
           )}
         </div>
 
         {/* Usage Status */}
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Estado de uso</label>
+          <label 
+            className="block text-theme-sm mb-1"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Estado de uso
+          </label>
           <select
-            area-label="Usage Status Select"
+            aria-label="Usage Status Select"
             {...register("usageStatus")}
-            className="w-full border border-gray-300 p-2 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="parametrization-input"
           >
             <option value="">Seleccione estado...</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="maintenance">Under Maintenance</option>
-            <option value="retired">Retired</option>
-            <option value="standby">Standby</option>
+            <option value="active">Activo</option>
+            <option value="inactive">Inactivo</option>
+            <option value="maintenance">En mantenimiento</option>
+            <option value="retired">Retirado</option>
+            <option value="standby">En espera</option>
           </select>
           {errors.usageStatus && (
-            <span className="text-red-500 text-xs">{errors.usageStatus.message}</span>
+            <span 
+              className="text-theme-xs mt-1 block" 
+              style={{ color: 'var(--color-error)' }}
+            >
+              {errors.usageStatus.message}
+            </span>
           )}
         </div>
 
         {/* Used Hours */}
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Horas de uso</label>
+          <label 
+            className="block text-theme-sm mb-1"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Horas de uso
+          </label>
           <input
-            area-label="Used Hours Input"
+            aria-label="Used Hours Input"
             type="number"
-            placeholder="Value"
+            placeholder="Ingrese las horas"
             min="0"
             step="0.1"
             {...register("usedHours")}
-            className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="parametrization-input"
           />
           {errors.usedHours && (
-            <span className="text-red-500 text-xs">{errors.usedHours.message}</span>
+            <span 
+              className="text-theme-xs mt-1 block" 
+              style={{ color: 'var(--color-error)' }}
+            >
+              {errors.usedHours.message}
+            </span>
           )}
         </div>
 
         {/* Mileage */}
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Kilometraje</label>
+          <label 
+            className="block text-theme-sm mb-1"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Kilometraje
+          </label>
           <div className="flex">
             <input
-              area-label="Mileage Input"
+              aria-label="Mileage Input"
               type="number"
-              placeholder="Value"
+              placeholder="Valor"
               min="0"
               step="0.1"
               {...register("mileage")}
-              className="flex-1 border border-gray-300 p-2 rounded-l focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="parametrization-input"
             />
             <select
-              area-label="Mileage Unit Select"
+              aria-label="Mileage Unit Select"
               {...register("mileageUnit")}
-              className="w-20 border-l-0 border border-gray-300 p-2 rounded-r bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="parametrization-input"
             >
               <option value="km">KM</option>
-              <option value="miles">Miles</option>
-              <option value="hours">Hours</option>
+              <option value="miles">Millas</option>
+              <option value="hours">Horas</option>
             </select>
           </div>
           {(errors.mileage || errors.mileageUnit) && (
-            <span className="text-red-500 text-xs">
+            <span 
+              className="text-theme-xs mt-1 block" 
+              style={{ color: 'var(--color-error)' }}
+            >
               {errors.mileage?.message || errors.mileageUnit?.message}
             </span>
           )}
@@ -91,21 +133,31 @@ export default function Step4UsageInfo() {
 
         {/* Tenure */}
         <div className="sm:col-span-2 lg:col-span-2">
-          <label className="block text-sm text-gray-600 mb-1">Tenencia</label>
-          <select
-            area-label="Tenure Select"
-            {...register("tenure")}
-            className="w-full border border-gray-300 p-2 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          <label 
+            className="block text-theme-sm mb-1"
+            style={{ color: 'var(--color-text-secondary)' }}
           >
-            <option value="">Select tenure...</option>
-            <option value="owned">Owned</option>
-            <option value="leased">Leased</option>
-            <option value="rented">Rented</option>
-            <option value="financed">Financed</option>
-            <option value="contract">Under Contract</option>
+            Tenencia
+          </label>
+          <select
+            aria-label="Tenure Select"
+            {...register("tenure")}
+            className="parametrization-input"
+          >
+            <option value="">Seleccione tenencia...</option>
+            <option value="owned">Propio</option>
+            <option value="leased">Arrendado</option>
+            <option value="rented">Rentado</option>
+            <option value="financed">Financiado</option>
+            <option value="contract">Bajo contrato</option>
           </select>
           {errors.tenure && (
-            <span className="text-red-500 text-xs">{errors.tenure.message}</span>
+            <span 
+              className="text-theme-xs mt-1 block" 
+              style={{ color: 'var(--color-error)' }}
+            >
+              {errors.tenure.message}
+            </span>
           )}
         </div>
       </div>
