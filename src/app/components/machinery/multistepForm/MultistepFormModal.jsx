@@ -459,26 +459,12 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
           {/* Navigation */}
             <div 
               className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0 mt-6 sm:mt-theme-xl pt-4 sm:pt-theme-lg"
-              style={{ 
-                marginTop: 'var(--spacing-lg)', 
-                paddingTop: 'var(--spacing-md)',
-                borderTop: `1px solid var(--color-border)`
-              }}
             >
               <button
                 type="button"
                 onClick={prevStep}
                 disabled={step === 0}
-                className={`btn-theme px-theme-lg py-theme-sm rounded-theme-md font-theme-medium transition-all duration-200 ${
-                  step === 0
-                    ? "opacity-50 cursor-not-allowed"
-                    : "btn-secondary hover:shadow-md"
-              }`}
-                style={{
-                  backgroundColor: step === 0 ? 'var(--color-surface)' : 'var(--color-secondary)',
-                  color: step === 0 ? 'var(--color-text-secondary)' : 'white',
-                  cursor: step === 0 ? 'not-allowed' : 'pointer'
-                }}
+                className="btn-theme btn-secondary"
               >
                 Previous
               </button>
@@ -487,12 +473,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
                 {isLastStep ? (
               <button
                     type="submit"
-                    className="btn-theme btn-success px-theme-xl py-theme-sm rounded-theme-md font-theme-medium hover:shadow-md transition-all duration-200"
-                    style={{
-                      backgroundColor: 'var(--color-primary)',
-                      color: 'white',
-                      padding: 'var(--spacing-sm) var(--spacing-lg)'
-                    }}
+                    className="btn-theme btn-primary"
                   >
                     Save
               </button>
@@ -500,12 +481,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
               <button
                     type="button"
                     onClick={handleNext}
-                    className="btn-theme btn-primary px-6 sm:px-theme-xl py-2 sm:py-theme-sm rounded-theme-md font-theme-medium hover:shadow-md transition-all duration-200 w-full sm:w-auto"
-                    style={{
-                      backgroundColor: 'var(--color-primary)',
-                      color: 'white',
-                      padding: 'var(--spacing-sm) var(--spacing-lg)'
-                    }}
+                    className="btn-theme btn-primary"
                   >
                     Next
               </button>
