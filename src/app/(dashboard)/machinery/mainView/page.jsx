@@ -2,9 +2,11 @@
 import TableList from '@/app/components/shared/TableList'
 import React, { useState, useMemo, useEffect } from 'react'
 import { CiFilter } from 'react-icons/ci'
-import { FaEye, FaPen, FaPlus, FaTimes, FaCog, FaCalendarAlt } from 'react-icons/fa'
+import { FaEye, FaPen, FaPlus, FaTimes, FaCog, FaCalendarAlt, FaBarcode, FaTag, FaCalendar, FaCheckCircle, FaTools, FaHashtag, FaRegPlayCircle, FaTractor } from 'react-icons/fa'
 import PermissionGuard from '@/app/(auth)/PermissionGuard'
 import * as Dialog from '@radix-ui/react-dialog'
+import { FiLayers } from 'react-icons/fi'
+import { IoCalendarOutline } from 'react-icons/io5'
 
 const MachineryMainView = () => {
   // Estado para el filtro global
@@ -198,15 +200,20 @@ const MachineryMainView = () => {
   const columns = useMemo(() => [
     {
       accessorKey: 'name',
-      header: 'Máquina',
+      header: () => (
+        <div className="flex items-center gap-2">
+          <FaTractor className="w-4 h-4" />
+          Máquina
+        </div>
+      ),
       cell: ({ row }) => {
         const machine = row.original
         return (
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-green-100 rounded-md flex items-center justify-center">
-              <FaCog className="w-4 h-4 text-green-600" />
+            <div className="w-8 h-8  rounded-md flex items-center justify-center">
+              <FaTractor  className="w-4 h-4 " />
             </div>
-            <div className="font-medium text-gray-900">
+            <div className="font-medium parametrization-text">
               {machine.name || 'N/A'}
             </div>
           </div>
@@ -215,45 +222,65 @@ const MachineryMainView = () => {
     },
     {
       accessorKey: 'serial_number',
-      header: 'Número de Serie',
+      header: () => (
+        <div className="flex items-center gap-1">
+          <FaHashtag  className="w-4 h-4 " />
+          Número de Serie
+        </div>
+      ),
       cell: ({ row }) => (
-        <div className="text-sm text-gray-900 font-mono">
+        <div className="text-sm parametrization-text font-mono">
           {row.getValue('serial_number') || 'N/A'}
         </div>
       )
     },
     {
       accessorKey: 'type',
-      header: 'Tipo',
+      header: () => (
+        <div className="flex items-center gap-2">
+          <FiLayers  className="w-4 h-4 " />
+          Tipo
+        </div>
+      ),
       cell: ({ row }) => (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium parametrization-text">
           {row.getValue('type') || 'N/A'}
         </span>
       )
     },
     {
       accessorKey: 'acquisition_date',
-      header: 'Fecha de Adquisición',
+      header: () => (
+        <div className="flex items-center gap-2">
+          <IoCalendarOutline  className="w-4 h-4 " />
+          Fecha de Adquisición
+        </div>
+      ),
       cell: ({ row }) => {
         const date = row.getValue('acquisition_date')
         return (
-          <div className="text-sm text-gray-900">
+          <div className="text-sm parametrization-text">
             <div>{formatDate(date)}</div>
-            <div className="text-xs text-gray-500">{formatTime(date)}</div>
+            <div className="text-xs parametrization-text">{formatTime(date)}</div>
           </div>
         )
       }
     },
     {
       accessorKey: 'status',
-      header: 'Estado',
+      header: () => (
+        <div className="flex items-center gap-2">
+          <FaRegPlayCircle  className="w-4 h-4 " />
+          Estado
+        </div>
+      ),
       cell: ({ row }) => {
         const status = row.getValue('status')
         const statusColors = {
-          'Producción': 'bg-green-100 text-green-800',
-          'Mantenimiento': 'bg-yellow-100 text-yellow-800',
-          'Fuera de Servicio': 'bg-red-100 text-red-800',
-          'Disponible': 'bg-blue-100 text-blue-800'
+          'Producción':           'parametrization-text',
+          'Mantenimiento':        'parametrization-text',
+          'Fuera de Servicio':    'parametrization-text',
+          'Disponible':           'parametrization-text'
         }
         
         return (
@@ -265,7 +292,12 @@ const MachineryMainView = () => {
     },
     {
       id: 'actions',
-      header: 'Acciones',
+      header: () => (
+        <div className="flex items-center gap-2">
+          <FaTools className="w-4 h-4 " />
+          Acciones
+        </div>
+      ),
       cell: ({ row }) => (
         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <button
