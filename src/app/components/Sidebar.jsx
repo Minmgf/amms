@@ -17,6 +17,7 @@ import {
   FaHistory,
   FaDesktop,
   FaRssSquare,
+  FaTractor,
 } from "react-icons/fa";
 import { MdSettings } from "react-icons/md";
 import {
@@ -139,10 +140,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     },
     { 
       name: "Maquinaria", 
-      icon: <FaCogs />, 
+      icon: <FaTractor />, 
       path: "/machinery",
       permissions: [],
-      module: "machinery"
+      module: "machinery",
     },
     {
       name: "Mantenimiento",
