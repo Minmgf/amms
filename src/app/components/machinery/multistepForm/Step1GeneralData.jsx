@@ -529,12 +529,8 @@ export default function Step1GeneralData({
                       aria-label="Change Button"
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="btn-theme btn-secondary text-theme-sm px-theme-md py-theme-sm rounded-theme-md transition-all duration-200 hover:shadow-md"
-                      style={{
-                        backgroundColor: 'var(--color-secondary)',
-                        color: 'white',
-                        border: 'none'
-                      }}
+                      className="btn-theme btn-secondary "
+                      
                     >
                       Cambiar
                     </button>
@@ -542,12 +538,8 @@ export default function Step1GeneralData({
                       aria-label="Remove Button"
                       type="button"
                       onClick={removeFile}
-                      className="btn-theme btn-error text-theme-sm px-theme-md py-theme-sm rounded-theme-md transition-all duration-200 hover:shadow-md"
-                      style={{
-                        backgroundColor: 'var(--color-error)',
-                        color: 'white',
-                        border: 'none'
-                      }}
+                      className="btn-theme btn-error"
+                      
                     >
                       Eliminar
                     </button>
