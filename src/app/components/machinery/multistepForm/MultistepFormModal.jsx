@@ -19,7 +19,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
   const [citiesList, setCitiesList] = useState([]);
   const [isLoadingStates, setIsLoadingStates] = useState(false);
   const [isLoadingCities, setIsLoadingCities] = useState(false);
-  
+
   // Hook del tema
   const { getCurrentTheme } = useTheme();
 
@@ -276,18 +276,17 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
 
                 <div className="mt-1 sm:mt-2 text-center w-16 sm:w-20 md:w-24 lg:w-auto">
                   <div
-                    className={`text-xs sm:text-theme-xs font-theme-medium ${
-                      status === "En progreso"
-                        ? "text-accent"
-                        : status === "Completo"
-                          ? "text-success"
-                          : "text-secondary"
-                    }`}
+                    className={`text-xs sm:text-theme-xs font-theme-medium ${status === "En progreso"
+                      ? "text-accent"
+                      : status === "Completo"
+                        ? "text-success"
+                        : "text-secondary"
+                      }`}
                     style={{
-                      color: status === "En progreso" 
-                        ? 'var(--color-accent)' 
-                        : status === "Completo" 
-                          ? 'var(--color-success)' 
+                      color: status === "En progreso"
+                        ? 'var(--color-accent)'
+                        : status === "Completo"
+                          ? 'var(--color-success)'
                           : 'var(--color-text-secondary)'
                     }}
                   >
@@ -297,18 +296,17 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
                     </span>
                   </div>
                   <div
-                    className={`text-xs sm:text-theme-xs mt-0.5 sm:mt-1 ${
-                      status === "En progreso"
-                        ? "text-accent"
-                        : status === "Completo"
-                          ? "text-success"
-                          : "text-secondary"
-                    }`}
+                    className={`text-xs sm:text-theme-xs mt-0.5 sm:mt-1 ${status === "En progreso"
+                      ? "text-accent"
+                      : status === "Completo"
+                        ? "text-success"
+                        : "text-secondary"
+                      }`}
                     style={{
-                      color: status === "En progreso" 
-                        ? 'var(--color-accent)' 
-                        : status === "Completo" 
-                          ? 'var(--color-success)' 
+                      color: status === "En progreso"
+                        ? 'var(--color-accent)'
+                        : status === "Completo"
+                          ? 'var(--color-success)'
                           : 'var(--color-text-secondary)'
                     }}
                   >
@@ -417,7 +415,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
             {/* Header */}
             <div className="flex justify-between items-center mb-3 xs:mb-4 sm:mb-6 md:mb-8">
               <h2 className="text-base xs:text-lg sm:text-xl md:text-theme-xl font-theme-semibold text-primary">
-                Add Machinery
+                Añadir maquinaria
               </h2>
               <button
                 type="button"
@@ -472,7 +470,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
                 disabled={step === 0}
                 className="btn-theme btn-secondary w-full xs:w-auto"
               >
-                Previous
+                Anterior
               </button>
 
               <div className="flex space-x-2 xs:space-x-3">
@@ -481,7 +479,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
                     type="submit"
                     className="btn-theme btn-primary w-full xs:w-auto"
                   >
-                    Save
+                    Guardar
                   </button>
                 ) : (
                   <button
@@ -489,7 +487,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
                     onClick={handleNext}
                     className="btn-theme btn-primary w-full xs:w-auto"
                   >
-                    Next
+                    Siguiente
                   </button>
                 )}
               </div>
