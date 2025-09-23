@@ -49,7 +49,7 @@ export default function Step6UploadDocs() {
   };
 
   return (
-    <div>
+    <div id="step-6-upload-docs">
       {/* Título */}
       <h3 className="text-lg font-semibold mb-4 text-black">
         Subir Documentación

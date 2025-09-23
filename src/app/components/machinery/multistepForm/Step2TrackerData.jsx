@@ -24,7 +24,7 @@ export default function Step2TrackerData() {
   };
 
   return (
-    <div>
+    <div id="step-2-tracker-data">
       {/* Título */}
       <h3 className="text-lg font-semibold mb-4 text-black">Ficha de Tracker</h3>
 

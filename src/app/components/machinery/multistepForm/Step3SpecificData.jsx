@@ -67,7 +67,7 @@ export default function Step3SpecificData() {
   );
 
   return (
-    <div className="step-3-specific-data space-y-4">
+    <div className="space-y-4" id="step-3-specific-data">
       <div>
         <h3
           className="text-theme-lg font-theme-semibold mb-2"
