@@ -32,7 +32,7 @@ const PermissionManager  = ({
         description: permission.description,
     });
     const { hasPermission } = usePermissions();
-    const canEditPermissions = hasPermission(26);
+    const canEditPermissions = hasPermission(19);
 
     const handleCheckboxChange = (id) => {
         setFormData(prev => {
