@@ -241,11 +241,11 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
             status = "Completo";
           }
 
-          return (
+  return (
             <div key={stepItem.id} className="flex items-center">
               <div className="flex flex-col items-center">
-                <button
-                  type="button"
+            <button 
+              type="button" 
                   onClick={() => goToStep(index)}
                   disabled={!isCompleted && index !== 0}
                   className={`w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-xs sm:text-theme-sm font-theme-bold border-2 transition-all duration-300 ${
@@ -433,7 +433,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
                 <FiX size={16} className="sm:hidden" />
                 <FiX size={18} className="hidden sm:block" />
               </button>
-            </div>
+          </div>
 
             {/* Progress Bar */}
             <StepIndicator steps={steps} currentStep={step} />
@@ -454,66 +454,42 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
               {step === 3 && <Step4UsageInfo />}
               {step === 4 && <Step5Maintenance />}
               {step === 5 && <Step6UploadDocs />}
-            </div>
+          </div>
 
-            {/* Navigation */}
+          {/* Navigation */}
             <div 
               className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0 mt-6 sm:mt-theme-xl pt-4 sm:pt-theme-lg"
-              style={{ 
-                marginTop: 'var(--spacing-lg)', 
-                paddingTop: 'var(--spacing-md)',
-                borderTop: `1px solid var(--color-border)`
-              }}
             >
               <button
                 type="button"
                 onClick={prevStep}
                 disabled={step === 0}
-                className={`btn-theme px-4 sm:px-theme-lg py-2 sm:py-theme-sm rounded-theme-md font-theme-medium transition-all duration-200 w-full sm:w-auto ${
-                  step === 0
-                    ? "opacity-50 cursor-not-allowed"
-                    : "btn-secondary hover:shadow-md"
-                }`}
-                style={{
-                  backgroundColor: step === 0 ? 'var(--color-surface)' : 'var(--color-secondary)',
-                  color: step === 0 ? 'var(--color-text-secondary)' : 'white',
-                  cursor: step === 0 ? 'not-allowed' : 'pointer'
-                }}
+                className="btn-theme btn-secondary"
               >
                 Previous
               </button>
 
-              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
+              <div className="flex space-x-3">
                 {isLastStep ? (
-                  <button
+              <button
                     type="submit"
-                    className="btn-theme btn-success px-6 sm:px-theme-xl py-2 sm:py-theme-sm rounded-theme-md font-theme-medium hover:shadow-md transition-all duration-200 w-full sm:w-auto"
-                    style={{
-                      backgroundColor: 'var(--color-success)',
-                      color: 'white',
-                      padding: 'var(--spacing-sm) var(--spacing-lg)'
-                    }}
+                    className="btn-theme btn-primary"
                   >
                     Save
-                  </button>
-                ) : (
-                  <button
+              </button>
+            ) : (
+              <button
                     type="button"
                     onClick={handleNext}
-                    className="btn-theme btn-primary px-6 sm:px-theme-xl py-2 sm:py-theme-sm rounded-theme-md font-theme-medium hover:shadow-md transition-all duration-200 w-full sm:w-auto"
-                    style={{
-                      backgroundColor: 'var(--color-primary)',
-                      color: 'white',
-                      padding: 'var(--spacing-sm) var(--spacing-lg)'
-                    }}
+                    className="btn-theme btn-primary"
                   >
                     Next
-                  </button>
-                )}
+              </button>
+            )}
               </div>
-            </div>
-          </form>
-        </FormProvider>
+          </div>
+        </form>
+      </FormProvider>
       </div>
     </div>
   );
