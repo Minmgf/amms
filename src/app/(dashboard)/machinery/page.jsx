@@ -7,7 +7,7 @@ import PermissionGuard from '@/app/(auth)/PermissionGuard'
 import * as Dialog from '@radix-ui/react-dialog'
 import { FiLayers } from 'react-icons/fi'
 import { IoCalendarOutline } from 'react-icons/io5'
-import { getMachineryList } from '@/services/MachineryService'
+import { getMachineryList } from '@/services/machineryService'
 import MultiStepFormModal from '@/app/components/machinery/multistepForm/MultistepFormModal'
 
 const MachineryMainView = () => {
