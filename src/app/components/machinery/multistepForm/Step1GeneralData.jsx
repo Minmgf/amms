@@ -2,12 +2,16 @@ import { useFormContext } from "react-hook-form";
 import { useState, useRef } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 
-export default function Step1GeneralData({ 
-  countriesList = [], 
-  statesList = [], 
+export default function Step1GeneralData({
+  countriesList = [],
+  statesList = [],
   citiesList = [],
   isLoadingStates = false,
-  isLoadingCities = false 
+  isLoadingCities = false,
+  machineryList = [],
+  machineList = [],
+  brandsList = [],
+  modelsList = [],
 }) {
   const { register, formState: { errors }, setValue, watch } = useFormContext();
   const [previewImage, setPreviewImage] = useState(null);
@@ -15,24 +19,24 @@ export default function Step1GeneralData({
   const [fileSize, setFileSize] = useState("");
   const fileInputRef = useRef(null);
   const { getCurrentTheme } = useTheme();
-  
+
   const watchedPhoto = watch("photo");
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
-    
+
     if (file) {
       // Actualizar información del archivo
       setFileName(file.name);
       setFileSize((file.size / 1024 / 1024).toFixed(2)); // Convertir a MB
-      
+
       // Crear preview si es una imagen
       const reader = new FileReader();
       reader.onload = (e) => {
         setPreviewImage(e.target.result);
       };
       reader.readAsDataURL(file);
-      
+
       // Actualizar el valor en react-hook-form
       setValue("photo", file);
     }
@@ -64,7 +68,7 @@ export default function Step1GeneralData({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
-          <label 
+          <label
             className="block text-theme-sm text-secondary mb-1"
             style={{ color: 'var(--color-text-secondary)' }}
           >
@@ -77,8 +81,8 @@ export default function Step1GeneralData({
             className="parametrization-input"
           />
           {errors.name && (
-            <span 
-              className="text-theme-xs mt-1 block" 
+            <span
+              className="text-theme-xs mt-1 block"
               style={{ color: 'var(--color-error)' }}
             >
               {errors.name.message}
@@ -87,7 +91,7 @@ export default function Step1GeneralData({
         </div>
 
         <div>
-          <label 
+          <label
             className="block text-theme-sm text-secondary mb-1"
             style={{ color: 'var(--color-text-secondary)' }}
           >
@@ -109,8 +113,8 @@ export default function Step1GeneralData({
             })}
           </select>
           {errors.manufactureYear && (
-            <span 
-              className="text-theme-xs mt-1 block" 
+            <span
+              className="text-theme-xs mt-1 block"
               style={{ color: 'var(--color-error)' }}
             >
               {errors.manufactureYear.message}
@@ -119,7 +123,7 @@ export default function Step1GeneralData({
         </div>
 
         <div>
-          <label 
+          <label
             className="block text-theme-sm text-secondary mb-1"
             style={{ color: 'var(--color-text-secondary)' }}
           >
@@ -132,8 +136,8 @@ export default function Step1GeneralData({
             className="parametrization-input"
           />
           {errors.serialNumber && (
-            <span 
-              className="text-theme-xs mt-1 block" 
+            <span
+              className="text-theme-xs mt-1 block"
               style={{ color: 'var(--color-error)' }}
             >
               {errors.serialNumber.message}
@@ -142,11 +146,11 @@ export default function Step1GeneralData({
         </div>
 
         <div>
-          <label 
+          <label
             className="block text-theme-sm text-secondary mb-1"
             style={{ color: 'var(--color-text-secondary)' }}
           >
-            Tipo de maquinaria
+            Tipo de maquina
           </label>
           <select
             aria-label="Machinery Type Select"
@@ -154,16 +158,15 @@ export default function Step1GeneralData({
             className="parametrization-input"
           >
             <option value="">Seleccione un tipo...</option>
-            <option value="tractor">Tractor</option>
-            <option value="excavator">Excavator</option>
-            <option value="bulldozer">Bulldozer</option>
-            <option value="crane">Crane</option>
-            <option value="loader">Loader</option>
-            <option value="grader">Grader</option>
+            {machineList.map((machineryType) => (
+              <option key={machineryType.id_types} value={machineryType.id_types}>
+                {machineryType.name}
+              </option>
+            ))}
           </select>
           {errors.machineryType && (
-            <span 
-              className="text-theme-xs mt-1 block" 
+            <span
+              className="text-theme-xs mt-1 block"
               style={{ color: 'var(--color-error)' }}
             >
               {errors.machineryType.message}
@@ -172,7 +175,7 @@ export default function Step1GeneralData({
         </div>
 
         <div>
-          <label 
+          <label
             className="block text-theme-sm text-secondary mb-1"
             style={{ color: 'var(--color-text-secondary)' }}
           >
@@ -183,17 +186,16 @@ export default function Step1GeneralData({
             {...register("brand")}
             className="parametrization-input"
           >
-            <option value="">Seleccione marca...</option>
-            <option value="caterpillar">Caterpillar</option>
-            <option value="john-deere">John Deere</option>
-            <option value="komatsu">Komatsu</option>
-            <option value="volvo">Volvo</option>
-            <option value="case">Case</option>
-            <option value="new-holland">New Holland</option>
+            <option value="">Seleccione una marca...</option>
+            {brandsList.map((brand) => (
+              <option key={brand.id_brands} value={brand.id_brands}>
+                {brand.name}
+              </option>
+            ))}
           </select>
           {errors.brand && (
-            <span 
-              className="text-theme-xs mt-1 block" 
+            <span
+              className="text-theme-xs mt-1 block"
               style={{ color: 'var(--color-error)' }}
             >
               {errors.brand.message}
@@ -202,21 +204,30 @@ export default function Step1GeneralData({
         </div>
 
         <div>
-          <label 
+          <label
             className="block text-theme-sm text-secondary mb-1"
             style={{ color: 'var(--color-text-secondary)' }}
           >
             Modelo
           </label>
-          <input
-            aria-label="Model Input"
-            placeholder="Ej: D6R"
+          <select
+            aria-label="Model Select"
             {...register("model")}
-            className="parametrization-input"
-          />
+            className="parametrization-input disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={modelsList.length === 0}
+          >
+            <option value="">
+              {modelsList.length === 0 ? "Seleccione una marca primero" : "Seleccione un modelo..."}
+            </option>
+            {modelsList.map((model) => (
+              <option key={model.id_model} value={model.id_model}>
+                {model.name}
+              </option>
+            ))}
+          </select>
           {errors.model && (
-            <span 
-              className="text-theme-xs mt-1 block" 
+            <span
+              className="text-theme-xs mt-1 block"
               style={{ color: 'var(--color-error)' }}
             >
               {errors.model.message}
@@ -225,7 +236,7 @@ export default function Step1GeneralData({
         </div>
 
         <div>
-          <label 
+          <label
             className="block text-theme-sm text-secondary mb-1"
             style={{ color: 'var(--color-text-secondary)' }}
           >
@@ -238,8 +249,8 @@ export default function Step1GeneralData({
             className="parametrization-input"
           />
           {errors.tariff && (
-            <span 
-              className="text-theme-xs mt-1 block" 
+            <span
+              className="text-theme-xs mt-1 block"
               style={{ color: 'var(--color-error)' }}
             >
               {errors.tariff.message}
@@ -248,7 +259,7 @@ export default function Step1GeneralData({
         </div>
 
         <div>
-          <label 
+          <label
             className="block text-theme-sm text-secondary mb-1"
             style={{ color: 'var(--color-text-secondary)' }}
           >
@@ -259,14 +270,16 @@ export default function Step1GeneralData({
             {...register("category")}
             className="parametrization-input"
           >
-            <option value="">Seleccione categoría...</option>
-            <option value="heavy">Heavy</option>
-            <option value="light">Light</option>
-            <option value="medium">Medium</option>
+            <option value="">Seleccione una categoría...</option>
+            {machineryList.map((category) => (
+              <option key={category.id_types} value={category.id_types}>
+                {category.name}
+              </option>
+            ))}
           </select>
           {errors.category && (
-            <span 
-              className="text-theme-xs mt-1 block" 
+            <span
+              className="text-theme-xs mt-1 block"
               style={{ color: 'var(--color-error)' }}
             >
               {errors.category.message}
@@ -275,7 +288,7 @@ export default function Step1GeneralData({
         </div>
 
         <div>
-          <label 
+          <label
             className="block text-theme-sm text-secondary mb-1"
             style={{ color: 'var(--color-text-secondary)' }}
           >
@@ -294,8 +307,8 @@ export default function Step1GeneralData({
             ))}
           </select>
           {errors.country && (
-            <span 
-              className="text-theme-xs mt-1 block" 
+            <span
+              className="text-theme-xs mt-1 block"
               style={{ color: 'var(--color-error)' }}
             >
               {errors.country.message}
@@ -304,7 +317,7 @@ export default function Step1GeneralData({
         </div>
 
         <div>
-          <label 
+          <label
             className="block text-theme-sm text-secondary mb-1"
             style={{ color: 'var(--color-text-secondary)' }}
           >
@@ -321,10 +334,10 @@ export default function Step1GeneralData({
             }}
           >
             <option value="">
-              {isLoadingStates 
-                ? "Loading..." 
-                : statesList.length === 0 
-                  ? "Seleccione un país primero" 
+              {isLoadingStates
+                ? "Loading..."
+                : statesList.length === 0
+                  ? "Seleccione un país primero"
                   : "Seleccione una región..."
               }
             </option>
@@ -335,8 +348,8 @@ export default function Step1GeneralData({
             ))}
           </select>
           {errors.department && (
-            <span 
-              className="text-theme-xs mt-1 block" 
+            <span
+              className="text-theme-xs mt-1 block"
               style={{ color: 'var(--color-error)' }}
             >
               {errors.department.message}
@@ -345,7 +358,7 @@ export default function Step1GeneralData({
         </div>
 
         <div>
-          <label 
+          <label
             className="block text-theme-sm text-secondary mb-1"
             style={{ color: 'var(--color-text-secondary)' }}
           >
@@ -362,10 +375,10 @@ export default function Step1GeneralData({
             }}
           >
             <option value="">
-              {isLoadingCities 
-                ? "Loading..." 
-                : citiesList.length === 0 
-                  ? "Seleccione una región primero" 
+              {isLoadingCities
+                ? "Loading..."
+                : citiesList.length === 0
+                  ? "Seleccione una región primero"
                   : "Seleccione una ciudad..."
               }
             </option>
@@ -376,8 +389,8 @@ export default function Step1GeneralData({
             ))}
           </select>
           {errors.city && (
-            <span 
-              className="text-theme-xs mt-1 block" 
+            <span
+              className="text-theme-xs mt-1 block"
               style={{ color: 'var(--color-error)' }}
             >
               {errors.city.message}
@@ -386,7 +399,7 @@ export default function Step1GeneralData({
         </div>
 
         <div>
-          <label 
+          <label
             className="block text-theme-sm text-secondary mb-1"
             style={{ color: 'var(--color-text-secondary)' }}
           >
@@ -402,8 +415,8 @@ export default function Step1GeneralData({
             <option value="no">No</option>
           </select>
           {errors.telemetry && (
-            <span 
-              className="text-theme-xs mt-1 block" 
+            <span
+              className="text-theme-xs mt-1 block"
               style={{ color: 'var(--color-error)' }}
             >
               {errors.telemetry.message}
@@ -414,13 +427,13 @@ export default function Step1GeneralData({
 
       {/* File Upload */}
       <div className="mt-theme-lg">
-        <label 
+        <label
           className="block text-theme-sm text-secondary mb-2"
           style={{ color: 'var(--color-text-secondary)' }}
         >
           Foto
         </label>
-        
+
         {!fileName ? (
           // Mostrar zona de drop cuando no hay archivo
           <div className="group">
@@ -433,8 +446,8 @@ export default function Step1GeneralData({
               className="hidden"
               id="photoUpload"
             />
-            <label 
-              htmlFor="photoUpload" 
+            <label
+              htmlFor="photoUpload"
               className="block border-2 border-dashed rounded-theme-lg p-theme-xl text-center transition-all duration-300 cursor-pointer hover:shadow-md"
               style={{
                 borderColor: 'var(--color-border)',
@@ -450,10 +463,10 @@ export default function Step1GeneralData({
             >
               <div className="flex flex-col items-center">
                 <div className="mb-theme-md">
-                  <svg 
-                    className="w-12 h-12" 
-                    fill="none" 
-                    stroke="currentColor" 
+                  <svg
+                    className="w-12 h-12"
+                    fill="none"
+                    stroke="currentColor"
                     viewBox="0 0 24 24"
                     style={{ color: 'var(--color-border)' }}
                   >
@@ -466,14 +479,14 @@ export default function Step1GeneralData({
                   </svg>
                 </div>
                 <div>
-                  <span 
+                  <span
                     className="font-theme-medium"
                     style={{ color: 'var(--color-text)' }}
                   >
                     Sube un archivo o arrastra y suelta
                   </span>
                   <br />
-                  <span 
+                  <span
                     className="text-theme-sm"
                     style={{ color: 'var(--color-text-secondary)' }}
                   >
@@ -485,7 +498,7 @@ export default function Step1GeneralData({
           </div>
         ) : (
           // Mostrar archivo cargado
-          <div 
+          <div
             className="border rounded-theme-lg p-theme-md"
             style={{
               borderColor: 'var(--color-border)',
@@ -496,33 +509,33 @@ export default function Step1GeneralData({
               {/* Preview de la imagen */}
               {previewImage && (
                 <div className="flex-shrink-0">
-                  <img 
-                    src={previewImage} 
-                    alt="Preview" 
+                  <img
+                    src={previewImage}
+                    alt="Preview"
                     className="w-16 h-16 object-cover rounded-theme-md border"
                     style={{ borderColor: 'var(--color-border)' }}
                   />
                 </div>
               )}
-              
+
               {/* Información del archivo */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p 
+                    <p
                       className="text-theme-sm font-theme-medium truncate"
                       style={{ color: 'var(--color-text)' }}
                     >
                       {fileName}
                     </p>
-                    <p 
+                    <p
                       className="text-theme-sm"
                       style={{ color: 'var(--color-text-secondary)' }}
                     >
                       {fileSize} MB
                     </p>
                   </div>
-                  
+
                   {/* Botones de acción */}
                   <div className="flex items-center space-x-2">
                     <button
@@ -530,7 +543,7 @@ export default function Step1GeneralData({
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       className="btn-theme btn-secondary "
-                      
+
                     >
                       Cambiar
                     </button>
@@ -539,25 +552,25 @@ export default function Step1GeneralData({
                       type="button"
                       onClick={removeFile}
                       className="btn-theme btn-error"
-                      
+
                     >
                       Eliminar
                     </button>
                   </div>
                 </div>
-                
+
                 {/* Barra de progreso */}
                 <div className="mt-2">
-                  <div 
+                  <div
                     className="rounded-full h-1.5"
                     style={{ backgroundColor: 'var(--color-surface)' }}
                   >
-                    <div 
+                    <div
                       className="h-1.5 rounded-full w-full transition-all duration-300"
                       style={{ backgroundColor: 'var(--color-success)' }}
                     ></div>
                   </div>
-                  <p 
+                  <p
                     className="text-theme-xs mt-1"
                     style={{ color: 'var(--color-success)' }}
                   >
@@ -578,10 +591,10 @@ export default function Step1GeneralData({
             />
           </div>
         )}
-        
+
         {errors.photo && (
-          <span 
-            className="text-theme-xs mt-1 block" 
+          <span
+            className="text-theme-xs mt-1 block"
             style={{ color: 'var(--color-error)' }}
           >
             {errors.photo.message}
