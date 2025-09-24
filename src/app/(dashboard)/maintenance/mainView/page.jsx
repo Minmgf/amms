@@ -2,7 +2,7 @@
 import TableList from '@/app/components/shared/TableList'
 import React, { useState, useMemo, useEffect } from 'react'
 import { CiFilter } from 'react-icons/ci'
-import { FaEye, FaPen, FaPlus, FaTimes, FaCog, FaCalendarAlt, FaBarcode, FaTag, FaCalendar, FaCheckCircle, FaTools, FaHashtag, FaRegPlayCircle, FaTractor, FaHistory, FaUser, FaExclamationTriangle, FaClock, FaWrench } from 'react-icons/fa'
+import { FaEye, FaPen, FaPlus, FaTimes, FaCog, FaCalendarAlt, FaBarcode, FaTag, FaCalendar, FaCheckCircle, FaTools, FaHashtag, FaRegPlayCircle, FaTractor, FaHistory, FaUser, FaExclamationTriangle, FaClock, FaWrench, FaCheck, FaBan, FaRegClock } from 'react-icons/fa'
 import PermissionGuard from '@/app/(auth)/PermissionGuard'
 import * as Dialog from '@radix-ui/react-dialog'
 import { FiLayers } from 'react-icons/fi'
@@ -404,22 +404,55 @@ const SolicitudesMantenimientoView = () => {
           Acciones
         </div>
       ),
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          <button
-            onClick={() => handleEdit(row.original)}
-            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black"
-          >
-            <FaPen /> Editar
-          </button>
-          <button
-            onClick={() => handleView(row.original)}
-            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black"
-          >
-            <FaEye /> Ver
-          </button>
-        </div> 
-      )
+      cell: ({ row }) => {
+        const request = row.original
+        const status = request.status
+        const canApprove = status === 'Pendiente'
+        const canCancel = ['Pendiente', 'Programado'].includes(status)
+        
+        return (
+          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <button
+              onClick={() => handleView(request)}
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600"
+              title="Ver detalles"
+            >
+              <FaHistory className="w-3 h-3" /> Detalles
+              
+            </button>
+            
+            {/* <button
+              onClick={() => handleEdit(request)}
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-yellow-500 hover:text-yellow-600"
+              title="Editar solicitud"
+            >
+              <FaRegClock  className="w-3 h-3" /> 
+            </button> */}
+
+            {/* Renderizado condicional para aprobar */}
+            {canApprove && (
+              <button
+                onClick={() => handleApprove(request)}
+                className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 hover:border-green-500 hover:text-green-600 text-green-600"
+                title="Aprobar solicitud"
+              >
+                <FaRegClock  className="w-3 h-3" /> Agendar
+              </button>
+            )}
+
+            {/* Renderizado condicional para cancelar */}
+            {canCancel && (
+              <button
+                onClick={() => handleCancel(request)}
+                className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-red-300 hover:border-red-500 hover:text-red-600 text-red-600"
+                title="Cancelar solicitud"
+              >
+                <FaBan className="w-3 h-3" /> Denegar
+              </button>
+            )}
+          </div>
+        )
+      }
     }
   ], [])
 
@@ -432,6 +465,54 @@ const SolicitudesMantenimientoView = () => {
   const handleView = (request) => {
     setSelectedRequest(request)
     setIsDetailsModalOpen(true)
+  }
+
+  const handleApprove = async (request) => {
+    try {
+      // Aquí irá la llamada a la API para aprobar
+      console.log('Aprobando solicitud:', request.id)
+      
+      // Actualizar el estado local
+      setMaintenanceData(prevData => 
+        prevData.map(item => 
+          item.id === request.id 
+            ? { ...item, status: 'Programado' }
+            : item
+        )
+      )
+      
+      // Mostrar mensaje de éxito (puedes usar un toast aquí)
+      alert('Solicitud aprobada exitosamente')
+    } catch (error) {
+      console.error('Error al aprobar solicitud:', error)
+      alert('Error al aprobar la solicitud')
+    }
+  }
+
+  const handleCancel = async (request) => {
+    if (!confirm('¿Estás seguro de que quieres cancelar esta solicitud?')) {
+      return
+    }
+
+    try {
+      // Aquí irá la llamada a la API para cancelar
+      console.log('Cancelando solicitud:', request.id)
+      
+      // Actualizar el estado local
+      setMaintenanceData(prevData => 
+        prevData.map(item => 
+          item.id === request.id 
+            ? { ...item, status: 'Cancelado' }
+            : item
+        )
+      )
+      
+      // Mostrar mensaje de éxito
+      alert('Solicitud cancelada exitosamente')
+    } catch (error) {
+      console.error('Error al cancelar solicitud:', error)
+      alert('Error al cancelar la solicitud')
+    }
   }
 
   const handleOpenAddRequestModal = () => {
