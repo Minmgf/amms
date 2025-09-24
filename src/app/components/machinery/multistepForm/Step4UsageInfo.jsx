@@ -1,9 +1,17 @@
 import { useFormContext } from "react-hook-form";
 import { useTheme } from "@/contexts/ThemeContext";
 
-export default function Step4UsageInfo() {
-  const { register, formState: { errors } } = useFormContext();
+export default function Step4UsageInfo({
+  machineryId,
+  distanceUnitsList = [],
+  usageStatesList = [],
+  tenureTypesList = [],
+}) {
+  const { register, formState: { errors }, watch } = useFormContext();
   const { getCurrentTheme } = useTheme();
+
+  // Watch para el valor del switch ownership
+  const watchOwnership = watch("ownership");
 
   return (
     <div id="step-4-usage-info">
@@ -14,9 +22,8 @@ export default function Step4UsageInfo() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Acquisition Date */}
         <div>
-          <label 
-            className="block text-theme-sm mb-1"
-            style={{ color: 'var(--color-text-secondary)' }}
+          <label
+            className="block text-theme-sm text-secondary mb-1"
           >
             Fecha de adquisición
           </label>
@@ -27,8 +34,8 @@ export default function Step4UsageInfo() {
             className="parametrization-input"
           />
           {errors.acquisitionDate && (
-            <span 
-              className="text-theme-xs mt-1 block" 
+            <span
+              className="text-theme-xs mt-1 block"
               style={{ color: 'var(--color-error)' }}
             >
               {errors.acquisitionDate.message}
@@ -38,27 +45,26 @@ export default function Step4UsageInfo() {
 
         {/* Usage Status */}
         <div>
-          <label 
-            className="block text-theme-sm mb-1"
-            style={{ color: 'var(--color-text-secondary)' }}
+          <label
+            className="block text-theme-sm text-secondary mb-1"
           >
             Estado de uso
           </label>
           <select
-            aria-label="Usage Status Select"
-            {...register("usageStatus")}
+            aria-label="Usage State Select"
+            {...register("usageState")}
             className="parametrization-input"
           >
-            <option value="">Seleccione estado...</option>
-            <option value="active">Activo</option>
-            <option value="inactive">Inactivo</option>
-            <option value="maintenance">En mantenimiento</option>
-            <option value="retired">Retirado</option>
-            <option value="standby">En espera</option>
+            <option value="">Seleccione un estado...</option>
+            {usageStatesList.map((usageState) => (
+              <option key={usageState.id_statues} value={usageState.id_statues}>
+                {usageState.name}
+              </option>
+            ))}
           </select>
           {errors.usageStatus && (
-            <span 
-              className="text-theme-xs mt-1 block" 
+            <span
+              className="text-theme-xs mt-1 block"
               style={{ color: 'var(--color-error)' }}
             >
               {errors.usageStatus.message}
@@ -68,9 +74,8 @@ export default function Step4UsageInfo() {
 
         {/* Used Hours */}
         <div>
-          <label 
-            className="block text-theme-sm mb-1"
-            style={{ color: 'var(--color-text-secondary)' }}
+          <label
+            className="block text-theme-sm text-secondary mb-1"
           >
             Horas de uso
           </label>
@@ -84,8 +89,8 @@ export default function Step4UsageInfo() {
             className="parametrization-input"
           />
           {errors.usedHours && (
-            <span 
-              className="text-theme-xs mt-1 block" 
+            <span
+              className="text-theme-xs mt-1 block"
               style={{ color: 'var(--color-error)' }}
             >
               {errors.usedHours.message}
@@ -95,9 +100,8 @@ export default function Step4UsageInfo() {
 
         {/* Mileage */}
         <div>
-          <label 
-            className="block text-theme-sm mb-1"
-            style={{ color: 'var(--color-text-secondary)' }}
+          <label
+            className="block text-theme-sm text-secondary mb-1"
           >
             Kilometraje
           </label>
@@ -116,14 +120,17 @@ export default function Step4UsageInfo() {
               {...register("mileageUnit")}
               className="parametrization-input"
             >
-              <option value="km">KM</option>
-              <option value="miles">Millas</option>
-              <option value="hours">Horas</option>
+              <option value="">Seleccione una unidad...</option>
+              {distanceUnitsList.map((mileageUnit) => (
+                <option key={mileageUnit.id_units} value={mileageUnit.id_units}>
+                  {mileageUnit.name} ({mileageUnit.symbol})
+                </option>
+              ))}
             </select>
           </div>
           {(errors.mileage || errors.mileageUnit) && (
-            <span 
-              className="text-theme-xs mt-1 block" 
+            <span
+              className="text-theme-xs mt-1 block"
               style={{ color: 'var(--color-error)' }}
             >
               {errors.mileage?.message || errors.mileageUnit?.message}
@@ -133,9 +140,8 @@ export default function Step4UsageInfo() {
 
         {/* Tenure */}
         <div className="sm:col-span-2 lg:col-span-2">
-          <label 
-            className="block text-theme-sm mb-1"
-            style={{ color: 'var(--color-text-secondary)' }}
+          <label
+            className="block text-theme-sm text-secondary mb-1"
           >
             Tenencia
           </label>
@@ -144,19 +150,76 @@ export default function Step4UsageInfo() {
             {...register("tenure")}
             className="parametrization-input"
           >
-            <option value="">Seleccione tenencia...</option>
-            <option value="owned">Propio</option>
-            <option value="leased">Arrendado</option>
-            <option value="rented">Rentado</option>
-            <option value="financed">Financiado</option>
-            <option value="contract">Bajo contrato</option>
+            <option value="">Seleccione una opción...</option>
+            {tenureTypesList.map((tenure) => (
+              <option key={tenure.id_types} value={tenure.id_types}>
+                {tenure.name}
+              </option>
+            ))}
           </select>
           {errors.tenure && (
-            <span 
-              className="text-theme-xs mt-1 block" 
+            <span
+              className="text-theme-xs mt-1 block"
               style={{ color: 'var(--color-error)' }}
             >
               {errors.tenure.message}
+            </span>
+          )}
+        </div>
+
+        {/* Ownership Switch */}
+        <div className="lg:col-span-1">
+          <label
+            className="block text-theme-sm text-secondary mb-1"
+          >
+            Es propio
+          </label>
+          <div className="flex items-center mt-2">
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                aria-label="Ownership Switch"
+                type="checkbox"
+                {...register("ownership")}
+                className="sr-only peer"
+              />
+              <div
+                className="relative w-11 h-6 rounded-full transition-colors duration-200 ease-in-out peer-focus:outline-none peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"
+                style={{
+                  backgroundColor: watchOwnership ? 'var(--color-accent)' : 'var(--color-border)',
+                }}
+              />
+            </label>
+          </div>
+          {errors.ownership && (
+            <span
+              className="text-theme-xs mt-1 block"
+              style={{ color: 'var(--color-error)' }}
+            >
+              {errors.ownership.message}
+            </span>
+          )}
+        </div>
+
+        {/* Contract End Date */}
+        <div className="sm:col-span-2 lg:col-span-2">
+          <label
+            className="block text-theme-sm text-secondary mb-1"
+          >
+            Fecha fin contrato
+          </label>
+          <input
+            aria-label="Contract End Date Input"
+            type="date"
+            {...register("contractEndDate")}
+            disabled={watchOwnership}
+            className={`parametrization-input ${watchOwnership ? 'disabled:opacity-50 disabled:cursor-not-allowed' : ''}`}
+          />
+          {errors.contractEndDate && (
+            <span
+              className="text-theme-xs mt-1 block"
+              style={{ color: 'var(--color-error)' }}
+            >
+              {errors.contractEndDate.message}
             </span>
           )}
         </div>
