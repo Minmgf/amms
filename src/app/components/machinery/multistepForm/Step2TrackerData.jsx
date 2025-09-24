@@ -3,10 +3,13 @@ import { useFormContext } from "react-hook-form";
 import { useState } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 
-export default function Step2TrackerData() {
+export default function Step2TrackerData({ machineryId }) {
   const { register, formState: { errors }, trigger } = useFormContext();
   const [checking, setChecking] = useState(false);
   const { getCurrentTheme } = useTheme();
+  
+  // Log del machineryId para debug
+  console.log("📋 Step2TrackerData - Machinery ID recibido:", machineryId);
 
   // Validación asíncrona contra la BD simulando un endpoint
   const validateDuplicate = async (field, value) => {

@@ -10,7 +10,7 @@ import Step6UploadDocs from "./Step6UploadDocs";
 import { getCountries, getStates, getCities } from "@/services/locationService";
 import { useTheme } from "@/contexts/ThemeContext";
 import { FiX } from "react-icons/fi";
-import { getActiveMachinery, getActiveMachine, getModelsByBrandId, getMachineryBrands, registerGeneralData } from "@/services/machineryService";
+import { getActiveMachinery, getActiveMachine, getModelsByBrandId, getMachineryBrands, registerGeneralData, createMachineryTracker } from "@/services/machineryService";
 
 export default function MultiStepFormModal({ isOpen, onClose }) {
   const [step, setStep] = useState(0);
@@ -376,10 +376,69 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
     }
   };
 
-  const onSubmit = (data) => {
-    console.log("Final Data:", data);
-    console.log("Machinery ID:", machineryId);
-    alert("Formulario enviado exitosamente!");
+  const onSubmit = async (data) => {
+    console.log("=".repeat(80));
+    console.log("🚀 INICIANDO PROCESO DE CREACIÓN DE FICHA TÉCNICA DE TRACKER");
+    console.log("=".repeat(80));
+    console.log("📝 Datos completos del formulario:", data);
+    console.log("📋 Machinery ID del Step 1:", machineryId);
+    
+    // Verificar que tenemos el machineryId del Step 1
+    if (!machineryId) {
+      console.error("❌ No se encontró el ID de maquinaria del Step 1");
+      alert("Error: No se encontró el ID de maquinaria. Por favor, complete el Step 1 primero.");
+      return;
+    }
+    
+    // Construir el payload para la API /machinery-tracker/create/
+    const trackerPayload = {
+      id_machinery: machineryId, // ✅ Usar el ID real del Step 1
+      terminal_serial_number: data.terminalSerial || "",
+      gps_serial_number: data.gpsSerial || "",
+      chassis_number: data.chasisNumber || "",
+      engine_number: data.engineNumber || "",
+      responsible_user: parseInt(id) || 1 // Usar el ID del usuario logueado
+    };
+    
+    console.log("📋 PAYLOAD CONSTRUIDO PARA LA API:");
+    console.log("📡 Endpoint: POST /machinery-tracker/create/");
+    console.log("📦 JSON que se enviará:", JSON.stringify(trackerPayload, null, 2));
+    console.log("-".repeat(50));
+    
+    try {
+      // ✅ AQUÍ SE ESTÁ LLAMANDO LA API CON MÉTODO POST desde machineryService
+      console.log("🔥 EJECUTANDO LLAMADA A LA API /machinery-tracker/create/ CON MÉTODO POST");
+      console.log("⏳ Enviando solicitud...");
+      
+      const result = await createMachineryTracker(trackerPayload);
+      
+      console.log("🎉 ¡API LLAMADA EXITOSAMENTE!");
+      console.log("✅ Respuesta de la API:", result);
+      console.log("✅ Método usado: POST");
+      console.log("✅ Endpoint llamado: /machinery-tracker/create/");
+      console.log("✅ JSON enviado:", JSON.stringify(trackerPayload, null, 2));
+      console.log("✅ Respuesta esperada recibida:", {
+        success: result.success,
+        message: result.message
+      });
+      
+      alert(`¡Ficha técnica de tracker creada exitosamente!\n\n${result.message}`);
+      
+    } catch (error) {
+      console.error("❌ ERROR AL LLAMAR LA API /machinery-tracker/create/");
+      console.error("❌ Método usado: POST");
+      console.error("❌ Endpoint: /machinery-tracker/create/");
+      console.error("❌ JSON que se intentó enviar:", JSON.stringify(trackerPayload, null, 2));
+      console.error("❌ Error completo:", error);
+      
+      alert(`Error al crear la ficha técnica de tracker: ${error.message}`);
+    } finally {
+      console.log("=".repeat(80));
+      console.log("🏁 FIN DEL PROCESO DE CREACIÓN DE FICHA TÉCNICA DE TRACKER");
+      console.log("=".repeat(80));
+    }
+    
+    // Cerrar modal y resetear formulario
     onClose();
     methods.reset();
     setStep(0);

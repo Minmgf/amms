@@ -37,3 +37,60 @@ export const registerGeneralData = async (formData) => {
     );
     return data;
 };
+
+// ===== PASO 2 - FICHA DE TRACKER =====
+
+/**
+ * Crear ficha técnica de seguimiento de maquinaria (Step 2)
+ * @param {Object} payload - Datos de la ficha técnica
+ * @param {number} payload.id_machinery - ID de la maquinaria obtenido del Step 1
+ * @param {string} payload.terminal_serial_number - Número de serie del terminal (requerido)
+ * @param {string} payload.gps_serial_number - Número de serie GPS (opcional)
+ * @param {string} payload.chassis_number - Número de chasis (opcional)
+ * @param {string} payload.engine_number - Número de motor (opcional)
+ * @param {number} payload.responsible_user - Usuario responsable (requerido)
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
+export const createMachineryTracker = async (payload) => {
+    try {
+        console.log('🚀 [POST] Creating machinery tracker with payload:', payload);
+        console.log('📡 Endpoint: POST /machinery-tracker/create/');
+        
+        // Validaciones básicas del lado cliente
+        if (!payload.id_machinery) {
+            throw new Error('ID de maquinaria es requerido (debe venir del Step 1)');
+        }
+        
+        if (!payload.terminal_serial_number || payload.terminal_serial_number.trim() === '') {
+            throw new Error('Número de serie del terminal es requerido');
+        }
+        
+        if (!payload.responsible_user) {
+            throw new Error('Usuario responsable es requerido');
+        }
+        
+        // Hacer la petición POST al endpoint
+        const { data } = await apiMain.post("/machinery-tracker/create/", payload);
+        
+        console.log('✅ [POST] Machinery tracker created successfully:', data);
+        console.log('📋 Expected response format:', {
+            success: data.success,
+            message: data.message
+        });
+        
+        return data;
+        
+    } catch (error) {
+        console.error('❌ [POST] Error creating machinery tracker:', error);
+        
+        // Manejar errores del servidor
+        if (error.response?.data) {
+            const errorData = error.response.data;
+            console.error('🔍 Server error response:', errorData);
+            throw new Error(errorData.message || 'Error al crear la ficha técnica de seguimiento');
+        }
+        
+        // Re-lanzar errores de validación del cliente
+        throw error;
+    }
+};
