@@ -8,6 +8,7 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { FiLayers } from 'react-icons/fi'
 import { IoCalendarOutline } from 'react-icons/io5'
 import { getMachineryList } from '@/services/MachineryService'
+import MultiStepFormModal from '@/app/components/machinery/multistepForm/MultistepFormModal'
 
 const MachineryMainView = () => {
   // Estado para el filtro global
@@ -553,6 +554,7 @@ const MachineryMainView = () => {
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
+      <MultiStepFormModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
 
       {/* TODO: Agregar modales de detalles, edición y creación de maquinaria */}
       {/* Estos modales se crearán posteriormente siguiendo el mismo patrón de userManagement */}
