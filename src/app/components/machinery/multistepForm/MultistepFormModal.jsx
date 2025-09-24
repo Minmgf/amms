@@ -163,7 +163,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
 
   // Cargar selects de todos los pasos
   useEffect(() => {
-    const fetchSelectsStep1 = async () => {
+    const fetchSelects = async () => {
       try {
         const machinery = await getActiveMachinery();
         const machine = await getActiveMachine();
@@ -171,38 +171,24 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
         const distanceUnits = await getDistanceUnits();
         const tenureTypes = await getTenureTypes();
         const usageStates = await getUseStates();
+        const maintenanceTypes = await getMaintenanceTypes();
+        
         setMachineryList(machinery);
         setMachineList(machine);
         setBrandsList(brands.data);
-        setDistanceUnitsList(distanceUnits.data)
-        setTenureTypeList(tenureTypes)
-        setUsageStatesList(usageStates)
+        setDistanceUnitsList(distanceUnits.data);
+        setTenureTypeList(tenureTypes);
+        setUsageStatesList(usageStates);
+        setMaintenanceTypeList(maintenanceTypes.data);
       } catch (error) {
         console.error("Error loading selects:", error);
       }
     };
 
     if (isOpen) {
-      fetchSelectsStep1();
+      fetchSelects();
     }
   }, [isOpen]);
-
-  // Cargar selects del paso 5
-  useEffect(() => {
-    const fetchSelectsStep5 = async () => {
-      try {
-        const maintenanceTypes = await getMaintenanceTypes();
-        setMaintenanceTypeList(maintenanceTypes.data);
-      } catch (error) {
-        console.error("Error loading step 1 selects:", error);
-      }
-    };
-
-    if (isOpen) {
-      fetchSelectsStep5();
-    }
-  }, [isOpen]);
-
 
   // Cargar países al montar el componente
   useEffect(() => {
@@ -315,7 +301,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
     const currentValues = methods.getValues();
     const requiredFields = [
       'acquisitionDate', 'usageState', 'usedHours', 'mileage',
-      'mileageUnit', 'tenure'
+      'mileageUnit'
     ];
 
     // Verificar si todos los campos requeridos están completos
