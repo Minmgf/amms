@@ -10,7 +10,8 @@ import Step6UploadDocs from "./Step6UploadDocs";
 import { getCountries, getStates, getCities } from "@/services/locationService";
 import { useTheme } from "@/contexts/ThemeContext";
 import { FiX } from "react-icons/fi";
-import { getActiveMachinery, getActiveMachine, getModelsByBrandId, getMachineryBrands, registerGeneralData, getDistanceUnits, getTenureTypes, getUseStates, registerUsageInfo } from "@/services/machineryService";
+import { getActiveMachinery, getActiveMachine, getModelsByBrandId, getMachineryBrands, registerGeneralData, getMaintenanceTypes, getDistanceUnits, getTenureTypes, getUseStates, registerUsageInfo } from "@/services/machineryService";
+
 
 export default function MultiStepFormModal({ isOpen, onClose }) {
   const [step, setStep] = useState(0);
@@ -27,6 +28,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
   const [distanceUnitsList, setDistanceUnitsList] = useState([]);
   const [tenureTypesList, setTenureTypeList] = useState([]);
   const [usageStatesList, setUsageStatesList] = useState([]);
+  const [maintenanceTypeList, setMaintenanceTypeList] = useState([]);
   const [isSubmittingStep, setIsSubmittingStep] = useState(false);
   const [machineryId, setMachineryId] = useState(null); // Para almacenar el ID devuelto por el backend
   const [id, setId] = useState(""); //id del usuario responsable
@@ -184,6 +186,23 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       fetchSelectsStep1();
     }
   }, [isOpen]);
+
+  // Cargar selects del paso 5
+  useEffect(() => {
+    const fetchSelectsStep5 = async () => {
+      try {
+        const maintenanceTypes = await getMaintenanceTypes();
+        setMaintenanceTypeList(maintenanceTypes.data);
+      } catch (error) {
+        console.error("Error loading step 1 selects:", error);
+      }
+    };
+
+    if (isOpen) {
+      fetchSelectsStep5();
+    }
+  }, [isOpen]);
+
 
   // Cargar países al montar el componente
   useEffect(() => {
@@ -694,7 +713,12 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
                   tenureTypesList={tenureTypesList}
                 />
               }
-              {step === 4 && <Step5Maintenance machineryId={machineryId} />}
+              {step === 4 && 
+                <Step5Maintenance 
+                  machineryId={machineryId}
+                  maintenanceTypeList={maintenanceTypeList} 
+                />
+              }
               {step === 5 && <Step6UploadDocs machineryId={machineryId} />}
             </div>
 
