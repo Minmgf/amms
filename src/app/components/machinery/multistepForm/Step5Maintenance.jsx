@@ -95,7 +95,7 @@ export default function Step5Maintenance({ machineryId, maintenanceTypeList = []
 
   //Filtrar tipos de mantenimiento ya registrados
   const registeredIds = items.map((item) => item.id_maintenance);
-  const availableMaintenanceTypes = maintenanceTypeList.filter(
+  const availableMaintenanceTypes = (maintenanceTypeList || []).filter(
     (maintenanceType) => !registeredIds.includes(maintenanceType.id_maintenance)
   );
 

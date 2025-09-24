@@ -43,7 +43,7 @@ export const registerGeneralData = async (formData) => {
 
 //traer listado de tipos de mantenimiento activos
 export const getMaintenanceTypes = async () => {
-    const { data } = await apiMain.get(`/maintenance/`);
+    const { data } = await apiMain.get(`/maintenance/active/`);
     return data;
 };
 

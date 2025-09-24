@@ -180,7 +180,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
     const fetchSelectsStep5 = async () => {
       try {
         const maintenanceTypes = await getMaintenanceTypes();
-        setMaintenanceTypeList(maintenanceTypes);
+        setMaintenanceTypeList(maintenanceTypes.data);
       } catch (error) {
         console.error("Error loading step 1 selects:", error);
       }
