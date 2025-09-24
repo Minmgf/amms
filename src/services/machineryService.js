@@ -63,6 +63,8 @@ export const registerUsageInfo = async (formData) => {
     const { data } = await apiMain.post("/machinery-usage/create/", formData,
         {headers: {"Content-Type": "multipart/form-data"}}
     );
+    return data;
+};
 
 // ===== PASO 5 =====
 
