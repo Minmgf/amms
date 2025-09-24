@@ -2,11 +2,12 @@
 import TableList from '@/app/components/shared/TableList'
 import React, { useState, useMemo, useEffect } from 'react'
 import { CiFilter } from 'react-icons/ci'
-import { FaEye, FaPen, FaPlus, FaTimes, FaCog, FaCalendarAlt, FaBarcode, FaTag, FaCalendar, FaCheckCircle, FaTools, FaHashtag, FaRegPlayCircle, FaTractor } from 'react-icons/fa'
+import { FaEye, FaPen, FaPlus, FaTimes, FaCog, FaCalendarAlt, FaBarcode, FaTag, FaCalendar, FaCheckCircle, FaTools, FaHashtag, FaRegPlayCircle, FaTractor, FaHistory } from 'react-icons/fa'
 import PermissionGuard from '@/app/(auth)/PermissionGuard'
 import * as Dialog from '@radix-ui/react-dialog'
 import { FiLayers } from 'react-icons/fi'
 import { IoCalendarOutline } from 'react-icons/io5'
+import { getMachineryList } from '@/services/MachineryService'
 
 const MachineryMainView = () => {
   // Estado para el filtro global
@@ -31,38 +32,6 @@ const MachineryMainView = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [selectedMachine, setSelectedMachine] = useState(null)
 
-  // Datos de ejemplo (posteriormente se reemplazará con llamadas a API)
-  const sampleData = [
-    {
-      id: 1,
-      name: 'Tractor para banano',
-      serial_number: 'CAT00D5GPWGB01070',
-      type: 'Tractor',
-      acquisition_date: '2025-03-14T09:23:00Z',
-      status: 'Producción',
-      status_id: 1,
-      brand: 'Caterpillar',
-      model: 'D5G',
-      year: 2023,
-      location: 'Campo A - Sector 1',
-      tenure: 'Propio'
-    },
-    {
-      id: 2,
-      name: 'Tractor para banano',
-      serial_number: 'CAT00D5GPWGB01070',
-      type: 'Tractor',
-      acquisition_date: '2025-03-14T09:23:00Z',
-      status: 'Producción',
-      status_id: 1,
-      brand: 'Caterpillar',
-      model: 'D5G',
-      year: 2023,
-      location: 'Campo A - Sector 2',
-      tenure: 'Arrendado'
-    }
-  ]
-
   // Cargar datos al montar el componente
   useEffect(() => {
     loadInitialData()
@@ -78,12 +47,45 @@ const MachineryMainView = () => {
     setError(null)
     
     try {
-      // TODO: Reemplazar con llamada real a la API
-      // const machineryResponse = await getMachineryList()
+      // Cargar datos de maquinaria
+      const machineryResponse = await getMachineryList()
       
-      // Simulando carga de datos
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      setMachineryData(sampleData)
+      console.log('=== DEBUG: Respuesta completa ===')
+      console.log('machineryResponse:', machineryResponse)
+      console.log('Type of response:', typeof machineryResponse)
+      console.log('Keys:', Object.keys(machineryResponse || {}))
+      console.log('Success:', machineryResponse?.success)
+      console.log('Data:', machineryResponse?.data)
+      console.log('Type of data:', typeof machineryResponse?.data)
+      console.log('Is data array?:', Array.isArray(machineryResponse?.data))
+
+      // Verificar si la respuesta es exitosa
+      if (machineryResponse && machineryResponse.success) {
+        const data = machineryResponse.data
+        
+        if (Array.isArray(data)) {
+          setMachineryData(data)
+          console.log('✅ Maquinaria cargada correctamente:', data)
+        } else if (data && typeof data === 'object') {
+          // Si es un objeto, intentar extraer el array
+          if (data.data && Array.isArray(data.data)) {
+            setMachineryData(data.data)
+            console.log('✅ Maquinaria cargada desde data.data:', data.data)
+          } else if (data.results && Array.isArray(data.results)) {
+            setMachineryData(data.results)
+            console.log('✅ Maquinaria cargada desde data.results:', data.results)
+          } else {
+            console.error('❌ Data no es un array válido:', data)
+            setError('Los datos recibidos no tienen el formato esperado')
+          }
+        } else {
+          console.error('❌ Data es null o undefined')
+          setError('No se recibieron datos de maquinaria')
+        }
+      } else {
+        console.error('❌ Respuesta no exitosa:', machineryResponse)
+        setError(machineryResponse?.message || 'Error al cargar la maquinaria')
+      }
       
     } catch (err) {
       console.error('Error loading data:', err)
@@ -95,17 +97,17 @@ const MachineryMainView = () => {
 
   // Obtener valores únicos para los filtros
   const uniqueMachineryTypes = useMemo(() => {
-    const types = machineryData.map(machine => machine.type).filter(Boolean)
+    const types = machineryData.map(machine => machine.machinery_secondary_type_name).filter(Boolean)
     return [...new Set(types)]
   }, [machineryData])
 
   const uniqueTenures = useMemo(() => {
-    const tenures = machineryData.map(machine => machine.tenure).filter(Boolean)
-    return [...new Set(tenures)]
+    // Este campo no existe en la API actual, mantener vacío por ahora
+    return []
   }, [machineryData])
 
   const uniqueOperativeStatuses = useMemo(() => {
-    const statuses = machineryData.map(machine => machine.status).filter(Boolean)
+    const statuses = machineryData.map(machine => machine.machinery_operational_status_name).filter(Boolean)
     return [...new Set(statuses)]
   }, [machineryData])
 
@@ -114,19 +116,20 @@ const MachineryMainView = () => {
     let filtered = machineryData
 
     if (machineryTypeFilter) {
-      filtered = filtered.filter(machine => machine.type === machineryTypeFilter)
+      filtered = filtered.filter(machine => machine.machinery_secondary_type_name === machineryTypeFilter)
     }
 
     if (tenureFilter) {
-      filtered = filtered.filter(machine => machine.tenure === tenureFilter)
+      // Campo tenure no existe en la API actual, omitir filtro
     }
 
     if (operativeStatusFilter) {
-      filtered = filtered.filter(machine => machine.status === operativeStatusFilter)
+      filtered = filtered.filter(machine => machine.machinery_operational_status_name === operativeStatusFilter)
     }
 
     if (acquisitionDateFilter) {
       filtered = filtered.filter(machine => {
+        if (!machine.acquisition_date) return false
         const machineDate = new Date(machine.acquisition_date).toISOString().split('T')[0]
         return machineDate === acquisitionDateFilter
       })
@@ -140,22 +143,40 @@ const MachineryMainView = () => {
     return (row, columnId, filterValue) => {
       if (!filterValue) return true
       
-      const searchTerm = filterValue.toLowerCase()
+      const searchTerm = filterValue.toLowerCase().trim()
+      if (!searchTerm) return true
+      
       const machine = row.original
       
-      // Crear texto completo para buscar
-      const name = (machine.name || '').toLowerCase()
-      const serialNumber = (machine.serial_number || '').toLowerCase()
-      const type = (machine.type || '').toLowerCase()
-      const brand = (machine.brand || '').toLowerCase()
-      const model = (machine.model || '').toLowerCase()
+      // Crear array de campos searchables usando los campos de la API
+      const searchableFields = [
+        machine.machinery_name,
+        machine.serial_number,
+        machine.machinery_secondary_type_name,
+        machine.machinery_operational_status_name,
+        machine.id_machinery?.toString(),
+        machine.id_machinery_secondary_type?.toString(),
+        machine.id_machinery_operational_status?.toString(),
+      ]
       
-      // Buscar en cualquier parte de los campos
-      return name.includes(searchTerm) ||
-             serialNumber.includes(searchTerm) ||
-             type.includes(searchTerm) ||
-             brand.includes(searchTerm) ||
-             model.includes(searchTerm)
+      // Agregar fechas formateadas si existen
+      if (machine.acquisition_date) {
+        const date = new Date(machine.acquisition_date)
+        searchableFields.push(
+          date.toLocaleDateString('es-ES'), // dd/mm/yyyy
+          date.toLocaleDateString('en-US'), // mm/dd/yyyy
+          date.toISOString().split('T')[0], // yyyy-mm-dd
+          date.getFullYear().toString(),    // año
+          (date.getMonth() + 1).toString().padStart(2, '0'), // mes
+          date.getDate().toString().padStart(2, '0')         // día
+        )
+      }
+      
+      // Buscar en cualquier campo que contenga el término
+      return searchableFields.some(field => {
+        if (!field) return false
+        return field.toString().toLowerCase().includes(searchTerm)
+      })
     }
   }, [])
 
@@ -199,22 +220,33 @@ const MachineryMainView = () => {
   // Definición de columnas para TanStack Table
   const columns = useMemo(() => [
     {
-      accessorKey: 'name',
+      accessorKey: 'machinery_name',
       header: () => (
         <div className="flex items-center gap-2">
           <FaTractor className="w-4 h-4" />
-          Máquina
+          Maquinaria
         </div>
       ),
       cell: ({ row }) => {
         const machine = row.original
         return (
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8  rounded-md flex items-center justify-center">
-              <FaTractor  className="w-4 h-4 " />
+            <div className="w-8 h-8 rounded-md overflow-hidden flex items-center justify-center bg-gray-100">
+              {machine.image_path ? (
+                <img 
+                  src={machine.image_path} 
+                  alt={machine.machinery_name || 'Maquinaria'}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+              ) : null}
+              <FaTractor className="w-4 h-4 text-gray-400" style={{ display: machine.image_path ? 'none' : 'block' }} />
             </div>
             <div className="font-medium parametrization-text">
-              {machine.name || 'N/A'}
+              {machine.machinery_name || 'N/A'}
             </div>
           </div>
         )
@@ -235,7 +267,7 @@ const MachineryMainView = () => {
       )
     },
     {
-      accessorKey: 'type',
+      accessorKey: 'machinery_secondary_type_name',
       header: () => (
         <div className="flex items-center gap-2">
           <FiLayers  className="w-4 h-4 " />
@@ -244,9 +276,26 @@ const MachineryMainView = () => {
       ),
       cell: ({ row }) => (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium parametrization-text">
-          {row.getValue('type') || 'N/A'}
+          {row.getValue('machinery_secondary_type_name') || 'N/A'}
         </span>
       )
+    },
+    {
+      accessorKey: 'machinery_operational_status_name',
+      header: () => (
+        <div className="flex items-center gap-2">
+          <FaCheckCircle  className="w-4 h-4 " />
+          Estado
+        </div>
+      ),
+      cell: ({ row }) => {
+        const status = row.getValue('machinery_operational_status_name')
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium parametrization-text">
+            {status || 'N/A'}
+          </span>
+        )
+      }
     },
     {
       accessorKey: 'acquisition_date',
@@ -267,30 +316,6 @@ const MachineryMainView = () => {
       }
     },
     {
-      accessorKey: 'status',
-      header: () => (
-        <div className="flex items-center gap-2">
-          <FaRegPlayCircle  className="w-4 h-4 " />
-          Estado
-        </div>
-      ),
-      cell: ({ row }) => {
-        const status = row.getValue('status')
-        const statusColors = {
-          'Producción':           'parametrization-text',
-          'Mantenimiento':        'parametrization-text',
-          'Fuera de Servicio':    'parametrization-text',
-          'Disponible':           'parametrization-text'
-        }
-        
-        return (
-          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[status] || 'bg-gray-100 text-gray-800'}`}>
-            {status || 'Desconocido'}
-          </span>
-        )
-      }
-    },
-    {
       id: 'actions',
       header: () => (
         <div className="flex items-center gap-2">
@@ -305,6 +330,12 @@ const MachineryMainView = () => {
             className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black"
           >
             <FaPen /> Editar
+          </button>
+          <button
+            onClick={() => handleView(row.original)}
+            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black"
+          >
+            <FaHistory  /> Historial
           </button>
           <button
             onClick={() => handleView(row.original)}
@@ -362,15 +393,20 @@ const MachineryMainView = () => {
 
       {/* Filtro de búsqueda global */}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-4">
-        <div className="max-w-md">
+        <div className="max-w-md relative">
           <input
             id="search"
             type="text"
-            placeholder="Buscar maquinaria..."
+            placeholder="Buscar por nombre, serie, tipo, estado..."
             value={globalFilter || ''}
             onChange={(e) => setGlobalFilter(e.target.value)}
             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
           />
+          {globalFilter && (
+            <div className="absolute -bottom-5 left-0 text-xs text-gray-500">
+              Filtrando por: "{globalFilter}"
+            </div>
+          )}
         </div>
         <button
           onClick={() => setIsFilterModalOpen(true)}
@@ -379,6 +415,14 @@ const MachineryMainView = () => {
           <CiFilter className="w-4 h-4" />
           Filtrar por
         </button>
+        {globalFilter && (
+          <button
+            onClick={() => setGlobalFilter('')}
+            className="text-sm text-gray-500 hover:text-gray-700 underline"
+          >
+            Limpiar búsqueda
+          </button>
+        )}
         <button
           onClick={handleOpenAddMachineModal}
           className="parametrization-filter-button"
