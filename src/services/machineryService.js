@@ -37,3 +37,31 @@ export const registerGeneralData = async (formData) => {
     );
     return data;
 };
+
+// ===== PASO 4 =====
+
+// traer estados de uso
+export const getUseStates = async () => {
+    const { data } = await apiMain.get("/statues/list/3/");
+    return data;
+};
+
+// traer unidades de distancia
+export const getDistanceUnits = async () => {
+    const { data } = await apiMain.get("/units/active/7/");
+    return data;
+};
+
+// traer tipos de tenencia
+export const getTenureTypes = async () => {
+    const { data } = await apiMain.get("/types/list/active/11/");
+    return data;
+};
+
+// registrar información de uso
+export const registerUsageInfo = async (formData) => {
+    const { data } = await apiMain.post("/machinery-usage/create/", formData,
+        {headers: {"Content-Type": "multipart/form-data"}}
+    );
+    return data;
+};
