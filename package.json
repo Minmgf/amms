@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.8",
     "@radix-ui/react-dialog": "^1.1.15",
     "@tanstack/react-table": "^8.21.3",
     "axios": "^1.11.0",
