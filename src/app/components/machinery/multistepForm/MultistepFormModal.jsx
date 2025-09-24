@@ -10,7 +10,8 @@ import Step6UploadDocs from "./Step6UploadDocs";
 import { getCountries, getStates, getCities } from "@/services/locationService";
 import { useTheme } from "@/contexts/ThemeContext";
 import { FiX } from "react-icons/fi";
-import { getActiveMachinery, getActiveMachine, getModelsByBrandId, getMachineryBrands, registerGeneralData, getMaintenanceTypes } from "@/services/machineryService";
+import { getActiveMachinery, getActiveMachine, getModelsByBrandId, getMachineryBrands, registerGeneralData, getMaintenanceTypes, getDistanceUnits, getTenureTypes, getUseStates, registerUsageInfo } from "@/services/machineryService";
+
 
 export default function MultiStepFormModal({ isOpen, onClose }) {
   const [step, setStep] = useState(0);
@@ -24,6 +25,9 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
   const [machineList, setMachineList] = useState([]);
   const [brandsList, setBrandsList] = useState([]);
   const [modelsList, setModelsList] = useState([]);
+  const [distanceUnitsList, setDistanceUnitsList] = useState([]);
+  const [tenureTypesList, setTenureTypeList] = useState([]);
+  const [usageStatesList, setUsageStatesList] = useState([]);
   const [maintenanceTypeList, setMaintenanceTypeList] = useState([]);
   const [isSubmittingStep, setIsSubmittingStep] = useState(false);
   const [machineryId, setMachineryId] = useState(null); // Para almacenar el ID devuelto por el backend
@@ -102,11 +106,13 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
 
       // Step 4 - Usage Information
       acquisitionDate: "",
-      usageStatus: "",
+      usageState: "",
       usedHours: "",
       mileage: "",
       mileageUnit: "",
       tenure: "",
+      ownership: false,
+      contractEndDate: "",
 
       // Step 5 - Maintenance Data
       maintenace: "",
@@ -155,18 +161,24 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
     fetchModels();
   }, [watchBrand, methods]);
 
-  // Cargar selects del paso 1
+  // Cargar selects de todos los pasos
   useEffect(() => {
     const fetchSelectsStep1 = async () => {
       try {
         const machinery = await getActiveMachinery();
         const machine = await getActiveMachine();
         const brands = await getMachineryBrands();
+        const distanceUnits = await getDistanceUnits();
+        const tenureTypes = await getTenureTypes();
+        const usageStates = await getUseStates();
         setMachineryList(machinery);
         setMachineList(machine);
         setBrandsList(brands.data);
+        setDistanceUnitsList(distanceUnits.data)
+        setTenureTypeList(tenureTypes)
+        setUsageStatesList(usageStates)
       } catch (error) {
-        console.error("Error loading step 1 selects:", error);
+        console.error("Error loading selects:", error);
       }
     };
 
@@ -272,10 +284,38 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
   const validateStep1 = () => {
     const currentValues = methods.getValues();
     const requiredFields = [
-      'name', 'manufactureYear', 'serialNumber', 'machineryType', 
-      'brand', 'model', 'tariff', 'category', 'country', 
+      'name', 'manufactureYear', 'serialNumber', 'machineryType',
+      'brand', 'model', 'tariff', 'category', 'country',
       'department', 'city'
       // 'telemetry' no está incluido porque es opcional
+    ];
+
+    // Verificar si todos los campos requeridos están completos
+    const missingFields = requiredFields.filter(field => {
+      const value = currentValues[field];
+      return !value || (typeof value === 'string' && value.trim() === '');
+    });
+
+    if (missingFields.length > 0) {
+      // Establecer errores manualmente para los campos faltantes
+      missingFields.forEach(field => {
+        methods.setError(field, {
+          type: 'required',
+          message: 'Este campo es obligatorio'
+        });
+      });
+      return false;
+    }
+
+    return true;
+  };
+
+  // Función para validar el paso 4
+  const validateStep4 = () => {
+    const currentValues = methods.getValues();
+    const requiredFields = [
+      'acquisitionDate', 'usageState', 'usedHours', 'mileage',
+      'mileageUnit', 'tenure'
     ];
 
     // Verificar si todos los campos requeridos están completos
@@ -302,10 +342,10 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
   const submitStep1 = async (data) => {
     try {
       setIsSubmittingStep(true);
-      
+
       // Crear FormData para enviar el archivo
       const formData = new FormData();
-      
+
       // Agregar todos los campos del paso 1
       formData.append('machinery_name', data.name);
       formData.append('manufacturing_year', data.manufactureYear);
@@ -316,12 +356,12 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       formData.append('machinery_type', data.category);
       formData.append('id_city', data.city);
       formData.append('responsible_user', id);
-      
+
       // Telemetría es opcional
       if (data.telemetry) {
         formData.append('id_device', data.telemetry);
       }
-      
+
       // Agregar foto si existe
       if (data.photo) {
         formData.append('image', data.photo);
@@ -329,23 +369,23 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
 
       // Enviar datos al backend
       const response = await registerGeneralData(formData);
-      
+
       // Guardar el ID de la maquinaria para los siguientes pasos
       setMachineryId(response.id || response.machinery_id);
-      
+
       // Marcar paso como completado y avanzar
       setCompletedSteps(prev => [...prev, 0]);
       setStep(1);
-      
+
       console.log('Step 1 submitted successfully:', response);
-      
+
     } catch (error) {
       console.error('Error submitting step 1:', error);
-      
+
       // Mostrar error al usuario
       if (error.response?.data) {
         const errorData = error.response.data;
-        
+
         // Si el backend devuelve errores específicos por campo
         Object.keys(errorData).forEach(field => {
           if (errorData[field] && Array.isArray(errorData[field])) {
@@ -364,17 +404,55 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
     }
   };
 
+  const submitStep4 = async (data) => {
+    try {
+      setIsSubmittingStep(true);
+
+      // Crear FormData para enviar el archivo
+      const formData = new FormData();
+
+      // Agregar todos los campos del paso 1
+      formData.append('id_machinery', machineryId);
+      formData.append('is_own', data.ownership);
+      formData.append('acquisition_date', data.acquisitionDate);
+      formData.append('usage_condition', data.usageState);
+      formData.append('usage_hours', data.usedHours);
+      formData.append('distance_value', data.mileage);
+      formData.append('distance_unit', data.mileageUnit);
+      formData.append('tenancy_type', data.tenure);
+      formData.append('contract_end_date', data.contractEndDate);
+      formData.append('responsible_user', id);
+
+      const response = await registerUsageInfo(formData);
+
+      // Marcar paso como completado y avanzar
+      setCompletedSteps(prev => [...prev, 3]);
+      setStep(4);
+    } catch (error) {
+      console.error('Error submitting step 1:', error);
+    } finally {
+      setIsSubmittingStep(false);
+    }
+  };
+
   const nextStep = () => {
     if (step === 0) {
       // Validar paso 1 antes de enviar
       if (!validateStep1()) {
         return; // No avanzar si hay errores
       }
-      
+
       // Enviar datos del paso 1
       const currentData = methods.getValues();
       submitStep1(currentData);
-    } else {
+    } else if(step === 3){
+      if (!validateStep4()) {
+        return;
+      }
+
+      const currentData = methods.getValues();
+      submitStep4(currentData);
+    }else {
       // Para los otros pasos, avanzar normalmente
       setStep((s) => {
         const newStep = Math.min(s + 1, steps.length - 1);
@@ -627,7 +705,14 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
               }
               {step === 1 && <Step2TrackerData machineryId={machineryId} />}
               {step === 2 && <Step3SpecificData machineryId={machineryId} />}
-              {step === 3 && <Step4UsageInfo machineryId={machineryId} />}
+              {step === 3 &&
+                <Step4UsageInfo
+                  machineryId={machineryId}
+                  distanceUnitsList={distanceUnitsList}
+                  usageStatesList={usageStatesList}
+                  tenureTypesList={tenureTypesList}
+                />
+              }
               {step === 4 && 
                 <Step5Maintenance 
                   machineryId={machineryId}

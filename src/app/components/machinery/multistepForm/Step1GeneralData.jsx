@@ -70,7 +70,6 @@ export default function Step1GeneralData({
         <div>
           <label
             className="block text-theme-sm text-secondary mb-1"
-            style={{ color: 'var(--color-text-secondary)' }}
           >
             Nombre
           </label>
@@ -93,7 +92,6 @@ export default function Step1GeneralData({
         <div>
           <label
             className="block text-theme-sm text-secondary mb-1"
-            style={{ color: 'var(--color-text-secondary)' }}
           >
             Año de fabricación
           </label>
@@ -125,7 +123,6 @@ export default function Step1GeneralData({
         <div>
           <label
             className="block text-theme-sm text-secondary mb-1"
-            style={{ color: 'var(--color-text-secondary)' }}
           >
             Número de serie
           </label>
@@ -148,7 +145,6 @@ export default function Step1GeneralData({
         <div>
           <label
             className="block text-theme-sm text-secondary mb-1"
-            style={{ color: 'var(--color-text-secondary)' }}
           >
             Tipo de maquina
           </label>
@@ -177,7 +173,6 @@ export default function Step1GeneralData({
         <div>
           <label
             className="block text-theme-sm text-secondary mb-1"
-            style={{ color: 'var(--color-text-secondary)' }}
           >
             Marca
           </label>
@@ -206,7 +201,6 @@ export default function Step1GeneralData({
         <div>
           <label
             className="block text-theme-sm text-secondary mb-1"
-            style={{ color: 'var(--color-text-secondary)' }}
           >
             Modelo
           </label>
@@ -238,7 +232,6 @@ export default function Step1GeneralData({
         <div>
           <label
             className="block text-theme-sm text-secondary mb-1"
-            style={{ color: 'var(--color-text-secondary)' }}
           >
             Subpartida arancelaria
           </label>
@@ -261,7 +254,6 @@ export default function Step1GeneralData({
         <div>
           <label
             className="block text-theme-sm text-secondary mb-1"
-            style={{ color: 'var(--color-text-secondary)' }}
           >
             Categoría de maquinaria
           </label>
@@ -290,7 +282,6 @@ export default function Step1GeneralData({
         <div>
           <label
             className="block text-theme-sm text-secondary mb-1"
-            style={{ color: 'var(--color-text-secondary)' }}
           >
             País
           </label>
@@ -319,7 +310,6 @@ export default function Step1GeneralData({
         <div>
           <label
             className="block text-theme-sm text-secondary mb-1"
-            style={{ color: 'var(--color-text-secondary)' }}
           >
             Región
           </label>
@@ -360,7 +350,6 @@ export default function Step1GeneralData({
         <div>
           <label
             className="block text-theme-sm text-secondary mb-1"
-            style={{ color: 'var(--color-text-secondary)' }}
           >
             City
           </label>
@@ -401,7 +390,6 @@ export default function Step1GeneralData({
         <div>
           <label
             className="block text-theme-sm text-secondary mb-1"
-            style={{ color: 'var(--color-text-secondary)' }}
           >
             Telemetría
           </label>
