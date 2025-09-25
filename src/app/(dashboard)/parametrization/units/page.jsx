@@ -32,69 +32,37 @@ const ParameterizationView = () => {
   const [modalMode, setModalMode] = useState("add");
   const [selectedParameter, setSelectedParameter] = useState(null);
 
-  // Datos mock para otras pestañas (no Units)
-  const mockDataForOtherTabs = [
-    {
-      id: 1,
-      name: "Sample Category",
-      description: "Sample description",
-      details: "",
-      parameters: [],
-    },
-  ];
-
-  // Opciones del menú de navegación
-  const menuItems = [
-    "Type...",
-    "Status",
-    "Brands",
-    "Units",
-    "Styles",
-    "Job Titles",
-  ];
-
-  // Función para obtener datos del backend
-  const fetchData = async (menuItem = "Units") => {
-    console.log("🚀 fetchData called with:", menuItem);
+  const fetchData = async () => {
+    console.log("📡 Fetching units categories...");
     setLoading(true);
     setError(null);
 
     try {
-      if (menuItem === "Units") {
-        console.log("📡 About to call getUnitsCategories()");
-        const response = await getUnitsCategories();
-        console.log("✅ Categories API Response:", response);
+      const response = await getUnitsCategories();
+      console.log("✅ Categories API Response:", response);
 
-        const transformedData = response.data.map((category) => ({
-          id: category.id_units_categories,
-          name: category.name,
-          description: category.description,
-          details: "",
-          parameters: [],
-        }));
+      const transformedData = (response.data || response).map((category) => ({
+        id: category.id_units_categories,
+        name: category.name,
+        description: category.description,
+        details: "",
+        parameters: [],
+      }));
 
-        console.log("🔄 Transformed categories data:", transformedData);
-        setData(transformedData);
-      } else {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        setData(mockDataForOtherTabs);
-      }
+      console.log("🔄 Transformed categories data:", transformedData);
+      setData(transformedData);
     } catch (err) {
       console.error("❌ Error in fetchData:", err);
       setError(err.message);
-      if (menuItem === "Units") {
-        setData([]);
-      } else {
-        setData(mockDataForOtherTabs);
-      }
+      setData([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData(activeMenuItem);
-  }, [activeMenuItem]);
+    fetchData();
+  }, []); // Sin dependencia de activeMenuItem
 
   const handleMenuItemChange = (item) => {
     setActiveMenuItem(item);

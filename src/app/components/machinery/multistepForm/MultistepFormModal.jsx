@@ -1028,7 +1028,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
 
             {/* Step Content */}
             <div style={{ minHeight: "300px" }} className="sm:min-h-[400px]">
-              {step === 2 && (
+              {step === 0 && (
                 <Step1GeneralData
                   countriesList={countriesList}
                   statesList={statesList}
@@ -1042,7 +1042,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
                 />
               )}
               {step === 1 && <Step2TrackerData machineryId={machineryId} />}
-              {step === 0 && (
+              {step === 2 && (
                 <Step3SpecificData
                   machineryId={machineryId}
                   powerUnitsList={powerUnitsList}
