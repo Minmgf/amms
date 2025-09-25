@@ -23,6 +23,7 @@ import {
   registerUsageInfo,
   getTelemetryDevices,
   getPowerUnits,
+  registerInfoTracker,
   getVolumeUnits,
   getFlowConsumptionUnits,
   getWeightUnits,
@@ -208,79 +209,6 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
     fetchModels();
   }, [watchBrand, methods]);
 
-  // Cargar selects para Step 3
-  useEffect(() => {
-    const fetchStep3Selects = async () => {
-      try {
-        // Units
-        const [
-          power,
-          volume,
-          flow,
-          weight,
-          speed,
-          force,
-          dimension,
-          performance,
-          pressure,
-        ] = await Promise.all([
-          getPowerUnits(),
-          getVolumeUnits(),
-          getFlowConsumptionUnits(),
-          getWeightUnits(),
-          getSpeedUnits(),
-          getForceUnits(),
-          getDimensionUnits(),
-          getPerformanceUnits(),
-          getPressureUnits(),
-        ]);
-
-        setPowerUnitsList(power.data);
-        setVolumeUnitsList(volume.data);
-        setFlowConsumptionUnitsList(flow.data);
-        setWeightUnitsList(weight.data);
-        setSpeedUnitsList(speed.data);
-        setForceUnitsList(force.data);
-        setDimensionUnitsList(dimension.data);
-        setPerformanceUnitsList(performance.data);
-        setPressureUnitsList(pressure.data);
-
-        // Types
-        const [
-          engine,
-          cylinder,
-          traction,
-          transmission,
-          airCond,
-          emission,
-          cabin,
-        ] = await Promise.all([
-          getEngineTypes(),
-          getCylinderArrangementTypes(),
-          getTractionTypes(),
-          getTransmissionSystemTypes(),
-          getAirConditioningSystemTypes(),
-          getEmissionLevelTypes(),
-          getCabinTypes(),
-        ]);
-
-        setEngineTypesList(engine.data);
-        setCylinderArrangementList(cylinder.data);
-        setTractionTypesList(traction.data);
-        setTransmissionSystemList(transmission.data);
-        setAirConditioningList(airCond.data);
-        setEmissionLevelList(emission.data);
-        setCabinTypesList(cabin.data);
-      } catch (error) {
-        console.error("Error loading Step 3 selects:", error);
-      }
-    };
-
-    if (isOpen && step === 2) {
-      fetchStep3Selects();
-    }
-  }, [isOpen, step]);
-
   // Cargar selects de todos los pasos
   useEffect(() => {
     const fetchSelects = async () => {
@@ -293,6 +221,27 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
         const usageStates = await getUseStates();
         const maintenanceTypes = await getMaintenanceTypes();
         const telemetryDevices = await getTelemetryDevices();
+
+        // Units
+        const power = await getPowerUnits();
+        const volume = await getVolumeUnits();
+        const flow = await getFlowConsumptionUnits();
+        const weight = await getWeightUnits();
+        const speed = await getSpeedUnits();
+        const force = await getForceUnits();
+        const dimension = await getDimensionUnits();
+        const performance = await getPerformanceUnits();
+        const pressure = await getPressureUnits();
+
+        // Types
+        const engine = await getEngineTypes();
+        const cylinder = await getCylinderArrangementTypes();
+        const traction = await getTractionTypes();
+        const transmission = await getTransmissionSystemTypes();
+        const airCond = await getAirConditioningSystemTypes();
+        const emission = await getEmissionLevelTypes();
+        const cabin = await getCabinTypes();
+
         setMachineryList(machinery);
         setMachineList(machine);
         setBrandsList(brands.data);
@@ -301,6 +250,23 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
         setUsageStatesList(usageStates);
         setMaintenanceTypeList(maintenanceTypes.data);
         setTelemetryDevicesList(telemetryDevices);
+
+        setEngineTypesList(engine.data);
+        setCylinderArrangementList(cylinder.data);
+        setTractionTypesList(traction.data);
+        setTransmissionSystemList(transmission.data);
+        setAirConditioningList(airCond.data);
+        setEmissionLevelList(emission.data);
+        setCabinTypesList(cabin.data);
+        setPowerUnitsList(power.data);
+        setVolumeUnitsList(volume.data);
+        setFlowConsumptionUnitsList(flow.data);
+        setWeightUnitsList(weight.data);
+        setSpeedUnitsList(speed.data);
+        setForceUnitsList(force.data);
+        setDimensionUnitsList(dimension.data);
+        setPerformanceUnitsList(performance.data);
+        setPressureUnitsList(pressure.data);
       } catch (error) {
         console.error("Error loading selects:", error);
       }
@@ -391,9 +357,18 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
   const validateStep1 = () => {
     const currentValues = methods.getValues();
     const requiredFields = [
-      'name', 'manufactureYear', 'serialNumber', 'machineryType',
-      'brand', 'model', 'tariff', 'category', 'country',
-      'department', 'city', 'telemetry'
+      "name",
+      "manufactureYear",
+      "serialNumber",
+      "machineryType",
+      "brand",
+      "model",
+      "tariff",
+      "category",
+      "country",
+      "department",
+      "city",
+      "telemetry",
       // 'telemetry' no está incluido porque es opcional
     ];
 
@@ -415,15 +390,12 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
     }
 
     return true;
-  }
+  };
 
-  // Función para validar el paso 4
-  const validateStep4 = () => {
+  // Función para validar el paso 2
+  const validateStep2 = () => {
     const currentValues = methods.getValues();
-    const requiredFields = [
-      'acquisitionDate', 'usageState', 'usedHours', 'mileage',
-      'mileageUnit'
-    ];
+    const requiredFields = ["terminalSerial"];
 
     // Verificar si todos los campos requeridos están completos
     const missingFields = requiredFields.filter((field) => {
@@ -477,6 +449,37 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
     });
 
     if (missingFields.length > 0) {
+      missingFields.forEach((field) => {
+        methods.setError(field, {
+          type: "required",
+          message: "Este campo es obligatorio",
+        });
+      });
+      return false;
+    }
+
+    return true;
+  };
+
+  // Función para validar el paso 4
+  const validateStep4 = () => {
+    const currentValues = methods.getValues();
+    const requiredFields = [
+      "acquisitionDate",
+      "usageState",
+      "usedHours",
+      "mileage",
+      "mileageUnit",
+    ];
+
+    // Verificar si todos los campos requeridos están completos
+    const missingFields = requiredFields.filter((field) => {
+      const value = currentValues[field];
+      return !value || (typeof value === "string" && value.trim() === "");
+    });
+
+    if (missingFields.length > 0) {
+      // Establecer errores manualmente para los campos faltantes
       missingFields.forEach((field) => {
         methods.setError(field, {
           type: "required",
@@ -554,7 +557,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
         });
       } else {
         // Error genérico
-        alert('Error al guardar los datos. Por favor, inténtelo de nuevo.');
+        alert("Error al guardar los datos. Por favor, inténtelo de nuevo.");
       }
     } finally {
       setIsSubmittingStep(false);
@@ -568,44 +571,44 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       const formData = new FormData();
 
       // Agregar todos los campos del paso 2
-      formData.append('id_machinery', machineryId);
-      formData.append('terminal_serial_number', data.terminalSerial);
-      formData.append('gps_serial_number', data.gpsSerial);
-      formData.append('chassis_number', data.chasisNumber);
-      formData.append('engine_number', data.engineNumber);
-      formData.append('responsible_user', id);
+      formData.append("id_machinery", machineryId);
+      formData.append("terminal_serial_number", data.terminalSerial);
+      formData.append("gps_serial_number", data.gpsSerial);
+      formData.append("chassis_number", data.chasisNumber);
+      formData.append("engine_number", data.engineNumber);
+      formData.append("responsible_user", id);
 
       const response = await registerInfoTracker(formData);
 
       // Marcar paso como completado y avanzar
-      setCompletedSteps(prev => [...prev, 1]);
+      setCompletedSteps((prev) => [...prev, 1]);
       setStep(2);
 
-      console.log('Step 2 submitted successfully:', response);
+      console.log("Step 2 submitted successfully:", response);
     } catch (error) {
-      console.error('Error submitting step 2:', error);
+      console.error("Error submitting step 2:", error);
 
       // Mostrar error al usuario
       if (error.response?.data) {
         const errorData = error.response.data;
 
         // Si el backend devuelve errores específicos por campo
-        Object.keys(errorData).forEach(field => {
+        Object.keys(errorData).forEach((field) => {
           if (errorData[field] && Array.isArray(errorData[field])) {
             methods.setError(field, {
-              type: 'server',
-              message: errorData[field][0]
+              type: "server",
+              message: errorData[field][0],
             });
           }
         });
       } else {
         // Error genérico
-        alert('Error al guardar los datos. Por favor, inténtelo de nuevo.');
+        alert("Error al guardar los datos. Por favor, inténtelo de nuevo.");
       }
     } finally {
       setIsSubmittingStep(false);
     }
-  }
+  };
 
   const submitStep4 = async (data) => {
     try {
@@ -769,7 +772,6 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       }
       const currentData = methods.getValues();
       submitStep1(currentData);
-
     } else if (step === 1) {
       // Validar y enviar paso 2
       if (!validateStep2()) {
@@ -777,7 +779,6 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       }
       const currentData = methods.getValues();
       submitStep2(currentData);
-
     } else if (step === 2) {
       // Validar y enviar paso 3
       if (!validateStep3()) {
@@ -785,7 +786,6 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       }
       const currentData = methods.getValues();
       submitStep3(currentData);
-
     } else if (step === 3) {
       // Validar y enviar paso 4
       if (!validateStep4()) {
@@ -804,7 +804,6 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       });
     }
   };
-
 
   const prevStep = () => setStep((s) => Math.max(s - 1, 0));
 
@@ -1094,7 +1093,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
 
             {/* Step Content */}
             <div style={{ minHeight: "300px" }} className="sm:min-h-[400px]">
-              {step === 0 &&
+              {step === 0 && (
                 <Step1GeneralData
                   countriesList={countriesList}
                   statesList={statesList}
@@ -1107,9 +1106,9 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
                   modelsList={modelsList}
                   telemetryDevicesList={telemetryDevicesList}
                 />
-              }
+              )}
               {step === 1 && <Step2TrackerData machineryId={machineryId} />}
-              {step === 2 &&
+              {step === 2 && (
                 <Step3SpecificData
                   machineryId={machineryId}
                   powerUnitsList={powerUnitsList}
@@ -1129,21 +1128,21 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
                   emissionLevelList={emissionLevelList}
                   cabinTypesList={cabinTypesList}
                 />
-              }
-              {step === 3 && 
+              )}
+              {step === 3 && (
                 <Step4UsageInfo
                   machineryId={machineryId}
                   distanceUnitsList={distanceUnitsList}
                   usageStatesList={usageStatesList}
                   tenureTypesList={tenureTypesList}
                 />
-              }
-              {step === 4 &&
+              )}
+              {step === 4 && (
                 <Step5Maintenance
                   machineryId={machineryId}
                   maintenanceTypeList={maintenanceTypeList}
-              />
-              }
+                />
+              )}
               {step === 5 && <Step6UploadDocs machineryId={machineryId} />}
             </div>
 

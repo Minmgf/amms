@@ -158,8 +158,9 @@ export default function Step3SpecificData({
                   >
                     <option value="">Unidad</option>
                     {powerUnitsList.map((unit) => (
+                      console.log(unit),
                       <option key={unit.id_units} value={unit.id_units}>
-                        {unit.abbreviation}
+                        {unit.symbol}
                       </option>
                     ))}
                   </select>
@@ -182,7 +183,7 @@ export default function Step3SpecificData({
                   <option value="">Seleccionar tipo</option>
                   {engineTypesList.map((type) => (
                     <option key={type.id_types} value={type.id_types}>
-                      {type.types_name}
+                      {type.name}
                     </option>
                   ))}
                 </select>
@@ -239,7 +240,7 @@ export default function Step3SpecificData({
                     <option value="">Unidad</option>
                     {volumeUnitsList.map((unit) => (
                       <option key={unit.id_units} value={unit.id_units}>
-                        {unit.abbreviation}
+                        {unit.symbol}
                       </option>
                     ))}
                   </select>
@@ -290,7 +291,7 @@ export default function Step3SpecificData({
                       key={arrangement.id_types}
                       value={arrangement.id_types}
                     >
-                      {arrangement.types_name}
+                      {arrangement.name}
                     </option>
                   ))}
                 </select>
@@ -320,7 +321,7 @@ export default function Step3SpecificData({
                   <option value="">Seleccionar tracción</option>
                   {tractionTypesList.map((traction) => (
                     <option key={traction.id_types} value={traction.id_types}>
-                      {traction.types_name}
+                      {traction.name}
                     </option>
                   ))}
                 </select>
@@ -369,7 +370,7 @@ export default function Step3SpecificData({
                     <option value="">Unidad</option>
                     {flowConsumptionUnitsList.map((unit) => (
                       <option key={unit.id_units} value={unit.id_units}>
-                        {unit.abbreviation}
+                        {unit.symbol}
                       </option>
                     ))}
                   </select>
@@ -392,7 +393,7 @@ export default function Step3SpecificData({
                   <option value="">Seleccionar transmisión</option>
                   {transmissionSystemList.map((system) => (
                     <option key={system.id_types} value={system.id_types}>
-                      {system.types_name}
+                      {system.name}
                     </option>
                   ))}
                 </select>
@@ -459,7 +460,7 @@ export default function Step3SpecificData({
                     <option value="">Unidad</option>
                     {volumeUnitsList.map((unit) => (
                       <option key={unit.id_units} value={unit.id_units}>
-                        {unit.abbreviation}
+                        {unit.symbol}
                       </option>
                     ))}
                   </select>
@@ -499,7 +500,7 @@ export default function Step3SpecificData({
                     <option value="">Unidad</option>
                     {weightUnitsList.map((unit) => (
                       <option key={unit.id_units} value={unit.id_units}>
-                        {unit.abbreviation}
+                        {unit.symbol}
                       </option>
                     ))}
                   </select>
@@ -539,7 +540,7 @@ export default function Step3SpecificData({
                     <option value="">Unidad</option>
                     {forceUnitsList.map((unit) => (
                       <option key={unit.id_units} value={unit.id_units}>
-                        {unit.abbreviation}
+                        {unit.symbol}
                       </option>
                     ))}
                   </select>
@@ -589,7 +590,7 @@ export default function Step3SpecificData({
                     <option value="">Unidad</option>
                     {weightUnitsList.map((unit) => (
                       <option key={unit.id_units} value={unit.id_units}>
-                        {unit.abbreviation}
+                        {unit.symbol}
                       </option>
                     ))}
                   </select>
@@ -637,7 +638,7 @@ export default function Step3SpecificData({
                     <option value="">Unidad</option>
                     {speedUnitsList.map((unit) => (
                       <option key={unit.id_units} value={unit.id_units}>
-                        {unit.abbreviation}
+                        {unit.symbol}
                       </option>
                     ))}
                   </select>
@@ -676,7 +677,7 @@ export default function Step3SpecificData({
                     <option value="">Unidad</option>
                     {dimensionUnitsList.map((unit) => (
                       <option key={unit.id_units} value={unit.id_units}>
-                        {unit.abbreviation}
+                        {unit.symbol}
                       </option>
                     ))}
                   </select>
@@ -757,7 +758,7 @@ export default function Step3SpecificData({
                   <option value="">Unidad</option>
                   {dimensionUnitsList.map((unit) => (
                     <option key={unit.id_units} value={unit.id_units}>
-                      {unit.abbreviation}
+                      {unit.symbol}
                     </option>
                   ))}
                 </select>
@@ -890,7 +891,7 @@ export default function Step3SpecificData({
                     <option value="">Unidad</option>
                     {weightUnitsList.map((unit) => (
                       <option key={unit.id_units} value={unit.id_units}>
-                        {unit.abbreviation}
+                        {unit.symbol}
                       </option>
                     ))}
                   </select>
@@ -933,7 +934,7 @@ export default function Step3SpecificData({
                   <option value="">Seleccionar tipo</option>
                   {airConditioningList.map((type) => (
                     <option key={type.id_types} value={type.id_types}>
-                      {type.types_name}
+                      {type.name}
                     </option>
                   ))}
                 </select>
@@ -972,7 +973,7 @@ export default function Step3SpecificData({
                     <option value="">Unidad</option>
                     {powerUnitsList.map((unit) => (
                       <option key={unit.id_units} value={unit.id_units}>
-                        {unit.abbreviation}
+                        {unit.symbol}
                       </option>
                     ))}
                   </select>
@@ -1012,7 +1013,7 @@ export default function Step3SpecificData({
                     <option value="">Unidad</option>
                     {pressureUnitsList.map((unit) => (
                       <option key={unit.id_units} value={unit.id_units}>
-                        {unit.abbreviation}
+                        {unit.symbol}
                       </option>
                     ))}
                   </select>
@@ -1052,7 +1053,7 @@ export default function Step3SpecificData({
                     <option value="">Unidad</option>
                     {flowConsumptionUnitsList.map((unit) => (
                       <option key={unit.id_units} value={unit.id_units}>
-                        {unit.abbreviation}
+                        {unit.symbol}
                       </option>
                     ))}
                   </select>
@@ -1092,7 +1093,7 @@ export default function Step3SpecificData({
                     <option value="">Unidad</option>
                     {volumeUnitsList.map((unit) => (
                       <option key={unit.id_units} value={unit.id_units}>
-                        {unit.abbreviation}
+                        {unit.symbol}
                       </option>
                     ))}
                   </select>
@@ -1135,7 +1136,7 @@ export default function Step3SpecificData({
                   <option value="">Seleccionar nivel</option>
                   {emissionLevelList.map((level) => (
                     <option key={level.id_types} value={level.id_types}>
-                      {level.types_name}
+                      {level.name}
                     </option>
                   ))}
                 </select>
@@ -1157,7 +1158,7 @@ export default function Step3SpecificData({
                   <option value="">Seleccionar tipo</option>
                   {cabinTypesList.map((type) => (
                     <option key={type.id_types} value={type.id_types}>
-                      {type.types_name}
+                      {type.name}
                     </option>
                   ))}
                 </select>
