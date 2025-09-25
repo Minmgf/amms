@@ -38,6 +38,12 @@ export const registerGeneralData = async (formData) => {
     return data;
 };
 
+// ===== PASO 2 =====
+export const registerInfoTracker = async (payload) => {
+    const { data } = await apiMain.post("/machinery-tracker/create/", payload);
+    return data;
+};
+
 // ===== PASO 4 =====
 
 // traer estados de uso

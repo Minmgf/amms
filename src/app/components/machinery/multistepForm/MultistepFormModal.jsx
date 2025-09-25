@@ -10,7 +10,7 @@ import Step6UploadDocs from "./Step6UploadDocs";
 import { getCountries, getStates, getCities } from "@/services/locationService";
 import { useTheme } from "@/contexts/ThemeContext";
 import { FiX } from "react-icons/fi";
-import { getActiveMachinery, getActiveMachine, getModelsByBrandId, getMachineryBrands, registerGeneralData, getMaintenanceTypes, getDistanceUnits, getTenureTypes, getUseStates, registerUsageInfo } from "@/services/machineryService";
+import { getActiveMachinery, getActiveMachine, getModelsByBrandId, getMachineryBrands, registerGeneralData, registerInfoTracker, getMaintenanceTypes, getDistanceUnits, getTenureTypes, getUseStates, registerUsageInfo } from "@/services/machineryService";
 
 
 export default function MultiStepFormModal({ isOpen, onClose }) {
@@ -296,6 +296,33 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
     return true;
   };
 
+  // Función para validar el paso 2
+  const validateStep2 = () => {
+    const currentValues = methods.getValues();
+    const requiredFields = [
+      'terminalSerial'
+    ];
+
+    // Verificar si todos los campos requeridos están completos
+    const missingFields = requiredFields.filter(field => {
+      const value = currentValues[field];
+      return !value || (typeof value === 'string' && value.trim() === '');
+    });
+
+    if (missingFields.length > 0) {
+      // Establecer errores manualmente para los campos faltantes
+      missingFields.forEach(field => {
+        methods.setError(field, {
+          type: 'required',
+          message: 'Este campo es obligatorio'
+        });
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   // Función para validar el paso 4
   const validateStep4 = () => {
     const currentValues = methods.getValues();
@@ -390,6 +417,52 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
     }
   };
 
+  const submitStep2 = async (data) => {
+    try {
+      setIsSubmittingStep(true);
+
+      // Crear payload JSON siguiendo la estructura especificada
+      const payload = {
+        id_machinery: machineryId,
+        terminal_serial_number: data.terminalSerial,
+        gps_serial_number: data.gpsSerial || "",
+        chassis_number: data.chasisNumber || "",
+        engine_number: data.engineNumber || "",
+        responsible_user: id
+      };
+
+      const response = await registerInfoTracker(payload);
+
+      // Marcar paso como completado y avanzar
+      setCompletedSteps(prev => [...prev, 1]);
+      setStep(2);
+
+      console.log('Step 2 submitted successfully:', response);
+    } catch (error) {
+      console.error('Error submitting step 2:', error);
+
+      // Mostrar error al usuario
+      if (error.response?.data) {
+        const errorData = error.response.data;
+
+        // Si el backend devuelve errores específicos por campo
+        Object.keys(errorData).forEach(field => {
+          if (errorData[field] && Array.isArray(errorData[field])) {
+            methods.setError(field, {
+              type: 'server',
+              message: errorData[field][0]
+            });
+          }
+        });
+      } else {
+        // Error genérico
+        alert('Error al guardar los datos. Por favor, inténtelo de nuevo.');
+      }
+    } finally {
+      setIsSubmittingStep(false);
+    }
+  };
+
   const submitStep4 = async (data) => {
     try {
       setIsSubmittingStep(true);
@@ -431,6 +504,15 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       // Enviar datos del paso 1
       const currentData = methods.getValues();
       submitStep1(currentData);
+    } else if(step === 1){
+      // Validar paso 2 antes de enviar
+      if (!validateStep2()) {
+        return;
+      }
+      
+      // Enviar datos del paso 2
+      const currentData = methods.getValues();
+      submitStep2(currentData);
     } else if(step === 3){
       if (!validateStep4()) {
         return;
