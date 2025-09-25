@@ -116,6 +116,7 @@ export default function Step5Maintenance({ machineryId, maintenanceTypeList = []
               {...register("maintenance", {
                 required: "Debe seleccionar un tipo de mantenimiento",
               })}
+              aria-label="Maintenance Select"
               className="parametrization-input"
             >
               <option value="">Seleccione un tipo de mantenimiento</option>
@@ -146,6 +147,7 @@ export default function Step5Maintenance({ machineryId, maintenanceTypeList = []
               {...register("usageHours", {
                 required: "Este campo es requerido",
               })}
+              aria-label="Usage Hours Select"
               className="parametrization-input"
             />
             {errors.usageHours && (
@@ -164,6 +166,7 @@ export default function Step5Maintenance({ machineryId, maintenanceTypeList = []
               {...register("unit", {
                 required: "Debe seleccionar una unidad",
               })}
+              aria-label="Unit Select"
               className="parametrization-input"
             >
               <option value="">Seleccione unidad</option>
@@ -180,14 +183,10 @@ export default function Step5Maintenance({ machineryId, maintenanceTypeList = []
 
         <button
           type="button"
+          aria-label="Add Maintenance Button"
           onClick={handleAdd}
           disabled={loading}
           className="btn-theme btn-secondary text-theme-sm px-theme-md py-theme-sm rounded-theme-md transition-all duration-200 hover:shadow-md"
-          style={{
-            backgroundColor: "var(--color-secondary)",
-            color: "white",
-            border: "none",
-          }}
         >
           {loading ? "Guardando..." : "Añadir"}
         </button>
