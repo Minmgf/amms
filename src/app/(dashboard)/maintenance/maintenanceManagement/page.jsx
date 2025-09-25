@@ -161,7 +161,7 @@ const GestorMantenimientos = () => {
 
     // Definición de columnas para TanStack Table
     const columns = useMemo(() => [
-               {
+            {
             accessorKey: 'name',
             header: () => (
                 <div className="flex items-center gap-2">
