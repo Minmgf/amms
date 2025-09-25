@@ -155,7 +155,7 @@ export const deleteMachineryDoc = async (documentId) => {
 export const getMachineryDocs = async (machineryId) => {
     const { data } = await apiMain.get(`/machinery-documentation/list/${machineryId}/`);
     return data;
-}:
+};
 
 /**
  * Obtiene la lista completa de maquinaria
