@@ -1,5 +1,6 @@
 'use client'
 import TableList from '@/app/components/shared/TableList'
+import MachineryHistoryModal from '@/app/components/machinery/history/machineryHistoryModal'
 import React, { useState, useMemo, useEffect } from 'react'
 import { CiFilter } from 'react-icons/ci'
 import { FaEye, FaPen, FaPlus, FaTimes, FaCog, FaCalendarAlt, FaBarcode, FaTag, FaCalendar, FaCheckCircle, FaTools, FaHashtag, FaRegPlayCircle, FaTractor, FaHistory } from 'react-icons/fa'
@@ -32,6 +33,7 @@ const MachineryMainView = () => {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [selectedMachine, setSelectedMachine] = useState(null)
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
 
   // Cargar datos al montar el componente
   useEffect(() => {
@@ -333,7 +335,7 @@ const MachineryMainView = () => {
             <FaPen /> Editar
           </button>
           <button
-            onClick={() => handleView(row.original)}
+            onClick={() => handleHistory(row.original)}
             className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black"
           >
             <FaHistory  /> Historial
@@ -360,6 +362,12 @@ const MachineryMainView = () => {
     console.log('Viewing machine:', machine)
     setSelectedMachine(machine)
     setIsDetailsModalOpen(true)
+  }
+
+  const handleHistory = (machine) => {
+    console.log('Viewing history for machine:', machine)
+    setSelectedMachine(machine)
+    setIsHistoryModalOpen(true)
   }
 
   const handleOpenAddMachineModal = () => {
@@ -555,6 +563,11 @@ const MachineryMainView = () => {
         </Dialog.Portal>
       </Dialog.Root>
       <MultiStepFormModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
+      <MachineryHistoryModal
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+        machinery={selectedMachine}
+      />
 
       {/* TODO: Agregar modales de detalles, edición y creación de maquinaria */}
       {/* Estos modales se crearán posteriormente siguiendo el mismo patrón de userManagement */}
