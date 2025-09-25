@@ -17,6 +17,7 @@ import {
   FaHistory,
   FaDesktop,
   FaRssSquare,
+  FaTractor,
 } from "react-icons/fa";
 import { MdSettings } from "react-icons/md";
 import {
@@ -139,10 +140,10 @@ export default function Sidebar({ isOpen, setIsOpen }) {
     },
     { 
       name: "Maquinaria", 
-      icon: <FaCogs />, 
+      icon: <FaTractor />, 
       path: "/machinery",
       permissions: [],
-      module: "machinery"
+      module: "machinery",
     },
     {
       name: "Mantenimiento",
@@ -154,7 +155,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         {
           name: "Mantenimientos programados",
           icon: <FaCalendarCheck />,
-          path: "/maintenance/scheduleMaintenance",
+          path: "/maintenance/scheduledMaintenance",
           permissions: [],
         },
         {
@@ -214,23 +215,29 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       ],
     },
     {
-      name: "Gestión de usuarios",
+      name: "Gestión de roles y usuarios",
       icon: <FaUsers />,
       path: "/userManagement",
       permissions: [],
       module: "users",
       sub: [
         {
+          name: "Gestión de usuarios",
+          icon: <FaUsers />,
+          path: "/userManagement/mainView",
+          permissions: [22],
+        },
+        {
           name: "Gestión de roles",
           icon: <FaUserShield />,
           path: "/userManagement/roleManagement",
-          permissions: [],
+          permissions: [23],
         },
         {
           name: "Auditorías",
           icon: <FaHistory />,
           path: "/userManagement/auditLog",
-          permissions: [],
+          permissions: [24],
         },
       ],
     },

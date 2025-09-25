@@ -38,7 +38,7 @@ const SelectField = ({ value, onChange, options, label }) => (
 
 // Main Component
 const StylesParameterizationView = () => {
-  const [activeMenuItem, setActiveMenuItem] = useState('Styles');
+  const [activeMenuItem, setActiveMenuItem] = useState('Estilos');
   
   // Usar el contexto de tema global
   const {
@@ -77,8 +77,9 @@ const StylesParameterizationView = () => {
         paragraphTextColor: theme.colors.textSecondary,
         backgroundColor: theme.colors.background,
         surfaceColor: theme.colors.surface,
-        primaryButton: theme.colors.accent,
+        primaryButton: theme.colors.primary,
         secondaryButton: theme.colors.secondary,
+        accentColor: theme.colors.accent,
         borderColor: theme.colors.border,
         hoverColor: theme.colors.hover,
         errorColor: theme.colors.error,
@@ -90,6 +91,7 @@ const StylesParameterizationView = () => {
       });
     }
   }, [currentTheme, getCurrentTheme]);
+
 
   const handleMenuItemChange = (item) => {
     setActiveMenuItem(item);
@@ -119,8 +121,9 @@ const StylesParameterizationView = () => {
           textSecondary: tempStyleParams.paragraphTextColor,
           background: tempStyleParams.backgroundColor,
           surface: tempStyleParams.surfaceColor,
-          accent: tempStyleParams.primaryButton,
+          primary: tempStyleParams.primaryButton,
           secondary: tempStyleParams.secondaryButton,
+          accent: tempStyleParams.accentColor,
           border: tempStyleParams.borderColor,
           hover: tempStyleParams.hoverColor,
           error: tempStyleParams.errorColor,
@@ -137,6 +140,7 @@ const StylesParameterizationView = () => {
           }
         }
       };
+
       
       // Si es un tema de la API (empieza con 'api_'), actualizarlo
       if (currentTheme && currentTheme.startsWith('api_')) {
@@ -323,7 +327,7 @@ const StylesParameterizationView = () => {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6 md:mb-10">
-            <h1 className="text-2xl md:text-3xl font-bold text-primary">Parameterization</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-primary">Parametrización</h1>
             <div className="text-sm bg-surface p-2 rounded-theme-md border border-primary">
               <span className="text-secondary">Tema actual: </span>
               <span className="font-semibold text-accent">{getAllThemes()[currentTheme]?.name || 'Cargando...'}</span>
@@ -438,6 +442,12 @@ const StylesParameterizationView = () => {
                     label="Botón Secundario"
                     color={tempStyleParams.secondaryButton}
                     onChange={(color) => handleStyleChange('secondaryButton', color)}
+                    onOpenColorPicker={handleOpenColorPicker}
+                  />
+                  <ColorPicker
+                    label="Color de Acento"
+                    color={tempStyleParams.accentColor}
+                    onChange={(color) => handleStyleChange('accentColor', color)}
                     onOpenColorPicker={handleOpenColorPicker}
                   />
                   <ColorPicker

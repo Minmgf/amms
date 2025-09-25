@@ -241,26 +241,30 @@ const page = () => {
                   <FiEye className="text-secondary" />
                 </button>
               </PermissionGuard>
-              <button
-                area-label="Edit Button"
-                onClick={() => handleOpenRoleFormModal("edit", info.getValue())}
-                className="p-2 hover:bg-gray-100 rounded-md transition-colors opacity-0 group-hover:opacity-100"
-                title="Editar"
-              >
-                <FiEdit2 className="text-secondary" />
-              </button>
-              <button
-                area-label="Change Status Button"
-                onClick={() => handleOpenStatusConfirm(info.getValue(), statusId)}
-                className="p-2 hover:bg-gray-100 rounded-md transition-colors opacity-0 group-hover:opacity-100"
-                title={statusId === 1 ? "Inactivar" : "Activar"}
-              >
-                {statusId === 1 ?
-                  <FiXCircle className="text-secondary" />
-                  :
-                  <FiCheckCircle className="text-secondary" />
-                }
-              </button>
+              <PermissionGuard permission={15}>
+                <button
+                  area-label="Edit Button"
+                  onClick={() => handleOpenRoleFormModal("edit", info.getValue())}
+                  className="p-2 hover:bg-gray-100 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                  title="Editar"
+                >
+                  <FiEdit2 className="text-secondary" />
+                </button>
+              </PermissionGuard>
+              <PermissionGuard permission={18}>
+                <button
+                  area-label="Change Status Button"
+                  onClick={() => handleOpenStatusConfirm(info.getValue(), statusId)}
+                  className="p-2 hover:bg-gray-100 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                  title={statusId === 1 ? "Inactivar" : "Activar"}
+                >
+                  {statusId === 1 ?
+                    <FiXCircle className="text-secondary" />
+                    :
+                    <FiCheckCircle className="text-secondary" />
+                  }
+                </button>
+              </PermissionGuard>
             </div>
           )
         },
@@ -288,7 +292,7 @@ const page = () => {
           </div>
           {/* Filter, Search and Add */}
           <div className="mb-4 md:mb-6 flex flex-col sm:flex-row gap-4 justify-between lg:justify-start">
-            <div class="relative flex-1 max-w-md">
+            <div className="relative flex-1 max-w-md">
 
               <div className="flex items-center parametrization-input rounded-md px-3 py-2 w-72">
                 <FiSearch className="text-secondary w-4 h-4 mr-2" />
@@ -322,13 +326,15 @@ const page = () => {
           </div>
 
           { /* Table */}
-          <TableList
-            columns={columns}
-            data={filteredData}
-            loading={loading}
-            globalFilter={globalFilter}
-            onGlobalFilterChange={setGlobalFilter}
-          />
+          <PermissionGuard permission={13}>
+            <TableList
+              columns={columns}
+              data={filteredData}
+              loading={loading}
+              globalFilter={globalFilter}
+              onGlobalFilterChange={setGlobalFilter}
+            />
+          </PermissionGuard>
         </div>
       </div>
       <RoleFormModal

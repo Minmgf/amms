@@ -212,11 +212,13 @@ const NewThemeModal = ({ isOpen, onClose, onSave }) => {
                   Description (Optional)
                 </label>
                 <textarea
+                  cols={30}
+                  rows={4}
+                  maxLength={200} // Límite de 200 caracteres
                   value={themeDescription}
                   onChange={(e) => setThemeDescription(e.target.value)}
                   placeholder="Brief description of your theme"
-                  rows="2"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
               </div>
             </div>

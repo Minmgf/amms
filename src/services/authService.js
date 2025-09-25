@@ -7,19 +7,29 @@ const getAuthToken = () => {
     if (!token) {
         token = sessionStorage.getItem("token");
     }
+    if (!token) {
+        token = Cookies.get("token");
+    }
     return token;
 };
 
 export const login = async (payload, rememberMe = false) => {
     const { data } = await apiUsers.post("/auth/login/", payload);
 
-    // Guardar siempre en cookie (ejemplo: expira en 1 hora)
-    Cookies.set("token", data.access_token, { expires: 1 / 24 });
+    // Guardar siempre en cookie para mantener consistencia
+    // La cookie expira en 7 días si rememberMe es true, sino en 1 día
+    const cookieExpiry = rememberMe ? 7 : 1;
+    Cookies.set("token", data.access_token, { expires: cookieExpiry });
 
+    // También guardar en localStorage o sessionStorage según preferencia
     if (rememberMe) {
         localStorage.setItem("token", data.access_token);
+        // Limpiar sessionStorage si existe
+        sessionStorage.removeItem("token");
     } else {
         sessionStorage.setItem("token", data.access_token);
+        // Limpiar localStorage si existe
+        localStorage.removeItem("token");
     }
 
     console.log("Token desde helper:", getAuthToken());
@@ -28,10 +38,24 @@ export const login = async (payload, rememberMe = false) => {
 };
 
 export const logout = async () => {
-    const { data } = await apiUsers.post("/auth/logout");
-    Cookies.remove("token");
-    localStorage.removeItem("token");
-    sessionStorage.removeItem("token"); // También limpiar sessionStorage
+    try {
+        const { data } = await apiUsers.post("/auth/logout");
+        return data;
+    } catch (error) {
+        // Si falla el logout en el servidor, continuamos con la limpieza local
+        console.error("Error en logout del servidor:", error);
+    } finally {
+        // Siempre limpiar los tokens locales
+        Cookies.remove("token");
+        localStorage.removeItem("token");
+        sessionStorage.removeItem("token");
+        localStorage.removeItem("userData");
+    }
+};
+
+// Nueva función para reenviar correo de activación
+export const resendActivationEmail = async (email) => {
+    const { data } = await apiUsers.post("/auth/resend-activation", { email });
     return data;
 };
 
@@ -45,6 +69,7 @@ export const getGenders = async () => {
     return data;
 };
 
+// Esta función NO requiere autenticación
 export const validateDocument = async (payload) => {
     const { data } = await apiUsers.post("/users/pre-register/validate", payload);
     return data;
@@ -60,6 +85,7 @@ export const activateAccount = async (token) => {
     return data;
 };
 
+// Esta función NO requiere autenticación - solo necesita el token de validación
 export const completePreregister = async (payload) => {
     const { data } = await apiUsers.post("/users/pre-register/complete", payload);
     return data;

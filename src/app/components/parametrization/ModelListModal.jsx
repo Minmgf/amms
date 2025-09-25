@@ -64,7 +64,7 @@ const CategoryModal = ({
         {/* Modal Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">
-            <span className="text-gray-500">Category:</span>
+            <span className="text-gray-500">Categoría: </span>
             <span className="text-gray-900">{categoryName}</span>
           </h2>
           <button
@@ -85,16 +85,16 @@ const CategoryModal = ({
                 <thead className="bg-gray-100 border-b border-gray-200">
                   <tr>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
-                      Brand name
+                      Marca
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
-                      Description
+                      Descripción
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
-                      Status
+                      Estado
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                      Actions
+                      Acciones
                     </th>
                   </tr>
                 </thead>
@@ -125,7 +125,7 @@ const CategoryModal = ({
                           className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md transition-colors"
                         >
                           <FiEdit3 className="w-3 h-3 mr-1.5" />
-                          Edit
+                          Editar
                         </button>
                       </td>
                     </tr>
@@ -141,7 +141,7 @@ const CategoryModal = ({
               onClick={handleAddBrand}
               className="px-8 py-3 btn-theme btn-primary relative"
             >
-              Add Brand
+              Añadir marca
             </button>
           </div>
         </div>

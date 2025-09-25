@@ -1,9 +1,11 @@
 'use client';
+import { useRouter } from "next/navigation";
 import React, { useState } from 'react';
 import Logo from "../../components/auth/Logo";
 import LoginCard from "../../components/auth/LoginCard";
 import { requestResetPassword } from '@/services/authService';
 import { useForm } from "react-hook-form";
+import Link from "next/link";
 import {
     SuccessModal,
     ErrorModal,
@@ -13,6 +15,7 @@ const Page = () => {
     const [successOpen, setSuccessOpen] = useState(false);
     const [errorOpen, setErrorOpen] = useState(false);
     const [modalMessage, setModalMessage] = useState("");
+    const router = useRouter();
     const {
         register,
         handleSubmit,
@@ -70,7 +73,14 @@ const Page = () => {
                         </button>
                     </form>
                     <div className="mt-8 text-center text-white">
-                        Ya tiene una cuenta activa? <a href="/login" className="text-white font-bold underline">Inicie sesión aquí</a>
+                        Ya tiene una cuenta activa? 
+                        <Link
+                            area-label="Login Button"
+                            href="/login"
+                            className="hover:underline font-bold text-white"
+                        >
+                            Inicie sesión aquí
+                        </Link>
                     </div>
                 </LoginCard>
                 <SuccessModal

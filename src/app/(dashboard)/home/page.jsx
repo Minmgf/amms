@@ -1,6 +1,5 @@
 "use client";
 import React from 'react'
-import UserTable from '../../components/userManagement/UserTable'
 
 const HomePage = ({ activeMenu = "Home" }) => {
 

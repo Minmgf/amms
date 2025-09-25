@@ -2,7 +2,10 @@
 import { changeJobStatus } from "@/services/parametrizationService";
 import React, { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
-import { SuccessModal, ErrorModal } from '@/app/components/shared/SuccessErrorModal';
+import {
+  SuccessModal,
+  ErrorModal,
+} from "@/app/components/shared/SuccessErrorModal";
 
 const JobModal = ({
   isOpen,
@@ -14,7 +17,7 @@ const JobModal = ({
   departmentName = "Department X",
   onSave,
   existingJobs = [], // Array de jobs existentes para validar unicidad
-  onStatusChange
+  onStatusChange,
 }) => {
   const [formData, setFormData] = useState({
     department: "",
@@ -38,7 +41,7 @@ const JobModal = ({
         department: departmentName || "Department X",
         jobTitle: jobData.name || "",
         description: jobData.description || "",
-        isActive: jobData.status === "Active",
+        isActive: jobData.idStatues === 1,
       });
     } else {
       // Reset form for add mode
@@ -78,9 +81,9 @@ const JobModal = ({
       const response = await changeJobStatus(jobData.id);
       setModalMessage(response.message);
       setSuccessOpen(true);
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        isActive: !prev.isActive
+        isActive: !prev.isActive,
       }));
       if (onStatusChange) {
         onStatusChange(departmentId);
@@ -141,7 +144,7 @@ const JobModal = ({
           {/* Header */}
           <div className="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-6 border-b border-gray-200">
             <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
-              {isAddMode ? "Add Job" : "Modify Job"}
+              {isAddMode ? "Añadir puesto" : "Modificar puesto"}
             </h2>
             <button
               onClick={onClose}
@@ -159,7 +162,7 @@ const JobModal = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Department
+                    Departamento
                   </label>
                   <input
                     type="text"
@@ -174,10 +177,11 @@ const JobModal = ({
 
                 <div>
                   <label
-                    className={`block text-sm font-medium mb-2 ${errors.jobTitle ? "text-red-500" : "text-gray-700"
-                      }`}
+                    className={`block text-sm font-medium mb-2 ${
+                      errors.jobTitle ? "text-red-500" : "text-gray-700"
+                    }`}
                   >
-                    Job Title
+                    Puesto de trabajo
                   </label>
                   <input
                     type="text"
@@ -186,10 +190,11 @@ const JobModal = ({
                       handleInputChange("jobTitle", e.target.value)
                     }
                     placeholder={isAddMode ? "" : ""}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errors.jobTitle
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                      errors.jobTitle
                         ? "border-red-500 focus:border-red-500 focus:ring-red-500"
                         : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                      }`}
+                    }`}
                   />
                   {errors.jobTitle && (
                     <div className="flex items-center mt-1 text-red-500 text-xs">
@@ -214,38 +219,44 @@ const JobModal = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description
+                    Descripción
                   </label>
-                  <input
-                    type="text"
+                  <textarea
+                    cols={30}
+                    rows={4}
+                    maxLength={200} // Límite de 200 caracteres
                     value={formData.description}
                     onChange={(e) =>
                       handleInputChange("description", e.target.value)
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    placeholder="Enter description"
                   />
                 </div>
 
-                {departmentMode !== 'add' && !isAddMode && (
+                {departmentMode !== "add" && !isAddMode && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Activate/Deactivate
+                      Activar/Desactivar
                     </label>
                     <div className="mt-1 sm:mt-0">
                       <button
                         onClick={() => handleToggleStatus()}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${formData.isActive ? "bg-red-500" : "bg-gray-200"
-                          }`}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                          formData.isActive ? "bg-red-500" : "bg-gray-200"
+                        }`}
                       >
                         <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.isActive ? "translate-x-6" : "translate-x-1"
-                            }`}
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            formData.isActive
+                              ? "translate-x-6"
+                              : "translate-x-1"
+                          }`}
                         />
                       </button>
                     </div>
                   </div>
                 )}
-
               </div>
             </div>
           </div>
@@ -256,7 +267,7 @@ const JobModal = ({
               onClick={handleSave}
               className="btn-theme btn-primary not-disabled: w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isAddMode ? "Save" : "Update"}
+              {isAddMode ? "Guardar" : "Actualizar"}
             </button>
           </div>
         </div>

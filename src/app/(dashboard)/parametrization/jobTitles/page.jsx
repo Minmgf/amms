@@ -16,11 +16,12 @@ import {
   SuccessModal,
   ErrorModal,
 } from "@/app/components/shared/SuccessErrorModal";
+import { InfoIcon } from "lucide-react";
 
 // Componente principal
 const ParameterizationView = () => {
   const { currentTheme } = useTheme();
-  const [activeMenuItem, setActiveMenuItem] = useState("Job Titles");
+  const [activeMenuItem, setActiveMenuItem] = useState("Cargos");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [data, setData] = useState([]);
@@ -172,17 +173,37 @@ const ParameterizationView = () => {
   const columns = useMemo(
     () => [
       columnHelper.accessor("department", {
-        header: "Department",
+        header: "Departamento",
         cell: (info) => (
           <div className="font-medium text-primary">{info.getValue()}</div>
         ),
       }),
       columnHelper.accessor("description", {
-        header: "Description",
+        header: "Descripción",
         cell: (info) => <div className="text-secondary">{info.getValue()}</div>,
       }),
+      columnHelper.accessor("status", {
+        header: "Estado",
+        cell: (info) => {
+          const row = info.row.original; // aquí tienes idStatues y todos los datos
+          return (
+            <div
+              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                row.idStatues === 1
+                  ? "bg-green-100 text-green-800"
+                  : row.idStatues === 2
+                  ? "bg-red-100 text-red-800"
+                  : "bg-gray-100 text-gray-800"
+              }`}
+            >
+              {info.getValue()}
+            </div>
+          );
+        },
+      }),
+
       columnHelper.accessor("id", {
-        header: "Details",
+        header: "Detalles",
         cell: (info) => (
           <button
             onClick={() => handleViewDetails(info.getValue())}
@@ -204,7 +225,7 @@ const ParameterizationView = () => {
           {/* Header */}
           <div className="flex items-center justify-between mb-6 md:mb-10">
             <h1 className="parametrization-header text-2xl md:text-3xl font-bold">
-              Parameterization
+              Parametrización
             </h1>
           </div>
 
@@ -222,7 +243,7 @@ const ParameterizationView = () => {
               className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit"
             >
               <FiUsers className="w-4 h-4" />
-              <span className="text-sm">Add department</span>
+              <span className="text-sm">Añadir parámetro</span>
             </button>
           </div>
 

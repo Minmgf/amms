@@ -1,4 +1,5 @@
 import React from "react";
+import { usePermissions } from "@/contexts/PermissionsContext";
 
 const PermissionManager  = ({
     permissions,
@@ -30,6 +31,8 @@ const PermissionManager  = ({
         name: permission.name,
         description: permission.description,
     });
+    const { hasPermission } = usePermissions();
+    const canEditPermissions = hasPermission(19);
 
     const handleCheckboxChange = (id) => {
         setFormData(prev => {
@@ -121,7 +124,7 @@ const PermissionManager  = ({
                                     area-label="Select All Checkbox"
                                     type="checkbox"
                                     className="h-4 w-4"
-                                    disabled={mode === "view"}
+                                    disabled={mode === "view" || !canEditPermissions}
                                     checked={
                                         filteredPermissions.length > 0 &&
                                         filteredPermissions.every(perm =>
@@ -143,7 +146,7 @@ const PermissionManager  = ({
                                     area-label="Permission Checkbox"
                                     type="checkbox"
                                     className="h-4 w-4"
-                                    disabled={mode === "view"}
+                                    disabled={mode === "view" || !canEditPermissions}
                                     checked={isPermissionSelected(formData.permissions, perm.id)}
                                     onChange={() => handleCheckboxChange(perm.id)}
                                 />
@@ -169,6 +172,7 @@ const PermissionManager  = ({
                             <button
                                 area-label="Reset Button"
                                 type="button"
+                                disabled = {!canEditPermissions}
                                 onClick={resetPermissions}
                                 className="btn-theme btn-secondary px-6 py-2 rounded-lg"
                             >
