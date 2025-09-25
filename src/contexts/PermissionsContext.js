@@ -61,10 +61,8 @@ export const PermissionsProvider = ({ children }) => {
       setUserData(payload);
 
       return { payload, allPermissions };
-    } else {
-      console.log("");
     }
-    
+        
     return null;
   };
 
