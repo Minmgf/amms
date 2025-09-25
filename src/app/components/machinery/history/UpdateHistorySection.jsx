@@ -199,26 +199,27 @@ const UpdateHistorySection = ({ history }) => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="relative w-full md:max-w-xs">
-          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
             type="text"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search"
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="input-theme pl-4"
+            aria-label="Buscar en historial"
           />
         </div>
         <button
           type="button"
           onClick={() => setIsFiltersModalOpen(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-primary hover:border-blue-500 hover:text-blue-600 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-primary hover:border-accent hover:text-accent transition-colors"
+          aria-label="Abrir filtros del historial"
         >
-          <CiFilter className="w-5 h-5" />
+          <CiFilter className="w-5 h-5" aria-hidden="true" />
           Filter by
         </button>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100">
+      <div className="card-theme rounded-xl p-0">
         <TableList
           columns={columns}
           data={filteredHistoryData}

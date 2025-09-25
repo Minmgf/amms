@@ -61,7 +61,7 @@ const MachineryHistoryModal = ({ isOpen, onClose, machinery }) => {
             <div className="flex justify-between items-start mb-6">
               <div>
                 <Dialog.Title className="text-2xl font-bold text-primary flex items-center gap-3">
-        
+
                   {machineTitle}
                 </Dialog.Title>
 
@@ -70,7 +70,7 @@ const MachineryHistoryModal = ({ isOpen, onClose, machinery }) => {
                 <button
                   onClick={onClose}
                   className="text-secondary hover:text-primary"
-                  aria-label="Cerrar modal"
+                  aria-label="Cerrar historial de maquinaria"
                 >
                   <FaTimes className="w-6 h-6" />
                 </button>
@@ -81,9 +81,9 @@ const MachineryHistoryModal = ({ isOpen, onClose, machinery }) => {
               <div className="space-y-6">
 
 
-                <section className="rounded-2xl  ">
+                <section className="rounded-2xl">
                   <div className="border-b border-gray-200 px-6">
-                    <nav className="flex flex-wrap items-center gap-6">
+                    <nav className="flex flex-wrap items-center gap-6" aria-label="Navegación de historial de maquinaria">
                       {historyTabs.map((tab) => {
                         const isActive = tab.id === activeTab
   return (
@@ -92,9 +92,11 @@ const MachineryHistoryModal = ({ isOpen, onClose, machinery }) => {
                             onClick={() => setActiveTab(tab.id)}
                             className={`py-4 text-sm font-semibold transition-colors border-b-2 ${
                               isActive
-                                ? 'text-blue-600 border-blue-600'
+                                ? 'text-accent border-accent'
                                 : 'text-secondary border-transparent hover:text-primary'
                             }`}
+                            aria-label={`Ver ${tab.label}`}
+                            aria-pressed={isActive}
                           >
                             {tab.label}
                           </button>

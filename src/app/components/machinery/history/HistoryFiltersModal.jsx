@@ -54,7 +54,7 @@ const HistoryFiltersModal = ({
     <Dialog.Root open={isOpen} onOpenChange={handleOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] w-full max-w-lg rounded-2xl bg-white shadow-2xl">
+        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] w-full max-w-lg rounded-2xl card-theme">
           <div className="p-6 space-y-6">
             <div className="flex items-start justify-between">
               <div>
@@ -64,7 +64,7 @@ const HistoryFiltersModal = ({
                 <button
                   onClick={onClose}
                   className="text-secondary hover:text-primary"
-                  aria-label="Cerrar filtro"
+                  aria-label="Cerrar filtros de historial"
                 >
                   <FaTimes className="w-5 h-5" />
                 </button>
@@ -83,7 +83,8 @@ const HistoryFiltersModal = ({
                         name="startDate"
                         value={filters.startDate}
                         onChange={handleInputChange}
-                        className="w-full rounded-lg border border-gray-200 py-2.5 pl-3 pr-10 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/10"
+                        className="w-full rounded-lg border border-gray-200 py-2.5 pl-3 pr-10 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                        aria-label="Fecha de inicio"
                       />
                       <FaCalendarAlt className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                     </div>
@@ -96,7 +97,8 @@ const HistoryFiltersModal = ({
                         name="endDate"
                         value={filters.endDate}
                         onChange={handleInputChange}
-                        className="w-full rounded-lg border border-gray-200 py-2.5 pl-3 pr-10 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/10"
+                        className="w-full rounded-lg border border-gray-200 py-2.5 pl-3 pr-10 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                        aria-label="Fecha de fin"
                       />
                       <FaCalendarAlt className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                     </div>
@@ -111,7 +113,8 @@ const HistoryFiltersModal = ({
                   value={filters.user}
                   onChange={handleInputChange}
                   disabled={loading || !!error}
-                  className="w-full rounded-lg border border-gray-200 py-2.5 px-3 text-sm focus:border-black focus:outline-none focus:ring-2 focus:ring-black/10 disabled:bg-gray-100 disabled:text-gray-400"
+                  className="w-full rounded-lg border border-gray-200 py-2.5 px-3 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 disabled:bg-gray-100 disabled:text-gray-400"
+                  aria-label="Seleccionar usuario responsable"
                 >
                   <option value="">Todos</option>
                   {users.map((user) => (
@@ -133,14 +136,16 @@ const HistoryFiltersModal = ({
               <button
                 type="button"
                 onClick={handleClear}
-                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold transition-colors hover:bg-red-600"
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-error text-white text-sm font-semibold transition-colors hover:bg-error-hover"
+                aria-label="Limpiar filtros"
               >
                 Clean
               </button>
               <button
                 type="button"
                 onClick={handleApply}
-                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-black text-white text-sm font-semibold transition-colors hover:bg-gray-900"
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold transition-colors hover:bg-accent"
+                aria-label="Aplicar filtros"
               >
                 Apply
               </button>
