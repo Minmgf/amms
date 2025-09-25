@@ -30,6 +30,13 @@ export const getModelsByBrandId = async (brandId) => {
     return data;
 };
 
+// traer dispositivos de telemetria activos
+export const getTelemetryDevices = async () => {
+    const { data } = await apiMain.get(`/telemetry-devices/active/`);
+    return data;
+};
+
+
 // iniciar formulario y registrar datos generales
 export const registerGeneralData = async (formData) => {
     const { data } = await apiMain.post("/machinery/create-general-sheet/", formData,

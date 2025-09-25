@@ -27,6 +27,7 @@ export default function Step2TrackerData() {
                   message: "Debe tener al menos 3 caracteres"
                 }
               })}
+              aria-label="Terminal Serial Input"
               placeholder="Ingrese el número de serie del terminal"
               className="parametrization-input"
             />
@@ -49,6 +50,7 @@ export default function Step2TrackerData() {
                   message: "Debe tener al menos 3 caracteres"
                 }
               })}
+              aria-label="GPS Serial Input"
               placeholder="Ingrese el número de serie del dispositivo GPS"
               className="parametrization-input"
             />
@@ -74,6 +76,7 @@ export default function Step2TrackerData() {
                   message: "Debe tener al menos 3 caracteres"
                 }
               })}
+              aria-label="Chasis Number Input"
               placeholder="Ingrese el número de chasis"
               className="parametrization-input"
             />
@@ -96,6 +99,7 @@ export default function Step2TrackerData() {
                   message: "Debe tener al menos 3 caracteres"
                 }
               })}
+              aria-label="Engine Number Input"
               placeholder="Ingrese el número de motor"
               className="parametrization-input"
             />
