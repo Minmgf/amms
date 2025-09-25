@@ -155,13 +155,19 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         {
           name: "Mantenimientos programados",
           icon: <FaCalendarCheck />,
-          path: "/maintenance/scheduleMaintenance",
+          path: "/maintenance/scheduledMaintenance",
           permissions: [],
         },
         {
           name: "Solicitud de mantenimiento",
           icon: <FaRegNewspaper />,
           path: "/maintenance/maintenanceRequest",
+          permissions: [],
+        },
+        {
+          name: "Gestor de mantenimientos",
+          icon: <FaTools  />,
+          path: "/maintenance/maintenanceManagement",
           permissions: [],
         },
       ],
