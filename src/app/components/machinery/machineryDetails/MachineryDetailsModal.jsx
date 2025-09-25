@@ -400,7 +400,7 @@ export default function MachineryDetailsModal({
 
                             {/* Periodic maintenance (lista tipo chips) */}
                             <div className="mt-3 bg-white p-4 md:p-0">
-                                <div className="font-semibold mb-2">Periodic maintenance</div>
+                                <div className="font-bold text-xl mb-4">Periodic maintenance</div>
                                 <div className="space-y-2">
                                     {[
                                         ['Oil level check', '50 hours'],
@@ -410,7 +410,7 @@ export default function MachineryDetailsModal({
                                         <div key={task} className="flex items-center justify-between bg-gray-100 rounded-full px-3 py-2">
                                             <span className="text-sm text-gray-700 truncate">{task}</span>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-xs bg-white rounded-full px-2 py-0.5 text-gray-600 border">{hours}</span>
+                                                <span className="w-full block text-xs bg-white rounded-full px-2 py-0.5 text-gray-600 border">{hours}</span>
                                                 <button className="text-xs px-2 py-0.5 rounded-full bg-rose-200 text-rose-800">Delete</button>
                                             </div>
                                         </div>
