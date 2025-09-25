@@ -145,6 +145,13 @@ export const getCabinTypes = async () => {
     const { data } = await apiMain.get("/types/list/active/10/");
     return data;
 };
+// ===== PASO 2 =====
+export const registerInfoTracker = async (formData) => {
+    const { data } = await apiMain.post("/machinery-tracker/create/", formData,
+        {headers: {"Content-Type": "multipart/form-data"}}
+    );
+    return data;
+};
 
 // ===== PASO 4 =====
 
@@ -199,5 +206,53 @@ export const getPeriodicMaintenancesById = async (id_machinery) => {
 // eliminar mantenimiento periódico de maquinaria por id
 export const deletePeriodicMaintenance = async (id_periodic_maintenance) => {
     const { data } = await apiMain.delete(`/machinery/periodic-maintenance/${id_periodic_maintenance}/`);
+    return data;
+};
+
+// ===== PASO 6 =====
+
+// crear documento de maquinaria
+export const createMachineryDoc = async (formData) => {
+    const { data } = await apiMain.post("/machinery-documentation/", formData, 
+        {headers: {"Content-Type": "multipart/form-data"}}
+    );
+    return data;
+};
+
+// descargar documento de maquinaria
+export const downloadMachineryDoc = async (documentId) => {
+    try {
+        // Intentar primero como JSON (información del archivo)
+        const response = await apiMain.get(`/machinery-documentation/${documentId}/download/`);
+        
+        // Si la respuesta es JSON, devolver la data
+        if (response.headers['content-type']?.includes('application/json')) {
+            return response.data;
+        }
+        
+        // Si es un archivo binario, devolver la respuesta completa
+        return response;
+    } catch (error) {
+        // Si falla como JSON, intentar como archivo binario
+        try {
+            const response = await apiMain.get(`/machinery-documentation/${documentId}/download/`, {
+                responseType: 'blob'
+            });
+            return response.data; // Devolver el blob
+        } catch (blobError) {
+            throw error; // Lanzar el error original
+        }
+    }
+};
+
+// eliminar documento de maquinaria
+export const deleteMachineryDoc = async (documentId) => {
+    const { data } = await apiMain.delete(`/machinery-documentation/${documentId}/`);
+    return data;
+};
+
+// listar documentos de maquinaria
+export const getMachineryDocs = async (machineryId) => {
+    const { data } = await apiMain.get(`/machinery-documentation/list/${machineryId}/`);
     return data;
 };
