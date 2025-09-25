@@ -23,8 +23,15 @@ const SolicitudesMantenimientoView = () => {
   const [maintenanceTypeFilter, setMaintenanceTypeFilter] = useState('')
   const [priorityFilter, setPriorityFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
-  const [requestDateFilter, setRequestDateFilter] = useState('')
+  const [requesterFilter, setRequesterFilter] = useState('')
+  const [startDateFilter, setStartDateFilter] = useState('')
+  const [endDateFilter, setEndDateFilter] = useState('')
   const [filteredData, setFilteredData] = useState([])
+
+  // Datos de usuarios disponibles (esto vendría de la BD)
+  const [availableRequesters, setAvailableRequesters] = useState([])
+  const [availableMaintenanceTypes, setAvailableMaintenanceTypes] = useState([])
+  const [availablePriorities, setAvailablePriorities] = useState([])
 
   // Estados para modales de detalles y edición
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
@@ -83,7 +90,7 @@ const SolicitudesMantenimientoView = () => {
   // Aplicar filtros cuando cambien los datos o los filtros
   useEffect(() => {
     applyFilters()
-  }, [maintenanceData, maintenanceTypeFilter, priorityFilter, statusFilter, requestDateFilter])
+  }, [maintenanceData, maintenanceTypeFilter, priorityFilter, statusFilter, requesterFilter, startDateFilter, endDateFilter])
 
   const loadInitialData = async () => {
     setLoading(true)
@@ -93,6 +100,35 @@ const SolicitudesMantenimientoView = () => {
       // Simulando carga de datos
       await new Promise(resolve => setTimeout(resolve, 1000))
       setMaintenanceData(sampleMaintenanceData)
+      
+      // Cargar datos para los selectores de filtros
+      // En un caso real, estos datos vendrían de la API/BD
+      const requestersFromDB = [
+        'Hernan Torres',
+        'Jairo Rojas', 
+        'Maria Gonzalez',
+        'Carlos Rodriguez',
+        'Ana Martinez',
+        'Luis Fernandez'
+      ]
+      
+      const maintenanceTypesFromDB = [
+        'Preventivo',
+        'Correctivo', 
+        'Emergencia',
+        'Predictivo'
+      ]
+      
+      const prioritiesFromDB = [
+        'Alta',
+        'Media',
+        'Baja',
+        'Crítica'
+      ]
+      
+      setAvailableRequesters(requestersFromDB)
+      setAvailableMaintenanceTypes(maintenanceTypesFromDB)
+      setAvailablePriorities(prioritiesFromDB)
       
     } catch (err) {
       console.error('Error loading data:', err)
@@ -134,11 +170,30 @@ const SolicitudesMantenimientoView = () => {
       filtered = filtered.filter(request => request.status === statusFilter)
     }
 
-    if (requestDateFilter) {
+    if (requesterFilter) {
+      filtered = filtered.filter(request => request.requester === requesterFilter)
+    }
+
+    // Filtro por rango de fechas
+    if (startDateFilter || endDateFilter) {
       filtered = filtered.filter(request => {
         if (!request.request_date) return false
-        const requestDate = new Date(request.request_date).toISOString().split('T')[0]
-        return requestDate === requestDateFilter
+        
+        const requestDate = new Date(request.request_date)
+        const startDate = startDateFilter ? new Date(startDateFilter) : null
+        const endDate = endDateFilter ? new Date(endDateFilter + 'T23:59:59') : null
+        
+        let matchesDateRange = true
+        
+        if (startDate && requestDate < startDate) {
+          matchesDateRange = false
+        }
+        
+        if (endDate && requestDate > endDate) {
+          matchesDateRange = false
+        }
+        
+        return matchesDateRange
       })
     }
 
@@ -197,7 +252,9 @@ const SolicitudesMantenimientoView = () => {
     setMaintenanceTypeFilter('')
     setPriorityFilter('')
     setStatusFilter('')
-    setRequestDateFilter('')
+    setRequesterFilter('')
+    setStartDateFilter('')
+    setEndDateFilter('')
     applyFilters()
   }
 
@@ -528,12 +585,7 @@ const SolicitudesMantenimientoView = () => {
       <div className="mb-6">
         <div className="flex justify-between items-center mb-2">
           <h1 className="text-2xl font-bold parametrization-text">Solicitudes de Mantenimiento</h1>
-          <button
-            onClick={handleOpenAddRequestModal}
-            className="bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800 flex items-center gap-2"
-          >
-            Nueva Solicitud
-          </button>
+        
         </div>
         
         {/* Mostrar error si existe */}
@@ -570,11 +622,27 @@ const SolicitudesMantenimientoView = () => {
         </div>
         <button
           onClick={() => setIsFilterModalOpen(true)}
-          className="parametrization-filter-button"
+          className={`parametrization-filter-button ${
+            maintenanceTypeFilter || priorityFilter || statusFilter || requesterFilter || startDateFilter || endDateFilter
+              ? 'bg-blue-100 border-blue-300 text-blue-700' 
+              : ''
+          }`}
         >
           <CiFilter className="w-4 h-4" />
           Filtrar por
+          {(maintenanceTypeFilter || priorityFilter || statusFilter || requesterFilter || startDateFilter || endDateFilter) && (
+            <span className="ml-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+              {[maintenanceTypeFilter, priorityFilter, statusFilter, requesterFilter, startDateFilter, endDateFilter].filter(Boolean).length}
+            </span>
+          )}
         </button>
+        {(maintenanceTypeFilter || priorityFilter || statusFilter || requesterFilter || startDateFilter || endDateFilter) && (
+          <button
+            onClick={handleClearFilters}
+            className="text-sm text-red-500 hover:text-red-700 underline flex items-center gap-1"
+          >
+          </button>
+        )}
         {globalFilter && (
           <button
             onClick={() => setGlobalFilter('')}
@@ -583,12 +651,18 @@ const SolicitudesMantenimientoView = () => {
             Limpiar búsqueda
           </button>
         )}
+          <button
+            onClick={handleOpenAddRequestModal}
+            className="bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800 flex items-center gap-2"
+          >
+            Nueva Solicitud
+          </button>
       </div>
 
       {/* Tabla de solicitudes de mantenimiento */}
       <TableList
         columns={columns}
-        data={filteredData.length > 0 || maintenanceTypeFilter || priorityFilter || statusFilter || requestDateFilter ? filteredData : maintenanceData}
+        data={filteredData.length > 0 || maintenanceTypeFilter || priorityFilter || statusFilter || requesterFilter || startDateFilter || endDateFilter ? filteredData : maintenanceData}
         loading={loading}
         globalFilter={globalFilter}
         onGlobalFilterChange={setGlobalFilter}
@@ -613,6 +687,62 @@ const SolicitudesMantenimientoView = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Rango de Fechas de Solicitud */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-primary mb-3">
+                    Rango de Fechas de Solicitud
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-2">
+                        Fecha de Inicio
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="date"
+                          value={startDateFilter}
+                          onChange={(e) => setStartDateFilter(e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent pr-12"
+                        />
+                        <FaCalendarAlt className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-2">
+                        Fecha de Fin
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="date"
+                          value={endDateFilter}
+                          onChange={(e) => setEndDateFilter(e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent pr-12"
+                        />
+                        <FaCalendarAlt className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Solicitante */}
+                <div>
+                  <label className="block text-sm font-medium text-primary mb-3">
+                    Solicitante
+                  </label>
+                  <select
+                    value={requesterFilter}
+                    onChange={(e) => setRequesterFilter(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
+                  >
+                    <option value="">Todos los solicitantes</option>
+                    {availableRequesters.map((requester) => (
+                      <option key={requester} value={requester}>
+                        {requester}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 {/* Tipo de Mantenimiento */}
                 <div>
                   <label className="block text-sm font-medium text-primary mb-3">
@@ -624,7 +754,7 @@ const SolicitudesMantenimientoView = () => {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
                   >
                     <option value="">Todos los tipos</option>
-                    {uniqueMaintenanceTypes.map((type) => (
+                    {availableMaintenanceTypes.map((type) => (
                       <option key={type} value={type}>
                         {type}
                       </option>
@@ -643,7 +773,7 @@ const SolicitudesMantenimientoView = () => {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
                   >
                     <option value="">Todas las prioridades</option>
-                    {uniquePriorities.map((priority) => (
+                    {availablePriorities.map((priority) => (
                       <option key={priority} value={priority}>
                         {priority}
                       </option>
@@ -668,22 +798,6 @@ const SolicitudesMantenimientoView = () => {
                       </option>
                     ))}
                   </select>
-                </div>
-
-                {/* Fecha de Solicitud */}
-                <div>
-                  <label className="block text-sm font-medium text-primary mb-3">
-                    Fecha de Solicitud
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="date"
-                      value={requestDateFilter}
-                      onChange={(e) => setRequestDateFilter(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent pr-12"
-                    />
-                    <FaCalendarAlt className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
-                  </div>
                 </div>
               </div>
 
