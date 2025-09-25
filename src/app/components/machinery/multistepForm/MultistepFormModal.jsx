@@ -163,7 +163,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
 
   // Cargar selects de todos los pasos
   useEffect(() => {
-    const fetchSelects = async () => {
+    const fetchSelectsStep1 = async () => {
       try {
         const machinery = await getActiveMachinery();
         const machine = await getActiveMachine();
@@ -171,24 +171,38 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
         const distanceUnits = await getDistanceUnits();
         const tenureTypes = await getTenureTypes();
         const usageStates = await getUseStates();
-        const maintenanceTypes = await getMaintenanceTypes();
-        
         setMachineryList(machinery);
         setMachineList(machine);
         setBrandsList(brands.data);
-        setDistanceUnitsList(distanceUnits.data);
-        setTenureTypeList(tenureTypes);
-        setUsageStatesList(usageStates);
-        setMaintenanceTypeList(maintenanceTypes.data);
+        setDistanceUnitsList(distanceUnits.data)
+        setTenureTypeList(tenureTypes)
+        setUsageStatesList(usageStates)
       } catch (error) {
         console.error("Error loading selects:", error);
       }
     };
 
     if (isOpen) {
-      fetchSelects();
+      fetchSelectsStep1();
     }
   }, [isOpen]);
+
+  // Cargar selects del paso 5
+  useEffect(() => {
+    const fetchSelectsStep5 = async () => {
+      try {
+        const maintenanceTypes = await getMaintenanceTypes();
+        setMaintenanceTypeList(maintenanceTypes.data);
+      } catch (error) {
+        console.error("Error loading step 1 selects:", error);
+      }
+    };
+
+    if (isOpen) {
+      fetchSelectsStep5();
+    }
+  }, [isOpen]);
+
 
   // Cargar países al montar el componente
   useEffect(() => {
@@ -321,14 +335,14 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
     }
 
     return true;
-  };
+  }
 
   // Función para validar el paso 4
   const validateStep4 = () => {
     const currentValues = methods.getValues();
     const requiredFields = [
       'acquisitionDate', 'usageState', 'usedHours', 'mileage',
-      'mileageUnit'
+      'mileageUnit', 'tenure'
     ];
 
     // Verificar si todos los campos requeridos están completos
@@ -348,6 +362,13 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       return false;
     }
 
+    return true;
+  };
+
+  // Función para validar el paso 6
+  const validateStep6 = () => {
+    // El Step 6 maneja su propia validación y envío de documentos
+    // No requiere validación adicional aquí ya que los documentos se gestionan directamente
     return true;
   };
 
@@ -420,18 +441,18 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
   const submitStep2 = async (data) => {
     try {
       setIsSubmittingStep(true);
+      // Crear FormData para enviar el archivo
+      const formData = new FormData();
 
-      // Crear payload JSON siguiendo la estructura especificada
-      const payload = {
-        id_machinery: machineryId,
-        terminal_serial_number: data.terminalSerial,
-        gps_serial_number: data.gpsSerial || "",
-        chassis_number: data.chasisNumber || "",
-        engine_number: data.engineNumber || "",
-        responsible_user: id
-      };
+      // Agregar todos los campos del paso 2
+      formData.append('id_machinery', machineryId);
+      formData.append('terminal_serial_number', data.terminalSerial);
+      formData.append('gps_serial_number', data.gpsSerial);
+      formData.append('chassis_number', data.chasisNumber);
+      formData.append('engine_number', data.engineNumber);
+      formData.append('responsible_user', id);
 
-      const response = await registerInfoTracker(payload);
+      const response = await registerInfoTracker(formData);
 
       // Marcar paso como completado y avanzar
       setCompletedSteps(prev => [...prev, 1]);
@@ -461,7 +482,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
     } finally {
       setIsSubmittingStep(false);
     }
-  };
+  }
 
   const submitStep4 = async (data) => {
     try {
@@ -504,16 +525,13 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       // Enviar datos del paso 1
       const currentData = methods.getValues();
       submitStep1(currentData);
-    } else if(step === 1){
-      // Validar paso 2 antes de enviar
+    }else if(step === 1){
       if (!validateStep2()) {
         return;
       }
-      
-      // Enviar datos del paso 2
-      const currentData = methods.getValues();
-      submitStep2(currentData);
-    } else if(step === 3){
+        const currentData = methods.getValues();
+        submitStep2(currentData);
+      } else if(step === 3){
       if (!validateStep4()) {
         return;
       }
@@ -541,14 +559,23 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
   };
 
   const onSubmit = (data) => {
-    console.log("Final Data:", data);
-    console.log("Machinery ID:", machineryId);
-    alert("Formulario enviado exitosamente!");
-    onClose();
-    methods.reset();
-    setStep(0);
-    setCompletedSteps([]);
-    setMachineryId(null);
+    // Si estamos en el último paso, finalizar el proceso
+    if (step === steps.length - 1) {
+      if (!validateStep6()) {
+        return;
+      }
+      
+      // El Step 6 ya maneja la creación de documentos directamente
+      // Aquí solo confirmamos que el proceso ha sido completado exitosamente
+      console.log("Machinery registration completed with ID:", machineryId);
+      console.log("Final form data:", data);
+      alert("¡Registro de maquinaria completado exitosamente!");
+      onClose();
+      methods.reset();
+      setStep(0);
+      setCompletedSteps([]);
+      setMachineryId(null);
+    }
   };
 
   // Función separada para manejar el evento de Next

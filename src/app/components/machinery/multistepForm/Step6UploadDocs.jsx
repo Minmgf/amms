@@ -1,10 +1,14 @@
 import { useFormContext } from "react-hook-form";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
+import { createMachineryDoc, getMachineryDocs, downloadMachineryDoc, deleteMachineryDoc } from "@/services/machineryService";
 
-export default function Step6UploadDocs() {
+export default function Step6UploadDocs({ machineryId }) {
   const { register, formState: { errors }, setValue, watch, getValues } = useFormContext();
-  const [docs, setDocs] = useState([]);
+  const [existingDocs, setExistingDocs] = useState([]);
+  const [loadingDocs, setLoadingDocs] = useState(false);
+  const [creatingDoc, setCreatingDoc] = useState(false);
+  const [deletingDoc, setDeletingDoc] = useState(null);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [previewFile, setPreviewFile] = useState(null);
@@ -17,6 +21,36 @@ export default function Step6UploadDocs() {
   const ALLOWED_TYPES = ["application/pdf", "image/jpeg", "image/png"];
 
   const watchedFile = watch("file");
+
+  // Cargar documentos existentes cuando se monta el componente o cambia machineryId
+  useEffect(() => {
+    const loadExistingDocs = async () => {
+      if (!machineryId) return;
+      
+      try {
+        setLoadingDocs(true);
+        const response = await getMachineryDocs(machineryId);
+        const documents = response.data || response || [];
+        
+        // Debug: mostrar la estructura de los documentos
+        console.log('Documentos recibidos del backend:', documents);
+        if (documents.length > 0) {
+          console.log('Estructura del primer documento:', documents[0]);
+          console.log('Claves disponibles:', Object.keys(documents[0]));
+        }
+        
+        setExistingDocs(documents);
+      } catch (error) {
+        console.error('Error cargando documentos:', error);
+        setError('Error al cargar documentos existentes');
+        setTimeout(() => setError(''), 3000);
+      } finally {
+        setLoadingDocs(false);
+      }
+    };
+
+    loadExistingDocs();
+  }, [machineryId]);
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
@@ -56,42 +90,201 @@ export default function Step6UploadDocs() {
     }
   };
 
-  const handleAdd = () => {
+  // Función para agregar documento usando el endpoint
+  const handleAdd = async () => {
     const name = getValues("documentName");
     const file = getValues("file");
 
     if (!name) {
       setError("El nombre del documento es obligatorio");
+      setTimeout(() => setError(''), 3000);
       return;
     }
     if (!file) {
       setError("Debe seleccionar un archivo");
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+    if (!machineryId) {
+      setError("ID de maquinaria no disponible");
+      setTimeout(() => setError(''), 3000);
       return;
     }
 
     if (!ALLOWED_TYPES.includes(file.type)) {
       setError("Formato no permitido. Solo PDF, JPG o PNG.");
+      setTimeout(() => setError(''), 3000);
       return;
     }
     if (file.size > MAX_SIZE) {
       setError("El archivo supera el tamaño máximo permitido (8MB).");
+      setTimeout(() => setError(''), 3000);
       return;
     }
 
-    const newDoc = { name, file };
-    setDocs([...docs, newDoc]);
+    try {
+      setCreatingDoc(true);
+      setError('');
+      
+      // Crear FormData para el endpoint
+      const formData = new FormData();
+      formData.append('document', name);
+      formData.append('machinery', machineryId);
+      
+      // Obtener usuario responsable de localStorage
+      const storedUser = localStorage.getItem("userData");
+      if (storedUser) {
+        const parsed = JSON.parse(storedUser);
+        formData.append('responsible_user', parsed.id);
+      }
+      
+      formData.append('file', file);
 
-    setValue("documentName", "");
-    setValue("file", null);
-    setPreviewFile(null);
-    setFileName("");
-    setFileSize("");
-    setError("");
-    setSuccessMsg("Documento agregado correctamente");
+      const response = await createMachineryDoc(formData);
+      
+      // Verificar respuesta de éxito del backend
+      if (response.status === "success") {
+        // Limpiar formulario
+        setValue("documentName", "");
+        setValue("file", null);
+        setPreviewFile(null);
+        setFileName("");
+        setFileSize("");
+        
+        setSuccessMsg(response.message || "Documento creado exitosamente");
+        setTimeout(() => setSuccessMsg(''), 3000);
+        
+        // Recargar lista de documentos
+        const docsResponse = await getMachineryDocs(machineryId);
+        setExistingDocs(docsResponse.data || docsResponse || []);
+      } else {
+        // Manejar respuesta de error del backend
+        if (response.errors) {
+          const errorMessages = Object.entries(response.errors)
+            .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
+            .join('; ');
+          setError(errorMessages);
+        } else {
+          setError(response.message || 'Error al crear el documento');
+        }
+        setTimeout(() => setError(''), 5000);
+      }
+      
+    } catch (error) {
+      console.error('Error creando documento:', error);
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        // Manejar formato de error de validación del backend
+        if (errorData.status === "error") {
+          if (errorData.errors) {
+            // Formatear errores específicos por campo
+            const errorMessages = Object.entries(errorData.errors)
+              .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
+              .join('; ');
+            setError(errorMessages);
+          } else {
+            setError(errorData.message || 'Datos de entrada inválidos');
+          }
+        } else {
+          // Formato de error genérico
+          setError(errorData.message || 'Error al crear el documento');
+        }
+      } else {
+        setError('Error de conexión al crear el documento');
+      }
+      setTimeout(() => setError(''), 5000);
+    } finally {
+      setCreatingDoc(false);
+    }
   };
 
-  const handleDelete = (index) => {
-    setDocs(docs.filter((_, i) => i !== index));
+  // Función para descargar documento
+  const handleDownload = async (documentId, documentName) => {
+    if (!documentId) {
+      setError('ID de documento no válido para descarga');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
+    try {
+      // 1. Llamas a tu endpoint para obtener la información del documento
+      const baseUrl = 'https://api.inmero.co/sigma/main';
+      const response = await fetch(`${baseUrl}/machinery-documentation/${documentId}/download/`);
+      const data = await response.json();
+
+      if (data.status === "success" && data.data) {
+        // 2. Obtienes la URL real del archivo
+        const fileUrl = data.data.path;
+        const fileName = data.data.document || documentName || `documento_${documentId}`;
+
+        // 3. Abrir la URL en una nueva pestaña para no interrumpir la página actual
+        window.open(fileUrl, '_blank');
+        
+        setSuccessMsg('¡Archivo abierto en nueva pestaña!');
+        setTimeout(() => setSuccessMsg(''), 3000);
+        
+      } else {
+        setError('No se pudo obtener la información del documento');
+        setTimeout(() => setError(''), 3000);
+      }
+      
+    } catch (error) {
+      console.error('Error descargando el archivo:', error);
+      setError('Error al descargar el documento');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
+  // Función para eliminar documento
+  const handleDeleteDoc = async (documentId) => {
+    if (!documentId) {
+      setError('ID de documento no válido');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+    
+    try {
+      setDeletingDoc(documentId);
+      const response = await deleteMachineryDoc(documentId);
+      
+      // Verificar respuesta de éxito
+      if (response.status === "success") {
+        // Actualizar lista de documentos - filtrar usando todos los posibles campos de ID
+        setExistingDocs(existingDocs.filter(doc => {
+          const docId = doc.id || doc.id_machinery_documentation || doc.document_id;
+          return docId !== documentId;
+        }));
+        setSuccessMsg(response.message || 'Documento eliminado exitosamente');
+        setTimeout(() => setSuccessMsg(''), 3000);
+      } else {
+        // Manejar respuesta de error
+        setError(response.message || 'Error al eliminar el documento');
+        setTimeout(() => setError(''), 3000);
+      }
+      
+    } catch (error) {
+      console.error('Error eliminando documento:', error);
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        if (errorData.status === "error") {
+          if (errorData.errors) {
+            const errorMessages = Object.entries(errorData.errors)
+              .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
+              .join('; ');
+            setError(errorMessages);
+          } else {
+            setError(errorData.message || 'Error al eliminar el documento');
+          }
+        } else {
+          setError(errorData.message || 'Error al eliminar el documento');
+        }
+      } else {
+        setError('Error de conexión al eliminar el documento');
+      }
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setDeletingDoc(null);
+    }
   };
 
   const formatFileSize = (bytes) => {
@@ -337,18 +530,6 @@ export default function Step6UploadDocs() {
             )}
           </div>
 
-          {/* Botón Agregar */}
-          <div className="pt-4">
-            <button
-              aria-label="Add Document Button"
-              type="button"
-              onClick={handleAdd}
-              className="btn-theme btn-secondary px-theme-lg py-theme-sm rounded-theme-md font-theme-medium transition-all duration-200"
-            >
-              Agregar
-            </button>
-          </div>
-
           {/* Mensajes de validación */}
           {error && (
             <p 
@@ -366,9 +547,21 @@ export default function Step6UploadDocs() {
               {successMsg}
             </p>
           )}
+
+          {/* Botón Agregar */}
+          <div className="pt-4">
+            <button
+              type="button"
+              onClick={handleAdd}
+              disabled={creatingDoc || !getValues("documentName") || !getValues("file")}
+              className="btn-theme btn-primary text-theme-sm px-theme-lg py-theme-md rounded-theme-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {creatingDoc ? "Agregando..." : "Agregar"}
+            </button>
+          </div>
         </div>
 
-        {/* Columna derecha - Lista de documentos */}
+        {/* Columna derecha - Documentos existentes */}
         <div className="space-y-4">
           <label 
             className="block text-theme-sm text-secondary mb-2"
@@ -376,111 +569,134 @@ export default function Step6UploadDocs() {
           >
             Documentos existentes
           </label>
-          <div className="space-y-4">
-            {docs.map((doc, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-theme-md border rounded-theme-md"
-                style={{
-                  borderColor: 'var(--color-border)',
-                  backgroundColor: 'var(--color-surface)'
-                }}
+          
+          {loadingDocs ? (
+            <div className="text-center py-8">
+              <p 
+                className="text-theme-sm"
+                style={{ color: 'var(--color-text-secondary)' }}
               >
-                <div className="flex items-center space-x-2 min-w-0 flex-1">
-                  <div className="flex-shrink-0">
-                    <svg 
-                      className="w-5 h-5" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                      style={{ color: 'var(--color-text-secondary)' }}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
+                Cargando documentos...
+              </p>
+            </div>
+          ) : existingDocs.length === 0 ? (
+            <div className="text-center py-8">
+              <p 
+                className="text-theme-sm"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                {machineryId ? "No hay documentos existentes" : "No hay maquinaria seleccionada"}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {existingDocs.map((doc, index) => {
+                // Obtener el ID del documento - puede venir como 'id', 'id_machinery_documentation', etc.
+                const documentId = doc.id_machinery_documentation || doc.id || doc.document_id;
+                const documentName = doc.document || doc.name || doc.document_name || 'Documento sin nombre';
+                
+                return (
+                  <div 
+                    key={documentId || index}
+                    className="border rounded-theme-lg p-theme-md"
+                    style={{
+                      borderColor: 'var(--color-border)',
+                      backgroundColor: 'var(--color-surface)'
+                    }}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p 
+                          className="text-theme-sm font-theme-medium truncate"
+                          style={{ color: 'var(--color-text)' }}
+                          title={documentName}
+                        >
+                          {documentName}
+                        </p>
+                        {doc.file && (
+                          <p 
+                            className="text-theme-xs"
+                            style={{ color: 'var(--color-text-secondary)' }}
+                          >
+                            {doc.file.split('/').pop()}
+                          </p>
+                        )}
+                        {doc.created_at && (
+                          <p 
+                            className="text-theme-xs"
+                            style={{ color: 'var(--color-text-secondary)' }}
+                          >
+                            {new Date(doc.created_at).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center space-x-2 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleDownload(documentId, documentName)}
+                          disabled={!documentId}
+                          className="btn-theme btn-secondary text-theme-xs px-theme-sm py-theme-xs rounded-theme-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Descargar documento"
+                        >
+                          <svg 
+                            className="w-4 h-4" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                            />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteDoc(documentId)}
+                          disabled={deletingDoc === documentId || !documentId}
+                          className="btn-theme btn-error text-theme-xs px-theme-sm py-theme-xs rounded-theme-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Eliminar documento"
+                        >
+                          {deletingDoc === documentId ? (
+                          <svg 
+                            className="w-4 h-4 animate-spin" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                            />
+                          </svg>
+                        ) : (
+                          <svg 
+                            className="w-4 h-4" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
                   </div>
-                  <span 
-                    className="text-theme-sm truncate" 
-                    style={{ color: 'var(--color-text)' }}
-                  >
-                    {doc.name}
-                  </span>
                 </div>
-                <div className="flex space-x-2 flex-shrink-0">
-                  {/* Descargar */}
-                  <button
-                    aria-label="Download Button"
-                    type="button"
-                    onClick={() => {
-                      const url = URL.createObjectURL(doc.file);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = doc.file.name;
-                      a.click();
-                    }}
-                    className="p-1 transition-colors duration-200 hover:bg-hover rounded-theme-sm"
-                    style={{ color: 'var(--color-text-secondary)' }}
-                    onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = 'var(--color-hover)';
-                      e.target.style.color = 'var(--color-text)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = 'transparent';
-                      e.target.style.color = 'var(--color-text-secondary)';
-                    }}
-                    title="Descargar"
-                  >
-                    <svg 
-                      className="w-5 h-5" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                  </button>
-                  {/* Eliminar */}
-                  <button
-                    aria-label="Delete Button"
-                    type="button"
-                    onClick={() => handleDelete(index)}
-                    className="p-1 transition-colors duration-200 hover:bg-hover rounded-theme-sm"
-                    style={{ color: 'var(--color-error)' }}
-                    onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = 'var(--color-hover)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = 'transparent';
-                    }}
-                    title="Eliminar"
-                  >
-                    <svg 
-                      className="w-5 h-5" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>
