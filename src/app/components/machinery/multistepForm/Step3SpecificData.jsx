@@ -157,12 +157,16 @@ export default function Step3SpecificData({
                     className="parametrization-input"
                   >
                     <option value="">Unidad</option>
-                    {powerUnitsList.map((unit) => (
-                      console.log(unit),
-                      <option key={unit.id_units} value={unit.id_units}>
-                        {unit.symbol}
-                      </option>
-                    ))}
+                    {powerUnitsList.map(
+                      (unit) => (
+                        console.log(unit),
+                        (
+                          <option key={unit.id_units} value={unit.id_units}>
+                            {unit.symbol}
+                          </option>
+                        )
+                      )
+                    )}
                   </select>
                 </div>
               </div>
@@ -181,11 +185,16 @@ export default function Step3SpecificData({
                   className="parametrization-input"
                 >
                   <option value="">Seleccionar tipo</option>
-                  {engineTypesList.map((type) => (
-                    <option key={type.id_types} value={type.id_types}>
-                      {type.name}
-                    </option>
-                  ))}
+                  {engineTypesList.map(
+                    (type) => (
+                      console.log(type),
+                      (
+                        <option key={type.id_types} value={type.id_types}>
+                          {type.name}
+                        </option>
+                      )
+                    )
+                  )}
                 </select>
                 {errors.engineType && (
                   <span
@@ -690,8 +699,33 @@ export default function Step3SpecificData({
                   className="block text-theme-sm font-theme-medium mb-1"
                   style={{ color: "var(--color-text-secondary)" }}
                 >
-                  Rendimiento (RPM)
+                  Rendimiento (RPM) *
                 </label>
+
+                {/* AGREGAR este select para la unidad */}
+                <div className="mb-2">
+                  <select
+                    aria-label="Performance Unit Select"
+                    {...register("performanceUnit", { required: "Requerido" })}
+                    className="parametrization-input w-48"
+                  >
+                    <option value="">Seleccionar unidad</option>
+                    {performanceUnitsList.map((unit) => (
+                      <option key={unit.id_units} value={unit.id_units}>
+                        {unit.symbol}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.performanceUnit && (
+                    <span
+                      className="text-theme-xs mt-1 block"
+                      style={{ color: "var(--color-error)" }}
+                    >
+                      {errors.performanceUnit.message}
+                    </span>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-[auto_1fr_auto_1fr] gap-4 items-center">
                   <span
                     className="text-theme-sm"
@@ -971,7 +1005,7 @@ export default function Step3SpecificData({
                     className="parametrization-input"
                   >
                     <option value="">Unidad</option>
-                    {powerUnitsList.map((unit) => (
+                    {flowConsumptionUnitsList.map((unit) => (
                       <option key={unit.id_units} value={unit.id_units}>
                         {unit.symbol}
                       </option>

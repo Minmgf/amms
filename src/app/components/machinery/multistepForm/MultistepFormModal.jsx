@@ -62,7 +62,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
   const [isSubmittingStep, setIsSubmittingStep] = useState(false);
   const [machineryId, setMachineryId] = useState(null); // Para almacenar el ID devuelto por el backend
   const [id, setId] = useState(""); //id del usuario responsable
-  // Agregar estos estados para Step 3
+ 
   const [powerUnitsList, setPowerUnitsList] = useState([]);
   const [volumeUnitsList, setVolumeUnitsList] = useState([]);
   const [flowConsumptionUnitsList, setFlowConsumptionUnitsList] = useState([]);
@@ -136,7 +136,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       performanceMax: "",
       dimensionsUnit: "",
       width: "",
-      lenght: "",
+      length: "",
       height: "",
       netWeight: "",
       netWeightUnit: "",
@@ -251,13 +251,13 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
         setMaintenanceTypeList(maintenanceTypes.data);
         setTelemetryDevicesList(telemetryDevices);
 
-        setEngineTypesList(engine.data);
-        setCylinderArrangementList(cylinder.data);
-        setTractionTypesList(traction.data);
-        setTransmissionSystemList(transmission.data);
-        setAirConditioningList(airCond.data);
-        setEmissionLevelList(emission.data);
-        setCabinTypesList(cabin.data);
+        setEngineTypesList(Array.isArray(engine.data || engine) ? engine.data || engine : []);
+        setCylinderArrangementList(Array.isArray(cylinder.data || cylinder) ? cylinder.data || cylinder : []);
+        setTractionTypesList(Array.isArray(traction.data || traction) ? traction.data || traction : []);
+        setTransmissionSystemList(Array.isArray(transmission.data || transmission) ? transmission.data || transmission : []);
+        setAirConditioningList(Array.isArray(airCond.data || airCond) ? airCond.data || airCond : []);
+        setEmissionLevelList(Array.isArray(emission.data || emission) ? emission.data || emission : []);
+        setCabinTypesList(Array.isArray(cabin.data || cabin) ? cabin.data || cabin : []);
         setPowerUnitsList(power.data);
         setVolumeUnitsList(volume.data);
         setFlowConsumptionUnitsList(flow.data);
@@ -275,7 +275,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
     if (isOpen) {
       fetchSelects();
     }
-  }, [isOpen]);
+  }, [isOpen, step]);
 
   // Cargar países al montar el componente
   useEffect(() => {
@@ -442,6 +442,11 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       "netWeight",
       "netWeightUnit",
     ];
+
+    // Justo después de recibir las props, agrega:
+    console.log("Engine Types List:", engineTypesList);
+    console.log("Cylinder Arrangement List:", cylinderArrangementList);
+    console.log("Traction Types List:", tractionTypesList);
 
     const missingFields = requiredFields.filter((field) => {
       const value = currentValues[field];
