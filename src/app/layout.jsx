@@ -3,7 +3,6 @@ import "./globals.css";
 import "../styles/theme.css";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { PermissionsProvider } from "@/contexts/PermissionsContext";
-import AppLoader from "./components/shared/AppLoader";
 
 
 const geistSans = Geist({
@@ -29,7 +28,7 @@ export default function RootLayout({ children }) {
       >
         <ThemeProvider>
           <PermissionsProvider>
-            <AppLoader>{children}</AppLoader>
+            {children}
           </PermissionsProvider>
         </ThemeProvider>
       </body>

@@ -24,17 +24,15 @@ function decodeToken(token) {
 
 export const PermissionsProvider = ({ children }) => {
   const [permissions, setPermissions] = useState([]);
-  const [userRoles, setUserRoles] = useState([]);
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(false);
-  const [isProcessingLogin, setIsProcessingLogin] = useState(false); // Nuevo estado
+  const [isProcessingLogin, setIsProcessingLogin] = useState(false); 
 
   const updateFromToken = (token, isFromLogin = false) => {
     
     if (!token) {
       setPermissions([]);
-      setUserRoles([]);
       setUserData(null);
       return null;
     }
@@ -43,15 +41,9 @@ export const PermissionsProvider = ({ children }) => {
 
     if (payload) {
       const allPermissions = [];
-      const roles = [];
 
       if (payload.rol && Array.isArray(payload.rol)) {
         payload.rol.forEach(role => {
-          roles.push({
-            id: role.id,
-            name: role.name
-          });
-
           if (role.permisos && Array.isArray(role.permisos)) {
             role.permisos.forEach(permiso => {
               if (!allPermissions.find(p => p.id === permiso.id)) {
@@ -64,13 +56,11 @@ export const PermissionsProvider = ({ children }) => {
           }
         });
       }
-
       // Actualizamos estado
       setPermissions(allPermissions);
-      setUserRoles(roles);
       setUserData(payload);
 
-      return { payload, roles, allPermissions };
+      return { payload, allPermissions };
     } else {
       console.log("");
     }
@@ -80,9 +70,7 @@ export const PermissionsProvider = ({ children }) => {
 
   // Inicialización al montar el componente (silenciosa)
   useEffect(() => {
-    
     const token = Cookies.get('token');
-    
     if (token) {
       // Carga silenciosa sin loading
       updateFromToken(token, false);
@@ -106,8 +94,7 @@ export const PermissionsProvider = ({ children }) => {
     const finishLoading = () => {
       const elapsedTime = Date.now() - startTime;
       const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
-      
-      
+            
       setTimeout(() => {
         setLoading(false);
         setInitializing(false);
@@ -140,7 +127,6 @@ export const PermissionsProvider = ({ children }) => {
 
   const clearPermissions = () => {
     setPermissions([]);
-    setUserRoles([]);
     setUserData(null);
     setLoading(false);
     setInitializing(false);
@@ -149,22 +135,6 @@ export const PermissionsProvider = ({ children }) => {
 
   const hasPermission = (permissionId) => {
     return permissions.some(permission => permission.id === permissionId);
-  };
-
-  const hasRole = (roleName) => {
-    return userRoles.some(role => role.name === roleName);
-  };
-
-  const hasAnyRole = (rolesList) => {
-    return rolesList.some(roleName =>
-      userRoles.some(role => role.name === roleName)
-    );
-  };
-
-  const hasAllRoles = (rolesList) => {
-    return rolesList.every(roleName =>
-      userRoles.some(role => role.name === roleName)
-    );
   };
 
   const hasAnyPermission = (permissionsList) => {
@@ -181,21 +151,16 @@ export const PermissionsProvider = ({ children }) => {
 
   const value = {
     permissions,
-    userRoles,
     userData,
     loading,
-    isProcessingLogin, // Nuevo estado expuesto
+    isProcessingLogin, 
     hasPermission,
-    hasRole,
-    hasAnyRole,
-    hasAllRoles,
     hasAnyPermission,
     hasAllPermissions,
     refreshPermissions,
     clearPermissions,
     loginSuccess,
     permissionNames: permissions.map(p => p.id),
-    roleNames: userRoles.map(r => r.name),
     userId: userData?.id,
     userName: userData?.name,
     userEmail: userData?.email,
