@@ -653,7 +653,7 @@ const SolicitudesMantenimientoView = () => {
         )}
           <button
             onClick={handleOpenAddRequestModal}
-            className="bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800 flex items-center gap-2"
+            className="parametrization-filter-button"
           >
             Nueva Solicitud
           </button>
