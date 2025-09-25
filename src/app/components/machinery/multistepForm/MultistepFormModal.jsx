@@ -10,7 +10,7 @@ import Step6UploadDocs from "./Step6UploadDocs";
 import { getCountries, getStates, getCities } from "@/services/locationService";
 import { useTheme } from "@/contexts/ThemeContext";
 import { FiX } from "react-icons/fi";
-import { getActiveMachinery, getActiveMachine, getModelsByBrandId, getMachineryBrands, registerGeneralData, registerInfoTracker, getMaintenanceTypes, getDistanceUnits, getTenureTypes, getUseStates, registerUsageInfo } from "@/services/machineryService";
+import { getActiveMachinery, getActiveMachine, getModelsByBrandId, getMachineryBrands, getTelemetryDevices, registerGeneralData, registerInfoTracker, getMaintenanceTypes, getDistanceUnits, getTenureTypes, getUseStates, registerUsageInfo } from "@/services/machineryService";
 
 
 export default function MultiStepFormModal({ isOpen, onClose }) {
@@ -28,6 +28,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
   const [distanceUnitsList, setDistanceUnitsList] = useState([]);
   const [tenureTypesList, setTenureTypeList] = useState([]);
   const [usageStatesList, setUsageStatesList] = useState([]);
+  const [telemetryDevicesList, setTelemetryDevicesList] = useState([]);
   const [maintenanceTypeList, setMaintenanceTypeList] = useState([]);
   const [isSubmittingStep, setIsSubmittingStep] = useState(false);
   const [machineryId, setMachineryId] = useState(null); // Para almacenar el ID devuelto por el backend
@@ -163,7 +164,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
 
   // Cargar selects de todos los pasos
   useEffect(() => {
-    const fetchSelectsStep1 = async () => {
+    const fetchSelects = async () => {
       try {
         const machinery = await getActiveMachinery();
         const machine = await getActiveMachine();
@@ -171,38 +172,25 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
         const distanceUnits = await getDistanceUnits();
         const tenureTypes = await getTenureTypes();
         const usageStates = await getUseStates();
+        const maintenanceTypes = await getMaintenanceTypes();
+        const telemetryDevices = await getTelemetryDevices();
         setMachineryList(machinery);
         setMachineList(machine);
         setBrandsList(brands.data);
-        setDistanceUnitsList(distanceUnits.data)
-        setTenureTypeList(tenureTypes)
-        setUsageStatesList(usageStates)
+        setDistanceUnitsList(distanceUnits.data);
+        setTenureTypeList(tenureTypes);
+        setUsageStatesList(usageStates);
+        setMaintenanceTypeList(maintenanceTypes.data);
+        setTelemetryDevicesList(telemetryDevices);
       } catch (error) {
         console.error("Error loading selects:", error);
       }
     };
 
     if (isOpen) {
-      fetchSelectsStep1();
+      fetchSelects();
     }
   }, [isOpen]);
-
-  // Cargar selects del paso 5
-  useEffect(() => {
-    const fetchSelectsStep5 = async () => {
-      try {
-        const maintenanceTypes = await getMaintenanceTypes();
-        setMaintenanceTypeList(maintenanceTypes.data);
-      } catch (error) {
-        console.error("Error loading step 1 selects:", error);
-      }
-    };
-
-    if (isOpen) {
-      fetchSelectsStep5();
-    }
-  }, [isOpen]);
-
 
   // Cargar países al montar el componente
   useEffect(() => {
@@ -286,7 +274,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
     const requiredFields = [
       'name', 'manufactureYear', 'serialNumber', 'machineryType',
       'brand', 'model', 'tariff', 'category', 'country',
-      'department', 'city'
+      'department', 'city', 'telemetry'
       // 'telemetry' no está incluido porque es opcional
     ];
 
@@ -342,7 +330,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
     const currentValues = methods.getValues();
     const requiredFields = [
       'acquisitionDate', 'usageState', 'usedHours', 'mileage',
-      'mileageUnit', 'tenure'
+      'mileageUnit'
     ];
 
     // Verificar si todos los campos requeridos están completos
@@ -525,20 +513,20 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       // Enviar datos del paso 1
       const currentData = methods.getValues();
       submitStep1(currentData);
-    }else if(step === 1){
+    } else if (step === 1) {
       if (!validateStep2()) {
         return;
       }
-        const currentData = methods.getValues();
-        submitStep2(currentData);
-      } else if(step === 3){
+      const currentData = methods.getValues();
+      submitStep2(currentData);
+    } else if (step === 3) {
       if (!validateStep4()) {
         return;
       }
 
       const currentData = methods.getValues();
       submitStep4(currentData);
-    }else {
+    } else {
       // Para los otros pasos, avanzar normalmente
       setStep((s) => {
         const newStep = Math.min(s + 1, steps.length - 1);
@@ -564,7 +552,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       if (!validateStep6()) {
         return;
       }
-      
+
       // El Step 6 ya maneja la creación de documentos directamente
       // Aquí solo confirmamos que el proceso ha sido completado exitosamente
       console.log("Machinery registration completed with ID:", machineryId);
@@ -796,6 +784,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
                   machineList={machineList}
                   brandsList={brandsList}
                   modelsList={modelsList}
+                  telemetryDevicesList={telemetryDevicesList}
                 />
               }
               {step === 1 && <Step2TrackerData machineryId={machineryId} />}
@@ -808,10 +797,10 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
                   tenureTypesList={tenureTypesList}
                 />
               }
-              {step === 4 && 
-                <Step5Maintenance 
+              {step === 4 &&
+                <Step5Maintenance
                   machineryId={machineryId}
-                  maintenanceTypeList={maintenanceTypeList} 
+                  maintenanceTypeList={maintenanceTypeList}
                 />
               }
               {step === 5 && <Step6UploadDocs machineryId={machineryId} />}
@@ -822,6 +811,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
               {/* Botón Anterior */}
               <button
                 type="button"
+                aria-label="Preview Button"
                 onClick={prevStep}
                 disabled={step === 0 || isSubmittingStep}
                 className="btn-theme btn-secondary w-auto"
@@ -833,6 +823,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
               {isLastStep ? (
                 <button
                   type="submit"
+                  aria-label="Save Button"
                   disabled={isSubmittingStep}
                   className="btn-theme btn-primary w-auto"
                 >
@@ -841,6 +832,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
               ) : (
                 <button
                   type="button"
+                  aria-label="Next Button"
                   onClick={handleNext}
                   disabled={isSubmittingStep}
                   className="btn-theme btn-primary w-auto"
