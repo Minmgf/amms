@@ -12,6 +12,7 @@ export default function Step1GeneralData({
   machineList = [],
   brandsList = [],
   modelsList = [],
+  telemetryDevicesList = [],
 }) {
   const { register, formState: { errors }, setValue, watch } = useFormContext();
   const [previewImage, setPreviewImage] = useState(null);
@@ -398,9 +399,12 @@ export default function Step1GeneralData({
             {...register("telemetry")}
             className="parametrization-input"
           >
-            <option value="">Selecciona...</option>
-            <option value="yes">Yes</option>
-            <option value="no">No</option>
+            <option value="">Seleccione un dispositivo...</option>
+            {telemetryDevicesList.map((telemetry) => (
+              <option key={telemetry.id_device} value={telemetry.id_device}>
+                {telemetry.name}
+              </option>
+            ))}
           </select>
           {errors.telemetry && (
             <span

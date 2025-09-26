@@ -10,7 +10,7 @@ import Step6UploadDocs from "./Step6UploadDocs";
 import { getCountries, getStates, getCities } from "@/services/locationService";
 import { useTheme } from "@/contexts/ThemeContext";
 import { FiX } from "react-icons/fi";
-import { getActiveMachinery, getActiveMachine, getModelsByBrandId, getMachineryBrands, registerGeneralData, getMaintenanceTypes, getDistanceUnits, getTenureTypes, getUseStates, registerUsageInfo } from "@/services/machineryService";
+import { getActiveMachinery, getActiveMachine, getModelsByBrandId, getMachineryBrands, getTelemetryDevices, registerGeneralData, registerInfoTracker, getMaintenanceTypes, getDistanceUnits, getTenureTypes, getUseStates, registerUsageInfo } from "@/services/machineryService";
 
 
 export default function MultiStepFormModal({ isOpen, onClose }) {
@@ -28,6 +28,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
   const [distanceUnitsList, setDistanceUnitsList] = useState([]);
   const [tenureTypesList, setTenureTypeList] = useState([]);
   const [usageStatesList, setUsageStatesList] = useState([]);
+  const [telemetryDevicesList, setTelemetryDevicesList] = useState([]);
   const [maintenanceTypeList, setMaintenanceTypeList] = useState([]);
   const [isSubmittingStep, setIsSubmittingStep] = useState(false);
   const [machineryId, setMachineryId] = useState(null); // Para almacenar el ID devuelto por el backend
@@ -172,7 +173,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
         const tenureTypes = await getTenureTypes();
         const usageStates = await getUseStates();
         const maintenanceTypes = await getMaintenanceTypes();
-        
+        const telemetryDevices = await getTelemetryDevices();
         setMachineryList(machinery);
         setMachineList(machine);
         setBrandsList(brands.data);
@@ -180,6 +181,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
         setTenureTypeList(tenureTypes);
         setUsageStatesList(usageStates);
         setMaintenanceTypeList(maintenanceTypes.data);
+        setTelemetryDevicesList(telemetryDevices);
       } catch (error) {
         console.error("Error loading selects:", error);
       }
@@ -272,7 +274,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
     const requiredFields = [
       'name', 'manufactureYear', 'serialNumber', 'machineryType',
       'brand', 'model', 'tariff', 'category', 'country',
-      'department', 'city'
+      'department', 'city', 'telemetry'
       // 'telemetry' no está incluido porque es opcional
     ];
 
@@ -295,6 +297,33 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
 
     return true;
   };
+
+  // Función para validar el paso 2
+  const validateStep2 = () => {
+    const currentValues = methods.getValues();
+    const requiredFields = [
+      'terminalSerial'
+    ];
+
+    // Verificar si todos los campos requeridos están completos
+    const missingFields = requiredFields.filter(field => {
+      const value = currentValues[field];
+      return !value || (typeof value === 'string' && value.trim() === '');
+    });
+
+    if (missingFields.length > 0) {
+      // Establecer errores manualmente para los campos faltantes
+      missingFields.forEach(field => {
+        methods.setError(field, {
+          type: 'required',
+          message: 'Este campo es obligatorio'
+        });
+      });
+      return false;
+    }
+
+    return true;
+  }
 
   // Función para validar el paso 4
   const validateStep4 = () => {
@@ -321,6 +350,13 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       return false;
     }
 
+    return true;
+  };
+
+  // Función para validar el paso 6
+  const validateStep6 = () => {
+    // El Step 6 maneja su propia validación y envío de documentos
+    // No requiere validación adicional aquí ya que los documentos se gestionan directamente
     return true;
   };
 
@@ -390,6 +426,52 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
     }
   };
 
+  const submitStep2 = async (data) => {
+    try {
+      setIsSubmittingStep(true);
+      // Crear FormData para enviar el archivo
+      const formData = new FormData();
+
+      // Agregar todos los campos del paso 2
+      formData.append('id_machinery', machineryId);
+      formData.append('terminal_serial_number', data.terminalSerial);
+      formData.append('gps_serial_number', data.gpsSerial);
+      formData.append('chassis_number', data.chasisNumber);
+      formData.append('engine_number', data.engineNumber);
+      formData.append('responsible_user', id);
+
+      const response = await registerInfoTracker(formData);
+
+      // Marcar paso como completado y avanzar
+      setCompletedSteps(prev => [...prev, 1]);
+      setStep(2);
+
+      console.log('Step 2 submitted successfully:', response);
+    } catch (error) {
+      console.error('Error submitting step 2:', error);
+
+      // Mostrar error al usuario
+      if (error.response?.data) {
+        const errorData = error.response.data;
+
+        // Si el backend devuelve errores específicos por campo
+        Object.keys(errorData).forEach(field => {
+          if (errorData[field] && Array.isArray(errorData[field])) {
+            methods.setError(field, {
+              type: 'server',
+              message: errorData[field][0]
+            });
+          }
+        });
+      } else {
+        // Error genérico
+        alert('Error al guardar los datos. Por favor, inténtelo de nuevo.');
+      }
+    } finally {
+      setIsSubmittingStep(false);
+    }
+  }
+
   const submitStep4 = async (data) => {
     try {
       setIsSubmittingStep(true);
@@ -431,14 +513,20 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       // Enviar datos del paso 1
       const currentData = methods.getValues();
       submitStep1(currentData);
-    } else if(step === 3){
+    } else if (step === 1) {
+      if (!validateStep2()) {
+        return;
+      }
+      const currentData = methods.getValues();
+      submitStep2(currentData);
+    } else if (step === 3) {
       if (!validateStep4()) {
         return;
       }
 
       const currentData = methods.getValues();
       submitStep4(currentData);
-    }else {
+    } else {
       // Para los otros pasos, avanzar normalmente
       setStep((s) => {
         const newStep = Math.min(s + 1, steps.length - 1);
@@ -459,14 +547,23 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
   };
 
   const onSubmit = (data) => {
-    console.log("Final Data:", data);
-    console.log("Machinery ID:", machineryId);
-    alert("Formulario enviado exitosamente!");
-    onClose();
-    methods.reset();
-    setStep(0);
-    setCompletedSteps([]);
-    setMachineryId(null);
+    // Si estamos en el último paso, finalizar el proceso
+    if (step === steps.length - 1) {
+      if (!validateStep6()) {
+        return;
+      }
+
+      // El Step 6 ya maneja la creación de documentos directamente
+      // Aquí solo confirmamos que el proceso ha sido completado exitosamente
+      console.log("Machinery registration completed with ID:", machineryId);
+      console.log("Final form data:", data);
+      alert("¡Registro de maquinaria completado exitosamente!");
+      onClose();
+      methods.reset();
+      setStep(0);
+      setCompletedSteps([]);
+      setMachineryId(null);
+    }
   };
 
   // Función separada para manejar el evento de Next
@@ -687,6 +784,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
                   machineList={machineList}
                   brandsList={brandsList}
                   modelsList={modelsList}
+                  telemetryDevicesList={telemetryDevicesList}
                 />
               }
               {step === 1 && <Step2TrackerData machineryId={machineryId} />}
@@ -699,10 +797,10 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
                   tenureTypesList={tenureTypesList}
                 />
               }
-              {step === 4 && 
-                <Step5Maintenance 
+              {step === 4 &&
+                <Step5Maintenance
                   machineryId={machineryId}
-                  maintenanceTypeList={maintenanceTypeList} 
+                  maintenanceTypeList={maintenanceTypeList}
                 />
               }
               {step === 5 && <Step6UploadDocs machineryId={machineryId} />}
@@ -713,6 +811,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
               {/* Botón Anterior */}
               <button
                 type="button"
+                aria-label="Preview Button"
                 onClick={prevStep}
                 disabled={step === 0 || isSubmittingStep}
                 className="btn-theme btn-secondary w-auto"
@@ -724,6 +823,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
               {isLastStep ? (
                 <button
                   type="submit"
+                  aria-label="Save Button"
                   disabled={isSubmittingStep}
                   className="btn-theme btn-primary w-auto"
                 >
@@ -732,6 +832,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
               ) : (
                 <button
                   type="button"
+                  aria-label="Next Button"
                   onClick={handleNext}
                   disabled={isSubmittingStep}
                   className="btn-theme btn-primary w-auto"

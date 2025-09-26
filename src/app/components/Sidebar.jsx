@@ -164,6 +164,12 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           path: "/maintenance/maintenanceRequest",
           permissions: [],
         },
+        {
+          name: "Gestor de mantenimientos",
+          icon: <FaTools  />,
+          path: "/maintenance/maintenanceManagement",
+          permissions: [],
+        },
       ],
     },
     {

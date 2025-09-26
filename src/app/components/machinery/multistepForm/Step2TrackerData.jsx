@@ -1,27 +1,10 @@
 // Step2TrackerData.jsx
 import { useFormContext } from "react-hook-form";
-import { useState } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 
 export default function Step2TrackerData() {
-  const { register, formState: { errors }, trigger } = useFormContext();
-  const [checking, setChecking] = useState(false);
+  const { register, formState: { errors } } = useFormContext();
   const { getCurrentTheme } = useTheme();
-
-  // Validación asíncrona contra la BD simulando un endpoint
-  const validateDuplicate = async (field, value) => {
-    if (!value) return true;
-    try {
-      setChecking(true);
-      const res = await fetch(`/api/check-serial?field=${field}&value=${value}`);
-      const data = await res.json();
-      return data.exists ? `El ${field} ya está registrado en la base de datos` : true;
-    } catch (error) {
-      return "Error al validar en la base de datos";
-    } finally {
-      setChecking(false);
-    }
-  };
 
   return (
     <div id="step-2-tracker-data">
@@ -42,10 +25,9 @@ export default function Step2TrackerData() {
                 minLength: {
                   value: 3,
                   message: "Debe tener al menos 3 caracteres"
-                },
-                validate: (value) => validateDuplicate("número de serie del terminal", value)
+                }
               })}
-              onBlur={() => trigger("terminalSerial")}
+              aria-label="Terminal Serial Input"
               placeholder="Ingrese el número de serie del terminal"
               className="parametrization-input"
             />
@@ -66,10 +48,9 @@ export default function Step2TrackerData() {
                 minLength: {
                   value: 3,
                   message: "Debe tener al menos 3 caracteres"
-                },
-                validate: (value) => validateDuplicate("número de serie del dispositivo GPS", value)
+                }
               })}
-              onBlur={() => trigger("gpsSerial")}
+              aria-label="GPS Serial Input"
               placeholder="Ingrese el número de serie del dispositivo GPS"
               className="parametrization-input"
             />
@@ -93,10 +74,9 @@ export default function Step2TrackerData() {
                 minLength: {
                   value: 3,
                   message: "Debe tener al menos 3 caracteres"
-                },
-                validate: (value) => validateDuplicate("número de chasis", value)
+                }
               })}
-              onBlur={() => trigger("chasisNumber")}
+              aria-label="Chasis Number Input"
               placeholder="Ingrese el número de chasis"
               className="parametrization-input"
             />
@@ -117,10 +97,9 @@ export default function Step2TrackerData() {
                 minLength: {
                   value: 3,
                   message: "Debe tener al menos 3 caracteres"
-                },
-                validate: (value) => validateDuplicate("número de motor", value)
+                }
               })}
-              onBlur={() => trigger("engineNumber")}
+              aria-label="Engine Number Input"
               placeholder="Ingrese el número de motor"
               className="parametrization-input"
             />
@@ -132,10 +111,6 @@ export default function Step2TrackerData() {
           </div>
         </div>
       </div>
-
-      {checking && (
-        <p className="text-xs text-gray-500 mt-4">Validando datos en la base de datos...</p>
-      )}
     </div>
   );
 }
