@@ -7,6 +7,7 @@ import PermissionGuard from '@/app/(auth)/PermissionGuard'
 import * as Dialog from '@radix-ui/react-dialog'
 import { FiLayers } from 'react-icons/fi'
 import { IoCalendarOutline } from 'react-icons/io5'
+import MaintenanceRequestModal from "@/app/components/maintenance/MaintenanceRequestModal";
 
 const SolicitudesMantenimientoView = () => {
   // Estado para el filtro global
@@ -819,6 +820,10 @@ const SolicitudesMantenimientoView = () => {
             </div>
           </Dialog.Content>
         </Dialog.Portal>
+        <MaintenanceRequestModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+        />
       </Dialog.Root>
     </div>
   )
