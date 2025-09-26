@@ -171,6 +171,7 @@ La estructura del proyecto está organizada por funcionalidad. Es crucial manten
 -   **Idioma:** Todos los textos visibles para el usuario en la interfaz (labels, botones, mensajes de error, etc.) deben estar en **español**.
 -   **Accesibilidad y Pruebas:** Todo elemento interactivo (botones, enlaces, inputs, etc.) debe tener un atributo `aria-label` descriptivo. Esto es fundamental para la accesibilidad y facilita la creación de pruebas automatizadas.
 -   **Dependencias Externas:** No se deben agregar nuevas librerías o paquetes (`npm install`) sin consultarlo previamente y obtener la aprobación del líder técnico. Esto previene la inclusión de dependencias innecesarias o conflictivas.
+-   **Parametrización:** Antes de escribir valores fijos en el código (conocido como "hardcodear"), siempre pregúntate si esos valores podrían cambiar en el futuro. La mayoría de las opciones en este sistema son parametrizables. En lugar de valores fijos, usa props o consume los datos desde un servicio. Si tienes dudas, consulta el código existente o pregunta directamente antes de continuar.
 
 ---
 
@@ -187,3 +188,5 @@ La estructura del proyecto está organizada por funcionalidad. Es crucial manten
     3.  En la descripción del PR, explica qué cambios hiciste y por qué.
     4.  Asigna el PR a uno o más compañeros para su revisión.
     5.  Una vez aprobado, el PR podrá ser fusionado a la rama principal.
+----
+Analiza bien el proyecto, para que tengas el contexto necesario antes de actuar además de pensar en un plan que puedas ir siguiendo.

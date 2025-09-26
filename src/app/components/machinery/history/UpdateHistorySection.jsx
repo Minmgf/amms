@@ -10,16 +10,16 @@ const fallbackHistory = [
     id: 1,
     modificationDate: '2025-03-14T21:23:00Z',
     modifiedBy: 'Cristiano Ronaldo',
-    sectionModified: 'Todo',
-    performedAction: 'Create',
+    sectionModified: 'General',
+    performedAction: 'Creación',
     justification: ''
   },
   {
     id: 2,
     modificationDate: '2025-03-14T21:23:00Z',
     modifiedBy: 'Juan Andres Pete',
-    sectionModified: 'Specific Data Sheet',
-    performedAction: 'Update',
+    sectionModified: 'Ficha de Datos Específica',
+    performedAction: 'Actualización',
     justification: 'Se cambió el dispositivo de telemetría'
   }
 ]
@@ -33,12 +33,12 @@ const DEFAULT_FILTERS = {
 const formatDateTime = (value) => {
   if (!value) return 'N/A'
   const date = new Date(value)
-  const formattedDate = date.toLocaleDateString('en-GB', {
+  const formattedDate = date.toLocaleDateString('es-ES', {
     day: '2-digit',
     month: 'short',
     year: 'numeric'
   })
-  const formattedTime = date.toLocaleTimeString('en-US', {
+  const formattedTime = date.toLocaleTimeString('es-ES', {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true
@@ -133,31 +133,31 @@ const UpdateHistorySection = ({ history }) => {
   const columns = useMemo(() => [
     {
       accessorKey: 'modificationDate',
-      header: 'Modification date',
+      header: 'Fecha de Modificación',
       cell: ({ row }) => (
         <span className="text-sm text-primary">{formatDateTime(row.original.modificationDate)}</span>
       )
     },
     {
       accessorKey: 'modifiedBy',
-      header: 'Modified by',
+      header: 'Modificado por',
       cell: ({ row }) => <span className="text-sm text-primary">{row.original.modifiedBy || 'N/A'}</span>
     },
     {
       accessorKey: 'sectionModified',
-      header: 'Section Modified',
+      header: 'Sección Modificada',
       cell: ({ row }) => (
         <span className="text-sm text-secondary">{row.original.sectionModified || 'N/A'}</span>
       )
     },
     {
       accessorKey: 'performedAction',
-      header: 'Performed Action',
+      header: 'Acción Realizada',
       cell: ({ row }) => <span className="text-sm text-primary">{row.original.performedAction || 'N/A'}</span>
     },
     {
       accessorKey: 'justification',
-      header: 'Justification',
+      header: 'Justificación',
       cell: ({ row }) => (
         <span className="text-sm text-secondary">{row.original.justification || '—'}</span>
       )
@@ -197,13 +197,13 @@ const UpdateHistorySection = ({ history }) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center gap-4">
         <div className="relative w-full md:max-w-xs">
           <input
             type="text"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search"
+            placeholder="Buscar"
             className="input-theme pl-4"
             aria-label="Buscar en historial"
           />
@@ -215,11 +215,11 @@ const UpdateHistorySection = ({ history }) => {
           aria-label="Abrir filtros del historial"
         >
           <CiFilter className="w-5 h-5" aria-hidden="true" />
-          Filter by
+          Filtrar por
         </button>
       </div>
 
-      <div className="card-theme rounded-xl p-0">
+      <div className=" rounded-xl p-0">
         <TableList
           columns={columns}
           data={filteredHistoryData}

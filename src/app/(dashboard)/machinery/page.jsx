@@ -1,6 +1,6 @@
 'use client'
 import TableList from '@/app/components/shared/TableList'
-import MachineryHistoryModal from '@/app/components/machinery/history/machineryHistoryModal'
+import MachineryHistoryModal from '@/app/components/machinery/history/MachineryHistoryModal'
 import React, { useState, useMemo, useEffect } from 'react'
 import { CiFilter } from 'react-icons/ci'
 import { FaEye, FaPen, FaPlus, FaTimes, FaCog, FaCalendarAlt, FaBarcode, FaTag, FaCalendar, FaCheckCircle, FaTools, FaHashtag, FaRegPlayCircle, FaTractor, FaHistory } from 'react-icons/fa'
