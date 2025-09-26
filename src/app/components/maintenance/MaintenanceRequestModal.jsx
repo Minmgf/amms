@@ -87,7 +87,7 @@ const MaintenanceRequestModal = ({
               </label>
               <select
                 {...register("maintenanceType", { required: true })}
-                className="parametrization-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
+                className="parametrization-input"
                 aria-label="Maintenance type Select"
                 defaultValue=""
               >
@@ -121,7 +121,7 @@ const MaintenanceRequestModal = ({
               </label>
               <select
                 {...register("priority", { required: true })}
-                className="parametrization-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
+                className="parametrization-input"
                 aria-label="Priority Select"
                 defaultValue=""
               >
@@ -144,7 +144,7 @@ const MaintenanceRequestModal = ({
                 <input
                   type="date"
                   {...register("detectionDate", { required: true })}
-                  className="parametrization-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
+                  className="parametrization-input"
                   aria-label="Detection date Input"
                 />
               </div>
