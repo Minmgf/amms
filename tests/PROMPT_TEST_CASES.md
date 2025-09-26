@@ -2,7 +2,7 @@
 
 ## 📋 Instrucciones Generales
 
-Crear un test case automatizado siguiendo exactamente el formato y estructura del archivo de referencia: `C:\Users\Nico\Documents\Proyecto Integrador\amms\tests\test_IT_GUSU_006_RF-074\test_IT_GUSU_006_RF-074.py`
+Crear un test case automatizado siguiendo exactamente el formato y estructura del archivo de referencia: `amms\tests\test_IT_GUSU_006_RF-074\test_IT_GUSU_006_RF-074.py`
 
 ## 🏗️ Estructura de Carpetas y Archivos
 
