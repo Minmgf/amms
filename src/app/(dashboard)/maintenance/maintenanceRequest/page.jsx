@@ -8,6 +8,7 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { FiLayers } from 'react-icons/fi'
 import { IoCalendarOutline } from 'react-icons/io5'
 import MaintenanceRequestModal from "@/app/components/maintenance/MaintenanceRequestModal";
+import RequestDetailModal from "@/app/components/maintenance/RequestDetailModal";
 
 const SolicitudesMantenimientoView = () => {
   // Estado para el filtro global
@@ -823,6 +824,11 @@ const SolicitudesMantenimientoView = () => {
         <MaintenanceRequestModal
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
+        />
+        <RequestDetailModal
+          isOpen={isDetailsModalOpen}
+          onClose={() => setIsDetailsModalOpen(false)}
+          request={selectedRequest}
         />
       </Dialog.Root>
     </div>
