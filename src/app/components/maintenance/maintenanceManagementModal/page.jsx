@@ -1,263 +1,205 @@
 'use client'
-
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
-import { FaTimes } from 'react-icons/fa'
 import axios from 'axios'
 
-/**
- * Modal para crear mantenimientos.
- *
- * Props:
- * - open: boolean (controlado desde el padre)
- * - onOpenChange: (boolean) => void
- * - onCreated: (createdItem) => void   // úsalo para recargar la lista
- * - responsibleUserId?: number         // si ya lo tienes en sesión, pásalo
- */
-const CreateMaintenanceModal = ({
+export default function CreateMaintenanceModal({
   open,
-  onOpenChange,
+  onClose,
   onCreated,
-  responsibleUserId = 1, // valor de respaldo
-}) => {
-  // ----- Config API
-  const API_BASE =
-    process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, '') ||
-    'https://api.inmero.co/sigma/main' // respaldo; ajústalo si trabajas local
-
-  const TYPES_ENDPOINT =
-    process.env.NEXT_PUBLIC_TYPES_ENDPOINT ||
-    // En Taiga indican /types/list/active/12/ para “tipos de mantenimiento”
-    `${API_BASE}/types/list/active/12/`
-
-  const CREATE_ENDPOINT =
-    process.env.NEXT_PUBLIC_CREATE_MAINTENANCE_ENDPOINT ||
-    `${API_BASE}/maintenance/`
-
-  // ----- State form
-  const [name, setName] = useState('')
-  const [typeId, setTypeId] = useState('')
-  const [description, setDescription] = useState('')
+  statusOptions = [
+    { id: 1, label: 'Habilitado' },
+    { id: 2, label: 'Deshabilitado' },
+  ],
+}) {
+  // Endpoints de producción
+  const CREATE_URL = 'https://api.inmero.co/sigma/main/maintenance/'
+  const TYPES_URL  = 'https://api.inmero.co/sigma/main/types/list/active/12/'
 
   const [types, setTypes] = useState([])
   const [loadingTypes, setLoadingTypes] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
 
-  // ----- Derivados
-  const descCount = useMemo(() => (description || '').length, [description])
-  const isValid = useMemo(() => {
-    const okName = name.trim().length > 0 && name.trim().length <= 100
-    const okType = !!typeId
-    const okDesc = descCount <= 300
-    return okName && okType && okDesc
-  }, [name, typeId, descCount])
+  const [form, setForm] = useState({
+    name: '',
+    description: '',
+    maintenance_type: '',  
+    responsible_user: '',   
+    id_estado: 1,
+  })
 
-  // ----- Cargar tipos de mantenimiento
-  useEffect(() => {
-    if (!open) return
-    let mounted = true
-    ;(async () => {
-      try {
-        setLoadingTypes(true)
-        setError(null)
-        const { data } = await axios.get(TYPES_ENDPOINT)
+  const onChange = (k, v) => setForm((p) => ({ ...p, [k]: v }))
 
-        // Normaliza posibles formatos de respuesta
-        // Acepta: array plano, {results: [...]}, {data: [...]}
-        const raw =
-          Array.isArray(data) ? data : Array.isArray(data?.results) ? data.results : data?.data || []
-
-        // Intentamos detectar claves comunes: id / id_type, name / type_name
-        const normalized = raw.map((t) => ({
-          id: t.id ?? t.id_type ?? t.type_id ?? t.value ?? t.key ?? t?.Id,
-          name: t.name ?? t.type_name ?? t.label ?? t.descripcion ?? t?.Name,
-        })).filter((t) => t.id != null)
-
-        if (mounted) setTypes(normalized)
-      } catch (err) {
-        console.error('Error fetching maintenance types', err)
-        if (mounted) setError('No fue posible cargar los tipos de mantenimiento.')
-      } finally {
-        if (mounted) setLoadingTypes(false)
+  const formatBackendErrors = (data) => {
+    try {
+      if (!data) return null
+      const lines = []
+      if (data.message) lines.push(String(data.message))
+      if (data.errors && typeof data.errors === 'object') {
+        for (const [k, v] of Object.entries(data.errors)) {
+          lines.push(`${k}: ${Array.isArray(v) ? v.join(' | ') : String(v)}`)
+        }
       }
-    })()
-
-    return () => {
-      mounted = false
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
-
-  // ----- Reset al cerrar
-  const handleOpenChange = (val) => {
-    if (!val) {
-      // reset suave
-      setTimeout(() => {
-        setName('')
-        setTypeId('')
-        setDescription('')
-        setError(null)
-      }, 200)
-    }
-    onOpenChange?.(val)
+      return lines.length ? lines.join('\n') : (typeof data === 'string' ? data : JSON.stringify(data))
+    } catch { return null }
   }
 
-  // ----- Submit
+  useEffect(() => {
+    if (!open) return
+    setError(null)
+    setLoadingTypes(true)
+
+    axios.get(TYPES_URL)
+      .then((res) => {
+        const arr = Array.isArray(res.data) ? res.data : (res.data?.results ?? [])
+        const mapped = arr
+          .map((t) => ({
+            id: t.id ?? t.pk ?? t.value,
+            label: t.name ?? t.nombre ?? t.label ?? `Tipo ${t.id}`,
+          }))
+          .filter((t) => t.id != null)
+
+        setTypes(mapped)
+        if (mapped.length && !form.maintenance_type) {
+          setForm((prev) => ({ ...prev, maintenance_type: String(mapped[0].id) }))
+        }
+      })
+      .catch((err) => {
+        console.error('Error cargando tipos', err)
+        setError('No se pudieron cargar los tipos de mantenimiento.')
+      })
+      .finally(() => setLoadingTypes(false))
+  }, [open])
+
   const handleSubmit = async (e) => {
-    e?.preventDefault?.()
-    if (!isValid || submitting) return
+    e.preventDefault()
+    setError(null)
 
+    const maintenance_type = Number(form.maintenance_type)
+    const responsible_user = Number(form.responsible_user)
+    const id_estado = Number(form.id_estado) || 1
+
+    if (!form.name.trim()) return setError('El nombre es obligatorio.')
+    if (!Number.isFinite(maintenance_type)) return setError('Selecciona un tipo de mantenimiento válido.')
+    if (!Number.isFinite(responsible_user) || responsible_user <= 0)
+      return setError('Ingresa un ID de responsable válido (> 0).')
+
+    const payload = {
+      name: form.name.trim(),
+      description: form.description?.trim() || '',
+      maintenance_type,    
+      responsible_user,     
+      id_estado,
+    }
+
+    setSubmitting(true)
     try {
-      setSubmitting(true)
-      setError(null)
-
-      // Body esperado por backend (según Taiga):
-      // {
-      //   "name": "cambio de motor",
-      //   "description": "se necesita cambiar motor",
-      //   "maintenance_type": 14,
-      //   "id_responsible_user": 1
-      // }
-      const payload = {
-        name: name.trim(),
-        description: description?.trim() || '',
-        maintenance_type: Number(typeId),
-        id_responsible_user: Number(responsibleUserId),
-      }
-
-      const { data } = await axios.post(CREATE_ENDPOINT, payload)
-
-      // Heurística de éxito (Taiga muestra { success: true, message: "..."} )
-      const ok =
-        data?.success === true ||
-        data?.id ||
-        data?.created === true
-
-      if (ok) {
-        // Avísale al padre para refrescar la tabla
-        onCreated?.(data)
-        handleOpenChange(false)
-        // feedback mínimo
-        if (typeof window !== 'undefined') alert('Mantenimiento creado correctamente.')
-      } else {
-        throw new Error(data?.message || 'No se pudo crear el mantenimiento.')
-      }
+      const resp = await axios.post(CREATE_URL, payload, {
+        headers: { 'Content-Type': 'application/json' },
+      })
+  
+      setForm({
+        name: '',
+        description: '',
+        maintenance_type: types[0]?.id ? String(types[0].id) : '',
+        responsible_user: '',
+        id_estado: 1,
+      })
+      onCreated && onCreated(resp.data)
+      onClose && onClose()
     } catch (err) {
-      console.error('Error creating maintenance', err)
-      setError(
-        err?.response?.data?.message ||
-          err?.message ||
-          'Error al crear el mantenimiento.'
-      )
+      const status = err?.response?.status
+      const data = err?.response?.data
+      const pretty = formatBackendErrors(data)
+      setError(status ? `Error ${status} al crear:\n${pretty || '(sin detalles)'}` : `Error de red: ${err?.message}`)
+      console.warn('Create maintenance error', err)
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <Dialog.Root open={open} onOpenChange={handleOpenChange}>
+    <Dialog.Root open={open} onOpenChange={(v) => !v && onClose && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-[101] w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-2xl shadow-xl">
-          <form onSubmit={handleSubmit} className="card-theme rounded-2xl p-8">
-            {/* Header */}
-            <div className="mb-6 flex items-center justify-between">
-              <Dialog.Title className="text-2xl font-bold">Add maintenance</Dialog.Title>
-              <Dialog.Close asChild>
-                <button type="button" className="text-secondary hover:text-primary">
-                  <FaTimes className="h-6 w-6" />
-                </button>
-              </Dialog.Close>
+        <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
+        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-2xl shadow-xl z-50 w-full max-w-md">
+          <div className="p-6 bg-white rounded-2xl">
+            <div className="flex justify-between mb-4">
+              <Dialog.Title className="text-lg font-semibold">Crear mantenimiento</Dialog.Title>
+              <button onClick={onClose} className="h-8 w-8 rounded hover:bg-gray-100" aria-label="Cerrar">×</button>
             </div>
 
-            {/* Grid */}
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              {/* Name */}
-              <div className="md:col-span-1">
-                <label className="mb-2 block text-sm font-medium text-primary">
-                  Maintenance name
-                </label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  maxLength={100}
-                  placeholder="Cambio de aceite"
-                  required
-                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-primary placeholder-gray-400 focus:border-black focus:outline-none focus:ring-2 focus:ring-black/10"
-                />
-                <p className="mt-1 text-xs text-gray-500">Máx. 100 caracteres</p>
-              </div>
-
-              {/* Type */}
-              <div className="md:col-span-1">
-                <label className="mb-2 block text-sm font-medium text-primary">
-                  Maintenance type
-                </label>
-                <select
-                  value={typeId}
-                  onChange={(e) => setTypeId(e.target.value)}
-                  required
-                  disabled={loadingTypes}
-                  className="w-full appearance-none rounded-lg border border-gray-300 bg-white px-4 py-3 text-primary focus:border-black focus:outline-none focus:ring-2 focus:ring-black/10"
-                >
-                  <option value="">{loadingTypes ? 'Loading...' : 'Select a type'}</option>
-                  {types.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Description (full width) */}
-              <div className="md:col-span-2">
-                <label className="mb-2 block text-sm font-medium text-primary">Description</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  maxLength={300}
-                  rows={4}
-                  placeholder="Description..."
-                  className="w-full resize-y rounded-lg border border-gray-300 bg-white px-4 py-3 text-primary placeholder-gray-400 focus:border-black focus:outline-none focus:ring-2 focus:ring-black/10"
-                />
-                <div className="mt-1 text-xs text-gray-500">{descCount}/300 characters</div>
-              </div>
-            </div>
-
-            {/* Error */}
             {error && (
-              <div className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <div className="mb-4 whitespace-pre-wrap bg-red-50 text-red-700 border border-red-200 p-3 rounded">
                 {error}
               </div>
             )}
 
-            {/* Actions */}
-            <div className="mt-8 flex items-center justify-end gap-4">
-              <Dialog.Close asChild>
-                <button
-                  type="button"
-                  className="rounded-lg bg-red-600 px-6 py-3 font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={submitting}
-                >
-                  Cancel
-                </button>
-              </Dialog.Close>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <input
+                className="w-full border px-3 py-2 rounded"
+                placeholder="Nombre (único)"
+                value={form.name}
+                onChange={(e) => onChange('name', e.target.value)}
+                maxLength={100}
+                required
+              />
 
-              <button
-                type="submit"
-                className="rounded-lg bg-black px-6 py-3 font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={!isValid || submitting}
+              <textarea
+                className="w-full border px-3 py-2 rounded"
+                placeholder="Descripción"
+                value={form.description}
+                onChange={(e) => onChange('description', e.target.value)}
+                maxLength={300}
+              />
+
+              <select
+                value={form.maintenance_type}
+                onChange={(e) => onChange('maintenance_type', e.target.value)}
+                className="w-full border px-3 py-2 rounded"
+                required
               >
-                {submitting ? 'Saving…' : 'Add'}
-              </button>
-            </div>
-          </form>
+                <option value="">
+                  {loadingTypes ? 'Cargando tipos…' : 'Selecciona el tipo'}
+                </option>
+                {types.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.label} (ID {t.id})
+                  </option>
+                ))}
+              </select>
+
+              <input
+                type="number"
+                min="1"
+                className="w-full border px-3 py-2 rounded"
+                placeholder="ID del responsable"
+                value={form.responsible_user}
+                onChange={(e) => onChange('responsible_user', e.target.value)}
+                required
+              />
+
+              <select
+                value={form.id_estado}
+                onChange={(e) => onChange('id_estado', e.target.value)}
+                className="w-full border px-3 py-2 rounded"
+              >
+                {statusOptions.map((s) => (
+                  <option key={s.id} value={s.id}>{s.label}</option>
+                ))}
+              </select>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button type="button" onClick={onClose} className="px-4 py-2 border rounded">Cancelar</button>
+                <button type="submit" disabled={submitting} className="px-4 py-2 bg-black text-white rounded disabled:opacity-60">
+                  {submitting ? 'Creando…' : 'Crear'}
+                </button>
+              </div>
+            </form>
+          </div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
   )
 }
-
-export default CreateMaintenanceModal
