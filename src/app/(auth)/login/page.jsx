@@ -12,7 +12,6 @@ import {
   SuccessModal,
   ErrorModal,
 } from "@/app/components/shared/SuccessErrorModal";
-import Cookies from "js-cookie";
 
 const Page = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -48,16 +47,12 @@ const Page = () => {
     if (!token) {
       token = sessionStorage.getItem("token");
     }
-    // También verificar cookies
-    if (!token) {
-      token = Cookies.get("token");
-    }
     return token;
   };
 
   useEffect(() => {
     // Usar la misma lógica que usa el interceptor de axios
-    const token = getAuthToken();
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     if (token) {
       // Verificar si el token es válido antes de redirigir
       try {
@@ -78,7 +73,6 @@ const Page = () => {
       localStorage.removeItem("token");
       sessionStorage.removeItem("token");
       localStorage.removeItem("userData");
-      Cookies.remove("token");
     }
     
     setLoading(false);
@@ -232,7 +226,7 @@ const Page = () => {
                   <FaUser className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
                   <input
                     type="text"
-                    area-label="Email Input"
+                    aria-label="Email Input"
                     placeholder="Correo electrónico"
                     {...register("email", {
                       required: "El correo electrónico es obligatorio",
@@ -259,7 +253,7 @@ const Page = () => {
                   <FaLock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
                   <input
                     type={showPassword ? "text" : "password"}
-                    area-label="Password Input"
+                    aria-label="Password Input"
                     placeholder="Contraseña"
                     {...register("password", {
                       required: "La contraseña es obligatoria",
@@ -268,7 +262,7 @@ const Page = () => {
                   />
                   <button
                     type="button"
-                    area-label="Show Password Button"
+                    aria-label="Show Password Button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                   >
@@ -288,7 +282,7 @@ const Page = () => {
               <label className="flex items-center gap-3 text-sm">
                 <input
                   type="checkbox"
-                  area-label="Remember Me Checkbox"
+                  aria-label="Remember Me Checkbox"
                   {...register("rememberMe")}
                   className="h-4 w-4 rounded border-white/30 bg-black/30 accent-red-600"
                 />
@@ -297,7 +291,7 @@ const Page = () => {
 
               <button
                 type="submit"
-                area-label="Login Button"
+                aria-label="Login Button"
                 disabled={loading}
                 className={`w-full text-white py-2 mt-6 rounded-lg text-lg font-semibold shadow transition-colors
                   ${
@@ -312,7 +306,7 @@ const Page = () => {
 
               <div className="text-center mt-3">
                 <Link
-                  area-label="Forgot Password"
+                  aria-label="Forgot Password"
                   href="/passwordRecovery"
                   className="text-white/80 hover:text-white underline-offset-4 hover:underline"
                 >
@@ -324,7 +318,7 @@ const Page = () => {
             <div className="flex justify-center mt-6 gap-2 text-sm">
               <span className="text-white/80">¿Nuevo aquí?</span>
               <Link
-                area-label="Signup"
+                aria-label="Signup"
                 href="/preregister"
                 className="hover:underline font-bold text-white"
               >

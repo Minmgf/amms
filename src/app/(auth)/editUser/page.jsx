@@ -115,7 +115,7 @@ const Page = () => {
             <div className="relative">
               <label className="block mb-2 text-sm font-medium">País</label>
               <select
-                area-label="Country Select"
+                aria-label="Country Select"
                 {...register("country", { required: "El país es obligatorio" })}
                 className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
               >
@@ -134,7 +134,7 @@ const Page = () => {
             <div className="relative">
               <label className="block mb-2 text-sm font-medium">Región</label>
               <select
-                area-label="Region Select"
+                aria-label="Region Select"
                 {...register("department", { required: "La región es obligatoria" })} disabled={!statesList.length}
                 className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
               >
@@ -153,7 +153,7 @@ const Page = () => {
             <div className="relative">
               <label className="block mb-2 text-sm font-medium">Ciudad</label>
               <select
-                area-label="City Select"
+                aria-label="City Select"
                 {...register("city", { required: "La ciudad es obligatoria" })} disabled={!citiesList.length}
                 className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
               >
@@ -174,7 +174,7 @@ const Page = () => {
               <label className="block mb-2 text-sm font-medium">Dirección de residencia</label>
               <input
                 type="text"
-                area-label="Address Input"
+                aria-label="Address Input"
                 placeholder="Ej: Calle 123 # 45-67"
                 {...register("address", { required: "La dirección es obligatoria" })}
                 className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
@@ -190,7 +190,7 @@ const Page = () => {
               <div>
                 <label className="block mb-2 text-sm font-medium">Código</label>
                 <select
-                  area-label="Code Select"
+                  aria-label="Code Select"
                   {...register("phoneCode")}
                   defaultValue="+57"
                   className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
@@ -205,7 +205,7 @@ const Page = () => {
                   Número de teléfono
                 </label>
                 <input
-                  area-label="Phone Number Input"
+                  aria-label="Phone Number Input"
                   type="text"
                   placeholder="Ej: 3112224444"
                   {...register("phone", {
@@ -239,7 +239,7 @@ const Page = () => {
                 <span className="text-xs md:text-sm text-white">Upload photo</span>
               </label>
               <input
-                area-label="Profile Photo Input"
+                aria-label="Profile Photo Input"
                 id="photo"
                 type="file"
                 accept="image/png, image/jpeg"
@@ -267,7 +267,7 @@ const Page = () => {
               )}
               <div className="flex flex-col">
                 <button
-                  area-label="Profile Photo Button"
+                  aria-label="Profile Photo Button"
                   type="button"
                   className="px-6 py-2 bg-gray-500 border border-gray-300 hover:bg-gray-700 text-white rounded-lg text-sm transition-colors mb-2"
                   onClick={() => document.getElementById('photo').click()}
@@ -288,7 +288,7 @@ const Page = () => {
           )}
 
           <button
-            area-label="Continue Button"
+            aria-label="Continue Button"
             type="submit"
             className="w-full text-white py-2 mt-6 rounded-lg bg-red-600 text-lg font-semibold shadow hover:bg-red-500 active:bg-red-700 transition-colors"
           >

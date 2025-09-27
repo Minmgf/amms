@@ -49,7 +49,7 @@ const Page = () => {
                         <label htmlFor="email" className="block text-sm font-medium text-white mb-1">Correo electrónico</label>
                         <input
                             id="email"
-                            area-label="Email Input"
+                            aria-label="Email Input"
                             type="email"
                             placeholder="Ingrese su correo electrónico"
                             className="py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-1 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
@@ -65,7 +65,7 @@ const Page = () => {
                             <p className="text-red-400 text-sm mt-1">{errors.email.message}</p>
                         )}
                         <button
-                            area-label="Send-Button"
+                            aria-label="Send-Button"
                             type="submit"
                             className="w-full text-white py-2 mt-6 rounded-lg bg-red-600 text-lg font-semibold shadow hover:bg-red-500 active:bg-red-700 transition-colors"
                         >
@@ -75,7 +75,7 @@ const Page = () => {
                     <div className="mt-8 text-center text-white">
                         Ya tiene una cuenta activa? 
                         <Link
-                            area-label="Login Button"
+                            aria-label="Login Button"
                             href="/login"
                             className="hover:underline font-bold text-white"
                         >

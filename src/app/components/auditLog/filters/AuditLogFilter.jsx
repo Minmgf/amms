@@ -87,10 +87,10 @@ export default function AuditLogFilter({ isOpen, onClose, onApply, onClean }) {
 
         {/* Botones */}
         <div className="flex gap-4 mt-6">
-          <button area-label="Clean Button" onClick={handleClean} className="btn-theme btn-secondary w-1/2 relative">
+          <button aria-label="Clean Button" onClick={handleClean} className="btn-theme btn-secondary w-1/2 relative">
             Limpiar
           </button>
-          <button area-label="Apply Button" onClick={handleApply} className="btn-theme btn-primary w-1/2 relative">
+          <button aria-label="Apply Button" onClick={handleApply} className="btn-theme btn-primary w-1/2 relative">
             Aplicar
           </button>
         </div>

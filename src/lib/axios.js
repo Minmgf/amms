@@ -1,5 +1,4 @@
 import axios from "axios";
-import Cookies from "js-cookie";
 
 // Función helper para obtener el token desde localStorage o sessionStorage
 const getAuthToken = () => {
@@ -8,10 +7,6 @@ const getAuthToken = () => {
   // Si no está en localStorage, intentar sessionStorage
   if (!token) {
     token = sessionStorage.getItem('token');
-  }
-  // Si tampoco está en storage, intentar cookies
-  if (!token) {
-    token = Cookies.get('token');
   }
   return token;
 };
@@ -35,7 +30,6 @@ const clearAllTokens = () => {
   localStorage.removeItem('token');
   sessionStorage.removeItem('token');
   localStorage.removeItem('userData');
-  Cookies.remove('token');
 };
 
 // Instancia para el microservicio de usuarios
@@ -117,7 +111,7 @@ const addInterceptors = (instance) => {
         
         config.headers.Authorization = `Bearer ${token}`;
       } else {
-        console.warn('No se encontró token en localStorage, sessionStorage ni cookies');
+        console.warn('No se encontró token en localStorage ni sessionStorage');
         
         // Si no hay token y no estamos en rutas públicas, redirigir al login
         if (typeof window !== 'undefined') {
