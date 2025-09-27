@@ -5,18 +5,18 @@ import { FaTimes, FaCalendarAlt } from 'react-icons/fa'
 const defaultFilters = {
   startDate: '',
   endDate: '',
-  user: ''
+  maintenanceType: '',
+  status: ''
 }
 
-const HistoryFiltersModal = ({
+const MaintenanceFiltersModal = ({
   isOpen,
   onClose,
   onApply,
   onClear,
   initialFilters = defaultFilters,
-  users = [],
-  loading = false,
-  error = null
+  maintenanceTypes = [],
+  statuses = []
 }) => {
   const [filters, setFilters] = useState(initialFilters)
 
@@ -64,7 +64,7 @@ const HistoryFiltersModal = ({
                 <button
                   onClick={onClose}
                   className="text-secondary hover:text-primary"
-                  aria-label="Cerrar filtros de historial"
+                  aria-label="Cerrar filtros"
                 >
                   <FaTimes className="w-5 h-5" />
                 </button>
@@ -73,7 +73,7 @@ const HistoryFiltersModal = ({
 
             <div className="space-y-5">
               <div className="space-y-3">
-                <span className="text-sm font-medium text-primary">Fecha de modificación</span>
+                <span className="text-sm font-medium text-primary">Fecha de solicitud</span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex flex-col gap-2">
                     <label className="text-xs text-secondary uppercase tracking-wide">Inicio</label>
@@ -106,29 +106,38 @@ const HistoryFiltersModal = ({
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-primary">Usuario responsable</label>
-                <select
-                  name="user"
-                  value={filters.user}
-                  onChange={handleInputChange}
-                  disabled={loading || !!error}
-                  className="w-full rounded-lg border border-gray-200 py-2.5 px-3 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 disabled:bg-gray-100 disabled:text-gray-400"
-                  aria-label="Seleccionar usuario responsable"
-                >
-                  <option value="">Todos</option>
-                  {users.map((user) => (
-                    <option key={user} value={user}>
-                      {user}
-                    </option>
-                  ))}
-                </select>
-                {loading && (
-                  <p className="text-xs text-secondary">Cargando usuarios...</p>
-                )}
-                {error && (
-                  <p className="text-xs text-red-500">{error}</p>
-                )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-primary">Tipo de mantenimiento</label>
+                  <select
+                    name="maintenanceType"
+                    value={filters.maintenanceType}
+                    onChange={handleInputChange}
+                    className="w-full rounded-lg border border-gray-200 py-2.5 px-3 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                    aria-label="Seleccionar tipo de mantenimiento"
+                  >
+                    <option value="">Todos</option>
+                    {maintenanceTypes.map((type) => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-primary">Estado de la solicitud</label>
+                  <select
+                    name="status"
+                    value={filters.status}
+                    onChange={handleInputChange}
+                    className="w-full rounded-lg border border-gray-200 py-2.5 px-3 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                    aria-label="Seleccionar estado de la solicitud"
+                  >
+                    <option value="">Todos</option>
+                    {statuses.map((status) => (
+                      <option key={status} value={status}>{status}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -136,7 +145,7 @@ const HistoryFiltersModal = ({
               <button
                 type="button"
                 onClick={handleClear}
-                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-error text-white text-sm font-semibold transition-colors hover:bg-error-hover"
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold transition-colors hover:bg-red-700"
                 aria-label="Limpiar filtros"
               >
                 Limpiar
@@ -144,7 +153,7 @@ const HistoryFiltersModal = ({
               <button
                 type="button"
                 onClick={handleApply}
-                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold transition-colors hover:bg-accent"
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gray-800 text-white text-sm font-semibold transition-colors hover:bg-gray-900"
                 aria-label="Aplicar filtros"
               >
                 Aplicar
@@ -157,5 +166,4 @@ const HistoryFiltersModal = ({
   )
 }
 
-export default HistoryFiltersModal
-
+export default MaintenanceFiltersModal

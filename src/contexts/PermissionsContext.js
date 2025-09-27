@@ -1,6 +1,5 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import Cookies from 'js-cookie';
 
 const PermissionsContext = createContext();
 
@@ -68,7 +67,7 @@ export const PermissionsProvider = ({ children }) => {
 
   // Inicialización al montar el componente (silenciosa)
   useEffect(() => {
-    const token = Cookies.get('token');
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     if (token) {
       // Carga silenciosa sin loading
       updateFromToken(token, false);
@@ -82,9 +81,6 @@ export const PermissionsProvider = ({ children }) => {
     setIsProcessingLogin(true);
     setLoading(true);
     setInitializing(true);
-    
-    // Guardar token en cookies INMEDIATAMENTE
-    Cookies.set('token', token);
     
     const startTime = Date.now();
     const minLoadingTime = 1200; // 1.2 segundos mínimo
@@ -112,7 +108,7 @@ export const PermissionsProvider = ({ children }) => {
 
   const refreshPermissions = () => {
     setLoading(true);
-    const token = Cookies.get('token');
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     if (token) {
       const result = updateFromToken(token);
       setLoading(false);

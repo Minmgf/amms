@@ -91,13 +91,13 @@ export const getMaintenanceTypes = async () => {
 
 //registrar mantenimiento periodico de una maquinaria
 export const registerPeriodicMaintenance = async (payload) => {
-    const { data } = await apiMain.post("/machinery/periodic-maintenance/", payload);
+    const { data } = await apiMain.post("/periodic-maintenance/", payload);
     return data;
 };
 
 //traer listado de mantenimientos periodicos de maquinaria por id
 export const getPeriodicMaintenancesById = async (id_machinery) => {
-    const { data } = await apiMain.get(`/machinery/periodic-maintenance/`,
+    const { data } = await apiMain.get(`/periodic-maintenance/`,
         { params: { machinery: id_machinery } }
     );
     return data;
@@ -105,7 +105,7 @@ export const getPeriodicMaintenancesById = async (id_machinery) => {
 
 // eliminar mantenimiento periódico de maquinaria por id
 export const deletePeriodicMaintenance = async (id_periodic_maintenance) => {
-    const { data } = await apiMain.delete(`/machinery/periodic-maintenance/${id_periodic_maintenance}/`);
+    const { data } = await apiMain.delete(`/periodic-maintenance/${id_periodic_maintenance}/`);
     return data;
 };
 

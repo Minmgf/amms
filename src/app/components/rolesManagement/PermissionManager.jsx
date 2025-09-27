@@ -96,7 +96,7 @@ const PermissionManager  = ({
                     Categorías de permisos
                 </label>
                 <select
-                    area-label="Permissions Categories Select"
+                    aria-label="Permissions Categories Select"
                     className="input-theme mt-2 w-64"
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
@@ -121,7 +121,7 @@ const PermissionManager  = ({
                             <div className="flex items-center gap-2">
                                 <span>Seleccionar todo</span>
                                 <input
-                                    area-label="Select All Checkbox"
+                                    aria-label="Select All Checkbox"
                                     type="checkbox"
                                     className="h-4 w-4"
                                     disabled={mode === "view" || !canEditPermissions}
@@ -143,7 +143,7 @@ const PermissionManager  = ({
                             >
                                 <span className="text-primary">{perm.description}</span>
                                 <input
-                                    area-label="Permission Checkbox"
+                                    aria-label="Permission Checkbox"
                                     type="checkbox"
                                     className="h-4 w-4"
                                     disabled={mode === "view" || !canEditPermissions}
@@ -170,7 +170,7 @@ const PermissionManager  = ({
                     {mode !== "view" && (
                         <div className="flex gap-3">
                             <button
-                                area-label="Reset Button"
+                                aria-label="Reset Button"
                                 type="button"
                                 disabled = {!canEditPermissions}
                                 onClick={resetPermissions}

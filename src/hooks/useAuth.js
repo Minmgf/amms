@@ -1,7 +1,6 @@
 "use client";
 import { useRouter } from 'next/navigation';
 import { usePermissions } from '../contexts/PermissionsContext';
-import Cookies from 'js-cookie';
 
 export const useAuth = () => {
   const router = useRouter();
@@ -20,9 +19,6 @@ export const useAuth = () => {
     let token = localStorage.getItem("token");
     if (!token) {
       token = sessionStorage.getItem("token");
-    }
-    if (!token) {
-      token = Cookies.get("token");
     }
     return token;
   };
@@ -48,7 +44,6 @@ export const useAuth = () => {
     // Verificar si el token no está expirado
     if (isTokenExpired(token)) {
       // Limpiar tokens expirados
-      Cookies.remove('token');
       localStorage.removeItem('token');
       sessionStorage.removeItem('token');
       localStorage.removeItem('userData');
@@ -76,7 +71,6 @@ export const useAuth = () => {
 
   const logout = () => {
     // Limpiar todos los storages
-    Cookies.remove('token');
     localStorage.removeItem('token');
     sessionStorage.removeItem('token');
     localStorage.removeItem('userData');

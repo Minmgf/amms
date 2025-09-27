@@ -109,7 +109,7 @@ const Page = () => {
             <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 w-full">
               <div className="w-full sm:w-auto">
                 <select
-                  area-label="Identification Type Select"
+                  aria-label="Identification Type Select"
                   {...register("selectedType", { required: "Seleccione un tipo de identificación" })}
                   className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-2 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
                   disabled={loading}
@@ -129,7 +129,7 @@ const Page = () => {
               <div className="w-full sm:w-auto">
                 <input
                   type="text"
-                  area-label="Identification Number Input"
+                  aria-label="Identification Number Input"
                   placeholder="Número de identificación"
                   disabled={loading}
                   {...register("identificationNumber", {
@@ -160,7 +160,7 @@ const Page = () => {
               </label>
               <input
                 id="issueDate"
-                area-label="Issue Date Input"
+                aria-label="Issue Date Input"
                 type="date"
                 disabled={loading}
                 {...register("issueDate", {
@@ -189,7 +189,7 @@ const Page = () => {
             </div>
 
             <button
-              area-label="Continue Button"
+              aria-label="Continue Button"
               type="submit"
               disabled={loading}
               className={`w-full text-white py-2 mt-6 rounded-lg text-lg font-semibold shadow transition-colors
@@ -207,7 +207,7 @@ const Page = () => {
           <p className="text-sm text-gray-300 mt-6 text-center">
             ¿Ya tiene una cuenta activa?{" "}
             <Link
-              area-label="Login Button"
+              aria-label="Login Button"
               href="/login"
               className="hover:underline font-bold text-white"
             >

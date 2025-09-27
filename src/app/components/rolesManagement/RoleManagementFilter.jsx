@@ -29,7 +29,7 @@ export default function RoleManagementFilter({ isOpen, onClose, statusFilter, on
     <div id="role-filter-modal" className="modal-overlay">
       <div className="parametrization-modal card-theme w-96 p-6 relative">
 
-        <button area-label="Close Button" onClick={onClose} className="absolute top-2 right-2 text-secondary hover:text-primary">
+        <button aria-label="Close Button" onClick={onClose} className="absolute top-2 right-2 text-secondary hover:text-primary">
           <FiX size={18} />
         </button>
 
@@ -38,7 +38,7 @@ export default function RoleManagementFilter({ isOpen, onClose, statusFilter, on
         <div>
           <label className="block text-sm font-medium mb-1 text-secondary">Estado</label>
           <select
-            area-label="Status Select"
+            aria-label="Status Select"
             value={localStatus}
             onChange={(e) => setLocalStatus(e.target.value)}
             className="w-full parametrization-input"
@@ -50,10 +50,10 @@ export default function RoleManagementFilter({ isOpen, onClose, statusFilter, on
         </div>
 
         <div className="flex gap-4 mt-6">
-          <button area-label="Clean Button" onClick={handleClean} className="btn-theme btn-secondary w-1/2 relative">
+          <button aria-label="Clean Button" onClick={handleClean} className="btn-theme btn-secondary w-1/2 relative">
             Limpiar
           </button>
-          <button area-label="Apply Button" onClick={handleApply} className="btn-theme btn-primary w-1/2 relative">
+          <button aria-label="Apply Button" onClick={handleApply} className="btn-theme btn-primary w-1/2 relative">
             Aplicar
           </button>
         </div>

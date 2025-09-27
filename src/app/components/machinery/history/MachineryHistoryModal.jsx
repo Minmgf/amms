@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { FaTimes } from 'react-icons/fa'
 import UpdateHistorySection from '@/app/components/machinery/history/UpdateHistorySection'
+import MaintenanceRequestSection from '@/app/components/machinery/history/MaintenanceRequestSection'
+import MaintenanceScheduledSection from '@/app/components/machinery/history/MaintenanceScheduledSection'
+import MaintenancePerformedSection from '@/app/components/machinery/history/MaintenancePerformedSection'
 
 const PlaceholderTabContent = ({ label }) => (
   <div className="flex items-center justify-center py-12 text-secondary text-sm">
@@ -10,10 +13,10 @@ const PlaceholderTabContent = ({ label }) => (
 )
 
 const historyTabs = [
-  { id: 'updateHistory', label: 'Update History' },
-  { id: 'maintenanceRequest', label: 'Maintenance Request' },
-  { id: 'maintenanceScheduled', label: 'Maintenance Scheduled' },
-  { id: 'maintenancePerformed', label: 'Maintenance Performed' }
+  { id: 'updateHistory', label: 'Historial de Cambios' },
+  { id: 'maintenanceRequest', label: 'Solicitud de Mantenimiento' },
+  { id: 'maintenanceScheduled', label: 'Mantenimiento Programado' },
+  { id: 'maintenancePerformed', label: 'Mantenimiento Realizado' }
 ]
 
 const MachineryHistoryModal = ({ isOpen, onClose, machinery }) => {
@@ -32,7 +35,7 @@ const MachineryHistoryModal = ({ isOpen, onClose, machinery }) => {
   }, [isOpen])
 
   const machineTitle = machinery?.machinery_name
-    ? `${machinery.machinery_name} Change History`
+    ? `Historial de Cambios de ${machinery.machinery_name}`
     : 'Historial de maquinaria'
 
   const updateHistoryData = machinery?.history?.updateHistory || machinery?.history?.update
@@ -42,11 +45,11 @@ const MachineryHistoryModal = ({ isOpen, onClose, machinery }) => {
       case 'updateHistory':
         return <UpdateHistorySection history={updateHistoryData} />
       case 'maintenanceRequest':
-        return <PlaceholderTabContent label="Maintenance Request" />
+        return <MaintenanceRequestSection requests={[]} />
       case 'maintenanceScheduled':
-        return <PlaceholderTabContent label="Maintenance Scheduled" />
+        return <MaintenanceScheduledSection scheduledMaint={[]} />
       case 'maintenancePerformed':
-        return <PlaceholderTabContent label="Maintenance Performed" />
+        return <MaintenancePerformedSection performedMaint={[]} />
       default:
         return null
     }
@@ -82,7 +85,7 @@ const MachineryHistoryModal = ({ isOpen, onClose, machinery }) => {
 
 
                 <section className="rounded-2xl">
-                  <div className="border-b border-gray-200 px-6">
+                  <div className="border-b border-gray-200 px-6 flex justify-center">
                     <nav className="flex flex-wrap items-center gap-6" aria-label="Navegación de historial de maquinaria">
                       {historyTabs.map((tab) => {
                         const isActive = tab.id === activeTab
