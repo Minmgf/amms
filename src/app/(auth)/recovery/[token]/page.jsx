@@ -75,14 +75,14 @@ const Page = () => {
             </label>
             <input
               id="new-password"
-              area-label="New Password Input"
+              aria-label="New Password Input"
               type={showPassword ? "text" : "password"}
               {...register("password", { required: true })}
               className="py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
               placeholder="Sigma1999"
             />
             <button
-              area-label="Show Password Button"
+              aria-label="Show Password Button"
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-10 top-12 text-gray-600 hover:text-gray-800"
@@ -102,7 +102,7 @@ const Page = () => {
             </label>
             <input
               id="confirm-password"
-              area-label="Confirm New Password Input"
+              aria-label="Confirm New Password Input"
               type={showConfirmPassword ? "text" : "password"}
               {...register("confirmPassword", {
                 required: true,
@@ -113,7 +113,7 @@ const Page = () => {
             />
             <button
               type="button"
-              area-label="Show Confirm Password Button"
+              aria-label="Show Confirm Password Button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               className="absolute right-10 top-12 text-gray-600 hover:text-gray-800"
             >
@@ -138,7 +138,7 @@ const Page = () => {
             <p className={validations.length ? "text-green-400" : "text-red-400"}>✔ Debe tener un mínimo de 12 caracteres.</p>
           </div>
           <button
-            area-label="Send Button"
+            aria-label="Send Button"
             type="submit"
             disabled={!(Object.values(validations).every(Boolean) && passwordsMatch) || loading}
             className="w-full text-white py-2 mt-6 rounded-lg bg-red-600 text-lg font-semibold shadow hover:bg-red-500 active:bg-red-700 transition-colors"

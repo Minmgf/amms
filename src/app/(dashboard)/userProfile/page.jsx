@@ -256,7 +256,7 @@ const ProfilePage = () => {
                       País
                     </label>
                     <select
-                      area-label="Country Select"
+                      aria-label="Country Select"
                       {...register("country", { required: true })}
                       className="w-full border rounded-lg px-3 py-2 bg-surface"
                     >
@@ -278,7 +278,7 @@ const ProfilePage = () => {
                       Región
                     </label>
                     <select
-                      area-label="Region Select"
+                      aria-label="Region Select"
                       {...register("department", { required: true })} disabled={!statesList.length}
                       className="w-full border rounded-lg px-3 py-2 bg-surface"
                     >
@@ -300,7 +300,7 @@ const ProfilePage = () => {
                       Ciudad
                     </label>
                     <select
-                      area-label="City Select"
+                      aria-label="City Select"
                       {...register("city", { required: true })} disabled={!citiesList.length}
                       className="w-full border rounded-lg px-3 py-2 bg-surface"
                     >
@@ -324,7 +324,7 @@ const ProfilePage = () => {
                       Dirección de residencia
                     </label>
                     <input
-                      area-label="Address Input"
+                      aria-label="Address Input"
                       type="text"
                       {...register("address", {
                         required: "La dirección de residencia es obligatoria",
@@ -349,7 +349,7 @@ const ProfilePage = () => {
                       Número de teléfono
                     </label>
                     <input
-                      area-label="Phone Number Input"
+                      aria-label="Phone Number Input"
                       type="text"
                       {...register("phoneNumber", {
                         required: "El número de teléfono es obligatorio",
@@ -377,7 +377,7 @@ const ProfilePage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-center">
                 <PermissionGuard permission={11}>
                   <button
-                    area-label="Change Password Button"
+                    aria-label="Change Password Button"
                     onClick={() => setIsChangePasswordModalOpen(true)}
                     className="parametrization-action-button font-semibold px-8 py-3 rounded-lg justify-self-center md:justify-self-start"
                   >
@@ -386,7 +386,7 @@ const ProfilePage = () => {
                 </PermissionGuard>
                 <PermissionGuard permission={8}>
                   <button
-                    area-label="Update Button"
+                    aria-label="Update Button"
                     type="submit"
                     form="residenceForm"
                     className="parametrization-action-button font-semibold px-8 py-3 rounded-lg">

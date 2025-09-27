@@ -63,6 +63,20 @@ const ParameterizationView = () => {
     setIsErrorModalOpen(true);
   };
 
+  const [id, setId] = useState(null);
+  // Estado para el ID del usuario (obtenido de localStorage)
+  useEffect(() => {
+    const storedUser = localStorage.getItem("userData");
+    if (storedUser) {
+      try {
+        const parsed = JSON.parse(storedUser);
+        setId(parsed.id);
+      } catch (err) {
+        console.error("Error parsing userData", err);
+      }
+    }
+  }, []);
+
   // Función para obtener categorías de Types
   const fetchCategoriesData = async () => {
     setLoading(true);
@@ -215,7 +229,7 @@ const ParameterizationView = () => {
           name: parameterData.typeName,
           description: parameterData.description,
           types_category: selectedCategory.id,
-          responsible_user: 1, // TODO: Obtener del contexto de usuario
+          responsible_user: id,
         };
 
         const createdResponse = await createTypeItem(payload);
@@ -267,7 +281,7 @@ const ParameterizationView = () => {
           const updatePayload = {
             name: parameterData.typeName,
             description: parameterData.description,
-            responsible_user: 1, // TODO: Obtener del contexto de usuario
+            responsible_user: id,
           };
 
           const updatedResponse = await updateTypeItem(

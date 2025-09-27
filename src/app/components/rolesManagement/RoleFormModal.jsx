@@ -59,7 +59,6 @@ const RoleFormModal = ({
                         {mode === "edit" ? "Modificar Rol" : mode === "view" ? "Información del Rol" : "Añadir Rol"}
                     </h2>
                     <button
-                        area-label="Close Button"
                         onClick={onClose}
                         className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                         aria-label="Close modal"
@@ -76,7 +75,7 @@ const RoleFormModal = ({
                                 Nombre del rol<span className="text-red-500">*</span>
                             </label>
                             <input
-                                area-label="Role Name Input"
+                                aria-label="Role Name Input"
                                 type="text"
                                 value={formData.roleName}
                                 disabled={mode === "view"}
@@ -100,7 +99,7 @@ const RoleFormModal = ({
                                 Descripción
                             </label>
                             <textarea
-                                area-label="Description Role Textarea"
+                                aria-label="Description Role Textarea"
                                 type="text"
                                 value={formData.description}
                                 disabled={mode === "view"}
@@ -132,7 +131,7 @@ const RoleFormModal = ({
                     {mode !== "view" && (
                         <div className="flex justify-end mt-6 gap-4">
                             <button
-                                area-label="Clean Button"
+                                aria-label="Clean Button"
                                 type="button"
                                 onClick={handleClearOrCancel}
                                 className="btn-error btn-theme px-8 py-2 font-semibold rounded-lg"
@@ -140,7 +139,7 @@ const RoleFormModal = ({
                                 {mode === "add" ? "Limpiar" : "Cancelar"}
                             </button>
                             <button
-                                area-label="Submit Button"
+                                aria-label="Submit Button"
                                 onClick={handleSubmit}
                                 className="btn-primary px-8 py-2 font-semibold rounded-lg text-white"
                             >

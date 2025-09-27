@@ -71,6 +71,20 @@ export const ThemeProvider = ({ children }) => {
   const [themes, setThemes] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [id, setId] = useState("");
+
+  // Obtener ID de usuario desde localStorage
+  useEffect(() => {
+    const storedUser = localStorage.getItem("userData");
+    if (storedUser) {
+      try {
+        const parsed = JSON.parse(storedUser);
+        setId(parsed.id);
+      } catch (err) {
+        console.error("Error parsing userData", err);
+      }
+    }
+  }, []);
 
   // Cargar temas desde la API al inicializar
   useEffect(() => {
@@ -266,7 +280,7 @@ export const ThemeProvider = ({ children }) => {
   };
 
   // Crear tema en la API
-  const createCustomTheme = async (themeData, responsibleUser = 1) => {
+  const createCustomTheme = async (themeData, responsibleUser = id) => {
     try {
       console.log('📤 Creando tema en API:', themeData);
       
@@ -291,7 +305,7 @@ export const ThemeProvider = ({ children }) => {
   };
 
   // Actualizar tema en la API
-  const updateTheme = async (themeKey, themeData, responsibleUser = 1) => {
+  const updateTheme = async (themeKey, themeData, responsibleUser = id) => {
     try {
       // Extraer el ID del tema desde la clave
       const themeId = themeKey.replace('api_', '');

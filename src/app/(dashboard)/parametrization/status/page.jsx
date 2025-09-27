@@ -58,6 +58,21 @@ const StatusParameterizationView = () => {
     setIsErrorModalOpen(true);
   };
 
+  const [id, setId] = useState("");
+
+  // Obtener ID de usuario desde localStorage
+  useEffect(() => {
+    const storedUser = localStorage.getItem("userData");
+    if (storedUser) {
+      try {
+        const parsed = JSON.parse(storedUser);
+        setId(parsed.id);
+      } catch (err) {
+        console.error("Error parsing userData", err);
+      }
+    }
+  }, []);
+
   // ===== Cargar categorías (Status)
   const fetchCategoriesData = async () => {
     setLoading(true);
@@ -169,7 +184,7 @@ const StatusParameterizationView = () => {
           name: parameterData.typeName,
           description: parameterData.description,
           statues_category: selectedCategory.id, // relación con la categoría
-          responsible_user: 1, // TODO: traer del contexto
+          responsible_user: id,
         };
         await createStatueItem(payload);
 
@@ -206,7 +221,7 @@ const StatusParameterizationView = () => {
         const updatePayload = {
           name: parameterData.typeName,
           description: parameterData.description,
-          responsible_user: 1,
+          responsible_user: id,
         };
         await updateStatue(selectedParameter.id, updatePayload);
 

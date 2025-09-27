@@ -121,7 +121,7 @@ const ChangePhotoModal = ({ isOpen, onClose, onSave }) => {
               Cambiar foto de perfil
             </h2>
             <button
-              area-label="Close Button"
+              aria-label="Close Button"
               onClick={handleClose}
               className="text-gray-400 hover:text-gray-600 transition-colors"
             >
@@ -173,7 +173,7 @@ const ChangePhotoModal = ({ isOpen, onClose, onSave }) => {
                     </p>
                   </div>
                   <button
-                    area-label="Choose File Button"
+                    aria-label="Choose File Button"
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -193,7 +193,7 @@ const ChangePhotoModal = ({ isOpen, onClose, onSave }) => {
 
               {/* Hidden File Input */}
               <input
-                area-label="Hidden File Input"
+                aria-label="Hidden File Input"
                 type="file"
                 accept="image/jpeg,image/png"
                 {...register("photo", {
@@ -233,7 +233,7 @@ const ChangePhotoModal = ({ isOpen, onClose, onSave }) => {
               {/* Buttons */}
               <div className="flex gap-3 pt-2">
                 <button
-                  area-label="Cancel Button"
+                  aria-label="Cancel Button"
                   type="button"
                   onClick={handleClose}
                   className="flex-1 px-4 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
@@ -241,7 +241,7 @@ const ChangePhotoModal = ({ isOpen, onClose, onSave }) => {
                   Cancelar
                 </button>
                 <button
-                  area-label="Save Button"
+                  aria-label="Save Button"
                   type="submit"
                   disabled={!selectedFile || isSubmitting}
                   className="flex-1 px-4 py-3 bg-gray-600 text-white font-medium rounded-lg hover:bg-gray-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
