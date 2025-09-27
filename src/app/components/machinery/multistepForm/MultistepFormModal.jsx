@@ -277,7 +277,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
     const requiredFields = [
       'name', 'manufactureYear', 'serialNumber', 'machineryType',
       'brand', 'model', 'tariff', 'category', 'country',
-      'department', 'city', 'telemetry'
+      'department', 'city'
       // 'telemetry' no está incluido porque es opcional
     ];
 
