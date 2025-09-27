@@ -1,20 +1,25 @@
 'use client'
 import TableList from '@/app/components/shared/TableList'
+import MachineryHistoryModal from '@/app/components/machinery/history/MachineryHistoryModal'
 import React, { useState, useMemo, useEffect } from 'react'
 import { CiFilter } from 'react-icons/ci'
 import { FaEye, FaPen, FaPlus, FaTimes, FaCog, FaCalendarAlt, FaBarcode, FaTag, FaCalendar, FaCheckCircle, FaTools, FaHashtag, FaRegPlayCircle, FaTractor, FaHistory } from 'react-icons/fa'
 import PermissionGuard from '@/app/(auth)/PermissionGuard'
 import * as Dialog from '@radix-ui/react-dialog'
-import { FiLayers } from 'react-icons/fi'
+import { FiLayers, FiDownload, FiFileText } from 'react-icons/fi'
 import { IoCalendarOutline } from 'react-icons/io5'
 import { getMachineryList } from '@/services/machineryService'
 import MultiStepFormModal from '@/app/components/machinery/multistepForm/MultistepFormModal'
+import MachineryDetailsModal from '@/app/components/machinery/machineryDetails/MachineryDetailsModal'
+import { FiChevronDown } from 'react-icons/fi'
+
+
 
 const MachineryMainView = () => {
   // Estado para el filtro global
   const [globalFilter, setGlobalFilter] = useState('')
   const [loading, setLoading] = useState(false)
-  
+
   // Estados para datos de la API
   const [machineryData, setMachineryData] = useState([])
   const [error, setError] = useState(null)
@@ -32,6 +37,8 @@ const MachineryMainView = () => {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [selectedMachine, setSelectedMachine] = useState(null)
+  const [activeTab, setActiveTab] = useState('general') // 'general' | 'tech' | 'docs'
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
 
   // Cargar datos al montar el componente
   useEffect(() => {
@@ -46,7 +53,7 @@ const MachineryMainView = () => {
   const loadInitialData = async () => {
     setLoading(true)
     setError(null)
-    
+
     try {
       // Cargar datos de maquinaria
       const machineryResponse = await getMachineryList()
@@ -87,7 +94,6 @@ const MachineryMainView = () => {
         console.error('❌ Respuesta no exitosa:', machineryResponse)
         setError(machineryResponse?.message || 'Error al cargar la maquinaria')
       }
-      
     } catch (err) {
       console.error('Error loading data:', err)
       setError('Error al cargar los datos. Por favor, intenta de nuevo.')
@@ -142,8 +148,7 @@ const MachineryMainView = () => {
   // Función personalizada de filtrado global
   const globalFilterFn = useMemo(() => {
     return (row, columnId, filterValue) => {
-      if (!filterValue) return true
-      
+      if (!filterValue) return true      
       const searchTerm = filterValue.toLowerCase().trim()
       if (!searchTerm) return true
       
@@ -257,7 +262,7 @@ const MachineryMainView = () => {
       accessorKey: 'serial_number',
       header: () => (
         <div className="flex items-center gap-1">
-          <FaHashtag  className="w-4 h-4 " />
+          <FaHashtag className="w-4 h-4 " />
           Número de Serie
         </div>
       ),
@@ -271,7 +276,7 @@ const MachineryMainView = () => {
       accessorKey: 'machinery_secondary_type_name',
       header: () => (
         <div className="flex items-center gap-2">
-          <FiLayers  className="w-4 h-4 " />
+          <FiLayers className="w-4 h-4 " />
           Tipo
         </div>
       ),
@@ -333,7 +338,7 @@ const MachineryMainView = () => {
             <FaPen /> Editar
           </button>
           <button
-            onClick={() => handleView(row.original)}
+            onClick={() => handleHistory(row.original)}
             className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black"
           >
             <FaHistory  /> Historial
@@ -344,7 +349,7 @@ const MachineryMainView = () => {
           >
             <FaEye /> Ver
           </button>
-        </div> 
+        </div>
       )
     }
   ], [])
@@ -362,6 +367,12 @@ const MachineryMainView = () => {
     setIsDetailsModalOpen(true)
   }
 
+  const handleHistory = (machine) => {
+    console.log('Viewing history for machine:', machine)
+    setSelectedMachine(machine)
+    setIsHistoryModalOpen(true)
+  }
+
   const handleOpenAddMachineModal = () => {
     setIsCreateModalOpen(true)
   }
@@ -376,7 +387,7 @@ const MachineryMainView = () => {
         <div className="flex justify-between items-center mb-2">
           <h1 className="text-2xl font-bold text-gray-900">Maquinaria</h1>
         </div>
-        
+
         {/* Mostrar error si existe */}
         {error && (
           <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative">
@@ -555,9 +566,18 @@ const MachineryMainView = () => {
         </Dialog.Portal>
       </Dialog.Root>
       <MultiStepFormModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
+      <MachineryHistoryModal
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+        machinery={selectedMachine}
+      />
 
-      {/* TODO: Agregar modales de detalles, edición y creación de maquinaria */}
-      {/* Estos modales se crearán posteriormente siguiendo el mismo patrón de userManagement */}
+      <MachineryDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        selectedMachine={selectedMachine}
+        formatDate={formatDate}
+      />
     </div>
   )
 }
