@@ -3,282 +3,300 @@ import React, { useEffect, useMemo, useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import axios from 'axios'
 
-// Endpoint base
 const BASE_URL = 'https://api.inmero.co/sigma/main/maintenance/'
+const TYPES_URL = 'https://api.inmero.co/sigma/main/types/list/active/12/'
+
+const getAuthToken = () => {
+  let token = localStorage.getItem("token");
+  if (!token) token = sessionStorage.getItem("token");
+  return token;
+};
 
 export default function EditMaintenanceModal({
   open,
   onClose,
-  onUpdated,                 // callback para recargar la lista
-  maintenance,               // fila seleccionada
-  typeOptions = [],          // [{ id, label }]
-  statusOptions = []         // [{ id:1,label:'Habilitado' },{ id:2,label:'Deshabilitado' }]
+  onUpdated,
+  maintenance,
+  typeOptions: initialTypeOptions = [],
+  statusOptions = [
+    { id: 1, label: 'Habilitado' },
+    { id: 2, label: 'Deshabilitado' }
+  ],
+  authToken,
+  defaultTypeId = 14
 }) {
+  const [typeOptions, setTypeOptions] = useState(initialTypeOptions);
+  const [loadingTypes, setLoadingTypes] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Form state
   const [form, setForm] = useState({
     name: '',
     description: '',
-    id_tipo_mantenimiento: '',  // string (para <select>)
-    responsible_user: '',       // string (pk en input number)
-    id_estado: '',              // string (para <select>)
+    maintenance_type: '', // id numérico
+    responsible_user: '',
+    id_estado: '',
     estado: 'Habilitado'
-  })
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState(null)
-  const [loadingDetail, setLoadingDetail] = useState(false)
+  });
 
-  // Helper: busca option por label y devuelve id
-  const findTypeIdByLabel = (label) => (
-    typeOptions.find(t => t.label === label)?.id
-  )
-  const findStatusIdByLabel = (label) => (
-    statusOptions.find(s => s.label === label)?.id
-  )
+  const headers = useMemo(() => {
+    const token = authToken || getAuthToken();
+    const h = { 'Content-Type': 'application/json' };
+    if (token) h['Authorization'] = token.startsWith("Bearer") ? token : `Bearer ${token}`;
+    return h;
+  }, [authToken]);
 
-  // Cargar detalle real del mantenimiento al abrir (para traer responsible_user e ids reales)
+  // Cargar tipos de mantenimiento dinámicamente
+  useEffect(() => {
+    if (!open) return;
+    const fetchTypes = async () => {
+      setLoadingTypes(true);
+      try {
+        const { data } = await axios.get(TYPES_URL, { headers });
+        // Usa id_types como id y name como label
+        const options = Array.isArray(data)
+          ? data.map(t => ({
+              id: t.id_types,
+              label: t.name
+            }))
+          : [];
+        setTypeOptions(options);
+        // Selecciona el tipo actual o el primero
+        setForm(f => ({
+          ...f,
+          maintenance_type: options.length
+            ? (options.find(o => o.id === Number(f.maintenance_type))?.id ?? options[0].id)
+            : ''
+        }));
+      } catch (e) {
+        setTypeOptions(initialTypeOptions);
+        if (initialTypeOptions.length) {
+          setForm(f => ({
+            ...f,
+            maintenance_type: initialTypeOptions[0].id
+          }));
+        }
+      } finally {
+        setLoadingTypes(false);
+      }
+    };
+    fetchTypes();
+  }, [open, authToken]);
+
+  // Cargar detalle del mantenimiento
   useEffect(() => {
     const loadDetail = async () => {
-      if (!open || !maintenance?.id_maintenance) return
-      setError(null)
-      setLoadingDetail(true)
+      if (!open || !maintenance?.id_maintenance) return;
+      setError(null);
+      setLoadingDetail(true);
       try {
-        const { data } = await axios.get(`${BASE_URL}${maintenance.id_maintenance}/`)
-
-        // Derivar IDs de tipo y estado
-        const typeId =
-          data.maintenance_type ?? data.id_tipo_mantenimiento ??
-          findTypeIdByLabel(data.tipo_mantenimiento) ??
-          findTypeIdByLabel(maintenance?.tipo_mantenimiento) ?? ''
-
-        const statusId =
-          data.id_estado ??
-          findStatusIdByLabel(data.estado) ??
-          findStatusIdByLabel(maintenance?.estado) ?? ''
-
+        const { data } = await axios.get(`${BASE_URL}${maintenance.id_maintenance}/`, { headers });
         setForm({
-          name: data.name ?? maintenance?.name ?? '',
-          description: (data.description ?? maintenance?.description ?? ''),
-          id_tipo_mantenimiento: typeId ? String(typeId) : '',
+          name: data.name ?? '',
+          description: data.description ?? '',
+          maintenance_type: data.maintenance_type ?? data.id_tipo_mantenimiento ?? '',
           responsible_user: data.responsible_user ? String(data.responsible_user) : '',
-          id_estado: statusId ? String(statusId) : '',
-          estado: data.estado ?? maintenance?.estado ?? 'Habilitado'
-        })
+          id_estado: data.id_estado ? String(data.id_estado) : '',
+          estado: data.estado ?? 'Habilitado'
+        });
       } catch (e) {
-        // Si el GET de detalle falla, al menos precarga desde la fila
         setForm(f => ({
           ...f,
           name: maintenance?.name ?? '',
           description: maintenance?.description ?? '',
-          id_tipo_mantenimiento:
-            maintenance?.id_tipo_mantenimiento
-              ? String(maintenance.id_tipo_mantenimiento)
-              : (findTypeIdByLabel(maintenance?.tipo_mantenimiento) ? String(findTypeIdByLabel(maintenance?.tipo_mantenimiento)) : ''),
+          maintenance_type: maintenance?.maintenance_type ?? maintenance?.id_tipo_mantenimiento ?? '',
           responsible_user: maintenance?.responsible_user ? String(maintenance.responsible_user) : '',
-          id_estado:
-            maintenance?.id_estado
-              ? String(maintenance.id_estado)
-              : (findStatusIdByLabel(maintenance?.estado) ? String(findStatusIdByLabel(maintenance?.estado)) : ''),
+          id_estado: maintenance?.id_estado ? String(maintenance.id_estado) : '',
           estado: maintenance?.estado ?? 'Habilitado'
-        }))
-        setError('No se pudo cargar el detalle. Puedes intentar editar igualmente.')
-        console.warn('GET detail error ->', e?.response?.data || e)
+        }));
+        setError('No se pudo cargar el detalle. Puedes editar igualmente.');
       } finally {
-        setLoadingDetail(false)
+        setLoadingDetail(false);
       }
-    }
-    loadDetail()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, maintenance?.id_maintenance])
+    };
+    loadDetail();
+  }, [open, maintenance?.id_maintenance, headers]);
 
-  const onChange = (k, v) => setForm(prev => ({ ...prev, [k]: v }))
+  const onChange = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
 
+  // Construir payload limpio
   const payload = useMemo(() => {
-    const maintenance_type = form.id_tipo_mantenimiento ? Number(form.id_tipo_mantenimiento) : undefined
-    const responsible_user = form.responsible_user ? Number(form.responsible_user) : undefined
-    const id_estado = form.id_estado ? Number(form.id_estado) : undefined
+    const maintenance_type = form.maintenance_type ? Number(form.maintenance_type) : undefined;
+    const responsible_user = form.responsible_user ? Number(form.responsible_user) : undefined;
+    const id_estado = form.id_estado ? Number(form.id_estado) : undefined;
 
-    // Mapear texto del estado por conveniencia (1/2)
-    let estadoTxt = form.estado
-    if (id_estado === 1) estadoTxt = 'Habilitado'
-    if (id_estado === 2) estadoTxt = 'Deshabilitado'
+    let estadoTxt = form.estado;
+    if (id_estado === 1) estadoTxt = 'Habilitado';
+    if (id_estado === 2) estadoTxt = 'Deshabilitado';
 
-    // HU indica PUT con: name, description, maintenance_type, responsible_user
     const base = {
-      name: form.name,
+      name: (form.name || '').trim(),
       description: form.description || '',
-      maintenance_type,  
+      maintenance_type,
       responsible_user
-    }
-    if (id_estado) {
-      return { ...base, id_estado, estado: estadoTxt }
-    }
-    return base
-  }, [form])
+    };
+    const full = id_estado ? { ...base, id_estado, estado: estadoTxt } : base;
+
+    // quitar keys vacías/undefined
+    return Object.fromEntries(Object.entries(full).filter(([_, v]) => v !== undefined && v !== ''));
+  }, [form]);
 
   const doPut = async (body) => {
     return axios.put(
       `${BASE_URL}${maintenance.id_maintenance}/`,
       body,
-      { headers: { 'Content-Type': 'application/json' } }
-    )
-  }
+      { headers }
+    );
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!maintenance?.id_maintenance) {
-      setError('Missing maintenance id.')
-      return
+    e.preventDefault();
+    setError(null);
+
+    if (!form.name.trim()) {
+      setError("El nombre es obligatorio.");
+      return;
     }
-    if (!payload.maintenance_type || !payload.responsible_user) {
-      setError('Maintenance type and responsible user are required.')
-      return
+    if (!typeOptions.some((o) => o.id === Number(form.maintenance_type))) {
+      setError("Selecciona un tipo de mantenimiento válido.");
+      return;
+    }
+    if (!form.responsible_user) {
+      setError("No hay usuario responsable.");
+      return;
     }
 
-    setSubmitting(true); setError(null)
+    setSubmitting(true);
     try {
-      await doPut(payload)
-      onUpdated?.()
-      onClose()
+      await doPut(payload);
+      onUpdated?.();
+      onClose();
     } catch (err) {
-      // Si el backend rechaza id_estado/estado, reintentamos sin status
-      const data = err?.response?.data
-      const text = typeof data === 'string' ? data : JSON.stringify(data || {})
-      const complainsStatus = /id_estado|estado/i.test(text)
-
-      if (complainsStatus && ('id_estado' in payload || 'estado' in payload)) {
-        try {
-          const { id_estado, estado, ...withoutStatus } = payload
-          await doPut(withoutStatus)
-          onUpdated?.()
-          onClose()
-          return
-        } catch (e2) {
-          setError(formatErr(e2))
-          console.warn('PUT retry without status →', e2?.response?.data || e2)
-        }
-      } else {
-        setError(formatErr(err))
-      }
-      console.warn('PUT update error →', err?.response?.data || err)
+      const apiMsg =
+        err?.response?.data?.message || "Error al editar el mantenimiento.";
+      const fieldErrs = err?.response?.data?.errors;
+      const extra = fieldErrs
+        ? Object.entries(fieldErrs)
+            .map(([k, v]) => `• ${k}: ${Array.isArray(v) ? v.join(", ") : v}`)
+            .join("\n")
+        : "";
+      setError([apiMsg, extra].filter(Boolean).join("\n"));
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
-
-  const formatErr = (err) => {
-    const status = err?.response?.status
-    const data = err?.response?.data
-    return status
-      ? `${status}: ${typeof data === 'string' ? data : JSON.stringify(data)}`
-      : `Request failed: ${err?.message}`
-  }
+  };
 
   return (
     <Dialog.Root open={open} onOpenChange={v => !v && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
         <Dialog.Content
-          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-xl z-50 w-full max-w-md"
+          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-2xl shadow-xl z-50 w-full max-w-2xl bg-background"
           aria-describedby="edit-maintenance-desc"
+          aria-label="Edit maintenance dialog"
         >
-          <div className="p-6 bg-white rounded-2xl">
+          <div className="p-8">
             <div className="flex justify-between items-center mb-4">
-              <Dialog.Title className="text-lg font-semibold">Edit maintenance</Dialog.Title>
-              <button onClick={onClose} className="text-gray-600 hover:text-black">×</button>
+              <Dialog.Title className="text-3xl font-bold text-center w-full parametrization-text">
+                Edit maintenance
+              </Dialog.Title>
+              <button onClick={onClose} className="text-gray-600 hover:text-black absolute top-8 right-8 parametrization-text" aria-label="Close">×</button>
             </div>
-            <Dialog.Description id="edit-maintenance-desc" className="sr-only">
+            <Dialog.Description id="edit-maintenance-desc" className="sr-only parametrization-text">
               Use this form to edit a maintenance configuration.
             </Dialog.Description>
 
-            {loadingDetail && (
-              <div className="mb-3 text-sm text-gray-500">Loading current data…</div>
+            {(loadingDetail || loadingTypes) && (
+              <div className="mb-3 text-sm text-gray-500 parametrization-text">
+                {loadingDetail ? 'Loading current data… ' : ''}
+                {loadingTypes ? 'Loading types…' : ''}
+              </div>
             )}
 
             {error && (
-              <div className="mb-4 bg-red-50 text-red-700 border border-red-200 p-2 rounded">{error}</div>
+              <div className="mb-4 bg-red-50 text-red-700 border border-red-200 p-2 rounded whitespace-pre-line parametrization-text">
+                {error}
+              </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium mb-1">Name</label>
+                <label className="block text-sm font-medium text-primary mb-3 parametrization-text">
+                  Maintenance name
+                </label>
                 <input
                   type="text"
                   value={form.name}
                   onChange={e => onChange('name', e.target.value)}
-                  className="w-full border px-3 py-2 rounded"
+                  className="w-full px-4 py-3 border-2 border-[#D7D7D7] rounded-lg bg-white parametrization-text"
                   required
+                  maxLength={100}
+                  placeholder="Ej. Cambio de aceite"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Description</label>
-                <textarea
-                  value={form.description}
-                  onChange={e => onChange('description', e.target.value)}
-                  className="w-full border px-3 py-2 rounded"
-                  rows={3}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Maintenance type</label>
+                <label className="block text-sm font-medium text-primary mb-3 parametrization-text">
+                  Maintenance type
+                </label>
                 <select
-                  value={form.id_tipo_mantenimiento}
-                  onChange={e => onChange('id_tipo_mantenimiento', e.target.value)}
-                  className="w-full border px-3 py-2 rounded"
+                  value={form.maintenance_type}
+                  onChange={e => onChange('maintenance_type', e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-[#D7D7D7] rounded-lg bg-white parametrization-text"
                   required
                 >
-                  <option value="" disabled>Select…</option>
-                  {typeOptions.map(t => (
-                    <option key={t.id} value={t.id}>{t.label}</option>
+                  {typeOptions.map(o => (
+                    <option key={o.id} value={o.id} className="parametrization-text">{o.label}</option>
                   ))}
                 </select>
-                <p className="mt-1 text-xs text-gray-500">
-                  Will send: <code>maintenance_type = {form.id_tipo_mantenimiento || '—'}</code>
-                </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Responsible user (ID)</label>
+                <label className="block text-sm font-medium text-primary mb-3 parametrization-text">
+                  Responsible user (ID)
+                </label>
                 <input
                   type="number"
                   min="1"
                   value={form.responsible_user}
                   onChange={e => onChange('responsible_user', e.target.value)}
-                  placeholder="Enter a valid user ID"
-                  className="w-full border px-3 py-2 rounded"
+                  className="w-full px-4 py-3 border-2 border-[#D7D7D7] rounded-lg bg-white parametrization-text"
                   required
+                  placeholder="ID de usuario responsable"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">Status</label>
-                <select
-                  value={form.id_estado}
-                  onChange={e => onChange('id_estado', e.target.value)}
-                  className="w-full border px-3 py-2 rounded"
-                >
-                  <option value="">Select…</option>
-                  {statusOptions.map(s => (
-                    <option key={s.id} value={s.id}>{s.label}</option>
-                  ))}
-                </select>
-                <p className="mt-1 text-xs text-gray-500">
-                  (Optional) If your API updates status via toggle, puedes dejar este campo vacío.
-                </p>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-primary mb-3 parametrization-text">
+                  Description
+                </label>
+                <textarea
+                  value={form.description}
+                  onChange={e => onChange('description', e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-[#D7D7D7] rounded-lg bg-white parametrization-text"
+                  rows={4}
+                  maxLength={300}
+                  placeholder="Description..."
+                />
+                <div className="text-xs text-gray-400 mt-1 parametrization-text">
+                  {form.description?.length || 0}/300 characters
+                </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="md:col-span-2 flex gap-4 mt-8">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-50"
+                  className="flex-1 px-6 py-3 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 transition-colors parametrization-text"
                   disabled={submitting}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded bg-black text-white hover:bg-gray-800 disabled:opacity-60"
+                  className="flex-1 px-6 py-3 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-60 parametrization-text"
                   disabled={submitting}
                 >
                   {submitting ? 'Saving…' : 'Save changes'}
@@ -289,5 +307,5 @@ export default function EditMaintenanceModal({
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
-  )
+  );
 }
