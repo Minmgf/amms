@@ -7,7 +7,7 @@ import PermissionGuard from '@/app/(auth)/PermissionGuard'
 import * as Dialog from '@radix-ui/react-dialog'
 import { FiLayers } from 'react-icons/fi'
 import { IoCalendarOutline } from 'react-icons/io5'
-import axios from 'axios'
+import { getMaintenanceList } from '@/services/maintenanceService'
 
 const GestorMantenimientos = () => {
     // Estado para el filtro global
@@ -49,27 +49,22 @@ const GestorMantenimientos = () => {
         setError(null)
 
         try {
-            const response = await axios.get('https://api.inmero.co/sigma/main/maintenance/')
+            const response = await getMaintenanceList();
 
-            if (response.data && Array.isArray(response.data)) {
-                setMaintenanceData(response.data)
+            if (response && Array.isArray(response)) {
+                setMaintenanceData(response)
 
                 // Extraer tipos de mantenimiento únicos para filtros
-                const uniqueTypes = [...new Set(response.data.map(item => item.tipo_mantenimiento).filter(Boolean))]
+                const uniqueTypes = [...new Set(response.map(item => item.tipo_mantenimiento).filter(Boolean))]
                 setAvailableMaintenanceTypes(uniqueTypes)
 
                 // Extraer estados únicos para filtros
-                const uniqueStatuses = [...new Set(response.data.map(item => item.estado).filter(Boolean))]
+                const uniqueStatuses = [...new Set(response.map(item => item.estado).filter(Boolean))]
                 setAvailableStatuses(uniqueStatuses)
-
-                console.log('Datos de mantenimientos cargados:', response.data)
             } else {
-                console.error('Formato de respuesta inesperado:', response.data)
                 setError('Formato de datos inesperado del servidor.')
             }
-
         } catch (err) {
-            console.error('Error loading maintenance data:', err)
             setError('Error al cargar los datos de mantenimientos. Por favor, intenta de nuevo.')
         } finally {
             setLoading(false)
