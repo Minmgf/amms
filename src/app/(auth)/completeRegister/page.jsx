@@ -12,6 +12,7 @@ import {
   ErrorModal,
 } from "@/app/components/shared/SuccessErrorModal";
 import { useRouter } from "next/navigation";
+import { getValidationToken, removeValidationToken } from "@/utils/tokenManager";
 
 const Page = () => {
   const {
@@ -33,7 +34,7 @@ const Page = () => {
 
   useEffect(() => {
     // Verificar si hay token de validación
-    const token = localStorage.getItem("validationToken");
+    const token = getValidationToken();
     if (!token) {
       setModalMessage("No se encontró token de validación. Debe completar primero la validación de documento.");
       setErrorOpen(true);
@@ -83,7 +84,7 @@ const Page = () => {
       setSuccessOpen(true);
       
       // Limpiar el token de validación
-      localStorage.removeItem("validationToken");
+      removeValidationToken();
       reset();
       
       setTimeout(() => {

@@ -6,11 +6,6 @@ import Select from 'react-select';
 import { getDocumentTypes, getGenderTypes, getRoleTypes, createUser } from '../../../services/authService';
 import { SuccessModal, ErrorModal } from '../shared/SuccessErrorModal';
 
-const getAuthToken = () => {
-  let token = localStorage.getItem('token');
-  if (!token) token = sessionStorage.getItem('token');
-  return token;
-};
 
 export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
   const [documentTypes, setDocumentTypes] = useState([]);
