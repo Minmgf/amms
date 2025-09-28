@@ -62,6 +62,9 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
   const [isSubmittingStep, setIsSubmittingStep] = useState(false);
   const [machineryId, setMachineryId] = useState(null); // Para almacenar el ID devuelto por el backend
   const [id, setId] = useState(""); //id del usuario responsable
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
 
   const [powerUnitsList, setPowerUnitsList] = useState([]);
   const [volumeUnitsList, setVolumeUnitsList] = useState([]);
@@ -633,6 +636,9 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
         // Error genérico
         alert("Error al guardar los datos. Por favor, inténtelo de nuevo.");
       }
+
+      setModalMessage(message);
+      setErrorOpen(true);
     } finally {
       setIsSubmittingStep(false);
     }
@@ -1273,6 +1279,18 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
           </form>
         </FormProvider>
       </div>
+      <SuccessModal
+        isOpen={successOpen}
+        onClose={() => setSuccessOpen(false)}
+        title="Éxito"
+        message={modalMessage}
+      />
+      <ErrorModal
+        isOpen={errorOpen}
+        onClose={() => setErrorOpen(false)}
+        title="Error"
+        message={modalMessage}
+      />
     </div>
   );
 }

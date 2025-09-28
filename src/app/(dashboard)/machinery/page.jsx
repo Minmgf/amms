@@ -332,18 +332,21 @@ const MachineryMainView = () => {
       cell: ({ row }) => (
         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <button
+            aria-label="Edit Button" 
             onClick={() => handleEdit(row.original)}
             className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black"
           >
             <FaPen /> Editar
           </button>
           <button
+            aria-label="History Button"
             onClick={() => handleHistory(row.original)}
             className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black"
           >
             <FaHistory  /> Historial
           </button>
           <button
+            aria-label="View Button"
             onClick={() => handleView(row.original)}
             className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black"
           >
@@ -393,6 +396,7 @@ const MachineryMainView = () => {
           <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative">
             <span className="block sm:inline">{error}</span>
             <button
+              aria-label="Dismiss Error Button"
               onClick={() => setError(null)}
               className="absolute top-0 bottom-0 right-0 px-4 py-3"
             >
@@ -407,6 +411,7 @@ const MachineryMainView = () => {
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="max-w-md relative">
           <input
+            aria-label="Search Input"
             id="search"
             type="text"
             placeholder="Buscar por nombre, serie, tipo, estado..."
@@ -421,6 +426,7 @@ const MachineryMainView = () => {
           )}
         </div>
         <button
+          aria-label="Filter Button"
           onClick={() => setIsFilterModalOpen(true)}
           className="parametrization-filter-button"
         >
@@ -429,6 +435,7 @@ const MachineryMainView = () => {
         </button>
         {globalFilter && (
           <button
+            aria-label="Clear Search Button"
             onClick={() => setGlobalFilter('')}
             className="text-sm text-gray-500 hover:text-gray-700 underline"
           >
@@ -436,6 +443,7 @@ const MachineryMainView = () => {
           </button>
         )}
         <button
+          aria-label="Add Machinery Button"
           onClick={handleOpenAddMachineModal}
           className="parametrization-filter-button"
         >
@@ -464,6 +472,7 @@ const MachineryMainView = () => {
               <div className="flex justify-between items-center mb-8">
                 <Dialog.Title className="text-2xl font-bold text-primary">Filtros</Dialog.Title>
                 <button
+                  aria-label="Close Filter Modal Button"
                   onClick={() => setIsFilterModalOpen(false)}
                   className="text-secondary hover:text-primary"
                 >
@@ -478,6 +487,7 @@ const MachineryMainView = () => {
                     Tipo de Maquinaria
                   </label>
                   <select
+                    aria-label="Machinery Type Select"
                     value={machineryTypeFilter}
                     onChange={(e) => setMachineryTypeFilter(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
@@ -497,6 +507,7 @@ const MachineryMainView = () => {
                     Tenencia
                   </label>
                   <select
+                    aria-label="Tenure Select"
                     value={tenureFilter}
                     onChange={(e) => setTenureFilter(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
@@ -516,6 +527,7 @@ const MachineryMainView = () => {
                     Estado Operativo
                   </label>
                   <select
+                    aria-label="Operative Status Select"
                     value={operativeStatusFilter}
                     onChange={(e) => setOperativeStatusFilter(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
@@ -536,6 +548,7 @@ const MachineryMainView = () => {
                   </label>
                   <div className="relative">
                     <input
+                      aria-label="Acquisition Date Input"
                       type="date"
                       value={acquisitionDateFilter}
                       onChange={(e) => setAcquisitionDateFilter(e.target.value)}
@@ -549,12 +562,14 @@ const MachineryMainView = () => {
               {/* Buttons */}
               <div className="flex gap-4 mt-8">
                 <button
+                  aria-label="Clear Filters Button"
                   onClick={handleClearFilters}
                   className="flex-1 px-6 py-3 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 transition-colors"
                 >
                   Limpiar
                 </button>
                 <button
+                  aria-label="Apply Filters Button"
                   onClick={handleApplyFilters}
                   className="flex-1 px-6 py-3 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
                 >
