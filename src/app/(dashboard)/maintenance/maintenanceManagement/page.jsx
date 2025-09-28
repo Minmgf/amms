@@ -40,7 +40,7 @@ import {
   ErrorModal,
   ConfirmModal,
 } from "@/app/components/shared/SuccessErrorModal";
-import MaintenanceFilterModal from "@/app/components/shared/FilterModal";
+import FilterModal from "@/app/components/shared/FilterModal";
 
 const GestorMantenimientos = () => {
   // Estado para el filtro global
@@ -762,7 +762,7 @@ const GestorMantenimientos = () => {
       />
 
       {/* Modal de filtros - componente separado */}
-      <MaintenanceFilterModal
+      <FilterModal
         open={isFilterModalOpen}
         onClose={() => setIsFilterModalOpen(false)}
         onClear={handleClearFilters}
@@ -807,7 +807,7 @@ const GestorMantenimientos = () => {
             </select>
           </div>
         </div>
-      </MaintenanceFilterModal>
+      </FilterModal>
     </div>
   );
 };

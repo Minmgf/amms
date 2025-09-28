@@ -1,14 +1,14 @@
 import { FaTimes } from "react-icons/fa";
 import React from "react";
 
-const MaintenanceFilterModal = ({
+const FilterModal = ({
   open,
   onClose,
   onClear,
   onApply,
   children,
 }) => {
-  // Cerrar modal al hacer clic fuera del contenido
+
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) onClose();
   };
@@ -19,7 +19,7 @@ const MaintenanceFilterModal = ({
     <div
       className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
       onClick={handleBackdropClick}
-      id="Maintenance Filter Modal"
+      id="Filter Modal"
     >
       <div
         className="bg-background rounded-xl shadow-2xl w-full max-w-2xl max-h-[95vh] overflow-hidden"
@@ -28,7 +28,7 @@ const MaintenanceFilterModal = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-bold text-gray-900 text-primary">
-            Filtros
+            Filtrar por
           </h2>
           <button
             aria-label="Cerrar modal"
@@ -62,4 +62,4 @@ const MaintenanceFilterModal = ({
   );
 };
 
-export default MaintenanceFilterModal;
+export default FilterModal;
