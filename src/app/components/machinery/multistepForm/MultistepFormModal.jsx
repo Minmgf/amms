@@ -62,7 +62,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
   const [isSubmittingStep, setIsSubmittingStep] = useState(false);
   const [machineryId, setMachineryId] = useState(null); // Para almacenar el ID devuelto por el backend
   const [id, setId] = useState(""); //id del usuario responsable
- 
+
   const [powerUnitsList, setPowerUnitsList] = useState([]);
   const [volumeUnitsList, setVolumeUnitsList] = useState([]);
   const [flowConsumptionUnitsList, setFlowConsumptionUnitsList] = useState([]);
@@ -251,13 +251,35 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
         setMaintenanceTypeList(maintenanceTypes.data);
         setTelemetryDevicesList(telemetryDevices);
 
-        setEngineTypesList(Array.isArray(engine.data || engine) ? engine.data || engine : []);
-        setCylinderArrangementList(Array.isArray(cylinder.data || cylinder) ? cylinder.data || cylinder : []);
-        setTractionTypesList(Array.isArray(traction.data || traction) ? traction.data || traction : []);
-        setTransmissionSystemList(Array.isArray(transmission.data || transmission) ? transmission.data || transmission : []);
-        setAirConditioningList(Array.isArray(airCond.data || airCond) ? airCond.data || airCond : []);
-        setEmissionLevelList(Array.isArray(emission.data || emission) ? emission.data || emission : []);
-        setCabinTypesList(Array.isArray(cabin.data || cabin) ? cabin.data || cabin : []);
+        setEngineTypesList(
+          Array.isArray(engine.data || engine) ? engine.data || engine : []
+        );
+        setCylinderArrangementList(
+          Array.isArray(cylinder.data || cylinder)
+            ? cylinder.data || cylinder
+            : []
+        );
+        setTractionTypesList(
+          Array.isArray(traction.data || traction)
+            ? traction.data || traction
+            : []
+        );
+        setTransmissionSystemList(
+          Array.isArray(transmission.data || transmission)
+            ? transmission.data || transmission
+            : []
+        );
+        setAirConditioningList(
+          Array.isArray(airCond.data || airCond) ? airCond.data || airCond : []
+        );
+        setEmissionLevelList(
+          Array.isArray(emission.data || emission)
+            ? emission.data || emission
+            : []
+        );
+        setCabinTypesList(
+          Array.isArray(cabin.data || cabin) ? cabin.data || cabin : []
+        );
         setPowerUnitsList(power.data);
         setVolumeUnitsList(volume.data);
         setFlowConsumptionUnitsList(flow.data);
@@ -418,8 +440,10 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
   };
 
   // Función para validar el paso 3
-  const validateStep3 = () => {
+  const validateStep3 = async () => {
     const currentValues = methods.getValues();
+
+    // Campos obligatorios base
     const requiredFields = [
       "enginePower",
       "enginePowerUnit",
@@ -435,6 +459,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       "operatingWeightUnit",
       "maxSpeed",
       "maxSpeedUnit",
+      "performanceUnit",
       "dimensionsUnit",
       "width",
       "length",
@@ -443,29 +468,73 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       "netWeightUnit",
     ];
 
-    // Justo después de recibir las props, agrega:
-    console.log("Engine Types List:", engineTypesList);
-    console.log("Cylinder Arrangement List:", cylinderArrangementList);
-    console.log("Traction Types List:", tractionTypesList);
+    const errors = [];
 
-    const missingFields = requiredFields.filter((field) => {
+    // Validar campos obligatorios
+    requiredFields.forEach((field) => {
       const value = currentValues[field];
-      return !value || (typeof value === "string" && value.trim() === "");
-    });
-
-    if (missingFields.length > 0) {
-      missingFields.forEach((field) => {
+      if (!value || (typeof value === "string" && value.trim() === "")) {
         methods.setError(field, {
           type: "required",
           message: "Este campo es obligatorio",
         });
-      });
+        errors.push(field);
+      }
+    });
+
+    // Validar que si hay un valor opcional, debe tener su unidad
+    const optionalFieldsWithUnits = [
+      { field: "tankCapacity", unit: "tankCapacityUnit" },
+      { field: "carryingCapacity", unit: "carryingCapacityUnit" },
+      { field: "draftForce", unit: "draftForceUnit" },
+      { field: "maxOperatingAltitude", unit: "maxOperatingAltitudeUnit" },
+      {
+        field: "airConditioningConsumption",
+        unit: "airConditioningConsumptionUnit",
+      },
+      { field: "maxHydraulicPressure", unit: "maxHydraulicPressureUnit" },
+      { field: "hydraulicPumpFlowRate", unit: "hydraulicPumpFlowRateUnit" },
+      {
+        field: "hydraulicReservoirCapacity",
+        unit: "hydraulicReservoirCapacityUnit",
+      },
+    ];
+
+    optionalFieldsWithUnits.forEach(({ field, unit }) => {
+      const fieldValue = currentValues[field];
+      const unitValue = currentValues[unit];
+
+      if (fieldValue && (!unitValue || unitValue === "")) {
+        methods.setError(unit, {
+          type: "required",
+          message: "Debe seleccionar una unidad cuando hay un valor",
+        });
+        errors.push(unit);
+      }
+    });
+
+    // Validar rangos de performance
+    if (currentValues.performanceMin && currentValues.performanceMax) {
+      if (
+        parseFloat(currentValues.performanceMin) >=
+        parseFloat(currentValues.performanceMax)
+      ) {
+        methods.setError("performanceMin", {
+          type: "validate",
+          message: "El RPM mínimo debe ser menor al máximo",
+        });
+        errors.push("performanceMin");
+      }
+    }
+
+    // Trigger validation para actualizar UI
+    if (errors.length > 0) {
+      await methods.trigger(errors);
       return false;
     }
 
     return true;
   };
-
   // Función para validar el paso 4
   const validateStep4 = () => {
     const currentValues = methods.getValues();
@@ -649,6 +718,19 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
   const submitStep3 = async (data) => {
     try {
       setIsSubmittingStep(true);
+
+      // Validar integridad de datos antes de enviar
+      const validationErrors = [];
+
+      // Verificar que los campos opcionales con valor tengan unidad
+      if (data.tankCapacity && !data.tankCapacityUnit) {
+        validationErrors.push("Capacidad del tanque requiere unidad");
+      }
+
+      if (validationErrors.length > 0) {
+        alert(`Errores de validación:\n${validationErrors.join("\n")}`);
+        return;
+      }
 
       // Mapear los datos del formulario al formato del backend
       const payload = {

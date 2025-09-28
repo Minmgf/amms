@@ -25,6 +25,9 @@ export default function Step3SpecificData({
   const {
     register,
     formState: { errors },
+    watch,
+    trigger,
+    setValue,
   } = useFormContext();
 
   const { getCurrentTheme } = useTheme();
@@ -43,6 +46,239 @@ export default function Step3SpecificData({
       ...prev,
       [section]: !prev[section],
     }));
+  };
+
+  // Reglas de validación
+  const validationRules = {
+    // Motor y Transmisión - Campos obligatorios
+    enginePower: {
+      required: "La potencia del motor es obligatoria",
+      min: { value: 0.1, message: "La potencia debe ser mayor a 0" },
+      max: { value: 10000, message: "La potencia no puede exceder 10,000" },
+    },
+    enginePowerUnit: {
+      required: "La unidad de potencia es obligatoria",
+    },
+    engineType: {
+      required: "El tipo de motor es obligatorio",
+    },
+    cylinderCapacity: {
+      required: "El cilindraje es obligatorio",
+      min: { value: 1, message: "El cilindraje debe ser mayor a 0" },
+      max: { value: 50000, message: "El cilindraje no puede exceder 50,000" },
+    },
+    cylinderCapacityUnit: {
+      required: "La unidad de cilindraje es obligatoria",
+    },
+    cylindersNumber: {
+      required: "El número de cilindros es obligatorio",
+      min: { value: 1, message: "Debe tener al menos 1 cilindro" },
+      max: { value: 32, message: "No puede exceder 32 cilindros" },
+      pattern: { value: /^\d+$/, message: "Solo números enteros" },
+    },
+    arrangement: {
+      required: "La disposición de cilindros es obligatoria",
+    },
+    fuelConsumption: {
+      required: "El consumo de combustible es obligatorio",
+      min: { value: 0.1, message: "El consumo debe ser mayor a 0" },
+      max: { value: 1000, message: "El consumo no puede exceder 1,000" },
+    },
+    fuelConsumptionUnit: {
+      required: "La unidad de consumo es obligatoria",
+    },
+    transmissionSystem: {
+      required: "El sistema de transmisión es obligatorio",
+    },
+
+    // Capacidad y Rendimiento - Campos obligatorios
+    operatingWeight: {
+      required: "El peso operativo es obligatorio",
+      min: { value: 0.1, message: "El peso debe ser mayor a 0" },
+      max: { value: 1000000, message: "El peso no puede exceder 1,000,000" },
+    },
+    operatingWeightUnit: {
+      required: "La unidad de peso operativo es obligatoria",
+    },
+    maxSpeed: {
+      required: "La velocidad máxima es obligatoria",
+      min: { value: 0.1, message: "La velocidad debe ser mayor a 0" },
+      max: { value: 500, message: "La velocidad no puede exceder 500" },
+    },
+    maxSpeedUnit: {
+      required: "La unidad de velocidad es obligatoria",
+    },
+    performanceUnit: {
+      required: "La unidad de rendimiento es obligatoria",
+    },
+
+    // Dimensiones y Peso - Campos obligatorios
+    dimensionsUnit: {
+      required: "La unidad de dimensiones es obligatoria",
+    },
+    width: {
+      required: "El ancho es obligatorio",
+      min: { value: 0.01, message: "El ancho debe ser mayor a 0" },
+      max: { value: 100, message: "El ancho no puede exceder 100" },
+    },
+    length: {
+      required: "El largo es obligatorio",
+      min: { value: 0.01, message: "El largo debe ser mayor a 0" },
+      max: { value: 100, message: "El largo no puede exceder 100" },
+    },
+    height: {
+      required: "El alto es obligatorio",
+      min: { value: 0.01, message: "El alto debe ser mayor a 0" },
+      max: { value: 50, message: "El alto no puede exceder 50" },
+    },
+    netWeight: {
+      required: "El peso neto es obligatorio",
+      min: { value: 0.1, message: "El peso neto debe ser mayor a 0" },
+      max: {
+        value: 1000000,
+        message: "El peso neto no puede exceder 1,000,000",
+      },
+    },
+    netWeightUnit: {
+      required: "La unidad de peso neto es obligatoria",
+    },
+
+    // Campos opcionales con validaciones
+    tankCapacity: {
+      min: { value: 0.1, message: "La capacidad debe ser mayor a 0" },
+      max: { value: 10000, message: "La capacidad no puede exceder 10,000" },
+    },
+    carryingCapacity: {
+      min: { value: 0.1, message: "La capacidad de carga debe ser mayor a 0" },
+      max: {
+        value: 1000000,
+        message: "La capacidad no puede exceder 1,000,000",
+      },
+    },
+    draftForce: {
+      min: { value: 0.1, message: "La fuerza debe ser mayor a 0" },
+      max: { value: 1000000, message: "La fuerza no puede exceder 1,000,000" },
+    },
+    maxOperatingAltitude: {
+      min: { value: 0, message: "La altitud no puede ser negativa" },
+      max: { value: 10000, message: "La altitud no puede exceder 10,000" },
+    },
+    performanceMin: {
+      min: { value: 0, message: "El RPM mínimo no puede ser negativo" },
+      max: { value: 10000, message: "El RPM no puede exceder 10,000" },
+      validate: (value, formValues) => {
+        const maxValue = formValues.performanceMax;
+        if (value && maxValue && parseFloat(value) >= parseFloat(maxValue)) {
+          return "El RPM mínimo debe ser menor al máximo";
+        }
+        return true;
+      },
+    },
+    performanceMax: {
+      min: { value: 1, message: "El RPM máximo debe ser mayor a 0" },
+      max: { value: 10000, message: "El RPM no puede exceder 10,000" },
+      validate: (value, formValues) => {
+        const minValue = formValues.performanceMin;
+        if (value && minValue && parseFloat(value) <= parseFloat(minValue)) {
+          return "El RPM máximo debe ser mayor al mínimo";
+        }
+        return true;
+      },
+    },
+    airConditioningConsumption: {
+      min: { value: 0.1, message: "El consumo debe ser mayor a 0" },
+      max: { value: 1000, message: "El consumo no puede exceder 1,000" },
+    },
+    maxHydraulicPressure: {
+      min: { value: 0.1, message: "La presión debe ser mayor a 0" },
+      max: { value: 10000, message: "La presión no puede exceder 10,000" },
+    },
+    hydraulicPumpFlowRate: {
+      min: { value: 0.1, message: "El caudal debe ser mayor a 0" },
+      max: { value: 10000, message: "El caudal no puede exceder 10,000" },
+    },
+    hydraulicReservoirCapacity: {
+      min: { value: 0.1, message: "La capacidad debe ser mayor a 0" },
+      max: { value: 10000, message: "La capacidad no puede exceder 10,000" },
+    },
+    tankCapacityUnit: {
+      validate: (value, formValues) => {
+        if (formValues.tankCapacity && !value) {
+          return "Debe seleccionar una unidad cuando hay un valor";
+        }
+        return true;
+      },
+    },
+    carryingCapacityUnit: {
+      validate: (value, formValues) => {
+        if (formValues.carryingCapacity && !value) {
+          return "Debe seleccionar una unidad cuando hay un valor";
+        }
+        return true;
+      },
+    },
+    draftForceUnit: {
+      validate: (value, formValues) => {
+        if (formValues.draftForce && !value) {
+          return "Debe seleccionar una unidad cuando hay un valor";
+        }
+        return true;
+      },
+    },
+    maxOperatingAltitudeUnit: {
+      validate: (value, formValues) => {
+        if (formValues.maxOperatingAltitude && !value) {
+          return "Debe seleccionar una unidad cuando hay un valor";
+        }
+        return true;
+      },
+    },
+    airConditioningConsumptionUnit: {
+      validate: (value, formValues) => {
+        if (formValues.airConditioningConsumption && !value) {
+          return "Debe seleccionar una unidad cuando hay un valor";
+        }
+        return true;
+      },
+    },
+    maxHydraulicPressureUnit: {
+      validate: (value, formValues) => {
+        if (formValues.maxHydraulicPressure && !value) {
+          return "Debe seleccionar una unidad cuando hay un valor";
+        }
+        return true;
+      },
+    },
+    hydraulicPumpFlowRateUnit: {
+      validate: (value, formValues) => {
+        if (formValues.hydraulicPumpFlowRate && !value) {
+          return "Debe seleccionar una unidad cuando hay un valor";
+        }
+        return true;
+      },
+    },
+    hydraulicReservoirCapacityUnit: {
+      validate: (value, formValues) => {
+        if (formValues.hydraulicReservoirCapacity && !value) {
+          return "Debe seleccionar una unidad cuando hay un valor";
+        }
+        return true;
+      },
+    },
+
+    // Validación especial para performanceUnit cuando hay valores de performance
+    performanceUnit: {
+      required: "La unidad de rendimiento es obligatoria",
+      validate: (value, formValues) => {
+        if (
+          (formValues.performanceMin || formValues.performanceMax) &&
+          !value
+        ) {
+          return "Debe seleccionar una unidad cuando hay valores de rendimiento";
+        }
+        return true;
+      },
+    },
   };
 
   // Componente para el header de cada sección
@@ -98,7 +334,7 @@ export default function Step3SpecificData({
           style={{ color: "var(--color-text-secondary)" }}
         >
           Ingrese las especificaciones técnicas y datos de rendimiento de la
-          maquinaria.
+          maquinaria. Los campos marcados con * son obligatorios.
         </p>
       </div>
 
@@ -131,9 +367,16 @@ export default function Step3SpecificData({
                     aria-label="Engine Power Input"
                     type="number"
                     step="0.1"
-                    {...register("enginePower", { required: "Requerido" })}
+                    {...register("enginePower", validationRules.enginePower)}
                     placeholder="Valor"
                     className="parametrization-input"
+                    onBlur={async () => {
+                      const value = watch("tankCapacity");
+                      const unitValue = watch("tankCapacityUnit");
+                      if (value && !unitValue) {
+                        await trigger("tankCapacityUnit");
+                      }
+                    }}
                   />
                   {errors.enginePower && (
                     <span
@@ -153,21 +396,27 @@ export default function Step3SpecificData({
                   </label>
                   <select
                     aria-label="Engine Power Unit Select"
-                    {...register("enginePowerUnit", { required: "Requerido" })}
+                    {...register(
+                      "enginePowerUnit",
+                      validationRules.enginePowerUnit
+                    )}
                     className="parametrization-input"
                   >
                     <option value="">Unidad</option>
-                    {powerUnitsList.map(
-                      (unit) => (
-                        console.log(unit),
-                        (
-                          <option key={unit.id_units} value={unit.id_units}>
-                            {unit.symbol}
-                          </option>
-                        )
-                      )
-                    )}
+                    {powerUnitsList.map((unit) => (
+                      <option key={unit.id_units} value={unit.id_units}>
+                        {unit.symbol}
+                      </option>
+                    ))}
                   </select>
+                  {errors.enginePowerUnit && (
+                    <span
+                      className="text-theme-xs mt-1 block"
+                      style={{ color: "var(--color-error)" }}
+                    >
+                      {errors.enginePowerUnit.message}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -181,20 +430,15 @@ export default function Step3SpecificData({
                 </label>
                 <select
                   aria-label="Engine Type Select"
-                  {...register("engineType", { required: "Requerido" })}
+                  {...register("engineType", validationRules.engineType)}
                   className="parametrization-input"
                 >
                   <option value="">Seleccionar tipo</option>
-                  {engineTypesList.map(
-                    (type) => (
-                      console.log(type),
-                      (
-                        <option key={type.id_types} value={type.id_types}>
-                          {type.name}
-                        </option>
-                      )
-                    )
-                  )}
+                  {engineTypesList.map((type) => (
+                    <option key={type.id_types} value={type.id_types}>
+                      {type.name}
+                    </option>
+                  ))}
                 </select>
                 {errors.engineType && (
                   <span
@@ -219,7 +463,10 @@ export default function Step3SpecificData({
                     aria-label="Cylinder Capacity Input"
                     type="number"
                     step="1"
-                    {...register("cylinderCapacity", { required: "Requerido" })}
+                    {...register(
+                      "cylinderCapacity",
+                      validationRules.cylinderCapacity
+                    )}
                     placeholder="Valor"
                     className="parametrization-input"
                   />
@@ -241,9 +488,10 @@ export default function Step3SpecificData({
                   </label>
                   <select
                     aria-label="Cylinder Capacity Unit Select"
-                    {...register("cylinderCapacityUnit", {
-                      required: "Requerido",
-                    })}
+                    {...register(
+                      "cylinderCapacityUnit",
+                      validationRules.cylinderCapacityUnit
+                    )}
                     className="parametrization-input"
                   >
                     <option value="">Unidad</option>
@@ -253,6 +501,14 @@ export default function Step3SpecificData({
                       </option>
                     ))}
                   </select>
+                  {errors.cylinderCapacityUnit && (
+                    <span
+                      className="text-theme-xs mt-1 block"
+                      style={{ color: "var(--color-error)" }}
+                    >
+                      {errors.cylinderCapacityUnit.message}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -267,7 +523,12 @@ export default function Step3SpecificData({
                 <input
                   aria-label="Cylinders Number Input"
                   type="number"
-                  {...register("cylindersNumber", { required: "Requerido" })}
+                  min="1"
+                  max="32"
+                  {...register(
+                    "cylindersNumber",
+                    validationRules.cylindersNumber
+                  )}
                   placeholder="Número"
                   className="parametrization-input"
                 />
@@ -291,7 +552,7 @@ export default function Step3SpecificData({
                 </label>
                 <select
                   aria-label="Arrangement Select"
-                  {...register("arrangement", { required: "Requerido" })}
+                  {...register("arrangement", validationRules.arrangement)}
                   className="parametrization-input"
                 >
                   <option value="">Seleccionar disposición</option>
@@ -349,7 +610,10 @@ export default function Step3SpecificData({
                     aria-label="Fuel Consumption Input"
                     type="number"
                     step="0.1"
-                    {...register("fuelConsumption", { required: "Requerido" })}
+                    {...register(
+                      "fuelConsumption",
+                      validationRules.fuelConsumption
+                    )}
                     placeholder="Valor"
                     className="parametrization-input"
                   />
@@ -371,9 +635,10 @@ export default function Step3SpecificData({
                   </label>
                   <select
                     aria-label="Fuel Consumption Unit Select"
-                    {...register("fuelConsumptionUnit", {
-                      required: "Requerido",
-                    })}
+                    {...register(
+                      "fuelConsumptionUnit",
+                      validationRules.fuelConsumptionUnit
+                    )}
                     className="parametrization-input"
                   >
                     <option value="">Unidad</option>
@@ -383,6 +648,14 @@ export default function Step3SpecificData({
                       </option>
                     ))}
                   </select>
+                  {errors.fuelConsumptionUnit && (
+                    <span
+                      className="text-theme-xs mt-1 block"
+                      style={{ color: "var(--color-error)" }}
+                    >
+                      {errors.fuelConsumptionUnit.message}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -396,7 +669,10 @@ export default function Step3SpecificData({
                 </label>
                 <select
                   aria-label="Transmission System Select"
-                  {...register("transmissionSystem", { required: "Requerido" })}
+                  {...register(
+                    "transmissionSystem",
+                    validationRules.transmissionSystem
+                  )}
                   className="parametrization-input"
                 >
                   <option value="">Seleccionar transmisión</option>
@@ -449,10 +725,18 @@ export default function Step3SpecificData({
                     aria-label="Tank Capacity Input"
                     type="number"
                     step="0.1"
-                    {...register("tankCapacity")}
+                    {...register("tankCapacity", validationRules.tankCapacity)}
                     placeholder="Valor"
                     className="parametrization-input"
                   />
+                  {errors.tankCapacity && (
+                    <span
+                      className="text-theme-xs mt-1 block"
+                      style={{ color: "var(--color-error)" }}
+                    >
+                      {errors.tankCapacity.message}
+                    </span>
+                  )}
                 </div>
                 <div className="w-24">
                   <label
@@ -489,10 +773,28 @@ export default function Step3SpecificData({
                     aria-label="Carrying Capacity Input"
                     type="number"
                     step="0.1"
-                    {...register("carryingCapacity")}
+                    {...register(
+                      "carryingCapacity",
+                      validationRules.carryingCapacity
+                    )}
                     placeholder="Valor"
                     className="parametrization-input"
+                    onBlur={async () => {
+                      const value = watch("carryingCapacity");
+                      const unitValue = watch("carryingCapacityUnit");
+                      if (value && !unitValue) {
+                        await trigger("carryingCapacityUnit");
+                      }
+                    }}
                   />
+                  {errors.carryingCapacity && (
+                    <span
+                      className="text-theme-xs mt-1 block"
+                      style={{ color: "var(--color-error)" }}
+                    >
+                      {errors.carryingCapacity.message}
+                    </span>
+                  )}
                 </div>
                 <div className="w-24">
                   <label
@@ -529,10 +831,25 @@ export default function Step3SpecificData({
                     aria-label="Draft Force Input"
                     type="number"
                     step="0.1"
-                    {...register("draftForce")}
+                    {...register("draftForce", validationRules.draftForce)}
                     placeholder="Valor"
                     className="parametrization-input"
+                    onBlur={async () => {
+                      const value = watch("draftForce");
+                      const unitValue = watch("draftForceUnit");
+                      if (value && !unitValue) {
+                        await trigger("draftForceUnit");
+                      }
+                    }}
                   />
+                  {errors.draftForce && (
+                    <span
+                      className="text-theme-xs mt-1 block"
+                      style={{ color: "var(--color-error)" }}
+                    >
+                      {errors.draftForce.message}
+                    </span>
+                  )}
                 </div>
                 <div className="w-24">
                   <label
@@ -569,7 +886,10 @@ export default function Step3SpecificData({
                     aria-label="Operating Weight Input"
                     type="number"
                     step="0.1"
-                    {...register("operatingWeight", { required: "Requerido" })}
+                    {...register(
+                      "operatingWeight",
+                      validationRules.operatingWeight
+                    )}
                     placeholder="Valor"
                     className="parametrization-input"
                   />
@@ -591,9 +911,10 @@ export default function Step3SpecificData({
                   </label>
                   <select
                     aria-label="Operating Weight Unit Select"
-                    {...register("operatingWeightUnit", {
-                      required: "Requerido",
-                    })}
+                    {...register(
+                      "operatingWeightUnit",
+                      validationRules.operatingWeightUnit
+                    )}
                     className="parametrization-input"
                   >
                     <option value="">Unidad</option>
@@ -603,6 +924,14 @@ export default function Step3SpecificData({
                       </option>
                     ))}
                   </select>
+                  {errors.operatingWeightUnit && (
+                    <span
+                      className="text-theme-xs mt-1 block"
+                      style={{ color: "var(--color-error)" }}
+                    >
+                      {errors.operatingWeightUnit.message}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -619,7 +948,7 @@ export default function Step3SpecificData({
                     aria-label="Max Speed Input"
                     type="number"
                     step="0.1"
-                    {...register("maxSpeed", { required: "Requerido" })}
+                    {...register("maxSpeed", validationRules.maxSpeed)}
                     placeholder="Valor"
                     className="parametrization-input"
                   />
@@ -641,7 +970,7 @@ export default function Step3SpecificData({
                   </label>
                   <select
                     aria-label="Max Speed Unit Select"
-                    {...register("maxSpeedUnit", { required: "Requerido" })}
+                    {...register("maxSpeedUnit", validationRules.maxSpeedUnit)}
                     className="parametrization-input"
                   >
                     <option value="">Unidad</option>
@@ -651,6 +980,14 @@ export default function Step3SpecificData({
                       </option>
                     ))}
                   </select>
+                  {errors.maxSpeedUnit && (
+                    <span
+                      className="text-theme-xs mt-1 block"
+                      style={{ color: "var(--color-error)" }}
+                    >
+                      {errors.maxSpeedUnit.message}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -666,10 +1003,28 @@ export default function Step3SpecificData({
                   <input
                     aria-label="Max Operating Altitude Input"
                     type="number"
-                    {...register("maxOperatingAltitude")}
+                    {...register(
+                      "maxOperatingAltitude",
+                      validationRules.maxOperatingAltitude
+                    )}
                     placeholder="Valor"
                     className="parametrization-input"
+                    onBlur={async () => {
+                      const value = watch("maxOperatingAltitude");
+                      const unitValue = watch("maxOperatingAltitudeUnit");
+                      if (value && !unitValue) {
+                        await trigger("maxOperatingAltitudeUnit");
+                      }
+                    }}
                   />
+                  {errors.maxOperatingAltitude && (
+                    <span
+                      className="text-theme-xs mt-1 block"
+                      style={{ color: "var(--color-error)" }}
+                    >
+                      {errors.maxOperatingAltitude.message}
+                    </span>
+                  )}
                 </div>
                 <div className="w-28">
                   <label
@@ -702,11 +1057,13 @@ export default function Step3SpecificData({
                   Rendimiento (RPM) *
                 </label>
 
-                {/* AGREGAR este select para la unidad */}
                 <div className="mb-2">
                   <select
                     aria-label="Performance Unit Select"
-                    {...register("performanceUnit", { required: "Requerido" })}
+                    {...register(
+                      "performanceUnit",
+                      validationRules.performanceUnit
+                    )}
                     className="parametrization-input w-48"
                   >
                     <option value="">Seleccionar unidad</option>
@@ -733,26 +1090,76 @@ export default function Step3SpecificData({
                   >
                     Mín:
                   </span>
-                  <input
-                    aria-label="Performance Min Input"
-                    type="number"
-                    {...register("performanceMin")}
-                    placeholder="Valor"
-                    className="parametrization-input"
-                  />
+                  <div>
+                    <input
+                      aria-label="Performance Min Input"
+                      type="number"
+                      {...register(
+                        "performanceMin",
+                        validationRules.performanceMin
+                      )}
+                      placeholder="Valor"
+                      className="parametrization-input"
+                      onBlur={async () => {
+                        const minValue = watch("performanceMin");
+                        const maxValue = watch("performanceMax");
+                        const unitValue = watch("performanceUnit");
+
+                        if ((minValue || maxValue) && !unitValue) {
+                          await trigger("performanceUnit");
+                        }
+                        if (minValue && maxValue) {
+                          await trigger("performanceMax");
+                        }
+                      }}
+                    />
+                    {errors.performanceMin && (
+                      <span
+                        className="text-theme-xs mt-1 block"
+                        style={{ color: "var(--color-error)" }}
+                      >
+                        {errors.performanceMin.message}
+                      </span>
+                    )}
+                  </div>
                   <span
                     className="text-theme-sm"
                     style={{ color: "var(--color-text-secondary)" }}
                   >
                     Máx:
                   </span>
-                  <input
-                    aria-label="Performance Max Input"
-                    type="number"
-                    {...register("performanceMax")}
-                    placeholder="Valor"
-                    className="parametrization-input"
-                  />
+                  <div>
+                    <input
+                      aria-label="Performance Max Input"
+                      type="number"
+                      {...register(
+                        "performanceMax",
+                        validationRules.performanceMax
+                      )}
+                      placeholder="Valor"
+                      className="parametrization-input"
+                      onBlur={async () => {
+                        const minValue = watch("performanceMin");
+                        const maxValue = watch("performanceMax");
+                        const unitValue = watch("performanceUnit");
+
+                        if ((minValue || maxValue) && !unitValue) {
+                          await trigger("performanceUnit");
+                        }
+                        if (minValue && maxValue) {
+                          await trigger("performanceMin");
+                        }
+                      }}
+                    />
+                    {errors.performanceMax && (
+                      <span
+                        className="text-theme-xs mt-1 block"
+                        style={{ color: "var(--color-error)" }}
+                      >
+                        {errors.performanceMax.message}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -786,7 +1193,10 @@ export default function Step3SpecificData({
                 </label>
                 <select
                   aria-label="Dimensions Unit Select"
-                  {...register("dimensionsUnit", { required: "Requerido" })}
+                  {...register(
+                    "dimensionsUnit",
+                    validationRules.dimensionsUnit
+                  )}
                   className="parametrization-input w-32"
                 >
                   <option value="">Unidad</option>
@@ -819,7 +1229,7 @@ export default function Step3SpecificData({
                     aria-label="Width Input"
                     type="number"
                     step="0.01"
-                    {...register("width", { required: "Requerido" })}
+                    {...register("width", validationRules.width)}
                     placeholder="Valor"
                     className="parametrization-input"
                   />
@@ -844,7 +1254,7 @@ export default function Step3SpecificData({
                     aria-label="Length Input"
                     type="number"
                     step="0.01"
-                    {...register("length", { required: "Requerido" })}
+                    {...register("length", validationRules.length)}
                     placeholder="Valor"
                     className="parametrization-input"
                   />
@@ -869,7 +1279,7 @@ export default function Step3SpecificData({
                     aria-label="Height Input"
                     type="number"
                     step="0.01"
-                    {...register("height", { required: "Requerido" })}
+                    {...register("height", validationRules.height)}
                     placeholder="Valor"
                     className="parametrization-input"
                   />
@@ -897,7 +1307,7 @@ export default function Step3SpecificData({
                     aria-label="Net Weight Input"
                     type="number"
                     step="0.1"
-                    {...register("netWeight", { required: "Requerido" })}
+                    {...register("netWeight", validationRules.netWeight)}
                     placeholder="Valor"
                     className="parametrization-input"
                   />
@@ -919,7 +1329,10 @@ export default function Step3SpecificData({
                   </label>
                   <select
                     aria-label="Net Weight Unit Select"
-                    {...register("netWeightUnit", { required: "Requerido" })}
+                    {...register(
+                      "netWeightUnit",
+                      validationRules.netWeightUnit
+                    )}
                     className="parametrization-input"
                   >
                     <option value="">Unidad</option>
@@ -929,6 +1342,14 @@ export default function Step3SpecificData({
                       </option>
                     ))}
                   </select>
+                  {errors.netWeightUnit && (
+                    <span
+                      className="text-theme-xs mt-1 block"
+                      style={{ color: "var(--color-error)" }}
+                    >
+                      {errors.netWeightUnit.message}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -987,10 +1408,28 @@ export default function Step3SpecificData({
                     aria-label="Air Conditioning Consumption Input"
                     type="number"
                     step="0.1"
-                    {...register("airConditioningConsumption")}
+                    {...register(
+                      "airConditioningConsumption",
+                      validationRules.airConditioningConsumption
+                    )}
                     placeholder="Valor"
                     className="parametrization-input"
+                    onBlur={async () => {
+                      const value = watch("airConditioningConsumption");
+                      const unitValue = watch("airConditioningConsumptionUnit");
+                      if (value && !unitValue) {
+                        await trigger("airConditioningConsumptionUnit");
+                      }
+                    }}
                   />
+                  {errors.airConditioningConsumption && (
+                    <span
+                      className="text-theme-xs mt-1 block"
+                      style={{ color: "var(--color-error)" }}
+                    >
+                      {errors.airConditioningConsumption.message}
+                    </span>
+                  )}
                 </div>
                 <div className="w-28">
                   <label
@@ -1027,10 +1466,28 @@ export default function Step3SpecificData({
                     aria-label="Max Hydraulic Pressure Input"
                     type="number"
                     step="0.1"
-                    {...register("maxHydraulicPressure")}
+                    {...register(
+                      "maxHydraulicPressure",
+                      validationRules.maxHydraulicPressure
+                    )}
                     placeholder="Valor"
                     className="parametrization-input"
+                    onBlur={async () => {
+                      const value = watch("maxHydraulicPressure");
+                      const unitValue = watch("maxHydraulicPressureUnit");
+                      if (value && !unitValue) {
+                        await trigger("maxHydraulicPressureUnit");
+                      }
+                    }}
                   />
+                  {errors.maxHydraulicPressure && (
+                    <span
+                      className="text-theme-xs mt-1 block"
+                      style={{ color: "var(--color-error)" }}
+                    >
+                      {errors.maxHydraulicPressure.message}
+                    </span>
+                  )}
                 </div>
                 <div className="w-24">
                   <label
@@ -1067,10 +1524,28 @@ export default function Step3SpecificData({
                     aria-label="Hydraulic Pump Flow Rate Input"
                     type="number"
                     step="0.1"
-                    {...register("hydraulicPumpFlowRate")}
+                    {...register(
+                      "hydraulicPumpFlowRate",
+                      validationRules.hydraulicPumpFlowRate
+                    )}
                     placeholder="Valor"
                     className="parametrization-input"
+                    onBlur={async () => {
+                      const value = watch("hydraulicPumpFlowRate");
+                      const unitValue = watch("hydraulicPumpFlowRateUnit");
+                      if (value && !unitValue) {
+                        await trigger("hydraulicPumpFlowRateUnit");
+                      }
+                    }}
                   />
+                  {errors.hydraulicPumpFlowRate && (
+                    <span
+                      className="text-theme-xs mt-1 block"
+                      style={{ color: "var(--color-error)" }}
+                    >
+                      {errors.hydraulicPumpFlowRate.message}
+                    </span>
+                  )}
                 </div>
                 <div className="w-28">
                   <label
@@ -1107,10 +1582,28 @@ export default function Step3SpecificData({
                     aria-label="Hydraulic Reservoir Capacity Input"
                     type="number"
                     step="0.1"
-                    {...register("hydraulicReservoirCapacity")}
+                    {...register(
+                      "hydraulicReservoirCapacity",
+                      validationRules.hydraulicReservoirCapacity
+                    )}
                     placeholder="Valor"
                     className="parametrization-input"
+                    onBlur={async () => {
+                      const value = watch("hydraulicReservoirCapacity");
+                      const unitValue = watch("hydraulicReservoirCapacityUnit");
+                      if (value && !unitValue) {
+                        await trigger("hydraulicReservoirCapacityUnit");
+                      }
+                    }}
                   />
+                  {errors.hydraulicReservoirCapacity && (
+                    <span
+                      className="text-theme-xs mt-1 block"
+                      style={{ color: "var(--color-error)" }}
+                    >
+                      {errors.hydraulicReservoirCapacity.message}
+                    </span>
+                  )}
                 </div>
                 <div className="w-24">
                   <label
@@ -1200,6 +1693,20 @@ export default function Step3SpecificData({
             </div>
           </div>
         )}
+      </div>
+
+      {/* Mensaje informativo sobre validaciones */}
+      <div
+        className="p-3 rounded-theme-md text-theme-sm"
+        style={{
+          backgroundColor: "var(--color-info-bg)",
+          color: "var(--color-info)",
+          border: `1px solid var(--color-info-border)`,
+        }}
+      >
+        <strong>Nota:</strong> Complete todos los campos obligatorios (*) antes
+        de continuar. Los valores numéricos deben estar dentro de los rangos
+        permitidos.
       </div>
     </div>
   );
