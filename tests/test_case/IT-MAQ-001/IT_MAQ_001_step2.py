@@ -186,25 +186,43 @@ def submit_form_step2(driver, modal_selector="div.modal-theme"):
         wait = WebDriverWait(driver, 10)
 
         # Buscar botón "Siguiente" en el modal
-        next_selectors = [
-            f"{modal_selector} button:contains('Siguiente')",
+        # Priorizar XPath por texto exacto (normalizando espacios) para evitar selectores CSS inválidos
+        xpath_candidates = [
+            "//button[normalize-space()='Siguiente']",
+            "//button[contains(normalize-space(.), 'Siguiente')]",
+            "//button[contains(text(), 'Siguiente')]",
+        ]
+
+        css_candidates = [
             f"{modal_selector} button[type='submit']",
-            f"{modal_selector} button[class*='primary']"
+            f"{modal_selector} .ant-btn-primary",
+            f"{modal_selector} button[class*='primary']",
+            f"{modal_selector} button[class*='btn-primary']",
         ]
 
         next_button = None
-        for selector in next_selectors:
+
+        # Primero intentar XPaths robustos
+        for xpath_selector in xpath_candidates:
             try:
-                if ":contains" in selector:
-                    text = selector.split("'")[1]
-                    xpath_selector = f"//button[contains(text(), '{text}')]"
-                    next_button = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_selector)))
-                else:
-                    next_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, selector)))
-                print(f"   ✅ Botón siguiente encontrado: {selector}")
+                print(f"   Probando XPath para botón siguiente: {xpath_selector}")
+                next_button = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_selector)))
+                print(f"   ✅ Botón siguiente encontrado vía XPath: {xpath_selector}")
                 break
-            except:
+            except Exception:
+                # No encontrado con este xpath, continuar
                 continue
+
+        # Si no encontramos con XPath, intentar selectores CSS como fallback
+        if not next_button:
+            for css_selector in css_candidates:
+                try:
+                    print(f"   Probando CSS para botón siguiente: {css_selector}")
+                    next_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, css_selector)))
+                    print(f"   ✅ Botón siguiente encontrado vía CSS: {css_selector}")
+                    break
+                except Exception:
+                    continue
 
         if not next_button:
             raise Exception("No se pudo encontrar el botón 'Siguiente' del Paso 2")
