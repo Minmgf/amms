@@ -44,7 +44,7 @@ import {
        } from "@/services/machineryService";
 import { SuccessModal, ErrorModal } from "../../shared/SuccessErrorModal";
 
-export default function MultiStepFormModal({ isOpen, onClose }) {
+export default function MultiStepFormModal({ isOpen, onClose, onSuccess }) {
   const [step, setStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState([]);
   const [countriesList, setCountriesList] = useState([]);
@@ -828,10 +828,9 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       
       if (response.success) {
         // Mostrar alerta de confirmación exitosa
-        setModalMessage(response.success || "Registro de maquinaria confirmado exitosamente.");
-        setSuccessOpen(true);        
-        // Limpiar y cerrar el modal
-        onClose();
+        setModalMessage(response.message || "Registro de maquinaria confirmado exitosamente.");
+        setSuccessOpen(true);     
+        onSuccess();   
         methods.reset();
         setStep(0);
         setCompletedSteps([]);
@@ -1212,7 +1211,10 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       </div>
       <SuccessModal
         isOpen={successOpen}
-        onClose={() => setSuccessOpen(false)}
+        onClose={() => {
+          setSuccessOpen(false);
+          onClose();
+        }}
         title="Éxito"
         message={modalMessage}
       />

@@ -580,7 +580,7 @@ const MachineryMainView = () => {
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
-      <MultiStepFormModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
+      <MultiStepFormModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} onSuccess={handleRefresh}/>
       <MachineryHistoryModal
         isOpen={isHistoryModalOpen}
         onClose={() => setIsHistoryModalOpen(false)}
