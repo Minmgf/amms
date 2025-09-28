@@ -408,6 +408,9 @@
   border-radius: var(--border-radius-md);
   padding: 0.5rem 0.75rem;
   display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
 }
 
 .parametrization-action-button {
