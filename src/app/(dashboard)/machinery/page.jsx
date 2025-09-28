@@ -1,129 +1,159 @@
-'use client'
-import TableList from '@/app/components/shared/TableList'
-import MachineryHistoryModal from '@/app/components/machinery/history/MachineryHistoryModal'
-import React, { useState, useMemo, useEffect } from 'react'
-import { CiFilter } from 'react-icons/ci'
-import { FaEye, FaPen, FaPlus, FaTimes, FaCog, FaCalendarAlt, FaBarcode, FaTag, FaCalendar, FaCheckCircle, FaTools, FaHashtag, FaRegPlayCircle, FaTractor, FaHistory } from 'react-icons/fa'
-import PermissionGuard from '@/app/(auth)/PermissionGuard'
-import * as Dialog from '@radix-ui/react-dialog'
-import { FiLayers, FiDownload, FiFileText } from 'react-icons/fi'
-import { IoCalendarOutline } from 'react-icons/io5'
-import { getMachineryList } from '@/services/machineryService'
-import MultiStepFormModal from '@/app/components/machinery/multistepForm/MultistepFormModal'
-import MachineryDetailsModal from '@/app/components/machinery/machineryDetails/MachineryDetailsModal'
-import { FiChevronDown } from 'react-icons/fi'
-
-
+"use client";
+import TableList from "@/app/components/shared/TableList";
+import MachineryHistoryModal from "@/app/components/machinery/history/MachineryHistoryModal";
+import React, { useState, useMemo, useEffect } from "react";
+import { CiFilter } from "react-icons/ci";
+import {
+  FaEye,
+  FaPen,
+  FaPlus,
+  FaTimes,
+  FaCog,
+  FaCalendarAlt,
+  FaBarcode,
+  FaTag,
+  FaCalendar,
+  FaCheckCircle,
+  FaTools,
+  FaHashtag,
+  FaRegPlayCircle,
+  FaTractor,
+  FaHistory,
+} from "react-icons/fa";
+import PermissionGuard from "@/app/(auth)/PermissionGuard";
+import * as Dialog from "@radix-ui/react-dialog";
+import { FiLayers, FiDownload, FiFileText } from "react-icons/fi";
+import { IoCalendarOutline } from "react-icons/io5";
+import { getMachineryList } from "@/services/machineryService";
+import MultiStepFormModal from "@/app/components/machinery/multistepForm/MultistepFormModal";
+import MachineryDetailsModal from "@/app/components/machinery/machineryDetails/MachineryDetailsModal";
+import { FiChevronDown } from "react-icons/fi";
 
 const MachineryMainView = () => {
   // Estado para el filtro global
-  const [globalFilter, setGlobalFilter] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [globalFilter, setGlobalFilter] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // Estados para datos de la API
-  const [machineryData, setMachineryData] = useState([])
-  const [error, setError] = useState(null)
+  const [machineryData, setMachineryData] = useState([]);
+  const [error, setError] = useState(null);
 
   // Estados para el modal de filtros
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [machineryTypeFilter, setMachineryTypeFilter] = useState('')
-  const [tenureFilter, setTenureFilter] = useState('')
-  const [operativeStatusFilter, setOperativeStatusFilter] = useState('')
-  const [acquisitionDateFilter, setAcquisitionDateFilter] = useState('')
-  const [filteredData, setFilteredData] = useState([])
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [machineryTypeFilter, setMachineryTypeFilter] = useState("");
+  const [tenureFilter, setTenureFilter] = useState("");
+  const [operativeStatusFilter, setOperativeStatusFilter] = useState("");
+  const [acquisitionDateFilter, setAcquisitionDateFilter] = useState("");
+  const [filteredData, setFilteredData] = useState([]);
 
   // Estados para modales de detalles y edición
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [selectedMachine, setSelectedMachine] = useState(null)
-  const [activeTab, setActiveTab] = useState('general') // 'general' | 'tech' | 'docs'
-  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedMachine, setSelectedMachine] = useState(null);
+  const [activeTab, setActiveTab] = useState("general"); // 'general' | 'tech' | 'docs'
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
   // Cargar datos al montar el componente
   useEffect(() => {
-    loadInitialData()
-  }, [])
+    loadInitialData();
+  }, []);
 
   // Aplicar filtros cuando cambien los datos o los filtros
   useEffect(() => {
-    applyFilters()
-  }, [machineryData, machineryTypeFilter, tenureFilter, operativeStatusFilter, acquisitionDateFilter])
+    applyFilters();
+  }, [
+    machineryData,
+    machineryTypeFilter,
+    tenureFilter,
+    operativeStatusFilter,
+    acquisitionDateFilter,
+  ]);
 
   const loadInitialData = async () => {
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
 
     try {
       // Cargar datos de maquinaria
-      const machineryResponse = await getMachineryList()
-      
-      console.log('=== DEBUG: Respuesta completa ===')
-      console.log('machineryResponse:', machineryResponse)
-      console.log('Type of response:', typeof machineryResponse)
-      console.log('Keys:', Object.keys(machineryResponse || {}))
-      console.log('Success:', machineryResponse?.success)
-      console.log('Data:', machineryResponse?.data)
-      console.log('Type of data:', typeof machineryResponse?.data)
-      console.log('Is data array?:', Array.isArray(machineryResponse?.data))
+      const machineryResponse = await getMachineryList();
+
+      console.log("=== DEBUG: Respuesta completa ===");
+      console.log("machineryResponse:", machineryResponse);
+      console.log("Type of response:", typeof machineryResponse);
+      console.log("Keys:", Object.keys(machineryResponse || {}));
+      console.log("Success:", machineryResponse?.success);
+      console.log("Data:", machineryResponse?.data);
+      console.log("Type of data:", typeof machineryResponse?.data);
+      console.log("Is data array?:", Array.isArray(machineryResponse?.data));
 
       // Verificar si la respuesta es exitosa
       if (machineryResponse && machineryResponse.success) {
-        const data = machineryResponse.data
-        
+        const data = machineryResponse.data;
+
         if (Array.isArray(data)) {
-          setMachineryData(data)
-          console.log('✅ Maquinaria cargada correctamente:', data)
-        } else if (data && typeof data === 'object') {
+          setMachineryData(data);
+          console.log("✅ Maquinaria cargada correctamente:", data);
+        } else if (data && typeof data === "object") {
           // Si es un objeto, intentar extraer el array
           if (data.data && Array.isArray(data.data)) {
-            setMachineryData(data.data)
-            console.log('✅ Maquinaria cargada desde data.data:', data.data)
+            setMachineryData(data.data);
+            console.log("✅ Maquinaria cargada desde data.data:", data.data);
           } else if (data.results && Array.isArray(data.results)) {
-            setMachineryData(data.results)
-            console.log('✅ Maquinaria cargada desde data.results:', data.results)
+            setMachineryData(data.results);
+            console.log(
+              "✅ Maquinaria cargada desde data.results:",
+              data.results
+            );
           } else {
-            console.error('❌ Data no es un array válido:', data)
-            setError('Los datos recibidos no tienen el formato esperado')
+            console.error("❌ Data no es un array válido:", data);
+            setError("Los datos recibidos no tienen el formato esperado");
           }
         } else {
-          console.error('❌ Data es null o undefined')
-          setError('No se recibieron datos de maquinaria')
+          console.error("❌ Data es null o undefined");
+          setError("No se recibieron datos de maquinaria");
         }
       } else {
-        console.error('❌ Respuesta no exitosa:', machineryResponse)
-        setError(machineryResponse?.message || 'Error al cargar la maquinaria')
+        console.error("❌ Respuesta no exitosa:", machineryResponse);
+        setError(machineryResponse?.message || "Error al cargar la maquinaria");
       }
     } catch (err) {
-      console.error('Error loading data:', err)
-      setError('Error al cargar los datos. Por favor, intenta de nuevo.')
+      console.error("Error loading data:", err);
+      setError("Error al cargar los datos. Por favor, intenta de nuevo.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Obtener valores únicos para los filtros
   const uniqueMachineryTypes = useMemo(() => {
-    const types = machineryData.map(machine => machine.machinery_secondary_type_name).filter(Boolean)
-    return [...new Set(types)]
-  }, [machineryData])
+    const types = machineryData
+      .map((machine) => machine.machinery_secondary_type_name)
+      .filter(Boolean);
+    return [...new Set(types)];
+  }, [machineryData]);
 
   const uniqueTenures = useMemo(() => {
     // Este campo no existe en la API actual, mantener vacío por ahora
-    return []
-  }, [machineryData])
+    return [];
+  }, [machineryData]);
 
   const uniqueOperativeStatuses = useMemo(() => {
-    const statuses = machineryData.map(machine => machine.machinery_operational_status_name).filter(Boolean)
-    return [...new Set(statuses)]
-  }, [machineryData])
+    const statuses = machineryData
+      .map((machine) => machine.machinery_operational_status_name)
+      .filter(Boolean);
+    return [...new Set(statuses)];
+  }, [machineryData]);
 
   // Aplicar filtros
   const applyFilters = () => {
-    let filtered = machineryData
+    let filtered = machineryData;
 
     if (machineryTypeFilter) {
-      filtered = filtered.filter(machine => machine.machinery_secondary_type_name === machineryTypeFilter)
+      filtered = filtered.filter(
+        (machine) =>
+          machine.machinery_secondary_type_name === machineryTypeFilter
+      );
     }
 
     if (tenureFilter) {
@@ -131,29 +161,34 @@ const MachineryMainView = () => {
     }
 
     if (operativeStatusFilter) {
-      filtered = filtered.filter(machine => machine.machinery_operational_status_name === operativeStatusFilter)
+      filtered = filtered.filter(
+        (machine) =>
+          machine.machinery_operational_status_name === operativeStatusFilter
+      );
     }
 
     if (acquisitionDateFilter) {
-      filtered = filtered.filter(machine => {
-        if (!machine.acquisition_date) return false
-        const machineDate = new Date(machine.acquisition_date).toISOString().split('T')[0]
-        return machineDate === acquisitionDateFilter
-      })
+      filtered = filtered.filter((machine) => {
+        if (!machine.acquisition_date) return false;
+        const machineDate = new Date(machine.acquisition_date)
+          .toISOString()
+          .split("T")[0];
+        return machineDate === acquisitionDateFilter;
+      });
     }
 
-    setFilteredData(filtered)
-  }
+    setFilteredData(filtered);
+  };
 
   // Función personalizada de filtrado global
   const globalFilterFn = useMemo(() => {
     return (row, columnId, filterValue) => {
-      if (!filterValue) return true      
-      const searchTerm = filterValue.toLowerCase().trim()
-      if (!searchTerm) return true
-      
-      const machine = row.original
-      
+      if (!filterValue) return true;
+      const searchTerm = filterValue.toLowerCase().trim();
+      if (!searchTerm) return true;
+
+      const machine = row.original;
+
       // Crear array de campos searchables usando los campos de la API
       const searchableFields = [
         machine.machinery_name,
@@ -163,232 +198,240 @@ const MachineryMainView = () => {
         machine.id_machinery?.toString(),
         machine.id_machinery_secondary_type?.toString(),
         machine.id_machinery_operational_status?.toString(),
-      ]
-      
+      ];
+
       // Agregar fechas formateadas si existen
       if (machine.acquisition_date) {
-        const date = new Date(machine.acquisition_date)
+        const date = new Date(machine.acquisition_date);
         searchableFields.push(
-          date.toLocaleDateString('es-ES'), // dd/mm/yyyy
-          date.toLocaleDateString('en-US'), // mm/dd/yyyy
-          date.toISOString().split('T')[0], // yyyy-mm-dd
-          date.getFullYear().toString(),    // año
-          (date.getMonth() + 1).toString().padStart(2, '0'), // mes
-          date.getDate().toString().padStart(2, '0')         // día
-        )
+          date.toLocaleDateString("es-ES"), // dd/mm/yyyy
+          date.toLocaleDateString("en-US"), // mm/dd/yyyy
+          date.toISOString().split("T")[0], // yyyy-mm-dd
+          date.getFullYear().toString(), // año
+          (date.getMonth() + 1).toString().padStart(2, "0"), // mes
+          date.getDate().toString().padStart(2, "0") // día
+        );
       }
-      
+
       // Buscar en cualquier campo que contenga el término
-      return searchableFields.some(field => {
-        if (!field) return false
-        return field.toString().toLowerCase().includes(searchTerm)
-      })
-    }
-  }, [])
+      return searchableFields.some((field) => {
+        if (!field) return false;
+        return field.toString().toLowerCase().includes(searchTerm);
+      });
+    };
+  }, []);
 
   // Handlers para filtros
   const handleApplyFilters = () => {
-    applyFilters()
-    setIsFilterModalOpen(false)
-  }
+    applyFilters();
+    setIsFilterModalOpen(false);
+  };
 
   const handleClearFilters = () => {
-    setMachineryTypeFilter('')
-    setTenureFilter('')
-    setOperativeStatusFilter('')
-    setAcquisitionDateFilter('')
-    setFilteredData(machineryData)
-    setIsFilterModalOpen(false)
-  }
+    setMachineryTypeFilter("");
+    setTenureFilter("");
+    setOperativeStatusFilter("");
+    setAcquisitionDateFilter("");
+    setFilteredData(machineryData);
+    setIsFilterModalOpen(false);
+  };
 
   // Formatear fecha
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A'
-    const date = new Date(dateString)
-    return date.toLocaleDateString('es-ES', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    })
-  }
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("es-ES", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
 
   // Formatear hora
   const formatTime = (dateString) => {
-    if (!dateString) return 'N/A'
-    const date = new Date(dateString)
-    return date.toLocaleTimeString('es-ES', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    })
-  }
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleTimeString("es-ES", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
 
   // Definición de columnas para TanStack Table
-  const columns = useMemo(() => [
-    {
-      accessorKey: 'machinery_name',
-      header: () => (
-        <div className="flex items-center gap-2">
-          <FaTractor className="w-4 h-4" />
-          Maquinaria
-        </div>
-      ),
-      cell: ({ row }) => {
-        const machine = row.original
-        return (
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-md overflow-hidden flex items-center justify-center bg-gray-100">
-              {machine.image_path ? (
-                <img 
-                  src={machine.image_path} 
-                  alt={machine.machinery_name || 'Maquinaria'}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'flex';
-                  }}
+  const columns = useMemo(
+    () => [
+      {
+        accessorKey: "machinery_name",
+        header: () => (
+          <div className="flex items-center gap-2">
+            <FaTractor className="w-4 h-4" />
+            Maquinaria
+          </div>
+        ),
+        cell: ({ row }) => {
+          const machine = row.original;
+          return (
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-md overflow-hidden flex items-center justify-center bg-gray-100">
+                {machine.image_path ? (
+                  <img
+                    src={machine.image_path}
+                    alt={machine.machinery_name || "Maquinaria"}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = "none";
+                      e.target.nextSibling.style.display = "flex";
+                    }}
+                  />
+                ) : null}
+                <FaTractor
+                  className="w-4 h-4 text-gray-400"
+                  style={{ display: machine.image_path ? "none" : "block" }}
                 />
-              ) : null}
-              <FaTractor className="w-4 h-4 text-gray-400" style={{ display: machine.image_path ? 'none' : 'block' }} />
+              </div>
+              <div className="font-medium parametrization-text">
+                {machine.machinery_name || "N/A"}
+              </div>
             </div>
-            <div className="font-medium parametrization-text">
-              {machine.machinery_name || 'N/A'}
-            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "serial_number",
+        header: () => (
+          <div className="flex items-center gap-1">
+            <FaHashtag className="w-4 h-4 " />
+            Número de Serie
           </div>
-        )
-      }
-    },
-    {
-      accessorKey: 'serial_number',
-      header: () => (
-        <div className="flex items-center gap-1">
-          <FaHashtag className="w-4 h-4 " />
-          Número de Serie
-        </div>
-      ),
-      cell: ({ row }) => (
-        <div className="text-sm parametrization-text font-mono">
-          {row.getValue('serial_number') || 'N/A'}
-        </div>
-      )
-    },
-    {
-      accessorKey: 'machinery_secondary_type_name',
-      header: () => (
-        <div className="flex items-center gap-2">
-          <FiLayers className="w-4 h-4 " />
-          Tipo
-        </div>
-      ),
-      cell: ({ row }) => (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium parametrization-text">
-          {row.getValue('machinery_secondary_type_name') || 'N/A'}
-        </span>
-      )
-    },
-    {
-      accessorKey: 'machinery_operational_status_name',
-      header: () => (
-        <div className="flex items-center gap-2">
-          <FaCheckCircle  className="w-4 h-4 " />
-          Estado
-        </div>
-      ),
-      cell: ({ row }) => {
-        const status = row.getValue('machinery_operational_status_name')
-        return (
+        ),
+        cell: ({ row }) => (
+          <div className="text-sm parametrization-text font-mono">
+            {row.getValue("serial_number") || "N/A"}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "machinery_secondary_type_name",
+        header: () => (
+          <div className="flex items-center gap-2">
+            <FiLayers className="w-4 h-4 " />
+            Tipo
+          </div>
+        ),
+        cell: ({ row }) => (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium parametrization-text">
-            {status || 'N/A'}
+            {row.getValue("machinery_secondary_type_name") || "N/A"}
           </span>
-        )
-      }
-    },
-    {
-      accessorKey: 'acquisition_date',
-      header: () => (
-        <div className="flex items-center gap-2">
-          <IoCalendarOutline  className="w-4 h-4 " />
-          Fecha de Adquisición
-        </div>
-      ),
-      cell: ({ row }) => {
-        const date = row.getValue('acquisition_date')
-        return (
-          <div className="text-sm parametrization-text">
-            <div>{formatDate(date)}</div>
-            <div className="text-xs parametrization-text">{formatTime(date)}</div>
+        ),
+      },
+      {
+        accessorKey: "machinery_operational_status_name",
+        header: () => (
+          <div className="flex items-center gap-2">
+            <FaCheckCircle className="w-4 h-4 " />
+            Estado
           </div>
-        )
-      }
-    },
-    {
-      id: 'actions',
-      header: () => (
-        <div className="flex items-center gap-2">
-          <FaTools className="w-4 h-4 " />
-          Acciones
-        </div>
-      ),
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          <button
-            aria-label="Edit Button" 
-            onClick={() => handleEdit(row.original)}
-            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black"
-          >
-            <FaPen /> Editar
-          </button>
-          <button
-            aria-label="History Button"
-            onClick={() => handleHistory(row.original)}
-            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black"
-          >
-            <FaHistory  /> Historial
-          </button>
-          <button
-            aria-label="View Button"
-            onClick={() => handleView(row.original)}
-            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black"
-          >
-            <FaEye /> Ver
-          </button>
-        </div>
-      )
-    }
-  ], [])
+        ),
+        cell: ({ row }) => {
+          const status = row.getValue("machinery_operational_status_name");
+          return (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium parametrization-text">
+              {status || "N/A"}
+            </span>
+          );
+        },
+      },
+      {
+        accessorKey: "acquisition_date",
+        header: () => (
+          <div className="flex items-center gap-2">
+            <IoCalendarOutline className="w-4 h-4 " />
+            Fecha de Adquisición
+          </div>
+        ),
+        cell: ({ row }) => {
+          const date = row.getValue("acquisition_date");
+          return (
+            <div className="text-sm parametrization-text">
+              <div>{formatDate(date)}</div>
+              <div className="text-xs parametrization-text">
+                {formatTime(date)}
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        id: "actions",
+        header: () => (
+          <div className="flex items-center gap-2">
+            <FaTools className="w-4 h-4 " />
+            Acciones
+          </div>
+        ),
+        cell: ({ row }) => (
+          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <button
+              aria-label="Edit Button"
+              onClick={() => handleEdit(row.original)}
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black"
+            >
+              <FaPen /> Editar
+            </button>
+            <button
+              aria-label="History Button"
+              onClick={() => handleHistory(row.original)}
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black"
+            >
+              <FaHistory /> Historial
+            </button>
+            <button
+              aria-label="View Button"
+              onClick={() => handleView(row.original)}
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black"
+            >
+              <FaEye /> Ver
+            </button>
+          </div>
+        ),
+      },
+    ],
+    []
+  );
 
   // Handlers para las acciones
   const handleEdit = (machine) => {
-    console.log('Editing machine:', machine)
-    setSelectedMachine(machine)
-    setIsEditModalOpen(true)
-  }
+    console.log("Editing machine:", machine);
+    setSelectedMachine(machine);
+    setIsEditModalOpen(true);
+  };
 
   const handleView = (machine) => {
-    console.log('Viewing machine:', machine)
-    setSelectedMachine(machine)
-    setIsDetailsModalOpen(true)
-  }
+    console.log("Viewing machine:", machine);
+    setSelectedMachine(machine);
+    setIsDetailsModalOpen(true);
+  };
 
   const handleHistory = (machine) => {
-    console.log('Viewing history for machine:', machine)
-    setSelectedMachine(machine)
-    setIsHistoryModalOpen(true)
-  }
+    console.log("Viewing history for machine:", machine);
+    setSelectedMachine(machine);
+    setIsHistoryModalOpen(true);
+  };
 
   const handleOpenAddMachineModal = () => {
-    setIsCreateModalOpen(true)
-  }
+    setIsCreateModalOpen(true);
+  };
 
   const handleRefresh = () => {
-    loadInitialData()
-  }
+    loadInitialData();
+  };
 
   return (
     <div className="p-6">
       <div className="mb-6">
         <div className="flex justify-between items-center mb-2">
-          <h1 className="text-2xl font-bold text-gray-900">Maquinaria</h1>
+          <h1 className="text-primary text-2xl font-bold text-gray-900">Maquinaria</h1>
         </div>
 
         {/* Mostrar error si existe */}
@@ -400,8 +443,7 @@ const MachineryMainView = () => {
               onClick={() => setError(null)}
               className="absolute top-0 bottom-0 right-0 px-4 py-3"
             >
-              <span className="sr-only">Dismiss</span>
-              ×
+              <span className="sr-only">Dismiss</span>×
             </button>
           </div>
         )}
@@ -415,7 +457,7 @@ const MachineryMainView = () => {
             id="search"
             type="text"
             placeholder="Buscar por nombre, serie, tipo, estado..."
-            value={globalFilter || ''}
+            value={globalFilter || ""}
             onChange={(e) => setGlobalFilter(e.target.value)}
             className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
           />
@@ -436,7 +478,7 @@ const MachineryMainView = () => {
         {globalFilter && (
           <button
             aria-label="Clear Search Button"
-            onClick={() => setGlobalFilter('')}
+            onClick={() => setGlobalFilter("")}
             className="text-sm text-gray-500 hover:text-gray-700 underline"
           >
             Limpiar búsqueda
@@ -455,7 +497,15 @@ const MachineryMainView = () => {
       {/* Tabla de maquinaria */}
       <TableList
         columns={columns}
-        data={filteredData.length > 0 || machineryTypeFilter || tenureFilter || operativeStatusFilter || acquisitionDateFilter ? filteredData : machineryData}
+        data={
+          filteredData.length > 0 ||
+          machineryTypeFilter ||
+          tenureFilter ||
+          operativeStatusFilter ||
+          acquisitionDateFilter
+            ? filteredData
+            : machineryData
+        }
         loading={loading}
         globalFilter={globalFilter}
         onGlobalFilterChange={setGlobalFilter}
@@ -470,7 +520,9 @@ const MachineryMainView = () => {
           <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-xl z-50 w-full max-w-2xl">
             <div className="p-8 card-theme rounded-2xl">
               <div className="flex justify-between items-center mb-8">
-                <Dialog.Title className="text-2xl font-bold text-primary">Filtros</Dialog.Title>
+                <Dialog.Title className="text-2xl font-bold text-primary">
+                  Filtros
+                </Dialog.Title>
                 <button
                   aria-label="Close Filter Modal Button"
                   onClick={() => setIsFilterModalOpen(false)}
@@ -580,7 +632,11 @@ const MachineryMainView = () => {
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
-      <MultiStepFormModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} onSuccess={handleRefresh}/>
+      <MultiStepFormModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={handleRefresh}
+      />
       <MachineryHistoryModal
         isOpen={isHistoryModalOpen}
         onClose={() => setIsHistoryModalOpen(false)}
@@ -594,7 +650,7 @@ const MachineryMainView = () => {
         formatDate={formatDate}
       />
     </div>
-  )
-}
+  );
+};
 
-export default MachineryMainView
+export default MachineryMainView;

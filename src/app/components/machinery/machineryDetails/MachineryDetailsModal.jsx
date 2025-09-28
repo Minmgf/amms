@@ -3,8 +3,14 @@
 import React, { useEffect, useState } from 'react'
 import { FaTimes, FaTools } from 'react-icons/fa'
 import { FiChevronDown, FiDownload, FiFileText } from 'react-icons/fi'
-
-const API_BASE = 'https://api.inmero.co'
+import { 
+    getActiveMachinery,
+    getActiveMachine,
+    getMachineryBrands,
+    getModelsByBrandId,
+    getMachineryPhoto,
+    getUseStates
+} from "@/services/machineryService";
 
 export default function MachineryDetailsModal({
     isOpen,
@@ -25,52 +31,48 @@ export default function MachineryDetailsModal({
     const [brandName, setBrandName] = useState('')
     const [modelName, setModelName] = useState('')
     const [statusName, setStatusName] = useState('')
+    const [photoUrl, setPhotoUrl] = useState(null);
 
     useEffect(() => {
-        if (!selectedMachine) return
+        if (!selectedMachine) return;
 
         // Tipo principal
-        fetch(`${API_BASE}/types/list/active/2/`)
-            .then(res => res.json())
-            .then(data => {
-                const found = data?.data?.find(t => t.id === selectedMachine.machinery_type)
-                setTypeName(found?.name || '')
-            })
+        getActiveMachinery().then(data => {
+            const found = data?.find(t => t.id === selectedMachine.machinery_type);
+            setTypeName(found?.name || '');
+        });
 
         // Tipo secundario
-        fetch(`${API_BASE}/types/list/active/3/`)
-            .then(res => res.json())
-            .then(data => {
-                const found = data?.data?.find(t => t.id === selectedMachine.machinery_secondary_type)
-                setSecondaryTypeName(found?.name || '')
-            })
+        getActiveMachine().then(data => {
+            const found = data?.find(t => t.id === selectedMachine.machinery_secondary_type);
+            setSecondaryTypeName(found?.name || '');
+        });
 
         // Marca
-        fetch(`${API_BASE}/brands/list/active/1/`)
-            .then(res => res.json())
-            .then(data => {
-                const found = data?.data?.find(b => b.id === selectedMachine.brand)
-                setBrandName(found?.name || '')
-            })
+        getMachineryBrands().then(data => {
+            const found = data?.find(b => b.id === selectedMachine.brand);
+            setBrandName(found?.name || '');
+        });
 
         // Modelo
         if (selectedMachine.id_model && selectedMachine.brand) {
-            fetch(`${API_BASE}/models/list/active/${selectedMachine.brand}/`)
-                .then(res => res.json())
-                .then(data => {
-                    const found = data?.data?.find(m => m.id === selectedMachine.id_model)
-                    setModelName(found?.name || '')
-                })
+            getModelsByBrandId(selectedMachine.brand).then(data => {
+                const found = data?.find(m => m.id === selectedMachine.id_model);
+                setModelName(found?.name || '');
+            });
         }
 
         // Estado operacional
-        fetch(`${API_BASE}/statues/list/2/`)
-            .then(res => res.json())
-            .then(data => {
-                const found = data?.data?.find(s => s.id === selectedMachine.machinery_operational_status)
-                setStatusName(found?.name || '')
-            })
+        getUseStates().then(data => {
+            const found = data?.find(s => s.id === selectedMachine.machinery_operational_status);
+            setStatusName(found?.name || '');
+        });
 
+        // Foto de la maquinaria
+        if (selectedMachine.id_maintenance || selectedMachine.id_machinery) {
+            const id = selectedMachine.id_maintenance || selectedMachine.id_machinery;
+            getMachineryPhoto(id).then(url => setPhotoUrl(url));
+        }
     }, [selectedMachine])
 
     if (!isOpen) return null
@@ -79,14 +81,13 @@ export default function MachineryDetailsModal({
         if (e.target === e.currentTarget) onClose?.()
     }
 
-    debugger
 
     return (
         <div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center"
             onClick={handleBackdropClick}
         >
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-6xl overflow-y-auto max-h-[95vh] relative">
+            <div className="modal-theme rounded-2xl shadow-xl w-full max-w-6xl overflow-y-auto max-h-[95vh] relative">
                 {/* Header */}
                 <div className="flex justify-between items-center p-4 border-b">
                     <h2 className="text-2xl font-bold">Detalle de Maquinaria</h2>
@@ -109,7 +110,7 @@ export default function MachineryDetailsModal({
                                     type="button"
                                     className={`w-40 px-4 py-2 -mb-px border-b-2 text-sm font-medium
                                          whitespace-normal text-center leading-snug cursor-pointer
-                                         ${activeTab === key ? 'border-black text-black' : 'border-transparent text-gray-500'}`}
+                                         ${activeTab === key ? 'border-secondary text-secondary' : 'border-transparent text-gray-500'}`}
                                 >
                                     {label}
                                 </button>
@@ -122,10 +123,18 @@ export default function MachineryDetailsModal({
                         <>
                             <div className="grid md:grid-cols-2 gap-6">
                                 <div className="bg-[#737373] h-full rounded-md flex items-center justify-center">
-                                    <span className="text-white">Foto aquí</span>
+                                    {photoUrl ? (
+                                        <img
+                                            src={photoUrl}
+                                            alt="Foto de maquinaria"
+                                            className="object-contain max-h-80 w-full rounded-md"
+                                        />
+                                    ) : (
+                                        <span className="text-white">Foto aquí</span>
+                                    )}
                                 </div>
 
-                                <div className="border rounded-xl p-4 border-[#E5E7EB]">
+                                <div className="border rounded-xl p-4 border-secondary">
                                     <h3 className="font-semibold text-lg mb-3">Datos Generales</h3>
                                     <div className="flex flex-col gap-3">
                                         <Row label="Número de serie" value={selectedMachine?.serial_number} />
@@ -406,8 +415,8 @@ export default function MachineryDetailsModal({
 
 function Row({ label, value }) {
     return (
-        <div className="flex justify-between text-[#525252]">
-            {label}: <span className="font-[400] text-black">{value ?? '—'}</span>
+        <div className="flex justify-between text-primary">
+            {label}: <span className="font-[400] text-secondary">{value ?? '—'}</span>
         </div>
     )
 }
