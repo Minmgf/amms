@@ -174,19 +174,26 @@ export default function Step6UploadDocs({ machineryId }) {
       console.error('Error creando documento:', error);
       if (error.response?.data) {
         const errorData = error.response.data;
-        // Manejar formato de error de validación del backend
         if (errorData.status === "error") {
           if (errorData.errors) {
-            // Formatear errores específicos por campo
-            const errorMessages = Object.entries(errorData.errors)
-              .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
-              .join('; ');
-            setError(errorMessages);
+            // Buscar errores de nombre duplicado y convertir a mensaje claro
+            const hasUniqueError = errorData.errors.non_field_errors?.some(msg => 
+              msg.includes('unique set') || msg.includes('must make a unique set')
+            );
+            
+            if (hasUniqueError) {
+              setError('Ya existe un documento con este nombre para esta maquinaria. Por favor, use un nombre diferente.');
+            } else {
+              const errorMessages = Object.entries(errorData.errors)
+                .filter(([field]) => field !== 'non_field_errors')
+                .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
+                .join('; ');
+              setError(errorMessages || 'Error en los datos ingresados');
+            }
           } else {
             setError(errorData.message || 'Datos de entrada inválidos');
           }
         } else {
-          // Formato de error genérico
           setError(errorData.message || 'Error al crear el documento');
         }
       } else {
@@ -207,31 +214,28 @@ export default function Step6UploadDocs({ machineryId }) {
     }
 
     try {
-      // 1. Llamas a tu endpoint para obtener la información del documento
-      const baseUrl = 'https://api.inmero.co/sigma/main';
-      const response = await fetch(`${baseUrl}/machinery-documentation/${documentId}/download/`);
-      const data = await response.json();
-
-      if (data.status === "success" && data.data) {
-        // 2. Obtienes la URL real del archivo
+      setError("");
+      
+      const data = await downloadMachineryDoc(documentId);
+      
+      if (data.status === "success" && data.data && data.data.path) {
         const fileUrl = data.data.path;
         const fileName = data.data.document || documentName || `documento_${documentId}`;
-
-        // 3. Abrir la URL en una nueva pestaña para no interrumpir la página actual
+        
         window.open(fileUrl, '_blank');
         
-        setSuccessMsg('¡Archivo abierto en nueva pestaña!');
-        setTimeout(() => setSuccessMsg(''), 3000);
+        setSuccessMsg("Descarga iniciada - Se abrirá en nueva ventana");
+        setTimeout(() => setSuccessMsg(""), 3000);
         
       } else {
-        setError('No se pudo obtener la información del documento');
-        setTimeout(() => setError(''), 3000);
+        setError("No se pudo obtener la URL del documento");
+        setTimeout(() => setError(""), 3000);
       }
       
     } catch (error) {
       console.error('Error descargando el archivo:', error);
-      setError('Error al descargar el documento');
-      setTimeout(() => setError(''), 3000);
+      setError('Error al descargar el documento. Por favor, inténtelo de nuevo.');
+      setTimeout(() => setError(''), 5000);
     }
   };
 

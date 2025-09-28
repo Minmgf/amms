@@ -594,22 +594,9 @@ export default function MultiStepFormModal({ isOpen, onClose, onSuccess }) {
     } catch (error) {
       console.error("Error submitting step 2:", error);
 
-      // Mostrar error al usuario
-      if (error.response?.data) {
-        const errorData = error.response.data;
-
-        // Si el backend devuelve errores específicos por campo
-        Object.keys(errorData).forEach((field) => {
-          if (errorData[field] && Array.isArray(errorData[field])) {
-            methods.setError(field, {
-              type: "server",
-              message: errorData[field][0],
-            });
-          }
-        });
-      } else {
-        // Error genérico
-        alert("Error al guardar los datos. Por favor, inténtelo de nuevo.");
+      // Llamar a la función de manejo de errores del Step2 si existe
+      if (window.handleStep2Error) {
+        window.handleStep2Error(error);
       }
     } finally {
       setIsSubmittingStep(false);
