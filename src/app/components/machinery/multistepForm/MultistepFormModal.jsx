@@ -828,8 +828,8 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       
       if (response.success) {
         // Mostrar alerta de confirmación exitosa
-        alert("¡Registro de maquinaria confirmado exitosamente! La maquinaria ahora está activa en el sistema.");
-        
+        setModalMessage(response.success || "Registro de maquinaria confirmado exitosamente.");
+        setSuccessOpen(true);        
         // Limpiar y cerrar el modal
         onClose();
         methods.reset();
@@ -837,25 +837,11 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
         setCompletedSteps([]);
         setMachineryId(null);
         
-      } else {
-        // TODO: Mostrar error específico cuando implementemos las notificaciones
-        alert(`Error: ${response.message || 'Error al confirmar el registro'}`);
-      }
-      
+      }      
     } catch (error) {
-      // Manejo de errores específicos basado en la respuesta del backend
-      if (error.response?.data) {
-        const errorData = error.response.data;
-        const errorMessage = errorData.message || 'Error desconocido';
-        const errorDetails = errorData.details ? ` - ${errorData.details}` : '';
-        
-        // TODO: Mostrar error específico cuando implementemos las notificaciones
-        alert(`Error: ${errorMessage}${errorDetails}`);
-      } else {
-        // Error genérico de conexión
-        alert('Error de conexión al confirmar el registro. Por favor, inténtelo de nuevo.');
-      }
-      
+      let message = "Error al confirmar el registro. Por favor, inténtelo de nuevo.";
+      setModalMessage(error.response.data.details || message);
+      setErrorOpen(true);      
     } finally {
       setIsConfirmingRegistration(false);
     }
