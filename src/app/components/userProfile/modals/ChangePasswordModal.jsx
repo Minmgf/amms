@@ -110,7 +110,7 @@ const ChangePasswordModal = ({ isOpen, onClose, onSubmit }) => {
               </label>
               <div className="relative">
                 <input
-                  area-label="Actual Password Input"
+                  aria-label="Actual Password Input"
                   type={showPasswords.current ? "text" : "password"}
                   {...register("old_password", {
                     required: "La contraseña actual es requerida",
@@ -119,7 +119,7 @@ const ChangePasswordModal = ({ isOpen, onClose, onSubmit }) => {
                   className="w-full pr-12 pl-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-700 placeholder-gray-200"
                 />
                 <button
-                  area-label="Show Actual Password Button"
+                  aria-label="Show Actual Password Button"
                   type="button"
                   onClick={() => togglePasswordVisibility("current")}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
@@ -146,7 +146,7 @@ const ChangePasswordModal = ({ isOpen, onClose, onSubmit }) => {
               </label>
               <div className="relative">
                 <input
-                  area-label="New Password Input"
+                  aria-label="New Password Input"
                   type={showPasswords.new ? "text" : "password"}
                   {...register("new_password", {
                     required: "La nueva contraseña es requerida",
@@ -164,7 +164,7 @@ const ChangePasswordModal = ({ isOpen, onClose, onSubmit }) => {
                   className="w-full pr-12 pl-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-700 placeholder-gray-200"
                 />
                 <button
-                  area-label="Show New Password Button"
+                  aria-label="Show New Password Button"
                   type="button"
                   onClick={() => togglePasswordVisibility("new")}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
@@ -252,7 +252,7 @@ const ChangePasswordModal = ({ isOpen, onClose, onSubmit }) => {
               </label>
               <div className="relative">
                 <input
-                  area-label="Confirm New Password Input"
+                  aria-label="Confirm New Password Input"
                   type={showPasswords.confirm ? "text" : "password"}
                   {...register("confirm_password", {
                     required: "Por favor confirma la nueva contraseña",
@@ -263,7 +263,7 @@ const ChangePasswordModal = ({ isOpen, onClose, onSubmit }) => {
                   className="w-full pr-12 pl-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-700 placeholder-gray-200"
                 />
                 <button
-                  area-label="Show Confirm New Password Button"
+                  aria-label="Show Confirm New Password Button"
                   type="button"
                   onClick={() => togglePasswordVisibility("confirm")}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
@@ -286,14 +286,14 @@ const ChangePasswordModal = ({ isOpen, onClose, onSubmit }) => {
             {/* Buttons */}
             <div className="flex gap-2 pt-2">
               <button
-                area-label="Cancel Button"
+                aria-label="Cancel Button"
                 onClick={handleCancel}
                 className="flex-1 px-4 py-2.5 bg-red-600 text-white font-medium rounded-md hover:bg-red-700 transition-colors text-sm"
               >
                 Cancelar
               </button>
               <button
-                area-label="Change Password Button"
+                aria-label="Change Password Button"
                 onClick={handleSubmit(onSubmitForm)}
                 className="flex-1 px-4 py-2.5 bg-gray-600 text-white font-medium rounded-md hover:bg-gray-700 transition-colors text-sm"
               >

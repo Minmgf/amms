@@ -36,6 +36,7 @@ const AddModifyUnitModal = ({
   const [successOpen, setSuccessOpen] = useState(false);
   const [errorOpen, setErrorOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
+  const [id, setId] = useState("");
 
   // Cargar tipos de datos cuando se abre el modal
   useEffect(() => {
@@ -43,6 +44,18 @@ const AddModifyUnitModal = ({
       fetchDataTypes();
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("userData");
+    if (storedUser) {
+      try {
+        const parsed = JSON.parse(storedUser);
+        setId(parsed.id);
+      } catch (err) {
+        console.error("Error parsing userData", err);
+      }
+    }
+  }, []);
 
   const fetchDataTypes = async () => {
     try {
@@ -186,7 +199,7 @@ const AddModifyUnitModal = ({
           name: formData.typeName,
           symbol: formData.symbol,
           unit_type: parseInt(formData.unitType),
-          responsible_user: 1,
+          responsible_user: id,
         };
 
         console.log("🔄 Updating unit with payload:", payload);
@@ -219,8 +232,8 @@ const AddModifyUnitModal = ({
           symbol: formData.symbol,
           units_category: categoryId,
           unit_type: parseInt(formData.unitType),
-          estado: formData.isActive ? "Activo" : "Inactivo",
-          responsible_user: 1,
+          estado: formData.isActive ? 'Activo' : 'Inactivo', // ← AGREGAR ESTADO
+          responsible_user: id,
         };
 
         console.log("📦 Creating unit with payload:", payload);

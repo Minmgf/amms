@@ -1,4 +1,3 @@
-import Cookies from "js-cookie";
 import { apiUsers } from "@/lib/axios";
 
 // Helper para obtener el token desde localStorage o sessionStorage
@@ -7,21 +6,12 @@ const getAuthToken = () => {
     if (!token) {
         token = sessionStorage.getItem("token");
     }
-    if (!token) {
-        token = Cookies.get("token");
-    }
     return token;
 };
 
 export const login = async (payload, rememberMe = false) => {
     const { data } = await apiUsers.post("/auth/login/", payload);
 
-    // Guardar siempre en cookie para mantener consistencia
-    // La cookie expira en 7 días si rememberMe es true, sino en 1 día
-    const cookieExpiry = rememberMe ? 7 : 1;
-    Cookies.set("token", data.access_token, { expires: cookieExpiry });
-
-    // También guardar en localStorage o sessionStorage según preferencia
     if (rememberMe) {
         localStorage.setItem("token", data.access_token);
         // Limpiar sessionStorage si existe
@@ -31,9 +21,6 @@ export const login = async (payload, rememberMe = false) => {
         // Limpiar localStorage si existe
         localStorage.removeItem("token");
     }
-
-    console.log("Token desde helper:", getAuthToken());
-    console.log("Token desde cookie:", Cookies.get("token"));
     return data;
 };
 
@@ -46,7 +33,6 @@ export const logout = async () => {
         console.error("Error en logout del servidor:", error);
     } finally {
         // Siempre limpiar los tokens locales
-        Cookies.remove("token");
         localStorage.removeItem("token");
         sessionStorage.removeItem("token");
         localStorage.removeItem("userData");

@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Cookies from "js-cookie";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import React from "react";
@@ -12,7 +11,7 @@ export default function DashboardLayout({ children }) {
   const router = useRouter();
 
   useEffect(() => {
-    const token = Cookies.get("token");
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     if (!token) {
       router.replace("/login");
     } else {

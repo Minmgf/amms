@@ -77,7 +77,7 @@ const SuccessModal = ({ isOpen, onClose, title = "Success", message = "Lorem ips
           
           {/* Botón */}
           <button
-            area-label="Continue Button"
+            aria-label="Continue Button"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -185,7 +185,7 @@ const ErrorModal = ({ isOpen, onClose, title = "Error", message = "Lorem ipsum d
           
           {/* Botón */}
           <button
-            area-label="Try Again Button"
+            aria-label="Try Again Button"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -285,7 +285,7 @@ const ConfirmModal = ({
           </p>
           <div className="flex gap-3">
             <button
-              area-label="Cancel Button"
+              aria-label="Cancel Button"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -308,7 +308,7 @@ const ConfirmModal = ({
               {cancelText}
             </button>
             <button
-              area-label="Confirm Button"
+              aria-label="Confirm Button"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();

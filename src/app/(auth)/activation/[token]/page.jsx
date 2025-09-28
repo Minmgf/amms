@@ -76,7 +76,7 @@ const page = () => {
             {status === "success" && (
               <Link
                 href="/login"
-                area-label="Next"
+                aria-label="Next"
                 className="w-3/4 text-center text-white py-2 mt-6 rounded-lg bg-red-600 text-lg font-semibold shadow hover:bg-red-500 active:bg-red-700 transition-colors"
               >
                 Siguiente
@@ -88,7 +88,7 @@ const page = () => {
               </a>
               <Link
                 href="/login"
-                area-label="Login"
+                aria-label="Login"
                 className="hover:underline font-bold">
                 Inicie sesión aquí
               </Link>

@@ -164,7 +164,7 @@ const Page = () => {
                 <input
                   id="email"
                   type="email"
-                  area-label="Email Input"
+                  aria-label="Email Input"
                   {...register("email", { 
                     required: "El correo electrónico es obligatorio",
                     pattern: {
@@ -192,7 +192,7 @@ const Page = () => {
                 <input
                   id="new-password"
                   type="password"
-                  area-label="Password Input"
+                  aria-label="Password Input"
                   {...register("password", { 
                     required: "La contraseña es obligatoria",
                     validate: () => Object.values(validations).every(Boolean) || "La contraseña no cumple con los requisitos"
@@ -220,7 +220,7 @@ const Page = () => {
                 <input
                   id="confirm-password"
                   type="password"
-                  area-label="Confirm Password Input"
+                  aria-label="Confirm Password Input"
                   {...register("password_confirmation", {
                     required: "La confirmación de contraseña es obligatoria",
                     validate: (value) => value === password || "Las contraseñas no coinciden",
@@ -275,7 +275,7 @@ const Page = () => {
               
               <button
                 type="submit"
-                area-label="Send Button"
+                aria-label="Send Button"
                 disabled={
                   loading ||
                   !(Object.values(validations).every(Boolean) && passwordsMatch)
@@ -297,7 +297,7 @@ const Page = () => {
               <span className="text-white/80">¿Ya tienes una cuenta?</span>
               <Link
                 href="/login"
-                area-label="Login Button"
+                aria-label="Login Button"
                 className="hover:underline font-bold text-white"
               >
                 Inicia sesión

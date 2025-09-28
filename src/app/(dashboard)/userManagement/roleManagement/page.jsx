@@ -233,7 +233,7 @@ const page = () => {
             <div className="flex space-x-2">
               <PermissionGuard permission={17}>
                 <button
-                  area-label="Detail Button"
+                  aria-label="Detail Button"
                   onClick={() => handleOpenRoleFormModal("view", info.getValue())}
                   className="p-2 hover:bg-gray-100 rounded-md transition-colors opacity-0 group-hover:opacity-100"
                   title="Ver detalles"
@@ -243,7 +243,7 @@ const page = () => {
               </PermissionGuard>
               <PermissionGuard permission={15}>
                 <button
-                  area-label="Edit Button"
+                  aria-label="Edit Button"
                   onClick={() => handleOpenRoleFormModal("edit", info.getValue())}
                   className="p-2 hover:bg-gray-100 rounded-md transition-colors opacity-0 group-hover:opacity-100"
                   title="Editar"
@@ -253,7 +253,7 @@ const page = () => {
               </PermissionGuard>
               <PermissionGuard permission={18}>
                 <button
-                  area-label="Change Status Button"
+                  aria-label="Change Status Button"
                   onClick={() => handleOpenStatusConfirm(info.getValue(), statusId)}
                   className="p-2 hover:bg-gray-100 rounded-md transition-colors opacity-0 group-hover:opacity-100"
                   title={statusId === 1 ? "Inactivar" : "Activar"}
