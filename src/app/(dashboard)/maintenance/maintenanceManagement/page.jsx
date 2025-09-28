@@ -39,8 +39,8 @@ import {
   deleteMaintenance,
 } from "@/services/maintenanceService";
 import { Edit } from "lucide-react";
-import CreateMaintenanceModal from "@/app/components/maintenance/createMaintenanceModal/page";
-import EditMaintenanceModal from "@/app/components/maintenance/editMaintenanceModal/page";
+import CreateMaintenanceModal from "@/app/components/maintenance/machineMaintenance/createMaintenanceModal";
+import EditMaintenanceModal from "@/app/components/maintenance/machineMaintenance/editMaintenanceModal";
 import {
   SuccessModal,
   ErrorModal,
@@ -399,7 +399,6 @@ const GestorMantenimientos = () => {
 
   const handleEnable = async (maintenance) => {
     try {
-      // Usa el endpoint toggle-status para activar/desactivar
       const result = await toggleMaintenanceStatus(maintenance.id_maintenance);
 
       setMaintenanceData((prevData) =>
@@ -429,13 +428,11 @@ const GestorMantenimientos = () => {
     loadMaintenanceData();
   };
 
-  // Nueva función para alternar estado
   const handleToggleStatus = async (maintenance) => {
     const nuevoEstado = maintenance.id_estado === 1 ? 2 : 1;
     const nuevoTextoEstado = nuevoEstado === 1 ? "Habilitado" : "Inactivo";
 
     try {
-      // Usa el servicio updateMaintenance
       const result = await updateMaintenance(maintenance.id_maintenance, {
         id_estado: nuevoEstado,
         estado: nuevoTextoEstado,
@@ -474,7 +471,7 @@ const GestorMantenimientos = () => {
   const handleEditMaintenance = async (id, payload) => {
     try {
       await updateMaintenance(id, payload);
-      loadMaintenanceData(); // Recarga la lista
+      loadMaintenanceData();
       setSuccessMsg("Mantenimiento actualizado correctamente.");
       setShowSuccess(true);
     } catch (error) {
@@ -487,7 +484,7 @@ const GestorMantenimientos = () => {
   const handleWarningAccept = async () => {
     setShowWarning(false);
     if (pendingDeactivate) {
-      await handleEnable(pendingDeactivate); // Usa toggle-status
+      await handleEnable(pendingDeactivate); 
       setPendingDeactivate(null);
     }
   };
