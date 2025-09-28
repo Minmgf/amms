@@ -11,7 +11,7 @@ import { getCountries, getStates, getCities } from "@/services/locationService";
 import { useTheme } from "@/contexts/ThemeContext";
 import { FiX } from "react-icons/fi";
 import { getActiveMachinery, getActiveMachine, getModelsByBrandId, getMachineryBrands, getTelemetryDevices, registerGeneralData, registerInfoTracker, getMaintenanceTypes, getDistanceUnits, getTenureTypes, getUseStates, registerUsageInfo } from "@/services/machineryService";
-
+import { SuccessModal, ErrorModal } from "../../shared/SuccessErrorModal";
 
 export default function MultiStepFormModal({ isOpen, onClose }) {
   const [step, setStep] = useState(0);
@@ -33,6 +33,9 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
   const [isSubmittingStep, setIsSubmittingStep] = useState(false);
   const [machineryId, setMachineryId] = useState(null); // Para almacenar el ID devuelto por el backend
   const [id, setId] = useState(""); //id del usuario responsable
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
 
   // Hook del tema
   const { getCurrentTheme } = useTheme();
@@ -274,7 +277,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
     const requiredFields = [
       'name', 'manufactureYear', 'serialNumber', 'machineryType',
       'brand', 'model', 'tariff', 'category', 'country',
-      'department', 'city', 'telemetry'
+      'department', 'city'
       // 'telemetry' no está incluido porque es opcional
     ];
 
@@ -402,25 +405,29 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       console.log('Step 1 submitted successfully:', response);
 
     } catch (error) {
-      console.error('Error submitting step 1:', error);
+      let message = "Error al guardar los datos. Por favor, inténtelo de nuevo.";
 
-      // Mostrar error al usuario
-      if (error.response?.data) {
-        const errorData = error.response.data;
-
-        // Si el backend devuelve errores específicos por campo
-        Object.keys(errorData).forEach(field => {
-          if (errorData[field] && Array.isArray(errorData[field])) {
-            methods.setError(field, {
-              type: 'server',
-              message: errorData[field][0]
-            });
-          }
-        });
-      } else {
-        // Error genérico
-        alert('Error al guardar los datos. Por favor, inténtelo de nuevo.');
+      if (error.response?.data?.details) {
+        const details = error.response.data.details;
+        // Recorre cada campo y concatena los mensajes
+        message = Object.entries(details)
+          .map(([field, value]) => {
+            if (Array.isArray(value)) {
+              // Si es un array de mensajes
+              return value.join(" ");
+            } else if (typeof value === "object" && value !== null) {
+              // Si es un objeto anidado (como image.image)
+              return Object.values(value).join(" ");
+            } else {
+              // Mensaje simple
+              return value;
+            }
+          })
+          .join(" ");
       }
+
+      setModalMessage(message);
+      setErrorOpen(true);
     } finally {
       setIsSubmittingStep(false);
     }
@@ -844,6 +851,18 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
           </form>
         </FormProvider>
       </div>
+      <SuccessModal
+        isOpen={successOpen}
+        onClose={() => setSuccessOpen(false)}
+        title="Éxito"
+        message={modalMessage}
+      />
+      <ErrorModal
+        isOpen={errorOpen}
+        onClose={() => setErrorOpen(false)}
+        title="Error"
+        message={modalMessage}
+      />
     </div>
   );
 }
