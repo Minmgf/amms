@@ -41,21 +41,3 @@ export const getMaintenanceDetail = async (id) => {
     const { data } = await apiMain.get(`/maintenance/${id}/`);
     return data;
 };
-
-// Obtener historial de mantenimiento
-export const getMaintenanceHistory = async (id) => {
-    const { data } = await apiMain.get(`/maintenance/${id}/history/`);
-    return data;
-};
-
-// Obtener responsables de mantenimiento
-export const getMaintenanceResponsibles = async () => {
-    const { data } = await apiMain.get("/users/");
-    return data;
-};
-
-// Obtener estados de mantenimiento
-export const getMaintenanceStatuses = async () => {
-    const { data } = await apiMain.get("/states/");
-    return data;
-};

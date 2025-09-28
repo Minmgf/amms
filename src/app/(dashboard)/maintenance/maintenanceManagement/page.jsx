@@ -3,34 +3,15 @@ import TableList from "@/app/components/shared/TableList";
 import React, { useState, useMemo, useEffect } from "react";
 import { CiFilter } from "react-icons/ci";
 import {
-  FaEye,
   FaPen,
-  FaPlus,
-  FaTimes,
   FaCog,
-  FaCalendarAlt,
-  FaBarcode,
   FaTag,
-  FaCalendar,
   FaCheckCircle,
   FaTools,
-  FaHashtag,
-  FaRegPlayCircle,
-  FaTractor,
-  FaHistory,
-  FaUser,
-  FaExclamationTriangle,
-  FaClock,
   FaWrench,
   FaCheck,
-  FaBan,
-  FaRegClock,
   FaTrash,
 } from "react-icons/fa";
-import PermissionGuard from "@/app/(auth)/PermissionGuard";
-import * as Dialog from "@radix-ui/react-dialog";
-import { FiLayers } from "react-icons/fi";
-import { IoCalendarOutline } from "react-icons/io5";
 import {
   getMaintenanceList,
   getMaintenanceTypes,
@@ -38,7 +19,6 @@ import {
   toggleMaintenanceStatus,
   deleteMaintenance,
 } from "@/services/maintenanceService";
-import { Edit } from "lucide-react";
 import CreateMaintenanceModal from "@/app/components/maintenance/machineMaintenance/createMaintenanceModal";
 import EditMaintenanceModal from "@/app/components/maintenance/machineMaintenance/editMaintenanceModal";
 import {
@@ -221,12 +201,6 @@ const GestorMantenimientos = () => {
     return colors[status_id] || "bg-gray-100 text-gray-800";
   };
 
-  const statusLabel = (status) => {
-    if (status === "Habilitado" || status === "Activo") return "Habilitado";
-    if (status === "Inactivo" || status === "Deshabilitado") return "Inactivo";
-    return status;
-  };
-
   // Definición de columnas para TanStack Table
   const columns = useMemo(
     () => [
@@ -242,9 +216,6 @@ const GestorMantenimientos = () => {
           const maintenance = row.original;
           return (
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gray-100 rounded-md flex items-center justify-center">
-                <FaWrench className="w-4 h-4 text-gray-400" />
-              </div>
               <div className="font-medium parametrization-text">
                 {maintenance.name || "N/A"}
               </div>
@@ -422,62 +393,6 @@ const GestorMantenimientos = () => {
 
   const handleOpenAddMaintenanceModal = () => {
     setIsCreateModalOpen(true);
-  };
-
-  const handleRefresh = () => {
-    loadMaintenanceData();
-  };
-
-  const handleToggleStatus = async (maintenance) => {
-    const nuevoEstado = maintenance.id_estado === 1 ? 2 : 1;
-    const nuevoTextoEstado = nuevoEstado === 1 ? "Habilitado" : "Inactivo";
-
-    try {
-      const result = await updateMaintenance(maintenance.id_maintenance, {
-        id_estado: nuevoEstado,
-        estado: nuevoTextoEstado,
-        name: maintenance.name,
-        description: maintenance.description,
-        maintenance_type: maintenance.maintenance_type ?? maintenance.tipo_mantenimiento,
-        responsible_user: maintenance.responsible_user,
-      });
-
-      if (result && result.success) {
-        setMaintenanceData((prevData) =>
-          prevData.map((item) =>
-            item.id_maintenance === maintenance.id_maintenance
-              ? {
-                  ...item,
-                  estado: result.data?.estado ?? item.estado,
-                  id_estado: result.data?.id_estado ?? item.id_estado,
-                }
-              : item
-          )
-        );
-        setSuccessMsg(result.message || "Estado actualizado correctamente.");
-        setShowSuccess(true);
-      } else {
-        setErrorMsg(
-          result?.message || "Error al actualizar el estado del mantenimiento."
-        );
-        setShowError(true);
-      }
-    } catch (error) {
-      setErrorMsg("Error de conexión al actualizar el estado.");
-      setShowError(true);
-    }
-  };
-
-  const handleEditMaintenance = async (id, payload) => {
-    try {
-      await updateMaintenance(id, payload);
-      loadMaintenanceData();
-      setSuccessMsg("Mantenimiento actualizado correctamente.");
-      setShowSuccess(true);
-    } catch (error) {
-      setErrorMsg("Error al actualizar el mantenimiento.");
-      setShowError(true);
-    }
   };
 
   // Cuando el usuario cierra el modal de advertencia, desactiva el mantenimiento
@@ -683,7 +598,7 @@ const GestorMantenimientos = () => {
             <select
               value={maintenanceTypeFilter}
               onChange={(e) => setMaintenanceTypeFilter(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
+              className="w-full px-4 py-3 parametrization-input text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
             >
               <option value="">Todos los tipos</option>
               {availableMaintenanceTypes.map((type) => (
@@ -701,7 +616,7 @@ const GestorMantenimientos = () => {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
+              className="w-full px-4 py-3 parametrization-input text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
             >
               <option value="">Todos los estados</option>
               {availableStatuses.map((status) => (
