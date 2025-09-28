@@ -10,10 +10,14 @@ import Step6UploadDocs from "./Step6UploadDocs";
 import { getCountries, getStates, getCities } from "@/services/locationService";
 import { useTheme } from "@/contexts/ThemeContext";
 import { FiX } from "react-icons/fi";
-import { getActiveMachinery, getActiveMachine, getModelsByBrandId, getMachineryBrands, getTelemetryDevices, registerGeneralData, registerInfoTracker, getMaintenanceTypes, getDistanceUnits, getTenureTypes, getUseStates, registerUsageInfo } from "@/services/machineryService";
+import {
+  getActiveMachinery, getActiveMachine, getModelsByBrandId, getMachineryBrands, getTelemetryDevices, registerGeneralData, registerInfoTracker, getMaintenanceTypes, getDistanceUnits, getTenureTypes, getUseStates, registerUsageInfo,
+  getMachineryStatus, getGeneralData, updateGeneralData
+} from "@/services/machineryService";
 import { SuccessModal, ErrorModal } from "../../shared/SuccessErrorModal";
 
-export default function MultiStepFormModal({ isOpen, onClose }) {
+export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit }) {
+  const isEditMode = !!machineryToEdit;
   const [step, setStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState([]);
   const [countriesList, setCountriesList] = useState([]);
@@ -36,7 +40,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
   const [successOpen, setSuccessOpen] = useState(false);
   const [errorOpen, setErrorOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
-
+  const [machineryStatuesList, setMachineryStatuesList] = useState([]);
   // Hook del tema
   const { getCurrentTheme } = useTheme();
 
@@ -56,6 +60,8 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       city: "",
       telemetry: "", // Este es opcional
       photo: null,
+      machineryStatues: "",
+      justification: "",      
 
       // Step 2 - Tracker Data
       terminalSerial: "",
@@ -144,6 +150,41 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
     }
   }, []);
 
+  useEffect(() => {
+    if (isOpen && isEditMode && machineryToEdit) {
+      // Aquí deberías hacer los GET de cada paso usando el ID
+      // Ejemplo para el paso 1:
+      getGeneralData(machineryToEdit.id_machinery).then(data => {
+        // Mapea los datos del backend a los nombres del formulario
+        const mappedData = {
+          name: data.machinery_name,
+          manufactureYear: data.manufacturing_year,
+          serialNumber: data.serial_number,
+          machineryType: data.machinery_secondary_type,
+          brand: data.brand, // Ajusta si el backend devuelve otro nombre
+          model: data.id_model,
+          tariff: data.tariff_subheading,
+          category: data.machinery_type,
+          country: data.country, // Ajusta si el backend devuelve otro nombre
+          department: data.department, // Ajusta si el backend devuelve otro nombre
+          city: data.id_city,
+          telemetry: data.id_device,
+          photo: null, // No puedes setear archivos directamente, solo si tienes la URL y lógica para cargarla
+          // ...agrega los demás campos que necesites mapear...
+        };
+        methods.reset({
+          ...methods.getValues(),
+          ...mappedData
+        });
+        setMachineryId(machineryToEdit.id);
+      });
+    }
+    if (isOpen && !isEditMode) {
+      methods.reset();
+      setMachineryId(null);
+    }
+  }, [isOpen, isEditMode, machineryToEdit, methods]);
+
   // Cuando cambia la marca, actualizamos los modelos
   useEffect(() => {
     const fetchModels = async () => {
@@ -177,6 +218,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
         const usageStates = await getUseStates();
         const maintenanceTypes = await getMaintenanceTypes();
         const telemetryDevices = await getTelemetryDevices();
+        const machineryStatues = await getMachineryStatus();
         setMachineryList(machinery);
         setMachineList(machine);
         setBrandsList(brands.data);
@@ -185,6 +227,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
         setUsageStatesList(usageStates);
         setMaintenanceTypeList(maintenanceTypes.data);
         setTelemetryDevicesList(telemetryDevices);
+        setMachineryStatuesList(machineryStatues);
       } catch (error) {
         console.error("Error loading selects:", error);
       }
@@ -392,18 +435,29 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
         formData.append('image', data.photo);
       }
 
-      // Enviar datos al backend
-      const response = await registerGeneralData(formData);
+      // 1. GET datos actuales si es edición
+      let existingData = null;
+      if (isEditMode && machineryId) {
+        existingData = await getGeneralData(machineryId);
+      }
 
-      // Guardar el ID de la maquinaria para los siguientes pasos
-      setMachineryId(response.id || response.machinery_id);
+      // 2. Compara si hay cambios
+      const hasChanges = !existingData || Object.keys(data).some(
+        key => data[key] !== existingData[key]
+      );
 
-      // Marcar paso como completado y avanzar
+      // 3. Decide POST/PUT/NADA
+      if (!existingData) {
+        // No hay datos previos: POST
+        const response = await registerGeneralData(formData);
+        setMachineryId(response.id || response.machinery_id);
+      } else if (hasChanges) {
+        // Hay datos previos y cambios: PUT
+        await updateGeneralData(machineryId, formData);
+      } // Si no hay cambios, no hagas nada
+
       setCompletedSteps(prev => [...prev, 0]);
       setStep(1);
-
-      console.log('Step 1 submitted successfully:', response);
-
     } catch (error) {
       let message = "Error al guardar los datos. Por favor, inténtelo de nuevo.";
 
@@ -792,6 +846,9 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
                   brandsList={brandsList}
                   modelsList={modelsList}
                   telemetryDevicesList={telemetryDevicesList}
+                  isEditMode={isEditMode}
+                  machineryStatuesList={machineryStatuesList}
+                  currentStatusName={machineryToEdit?.machinery_operational_status_name?.toLowerCase()}
                 />
               }
               {step === 1 && <Step2TrackerData machineryId={machineryId} />}

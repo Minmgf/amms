@@ -45,6 +45,26 @@ export const registerGeneralData = async (formData) => {
     return data;
 };
 
+// traer estado de una maquinaria
+export const getMachineryStatus = async () => {
+    const { data } = await apiMain.get("/statues/list/2/");
+    return data;
+};
+
+// traer datos generales de una maquinaria por id
+export const getGeneralData = async (machineryId) => {
+    const { data } = await apiMain.get(`/machinery/${machineryId}/`);
+    return data.data;
+};
+
+// actualizar datos generales de una maquinaria por id
+export const updateGeneralData = async (machineryId, formData) => {
+    const { data } = await apiMain.put(`/machinery/${machineryId}/update/`, formData,
+        {headers: {"Content-Type": "multipart/form-data"}}
+    );
+    return data;
+};
+
 // ===== PASO 2 =====
 export const registerInfoTracker = async (formData) => {
     const { data } = await apiMain.post("/machinery-tracker/create/", formData,
