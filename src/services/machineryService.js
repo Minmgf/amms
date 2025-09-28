@@ -114,6 +114,11 @@ export const registerPeriodicMaintenance = async (payload) => {
     const { data } = await apiMain.post("/periodic-maintenance/", payload);
     return data;
 };
+//actualizar mantenimiento periodico de una maquinaria
+export const updatePeriodicMaintenance = async (id_periodic_maintenance, payload) => {
+    const { data } = await apiMain.put(`/periodic-maintenance/${id_periodic_maintenance}/`, payload);
+    return data;
+};
 
 //traer listado de mantenimientos periodicos de maquinaria por id
 export const getPeriodicMaintenancesById = async (id_machinery) => {

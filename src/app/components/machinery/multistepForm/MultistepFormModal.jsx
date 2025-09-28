@@ -151,6 +151,12 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
   }, []);
 
   useEffect(() => {
+    if (!isOpen) {
+      setMachineryId(null);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
     if (isOpen && isEditMode && machineryToEdit && machineryList.length > 0) {
       // Aquí deberías hacer los GET de cada paso usando el ID
       // Ejemplo para el paso 1:
@@ -871,6 +877,8 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
                 <Step5Maintenance
                   machineryId={machineryId}
                   maintenanceTypeList={maintenanceTypeList}
+                  isEditMode={isEditMode}
+                  currentStatusName={machineryToEdit?.machinery_operational_status_name?.toLowerCase()} 
                 />
               }
               {step === 5 && <Step6UploadDocs machineryId={machineryId} />}
