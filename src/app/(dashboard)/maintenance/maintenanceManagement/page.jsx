@@ -35,7 +35,12 @@ import { getMaintenanceList } from "@/services/maintenanceService";
 import { Edit } from "lucide-react";
 import CreateMaintenanceModal from "@/app/components/maintenance/createMaintenanceModal/page";
 import EditMaintenanceModal from "@/app/components/maintenance/editMaintenanceModal/page";
-import { SuccessModal, ErrorModal, ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
+import {
+  SuccessModal,
+  ErrorModal,
+  ConfirmModal,
+} from "@/app/components/shared/SuccessErrorModal";
+import MaintenanceFilterModal from "@/app/components/shared/MaintenanceFilterModal";
 
 const GestorMantenimientos = () => {
   // Estado para el filtro global
@@ -50,7 +55,11 @@ const GestorMantenimientos = () => {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [maintenanceTypeFilter, setMaintenanceTypeFilter] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [requesterFilter, setRequesterFilter] = useState("");
+  const [startDateFilter, setStartDateFilter] = useState("");
+  const [endDateFilter, setEndDateFilter] = useState("");
   const [filteredData, setFilteredData] = useState([]);
 
   // Estados para modales de detalles y edición
@@ -62,7 +71,9 @@ const GestorMantenimientos = () => {
   const [availableMaintenanceTypes, setAvailableMaintenanceTypes] = useState(
     []
   );
+  const [availablePriorities, setAvailablePriorities] = useState([]);
   const [availableStatuses, setAvailableStatuses] = useState([]);
+  const [availableRequesters, setAvailableRequesters] = useState([]);
 
   // Estados para mensajes de éxito y error
   const [showConfirm, setShowConfirm] = useState(false);
@@ -71,6 +82,7 @@ const GestorMantenimientos = () => {
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [maintenanceToDelete, setMaintenanceToDelete] = useState(null);
+  const [showWarning, setShowWarning] = useState(false);
 
   // Cargar datos al montar el componente
   useEffect(() => {
@@ -100,11 +112,23 @@ const GestorMantenimientos = () => {
         ];
         setAvailableMaintenanceTypes(uniqueTypes);
 
+        // Extraer prioridades únicas para filtros
+        const uniquePriorities = [
+          ...new Set(response.map((item) => item.prioridad).filter(Boolean)),
+        ];
+        setAvailablePriorities(uniquePriorities);
+
         // Extraer estados únicos para filtros
         const uniqueStatuses = [
           ...new Set(response.map((item) => item.estado).filter(Boolean)),
         ];
         setAvailableStatuses(uniqueStatuses);
+
+        // Extraer solicitantes únicos para filtros
+        const uniqueRequesters = [
+          ...new Set(response.map((item) => item.solicitante).filter(Boolean)),
+        ];
+        setAvailableRequesters(uniqueRequesters);
       } else {
         setError("Formato de datos inesperado del servidor.");
       }
@@ -132,6 +156,39 @@ const GestorMantenimientos = () => {
       filtered = filtered.filter(
         (maintenance) => maintenance.estado === statusFilter
       );
+    }
+
+    if (requesterFilter) {
+      filtered = filtered.filter(
+        (maintenance) => maintenance.solicitante === requesterFilter
+      );
+    }
+
+    if (priorityFilter) {
+      filtered = filtered.filter(
+        (maintenance) => maintenance.prioridad === priorityFilter
+      );
+    }
+
+    // Filtrado por rango de fechas
+    if (startDateFilter && endDateFilter) {
+      filtered = filtered.filter((maintenance) => {
+        const maintenanceDate = new Date(maintenance.fecha_creacion);
+        return (
+          maintenanceDate >= new Date(startDateFilter) &&
+          maintenanceDate <= new Date(endDateFilter)
+        );
+      });
+    } else if (startDateFilter) {
+      filtered = filtered.filter((maintenance) => {
+        const maintenanceDate = new Date(maintenance.fecha_creacion);
+        return maintenanceDate >= new Date(startDateFilter);
+      });
+    } else if (endDateFilter) {
+      filtered = filtered.filter((maintenance) => {
+        const maintenanceDate = new Date(maintenance.fecha_creacion);
+        return maintenanceDate <= new Date(endDateFilter);
+      });
     }
 
     setFilteredData(filtered);
@@ -173,6 +230,10 @@ const GestorMantenimientos = () => {
   const handleClearFilters = () => {
     setMaintenanceTypeFilter("");
     setStatusFilter("");
+    setPriorityFilter("");
+    setRequesterFilter("");
+    setStartDateFilter("");
+    setEndDateFilter("");
     applyFilters();
   };
 
@@ -278,14 +339,13 @@ const GestorMantenimientos = () => {
         ),
         cell: ({ row }) => {
           const status = row.getValue("estado");
-          const displayText = getStatusDisplayText(status);
           return (
             <span
               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                displayText
+                status
               )}`}
             >
-              {displayText || "N/A"}
+              {status || "N/A"}
             </span>
           );
         },
@@ -304,17 +364,17 @@ const GestorMantenimientos = () => {
 
           return (
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              {/* Botón Edit - siempre visible */}
+              {/* Botón Editar - siempre visible */}
               <button
                 onClick={() => handleEdit(maintenance)}
                 className="inline-flex items-center px-3 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-gray-500 hover:text-gray-600"
                 title="Editar mantenimiento"
               >
                 <FaPen className="w-3 h-3" />
-                Edit
+                Editar
               </button>
 
-              {/* Botón Delete - solo visible si está activo */}
+              {/* Botón Eliminar - solo visible si está activo */}
               {isActive && (
                 <button
                   onClick={() => handleDelete(maintenance)}
@@ -322,11 +382,11 @@ const GestorMantenimientos = () => {
                   title="Eliminar mantenimiento"
                 >
                   <FaTrash className="w-3 h-3" />
-                  Delete
+                  Eliminar
                 </button>
               )}
 
-              {/* Botón Enable - solo visible si está inactivo */}
+              {/* Botón Habilitar - solo visible si está inactivo */}
               {!isActive && (
                 <button
                   onClick={() => handleEnable(maintenance)}
@@ -334,7 +394,7 @@ const GestorMantenimientos = () => {
                   title="Habilitar mantenimiento"
                 >
                   <FaCheck className="w-3 h-3" />
-                  Enable
+                  Habilitar
                 </button>
               )}
             </div>
@@ -366,7 +426,8 @@ const GestorMantenimientos = () => {
     const maintenance = maintenanceToDelete;
     if (!maintenance) return;
 
-    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    const token =
+      localStorage.getItem("token") || sessionStorage.getItem("token");
     if (!token) {
       setErrorMsg("No hay token de autenticación. Inicia sesión.");
       setShowError(true);
@@ -380,7 +441,9 @@ const GestorMantenimientos = () => {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
-            Authorization: token.startsWith("Bearer") ? token : `Bearer ${token}`,
+            Authorization: token.startsWith("Bearer")
+              ? token
+              : `Bearer ${token}`,
           },
         }
       );
@@ -392,8 +455,17 @@ const GestorMantenimientos = () => {
             (item) => item.id_maintenance !== maintenance.id_maintenance
           )
         );
-        setSuccessMsg(result.message || "Mantenimiento eliminado correctamente.");
+        setSuccessMsg("Mantenimiento eliminado exitosamente."); // <-- Cambia el mensaje aquí
         setShowSuccess(true);
+      } else if (response.status === 409) {
+        setMaintenanceData((prevData) =>
+          prevData.map((item) =>
+            item.id_maintenance === maintenance.id_maintenance
+              ? { ...item, id_estado: 2, estado: "Inactivo" }
+              : item
+          )
+        );
+        setShowWarning(true);
       } else {
         setErrorMsg(result.message || "No se pudo eliminar el mantenimiento.");
         setShowError(true);
@@ -408,7 +480,8 @@ const GestorMantenimientos = () => {
     setSuccessMsg("");
     setErrorMsg("");
 
-    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    const token =
+      localStorage.getItem("token") || sessionStorage.getItem("token");
     if (!token) {
       setErrorMsg("No hay token de autenticación. Inicia sesión.");
       setShowError(true);
@@ -417,12 +490,14 @@ const GestorMantenimientos = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:8000/maintenance/${maintenance.id_maintenance}/toggle-status/`,
+        `https://api.inmero.co/sigma/main/maintenance/${maintenance.id_maintenance}/toggle-status/`,
         {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            Authorization: token.startsWith("Bearer") ? token : `Bearer ${token}`,
+            Authorization: token.startsWith("Bearer")
+              ? token
+              : `Bearer ${token}`,
           },
         }
       );
@@ -436,11 +511,12 @@ const GestorMantenimientos = () => {
               ? {
                   ...item,
                   estado:
-                    item.estado === "Habilitado" ? "Deshabilitado" : "Habilitado",
-                  id_estado:
-                    item.estado === "Habilitado" ? 2 : 1,
+                    item.estado === "Habilitado"
+                      ? "Deshabilitado"
+                      : "Habilitado",
+                  id_estado: item.estado === "Habilitado" ? 2 : 1,
                 }
-            : item
+              : item
           )
         );
         setSuccessMsg(result.message || "Estado actualizado correctamente.");
@@ -463,6 +539,55 @@ const GestorMantenimientos = () => {
     loadMaintenanceData();
   };
 
+  // Nueva función para alternar estado
+  const handleToggleStatus = async (maintenance) => {
+    const nuevoEstado = maintenance.id_estado === 1 ? 2 : 1;
+    const nuevoTextoEstado = nuevoEstado === 1 ? "Habilitado" : "Inactivo";
+
+    try {
+      const token =
+        localStorage.getItem("token") || sessionStorage.getItem("token");
+      const response = await fetch(
+        `https://api.inmero.co/sigma/main/maintenance/${maintenance.id_maintenance}/`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token.startsWith("Bearer")
+              ? token
+              : `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            id_estado: nuevoEstado,
+            estado: nuevoTextoEstado,
+          }),
+        }
+      );
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        // Actualiza el estado local
+        setMaintenanceData((prevData) =>
+          prevData.map((item) =>
+            item.id_maintenance === maintenance.id_maintenance
+              ? { ...item, id_estado: nuevoEstado, estado: nuevoTextoEstado }
+              : item
+          )
+        );
+        setSuccessMsg("Estado actualizado correctamente.");
+        setShowSuccess(true);
+      } else {
+        setErrorMsg(
+          result.message || "Error al actualizar el estado del mantenimiento."
+        );
+        setShowError(true);
+      }
+    } catch (error) {
+      setErrorMsg("Error de conexión al actualizar el estado.");
+      setShowError(true);
+    }
+  };
+
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -475,7 +600,9 @@ const GestorMantenimientos = () => {
         {/* Mostrar error si existe */}
         {error && (
           <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative parametrization-text">
-            <span className="block sm:inline parametrization-text">{error}</span>
+            <span className="block sm:inline parametrization-text">
+              {error}
+            </span>
             <button
               onClick={() => setError(null)}
               className="absolute top-0 bottom-0 right-0 px-4 py-3 parametrization-text"
@@ -618,6 +745,70 @@ const GestorMantenimientos = () => {
                     ))}
                   </select>
                 </div>
+
+                {/* Prioridad */}
+                <div>
+                  <label className="block text-sm font-medium text-primary mb-3 parametrization-text">
+                    Prioridad
+                  </label>
+                  <select
+                    value={priorityFilter}
+                    onChange={(e) => setPriorityFilter(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
+                  >
+                    <option value="">Todas las prioridades</option>
+                    {availablePriorities.map((priority) => (
+                      <option key={priority} value={priority}>
+                        {priority}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Solicitante */}
+                <div>
+                  <label className="block text-sm font-medium text-primary mb-3 parametrization-text">
+                    Solicitante
+                  </label>
+                  <select
+                    value={requesterFilter}
+                    onChange={(e) => setRequesterFilter(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
+                  >
+                    <option value="">Todos los solicitantes</option>
+                    {availableRequesters.map((requester) => (
+                      <option key={requester} value={requester}>
+                        {requester}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Fecha de Inicio */}
+                <div>
+                  <label className="block text-sm font-medium text-primary mb-3 parametrization-text">
+                    Fecha de Inicio
+                  </label>
+                  <input
+                    type="date"
+                    value={startDateFilter}
+                    onChange={(e) => setStartDateFilter(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
+                  />
+                </div>
+
+                {/* Fecha de Fin */}
+                <div>
+                  <label className="block text-sm font-medium text-primary mb-3 parametrization-text">
+                    Fecha de Fin
+                  </label>
+                  <input
+                    type="date"
+                    value={endDateFilter}
+                    onChange={(e) => setEndDateFilter(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
+                  />
+                </div>
               </div>
 
               {/* Botones de acción */}
@@ -659,8 +850,18 @@ const GestorMantenimientos = () => {
         isOpen={showConfirm}
         onClose={() => setShowConfirm(false)}
         onConfirm={confirmDelete}
-        title={<span className="parametrization-text">¿Estás seguro de que quieres eliminar el mantenimiento?</span>}
-        message={<span className="parametrization-text">{maintenanceToDelete ? `Mantenimiento: ${maintenanceToDelete.name}` : ""}</span>}
+        title={
+          <span className="parametrization-text">
+            ¿Estás seguro de que quieres eliminar el mantenimiento?
+          </span>
+        }
+        message={
+          <span className="parametrization-text">
+            {maintenanceToDelete
+              ? `Mantenimiento: ${maintenanceToDelete.name}`
+              : ""}
+          </span>
+        }
         confirmText={<span className="parametrization-text">Eliminar</span>}
         cancelText={<span className="parametrization-text">Cancelar</span>}
         confirmColor="btn-error"
@@ -670,7 +871,11 @@ const GestorMantenimientos = () => {
       <SuccessModal
         isOpen={showSuccess}
         onClose={() => setShowSuccess(false)}
-        title={<span className="parametrization-text">¡Eliminado!</span>}
+        title={
+          <span className="parametrization-text">
+            {successMsg.includes("eliminado") ? "¡Eliminado!" : "¡Activado!"}
+          </span>
+        }
         message={<span className="parametrization-text">{successMsg}</span>}
       />
 
@@ -679,6 +884,47 @@ const GestorMantenimientos = () => {
         onClose={() => setShowError(false)}
         title={<span className="parametrization-text">Error</span>}
         message={<span className="parametrization-text">{errorMsg}</span>}
+      />
+
+      {/* Modal de advertencia */}
+      <ErrorModal
+        isOpen={showWarning}
+        onClose={() => setShowWarning(false)}
+        title={<span className="text-red-600 font-bold">Advertencia</span>}
+        message={
+          <span>
+            Este mantenimiento está asociado a solicitudes o mantenimientos
+            programados.
+            <br />
+            No se puede eliminar, pero será desactivado para que no esté
+            disponible en futuros formularios.
+          </span>
+        }
+        buttonText="Aceptar" // <-- Cambia el texto del botón aquí
+      />
+
+      {/* Modal de filtros - componente separado */}
+      <MaintenanceFilterModal
+        open={isFilterModalOpen}
+        onClose={() => setIsFilterModalOpen(false)}
+        maintenanceTypeFilter={maintenanceTypeFilter}
+        setMaintenanceTypeFilter={setMaintenanceTypeFilter}
+        priorityFilter={priorityFilter}
+        setPriorityFilter={setPriorityFilter}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        requesterFilter={requesterFilter}
+        setRequesterFilter={setRequesterFilter}
+        startDateFilter={startDateFilter}
+        setStartDateFilter={setStartDateFilter}
+        endDateFilter={endDateFilter}
+        setEndDateFilter={setEndDateFilter}
+        availableRequesters={availableRequesters}
+        availableMaintenanceTypes={availableMaintenanceTypes}
+        availablePriorities={availablePriorities}
+        availableStatuses={availableStatuses}
+        onClear={handleClearFilters}
+        onApply={handleApplyFilters}
       />
     </div>
   );
