@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
 
 const mockData = {
   serialNumber: "EXC-2024-0012",
@@ -12,13 +13,13 @@ const mockData = {
   scheduleMinute: "00",
   schedulePeriod: "AM",
   assignedTechnician: "Jaime Peña",
-  maintenanceType: "Preventive",
+  maintenanceType: "Preventivo",
 };
 
-const technicians = ["Jaime Peña", "Ana Torres", "Luis Gómez"];
+const technicians = ["Cesar Ramirez", "Luigy Rodriguez", "Luis Gómez"];
 const maintenanceTypes = ["Preventivo", "Correctivo", "Predictivo"];
 
-export default function UpdateMaintenanceModal({ onClose }) {
+const UpdateMaintenanceSchedule = ({ onClose }) => {
   const [scheduleDate, setScheduleDate] = useState(mockData.scheduleDate);
   const [hour, setHour] = useState(mockData.scheduleHour);
   const [minute, setMinute] = useState(mockData.scheduleMinute);
@@ -33,78 +34,115 @@ export default function UpdateMaintenanceModal({ onClose }) {
     mockData.maintenanceType
   );
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showError, setShowError] = useState(false);
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleSubmit(e) {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (isSubmitting) return;
+    
     setError("");
-    // Validaciones básicas
-    if (
-      !scheduleDate ||
-      !hour ||
-      !minute ||
-      !period ||
-      !assignedTechnician ||
-      !maintenanceDetails ||
-      !maintenanceType
-    ) {
-      setError("Todos los campos marcados con * son obligatorios.");
-      return;
+    setShowError(false);
+    setIsSubmitting(true);
+    
+    try {
+      // Validaciones básicas
+      if (
+        !scheduleDate ||
+        !hour ||
+        !minute ||
+        !period ||
+        !assignedTechnician ||
+        !maintenanceDetails ||
+        !maintenanceType
+      ) {
+        throw new Error("Todos los campos marcados con * son obligatorios.");
+      }
+      
+      if (maintenanceDetails.length > 350) {
+        throw new Error("Los detalles no pueden superar los 350 caracteres.");
+      }
+      
+      // Validación de fecha futura
+      const selectedDate = new Date(scheduleDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (selectedDate < today) {
+        throw new Error("La fecha programada debe ser igual o posterior a hoy.");
+      }
+      
+      // Validación de hora válida
+      const hourNum = parseInt(hour);
+      const minuteNum = parseInt(minute);
+      
+      if (hourNum < 1 || hourNum > 12 || minuteNum < 0 || minuteNum > 59) {
+        throw new Error("Por favor ingrese una hora válida.");
+      }
+      
+      // Simulación de llamada API
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Simulación de guardado exitoso
+      setShowSuccess(true);
+      
+    } catch (error) {
+      setError(error.message);
+      setShowError(true);
+    } finally {
+      setIsSubmitting(false);
     }
-    if (maintenanceDetails.length > 350) {
-      setError("Los detalles no pueden superar los 350 caracteres.");
-      return;
-    }
-    setShowSuccess(true);
-  }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 overflow-auto">
-      <div className="bg-white w-full max-w-2xl rounded-xl shadow-lg p-6 relative">
+    <div className="modal-overlay">
+      <div className="modal-theme w-full max-w-4xl p-6 relative">
         <button
           aria-label="Cerrar"
           onClick={onClose}
-          className="absolute top-4 right-4 text-2xl text-gray-500 hover:text-gray-700"
+          className="absolute top-4 right-4 text-2xl text-secondary hover:text-primary"
         >
           ×
         </button>
-        <h2 className="text-2xl font-bold mb-4">Actualizar mantenimiento</h2>
+        <h2 className="text-theme-2xl font-theme-bold mb-4 text-primary">Actualizar mantenimiento</h2>
 
         {/* Información de la solicitud */}
-        <div className="border border-gray-300 rounded-lg mb-4">
-          <h3 className="font-semibold px-6 pt-5 pb-3">
+        <div className="border-primary rounded-theme-lg mb-4 border">
+          <h3 className="font-theme-semibold px-6 pt-5 pb-3 text-primary">
             Información de la solicitud
           </h3>
-          <div className="divide-y divide-gray-200">
-            <div className="grid grid-cols-2 divide-x divide-gray-200 text-sm">
+          <div className="divide-y border-primary">
+            <div className="grid grid-cols-2 divide-x border-primary text-theme-sm">
               <div className="px-6 py-3">
-                <p className="text-gray-500">Número de serie</p>
-                <p className="mt-1 font-medium">{mockData.serialNumber}</p>
+                <p className="text-secondary">Número de serie</p>
+                <p className="mt-1 font-theme-medium text-primary">{mockData.serialNumber}</p>
               </div>
               <div className="px-6 py-3">
-                <p className="text-gray-500">Nombre de la máquina</p>
-                <p className="mt-1 font-medium">{mockData.machineName}</p>
+                <p className="text-secondary">Nombre de la máquina</p>
+                <p className="mt-1 font-theme-medium text-primary">{mockData.machineName}</p>
               </div>
             </div>
-            <div className="px-6 py-3 text-sm">
-              <p className="text-gray-500">Fecha de la solicitud</p>
-              <p className="mt-1 font-medium">{mockData.requestDate}</p>
+            <div className="px-6 py-3 text-theme-sm">
+              <p className="text-secondary">Fecha de la solicitud</p>
+              <p className="mt-1 font-theme-medium text-primary">{mockData.requestDate}</p>
             </div>
           </div>
         </div>
 
         {/* Información del mantenimiento */}
-        <div className="border border-gray-300 rounded-lg mb-4">
-          <h3 className="font-semibold px-6 pt-5 pb-3">
+        <div className="border-primary rounded-theme-lg mb-4 border">
+          <h3 className="font-theme-semibold px-6 pt-5 pb-3 text-primary">
             Información del mantenimiento
           </h3>
           <div className="px-6 pb-4">
-            <div className="grid grid-cols-3 gap-3 mb-3">
+            <div className="grid grid-cols-3 gap-6 mb-4">
               {/* Fecha programada */}
               <div className="flex flex-col">
                 <label
                   htmlFor="scheduleDate"
-                  className="text-sm text-gray-600 mb-1"
+                  className="text-theme-sm text-secondary mb-1"
                 >
                   Fecha programada*
                 </label>
@@ -113,50 +151,79 @@ export default function UpdateMaintenanceModal({ onClose }) {
                   type="date"
                   value={scheduleDate}
                   onChange={(e) => setScheduleDate(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-black/60"
+                  className="input-theme w-full"
                 />
               </div>
 
               {/* Hora programada */}
               <div className="flex flex-col">
-                <label className="text-sm text-gray-600 mb-1">
+                <label className="text-theme-sm text-secondary mb-1">
                   Hora programada*
                 </label>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3">
                   <input
                     type="number"
                     min="1"
                     max="12"
-                    value={hour}
-                    onChange={(e) =>
-                      setHour(e.target.value.padStart(2, "0"))
-                    }
-                    className="w-14 border border-gray-300 rounded-md text-center py-2 focus:outline-none focus:ring-2 focus:ring-black/60"
+                    value={parseInt(hour) || ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '' || (parseInt(value) >= 1 && parseInt(value) <= 12)) {
+                        // mantener dos dígitos al guardar, con ‘01’ como valor por defecto
+                        setHour(value === '' ? '01' : value.padStart(2, '0'));
+                      }
+                    }}
+                    className="input-theme w-20 text-center"
+                    placeholder="HH"
                   />
+                  <span className="text-secondary font-theme-medium text-lg">:</span>
                   <input
                     type="number"
                     min="0"
                     max="59"
-                    value={minute}
-                    onChange={(e) =>
-                      setMinute(e.target.value.padStart(2, "0"))
-                    }
-                    className="w-14 border border-gray-300 rounded-md text-center py-2 focus:outline-none focus:ring-2 focus:ring-black/60"
+                    value={parseInt(minute) || ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '' || (parseInt(value) >= 0 && parseInt(value) <= 59)) {
+                        // mantener dos dígitos al guardar, con ‘00’ como valor por defecto
+                        setMinute(value === '' ? '00' : value.padStart(2, '0'));
+                      }
+                    }}
+                    className="input-theme w-20 text-center"
+                    placeholder="MM"
                   />
-                  <select
-                    value={period}
-                    onChange={(e) => setPeriod(e.target.value)}
-                    className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black/60"
-                  >
-                    <option value="AM">AM</option>
-                    <option value="PM">PM</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={period}
+                      onChange={(e) => setPeriod(e.target.value)}
+                      className="input-theme px-4 py-2 pr-8 min-w-[80px] appearance-none text-center font-theme-medium"
+                    > 
+                      <option value="AM">AM</option>
+                      <option value="PM">PM</option>
+                    </select>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-secondary pointer-events-none"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </div>
                 </div>
               </div>
 
+                  
+
               {/* Técnico asignado */}
               <div className="flex flex-col">
-                <label className="text-sm text-gray-600 mb-1">
+                <label className="text-theme-sm text-secondary mb-1">
                   Técnico asignado*
                 </label>
                 <div className="relative">
@@ -165,7 +232,7 @@ export default function UpdateMaintenanceModal({ onClose }) {
                     onChange={(e) =>
                       setAssignedTechnician(e.target.value)
                     }
-                    className="w-full border border-gray-300 rounded-md px-4 py-2 pr-8 appearance-none focus:outline-none focus:ring-2 focus:ring-black/60"
+                    className="input-theme w-full pr-8 appearance-none"
                   >
                     {technicians.map((t) => (
                       <option key={t} value={t}>
@@ -175,7 +242,7 @@ export default function UpdateMaintenanceModal({ onClose }) {
                   </select>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-secondary pointer-events-none"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -192,9 +259,9 @@ export default function UpdateMaintenanceModal({ onClose }) {
             </div>
 
             {/* Detalles del mantenimiento y tipo en una sola fila */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm text-gray-600 mb-1">
+                <label className="block text-theme-sm text-secondary mb-1">
                   Detalles del mantenimiento*
                 </label>
                 <textarea
@@ -204,14 +271,14 @@ export default function UpdateMaintenanceModal({ onClose }) {
                   }
                   maxLength={350}
                   rows={4}
-                  className="w-full border border-gray-300 rounded-md px-4 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-black/60"
+                  className="input-theme w-full resize-none"
                 />
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-theme-xs text-secondary mt-1">
                   {maintenanceDetails.length}/350 caracteres
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-gray-600 mb-1">
+                <label className="block text-theme-sm text-secondary mb-1">
                   Tipo de mantenimiento*
                 </label>
                 <div className="relative">
@@ -220,7 +287,7 @@ export default function UpdateMaintenanceModal({ onClose }) {
                     onChange={(e) =>
                       setMaintenanceType(e.target.value)
                     }
-                    className="w-full border border-gray-300 rounded-md px-4 py-2 pr-8 appearance-none focus:outline-none focus:ring-2 focus:ring-black/60"
+                    className="input-theme w-full pr-8 appearance-none"
                   >
                     {maintenanceTypes.map((type) => (
                       <option key={type} value={type}>
@@ -230,7 +297,7 @@ export default function UpdateMaintenanceModal({ onClose }) {
                   </select>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-secondary pointer-events-none"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -248,40 +315,37 @@ export default function UpdateMaintenanceModal({ onClose }) {
           </div>
         </div>
 
-        {error && (
-          <p className="text-red-600 mb-4 text-sm">{error}</p>
-        )}
-
         <button
           type="button"
           onClick={handleSubmit}
-          className="w-full py-3 bg-black text-white rounded-lg font-semibold text-lg hover:bg-gray-800"
+          disabled={isSubmitting}
+          className={`btn-theme btn-primary w-full py-3 text-theme-lg font-theme-semibold ${
+            isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
+          aria-label="Actualizar programación de mantenimiento"
         >
-          Actualizar
+          {isSubmitting ? 'Actualizando...' : 'Actualizar'}
         </button>
 
-        {showSuccess && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black/40">
-            <div className="bg-white p-8 rounded-lg shadow-lg max-w-sm w-full text-center">
-              <h4 className="text-lg font-semibold mb-2">
-                ¡Actualización exitosa!
-              </h4>
-              <p className="mb-4">
-                La programación de mantenimiento se actualizó correctamente.
-              </p>
-              <button
-                onClick={() => {
-                  setShowSuccess(false);
-                  onClose();
-                }}
-                className="mt-2 px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800"
-              >
-                Cerrar
-              </button>
-            </div>
-          </div>
-        )}
+        <SuccessModal
+          isOpen={showSuccess}
+          title="¡Actualización exitosa!"
+          message="La programación de mantenimiento se actualizó correctamente."
+          onClose={() => {
+            setShowSuccess(false);
+            onClose();
+          }}
+        />
+
+        <ErrorModal
+          isOpen={showError}
+          title="Error de validación"
+          message={error}
+          onClose={() => setShowError(false)}
+        />
       </div>
     </div>
   );
-}
+};
+
+export default UpdateMaintenanceSchedule;
