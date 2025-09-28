@@ -10,8 +10,20 @@ import Step6UploadDocs from "./Step6UploadDocs";
 import { getCountries, getStates, getCities } from "@/services/locationService";
 import { useTheme } from "@/contexts/ThemeContext";
 import { FiX } from "react-icons/fi";
-import { getActiveMachinery, getActiveMachine, getModelsByBrandId, getMachineryBrands, getTelemetryDevices, registerGeneralData, registerInfoTracker, getMaintenanceTypes, getDistanceUnits, getTenureTypes, getUseStates, registerUsageInfo,
-       getPowerUnits,
+import { 
+  getActiveMachinery, 
+  getActiveMachine, 
+  getModelsByBrandId, 
+  getMachineryBrands, 
+  getTelemetryDevices, 
+  registerGeneralData, 
+  registerInfoTracker, 
+  getMaintenanceTypes, 
+  getDistanceUnits, 
+  getTenureTypes, 
+  getUseStates, 
+  registerUsageInfo,
+  getPowerUnits,
   getVolumeUnits,
   getFlowConsumptionUnits,
   getWeightUnits,
@@ -28,6 +40,7 @@ import { getActiveMachinery, getActiveMachine, getModelsByBrandId, getMachineryB
   getEmissionLevelTypes,
   getCabinTypes,
   createSpecificTechnicalSheet,
+  confirmMachineryRegistration,
        } from "@/services/machineryService";
 import { SuccessModal, ErrorModal } from "../../shared/SuccessErrorModal";
 
@@ -51,6 +64,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
   const [isSubmittingStep, setIsSubmittingStep] = useState(false);
   const [machineryId, setMachineryId] = useState(null); // Para almacenar el ID devuelto por el backend
   const [id, setId] = useState(""); //id del usuario responsable
+  const [isConfirmingRegistration, setIsConfirmingRegistration] = useState(false);
  
   const [powerUnitsList, setPowerUnitsList] = useState([]);
   const [volumeUnitsList, setVolumeUnitsList] = useState([]);
@@ -267,7 +281,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
     if (isOpen) {
       fetchSelects();
     }
-  }, [isOpen, step]);
+  }, [isOpen]);
 
   // Cargar países al montar el componente
   useEffect(() => {
@@ -805,24 +819,56 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
     }
   };
 
-  const onSubmit = (data) => {
+  // Función para confirmar el registro de maquinaria
+  const confirmRegistration = async () => {
+    try {
+      setIsConfirmingRegistration(true);
+      
+      const response = await confirmMachineryRegistration(machineryId);
+      
+      if (response.success) {
+        // Mostrar alerta de confirmación exitosa
+        alert("¡Registro de maquinaria confirmado exitosamente! La maquinaria ahora está activa en el sistema.");
+        
+        // Limpiar y cerrar el modal
+        onClose();
+        methods.reset();
+        setStep(0);
+        setCompletedSteps([]);
+        setMachineryId(null);
+        
+      } else {
+        // TODO: Mostrar error específico cuando implementemos las notificaciones
+        alert(`Error: ${response.message || 'Error al confirmar el registro'}`);
+      }
+      
+    } catch (error) {
+      // Manejo de errores específicos basado en la respuesta del backend
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        const errorMessage = errorData.message || 'Error desconocido';
+        const errorDetails = errorData.details ? ` - ${errorData.details}` : '';
+        
+        // TODO: Mostrar error específico cuando implementemos las notificaciones
+        alert(`Error: ${errorMessage}${errorDetails}`);
+      } else {
+        // Error genérico de conexión
+        alert('Error de conexión al confirmar el registro. Por favor, inténtelo de nuevo.');
+      }
+      
+    } finally {
+      setIsConfirmingRegistration(false);
+    }
+  };
+
+  const onSubmit = () => {
     // Si estamos en el último paso, finalizar el proceso
     if (step === steps.length - 1) {
       if (!validateStep6()) {
         return;
       }
-
-      // El Step 6 ya maneja la creación de documentos directamente
-      // Aquí solo confirmamos que el proceso ha sido completado exitosamente
-      console.log("Machinery registration completed with ID:", machineryId);
-      console.log("Final form data:", data);
-      alert("¡Registro de maquinaria completado exitosamente!");
-      onClose();
-      methods.reset();
-      setStep(0);
-      setCompletedSteps([]);
-      setMachineryId(null);
-    }
+      confirmRegistration();
+    }      
   };
 
   // Función separada para manejar el evento de Next

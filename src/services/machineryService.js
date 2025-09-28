@@ -264,6 +264,12 @@ export const getMachineryDocs = async (machineryId) => {
     return data;
 };
 
+// ===== CONFIRMAR REGISTRO DE MAQUINARIA =====
+export const confirmMachineryRegistration = async (machineryId) => {
+    const { data } = await apiMain.post(`/machinery/${machineryId}/confirm-registration/`);
+    return data;
+};
+
 /**
  * Obtiene la lista completa de maquinaria
  * @returns {Promise} - Promesa con la respuesta de la API
