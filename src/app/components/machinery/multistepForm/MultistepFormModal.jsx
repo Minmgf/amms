@@ -594,10 +594,9 @@ export default function MultiStepFormModal({ isOpen, onClose, onSuccess }) {
     } catch (error) {
       console.error("Error submitting step 2:", error);
 
-      // Llamar a la función de manejo de errores del Step2 si existe
-      if (window.handleStep2Error) {
-        window.handleStep2Error(error);
-      }
+      // Mostrar error modal igual que en Step 1
+      setModalMessage("El número de serie del terminal ya está registrado. Por favor, ingrese un número diferente.");
+      setErrorOpen(true);
     } finally {
       setIsSubmittingStep(false);
     }
