@@ -308,6 +308,5 @@ export const getMachineryList = async () => {
 // obtener foto de maquinaria
 export const getMachineryPhoto = async (machineryId) => {
     const { data } = await apiMain.get(`/machinery/${machineryId}/photo/`);
-    // Supón que el endpoint devuelve { url: "https://..." }
     return data?.url || null;
 };
