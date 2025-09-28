@@ -55,11 +55,7 @@ const GestorMantenimientos = () => {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [maintenanceTypeFilter, setMaintenanceTypeFilter] = useState("");
-  const [priorityFilter, setPriorityFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [requesterFilter, setRequesterFilter] = useState("");
-  const [startDateFilter, setStartDateFilter] = useState("");
-  const [endDateFilter, setEndDateFilter] = useState("");
   const [filteredData, setFilteredData] = useState([]);
 
   // Estados para modales de detalles y edición
@@ -71,9 +67,7 @@ const GestorMantenimientos = () => {
   const [availableMaintenanceTypes, setAvailableMaintenanceTypes] = useState(
     []
   );
-  const [availablePriorities, setAvailablePriorities] = useState([]);
   const [availableStatuses, setAvailableStatuses] = useState([]);
-  const [availableRequesters, setAvailableRequesters] = useState([]);
 
   // Estados para mensajes de éxito y error
   const [showConfirm, setShowConfirm] = useState(false);
@@ -92,7 +86,7 @@ const GestorMantenimientos = () => {
   // Aplicar filtros cuando cambien los datos o los filtros
   useEffect(() => {
     applyFilters();
-  }, [maintenanceData, maintenanceTypeFilter, statusFilter]);
+  }, [maintenanceData]);
 
   const loadMaintenanceData = async () => {
     setLoading(true);
@@ -112,23 +106,12 @@ const GestorMantenimientos = () => {
         ];
         setAvailableMaintenanceTypes(uniqueTypes);
 
-        // Extraer prioridades únicas para filtros
-        const uniquePriorities = [
-          ...new Set(response.map((item) => item.prioridad).filter(Boolean)),
-        ];
-        setAvailablePriorities(uniquePriorities);
-
         // Extraer estados únicos para filtros
         const uniqueStatuses = [
           ...new Set(response.map((item) => item.estado).filter(Boolean)),
         ];
         setAvailableStatuses(uniqueStatuses);
 
-        // Extraer solicitantes únicos para filtros
-        const uniqueRequesters = [
-          ...new Set(response.map((item) => item.solicitante).filter(Boolean)),
-        ];
-        setAvailableRequesters(uniqueRequesters);
       } else {
         setError("Formato de datos inesperado del servidor.");
       }
@@ -156,39 +139,6 @@ const GestorMantenimientos = () => {
       filtered = filtered.filter(
         (maintenance) => maintenance.estado === statusFilter
       );
-    }
-
-    if (requesterFilter) {
-      filtered = filtered.filter(
-        (maintenance) => maintenance.solicitante === requesterFilter
-      );
-    }
-
-    if (priorityFilter) {
-      filtered = filtered.filter(
-        (maintenance) => maintenance.prioridad === priorityFilter
-      );
-    }
-
-    // Filtrado por rango de fechas
-    if (startDateFilter && endDateFilter) {
-      filtered = filtered.filter((maintenance) => {
-        const maintenanceDate = new Date(maintenance.fecha_creacion);
-        return (
-          maintenanceDate >= new Date(startDateFilter) &&
-          maintenanceDate <= new Date(endDateFilter)
-        );
-      });
-    } else if (startDateFilter) {
-      filtered = filtered.filter((maintenance) => {
-        const maintenanceDate = new Date(maintenance.fecha_creacion);
-        return maintenanceDate >= new Date(startDateFilter);
-      });
-    } else if (endDateFilter) {
-      filtered = filtered.filter((maintenance) => {
-        const maintenanceDate = new Date(maintenance.fecha_creacion);
-        return maintenanceDate <= new Date(endDateFilter);
-      });
     }
 
     setFilteredData(filtered);
@@ -230,40 +180,17 @@ const GestorMantenimientos = () => {
   const handleClearFilters = () => {
     setMaintenanceTypeFilter("");
     setStatusFilter("");
-    setPriorityFilter("");
-    setRequesterFilter("");
-    setStartDateFilter("");
-    setEndDateFilter("");
-    applyFilters();
+    setFilteredData([])
+    setIsFilterModalOpen(false)
   };
 
   // Función para obtener color del estado
-  const getStatusColor = (status) => {
+  const getStatusColor = (status_id) => {
     const colors = {
-      Habilitado: "bg-green-100 text-green-800",
-      Deshabilitado: "bg-red-100 text-red-800",
-      Active: "bg-green-100 text-green-800",
-      Inactive: "bg-red-100 text-red-800",
-      Activo: "bg-green-100 text-green-800",
-      Inactivo: "bg-red-100 text-red-800",
+      1: "bg-green-100 text-green-800",
+      2: "bg-red-100 text-red-800",
     };
-    return colors[status] || "bg-gray-100 text-gray-800";
-  };
-
-  // Función para mapear estado de API a texto mostrado
-  const getStatusDisplayText = (apiStatus) => {
-    return apiStatus === "Habilitado" ? "Active" : "Inactive";
-  };
-
-  // Función para obtener color del tipo de mantenimiento
-  const getMaintenanceTypeColor = (type) => {
-    const colors = {
-      "Mantenimiento Preventivo": "",
-      "Mantenimiento Correctivo": "",
-      "Mantenimiento Predictivo": "",
-      "Mantenimiento de Emergencia": "",
-    };
-    return colors[type] || "";
+    return colors[status_id] || "bg-gray-100 text-gray-800";
   };
 
   // Definición de columnas para TanStack Table
@@ -320,9 +247,7 @@ const GestorMantenimientos = () => {
           const type = row.getValue("tipo_mantenimiento");
           return (
             <span
-              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getMaintenanceTypeColor(
-                type
-              )}`}
+              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
             >
               {type || "N/A"}
             </span>
@@ -339,10 +264,11 @@ const GestorMantenimientos = () => {
         ),
         cell: ({ row }) => {
           const status = row.getValue("estado");
+          const status_id = row.getValue("id_estado");
           return (
             <span
               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                status
+                status_id
               )}`}
             >
               {status || "N/A"}
@@ -630,6 +556,14 @@ const GestorMantenimientos = () => {
             </div>
           )}
         </div>
+        {globalFilter && (
+          <button
+            onClick={() => setGlobalFilter("")}
+            className="text-sm text-gray-500 hover:text-gray-700 underline"
+          >
+            Limpiar búsqueda
+          </button>
+        )}
 
         <button
           onClick={() => setIsFilterModalOpen(true)}
@@ -647,6 +581,7 @@ const GestorMantenimientos = () => {
             </span>
           )}
         </button>
+        
 
         {(maintenanceTypeFilter || statusFilter) && (
           <button
@@ -655,14 +590,6 @@ const GestorMantenimientos = () => {
           ></button>
         )}
 
-        {globalFilter && (
-          <button
-            onClick={() => setGlobalFilter("")}
-            className="text-sm text-gray-500 hover:text-gray-700 underline"
-          >
-            Limpiar búsqueda
-          </button>
-        )}
 
         <button
           onClick={handleOpenAddMaintenanceModal}
@@ -677,7 +604,7 @@ const GestorMantenimientos = () => {
       <TableList
         columns={columns}
         data={
-          filteredData.length > 0 || maintenanceTypeFilter || statusFilter
+          filteredData.length > 0
             ? filteredData
             : maintenanceData
         }
