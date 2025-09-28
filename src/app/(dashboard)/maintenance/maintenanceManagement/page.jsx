@@ -689,150 +689,8 @@ const GestorMantenimientos = () => {
         className="parametrization-table"
       />
 
-      {/* Modal de filtros */}
-      <Dialog.Root open={isFilterModalOpen} onOpenChange={setIsFilterModalOpen}>
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
-          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-xl z-50 w-full max-w-2xl">
-            <div className="p-8 card-theme rounded-2xl">
-              <div className="flex justify-between items-center mb-8">
-                <Dialog.Title className="text-2xl font-bold text-primary parametrization-text">
-                  Filtros
-                </Dialog.Title>
-                <button
-                  onClick={() => setIsFilterModalOpen(false)}
-                  className="text-secondary hover:text-primary"
-                >
-                  <FaTimes className="w-6 h-6" />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Tipo de Mantenimiento */}
-                <div>
-                  <label className="block text-sm font-medium text-primary mb-3 parametrization-text">
-                    Tipo de Mantenimiento
-                  </label>
-                  <select
-                    value={maintenanceTypeFilter}
-                    onChange={(e) => setMaintenanceTypeFilter(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
-                  >
-                    <option value="">Todos los tipos</option>
-                    {availableMaintenanceTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Estado */}
-                <div>
-                  <label className="block text-sm font-medium text-primary mb-3 parametrization-text">
-                    Estado
-                  </label>
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
-                  >
-                    <option value="">Todos los estados</option>
-                    {availableStatuses.map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Prioridad */}
-                <div>
-                  <label className="block text-sm font-medium text-primary mb-3 parametrization-text">
-                    Prioridad
-                  </label>
-                  <select
-                    value={priorityFilter}
-                    onChange={(e) => setPriorityFilter(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
-                  >
-                    <option value="">Todas las prioridades</option>
-                    {availablePriorities.map((priority) => (
-                      <option key={priority} value={priority}>
-                        {priority}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Solicitante */}
-                <div>
-                  <label className="block text-sm font-medium text-primary mb-3 parametrization-text">
-                    Solicitante
-                  </label>
-                  <select
-                    value={requesterFilter}
-                    onChange={(e) => setRequesterFilter(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
-                  >
-                    <option value="">Todos los solicitantes</option>
-                    {availableRequesters.map((requester) => (
-                      <option key={requester} value={requester}>
-                        {requester}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Fecha de Inicio */}
-                <div>
-                  <label className="block text-sm font-medium text-primary mb-3 parametrization-text">
-                    Fecha de Inicio
-                  </label>
-                  <input
-                    type="date"
-                    value={startDateFilter}
-                    onChange={(e) => setStartDateFilter(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
-                  />
-                </div>
-
-                {/* Fecha de Fin */}
-                <div>
-                  <label className="block text-sm font-medium text-primary mb-3 parametrization-text">
-                    Fecha de Fin
-                  </label>
-                  <input
-                    type="date"
-                    value={endDateFilter}
-                    onChange={(e) => setEndDateFilter(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
-                  />
-                </div>
-              </div>
-
-              {/* Botones de acción */}
-              <div className="flex gap-4 mt-8">
-                <button
-                  onClick={handleClearFilters}
-                  className="flex-1 px-6 py-3 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 transition-colors parametrization-text"
-                >
-                  Limpiar
-                </button>
-                <button
-                  onClick={handleApplyFilters}
-                  className="flex-1 px-6 py-3 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition-colors parametrization-text"
-                >
-                  Aplicar
-                </button>
-              </div>
-            </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
-
       <EditMaintenanceModal
-        open={isEditModalOpen}
+        isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         onUpdated={loadMaintenanceData}
         maintenance={selectedMaintenance}
@@ -907,25 +765,113 @@ const GestorMantenimientos = () => {
       <MaintenanceFilterModal
         open={isFilterModalOpen}
         onClose={() => setIsFilterModalOpen(false)}
-        maintenanceTypeFilter={maintenanceTypeFilter}
-        setMaintenanceTypeFilter={setMaintenanceTypeFilter}
-        priorityFilter={priorityFilter}
-        setPriorityFilter={setPriorityFilter}
-        statusFilter={statusFilter}
-        setStatusFilter={setStatusFilter}
-        requesterFilter={requesterFilter}
-        setRequesterFilter={setRequesterFilter}
-        startDateFilter={startDateFilter}
-        setStartDateFilter={setStartDateFilter}
-        endDateFilter={endDateFilter}
-        setEndDateFilter={setEndDateFilter}
-        availableRequesters={availableRequesters}
-        availableMaintenanceTypes={availableMaintenanceTypes}
-        availablePriorities={availablePriorities}
-        availableStatuses={availableStatuses}
         onClear={handleClearFilters}
         onApply={handleApplyFilters}
-      />
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Tipo de Mantenimiento */}
+          <div>
+            <label className="block text-sm font-medium text-primary mb-3 parametrization-text">
+              Tipo de Mantenimiento
+            </label>
+            <select
+              value={maintenanceTypeFilter}
+              onChange={(e) => setMaintenanceTypeFilter(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
+            >
+              <option value="">Todos los tipos</option>
+              {availableMaintenanceTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Estado */}
+          <div>
+            <label className="block text-sm font-medium text-primary mb-3 parametrization-text">
+              Estado
+            </label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
+            >
+              <option value="">Todos los estados</option>
+              {availableStatuses.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Prioridad */}
+          <div>
+            <label className="block text-sm font-medium text-primary mb-3 parametrization-text">
+              Prioridad
+            </label>
+            <select
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
+            >
+              <option value="">Todas las prioridades</option>
+              {availablePriorities.map((priority) => (
+                <option key={priority} value={priority}>
+                  {priority}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Solicitante */}
+          <div>
+            <label className="block text-sm font-medium text-primary mb-3 parametrization-text">
+              Solicitante
+            </label>
+            <select
+              value={requesterFilter}
+              onChange={(e) => setRequesterFilter(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
+            >
+              <option value="">Todos los solicitantes</option>
+              {availableRequesters.map((requester) => (
+                <option key={requester} value={requester}>
+                  {requester}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Fecha de Inicio */}
+          <div>
+            <label className="block text-sm font-medium text-primary mb-3 parametrization-text">
+              Fecha de Inicio
+            </label>
+            <input
+              type="date"
+              value={startDateFilter}
+              onChange={(e) => setStartDateFilter(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
+            />
+          </div>
+
+          {/* Fecha de Fin */}
+          <div>
+            <label className="block text-sm font-medium text-primary mb-3 parametrization-text">
+              Fecha de Fin
+            </label>
+            <input
+              type="date"
+              value={endDateFilter}
+              onChange={(e) => setEndDateFilter(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
+            />
+          </div>
+        </div>
+      </MaintenanceFilterModal>
     </div>
   );
 };

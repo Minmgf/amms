@@ -186,7 +186,8 @@ export default function CreateMaintenanceModal({
                 aria-label="Maintenance type Select"
               />
             </div>
-            {/* Maintenance type */}            
+
+            {/* Maintenance type */}
             <div>
               <label className="block text-sm text-gray-600 mb-2">
                 Seleccione el tipo
@@ -204,7 +205,7 @@ export default function CreateMaintenanceModal({
                 ))}
               </select>
             </div>
- 
+
             {/* Maintenance modal */}
             <div className="md:col-span-2">
               <label className="block text-sm text-gray-600 mb-2">
@@ -223,7 +224,6 @@ export default function CreateMaintenanceModal({
                 {description?.length || 0}/300 characters
               </div>
             </div>
-
           </div>
 
           {error && (
@@ -233,7 +233,7 @@ export default function CreateMaintenanceModal({
           )}
 
           {/* Footer buttons */}
-          <div className="flex gap-4 mt-8 justify-center">
+          <div className="flex justify-center gap-4 mt-8">
             <button
               type="button"
               onClick={handleClose}
