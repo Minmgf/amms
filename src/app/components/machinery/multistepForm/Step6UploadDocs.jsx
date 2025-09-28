@@ -22,7 +22,6 @@ export default function Step6UploadDocs({ machineryId }) {
 
   const watchedFile = watch("file");
 
-  // Cargar documentos existentes cuando se monta el componente o cambia machineryId
   useEffect(() => {
     const loadExistingDocs = async () => {
       if (!machineryId) return;
@@ -31,13 +30,6 @@ export default function Step6UploadDocs({ machineryId }) {
         setLoadingDocs(true);
         const response = await getMachineryDocs(machineryId);
         const documents = response.data || response || [];
-        
-        // Debug: mostrar la estructura de los documentos
-        console.log('Documentos recibidos del backend:', documents);
-        if (documents.length > 0) {
-          console.log('Estructura del primer documento:', documents[0]);
-          console.log('Claves disponibles:', Object.keys(documents[0]));
-        }
         
         setExistingDocs(documents);
       } catch (error) {
@@ -56,11 +48,9 @@ export default function Step6UploadDocs({ machineryId }) {
     const file = event.target.files[0];
     
     if (file) {
-      // Actualizar información del archivo
       setFileName(file.name);
-      setFileSize((file.size / 1024 / 1024).toFixed(2)); // Convertir a MB
+      setFileSize((file.size / 1024 / 1024).toFixed(2));
       
-      // Crear preview si es una imagen
       if (file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -71,7 +61,6 @@ export default function Step6UploadDocs({ machineryId }) {
         setPreviewFile(null);
       }
       
-      // Actualizar el valor en react-hook-form
       setValue("file", file);
       setError("");
       setSuccessMsg("");
@@ -90,7 +79,6 @@ export default function Step6UploadDocs({ machineryId }) {
     }
   };
 
-  // Función para agregar documento usando el endpoint
   const handleAdd = async () => {
     const name = getValues("documentName");
     const file = getValues("file");
@@ -126,12 +114,10 @@ export default function Step6UploadDocs({ machineryId }) {
       setCreatingDoc(true);
       setError('');
       
-      // Crear FormData para el endpoint
       const formData = new FormData();
       formData.append('document', name);
       formData.append('machinery', machineryId);
       
-      // Obtener usuario responsable de localStorage
       const storedUser = localStorage.getItem("userData");
       if (storedUser) {
         const parsed = JSON.parse(storedUser);
@@ -142,9 +128,7 @@ export default function Step6UploadDocs({ machineryId }) {
 
       const response = await createMachineryDoc(formData);
       
-      // Verificar respuesta de éxito del backend
       if (response.status === "success") {
-        // Limpiar formulario
         setValue("documentName", "");
         setValue("file", null);
         setPreviewFile(null);
@@ -154,11 +138,9 @@ export default function Step6UploadDocs({ machineryId }) {
         setSuccessMsg(response.message || "Documento creado exitosamente");
         setTimeout(() => setSuccessMsg(''), 3000);
         
-        // Recargar lista de documentos
         const docsResponse = await getMachineryDocs(machineryId);
         setExistingDocs(docsResponse.data || docsResponse || []);
       } else {
-        // Manejar respuesta de error del backend
         if (response.errors) {
           const errorMessages = Object.entries(response.errors)
             .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
@@ -174,19 +156,26 @@ export default function Step6UploadDocs({ machineryId }) {
       console.error('Error creando documento:', error);
       if (error.response?.data) {
         const errorData = error.response.data;
-        // Manejar formato de error de validación del backend
         if (errorData.status === "error") {
           if (errorData.errors) {
-            // Formatear errores específicos por campo
-            const errorMessages = Object.entries(errorData.errors)
-              .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
-              .join('; ');
-            setError(errorMessages);
+            // Buscar errores de nombre duplicado y convertir a mensaje claro
+            const hasUniqueError = errorData.errors.non_field_errors?.some(msg => 
+              msg.includes('unique set') || msg.includes('must make a unique set')
+            );
+            
+            if (hasUniqueError) {
+              setError('Ya existe un documento con este nombre para esta maquinaria. Por favor, use un nombre diferente.');
+            } else {
+              const errorMessages = Object.entries(errorData.errors)
+                .filter(([field]) => field !== 'non_field_errors')
+                .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
+                .join('; ');
+              setError(errorMessages || 'Error en los datos ingresados');
+            }
           } else {
             setError(errorData.message || 'Datos de entrada inválidos');
           }
         } else {
-          // Formato de error genérico
           setError(errorData.message || 'Error al crear el documento');
         }
       } else {
@@ -198,7 +187,6 @@ export default function Step6UploadDocs({ machineryId }) {
     }
   };
 
-  // Función para descargar documento
   const handleDownload = async (documentId, documentName) => {
     if (!documentId) {
       setError('ID de documento no válido para descarga');
@@ -207,35 +195,31 @@ export default function Step6UploadDocs({ machineryId }) {
     }
 
     try {
-      // 1. Llamas a tu endpoint para obtener la información del documento
-      const baseUrl = 'https://api.inmero.co/sigma/main';
-      const response = await fetch(`${baseUrl}/machinery-documentation/${documentId}/download/`);
-      const data = await response.json();
-
-      if (data.status === "success" && data.data) {
-        // 2. Obtienes la URL real del archivo
+      setError("");
+      
+      const data = await downloadMachineryDoc(documentId);
+      
+      if (data.status === "success" && data.data && data.data.path) {
         const fileUrl = data.data.path;
         const fileName = data.data.document || documentName || `documento_${documentId}`;
-
-        // 3. Abrir la URL en una nueva pestaña para no interrumpir la página actual
+        
         window.open(fileUrl, '_blank');
         
-        setSuccessMsg('¡Archivo abierto en nueva pestaña!');
-        setTimeout(() => setSuccessMsg(''), 3000);
+        setSuccessMsg("Descarga iniciada - Se abrirá en nueva ventana");
+        setTimeout(() => setSuccessMsg(""), 3000);
         
       } else {
-        setError('No se pudo obtener la información del documento');
-        setTimeout(() => setError(''), 3000);
+        setError("No se pudo obtener la URL del documento");
+        setTimeout(() => setError(""), 3000);
       }
       
     } catch (error) {
       console.error('Error descargando el archivo:', error);
-      setError('Error al descargar el documento');
-      setTimeout(() => setError(''), 3000);
+      setError('Error al descargar el documento. Por favor, inténtelo de nuevo.');
+      setTimeout(() => setError(''), 5000);
     }
   };
 
-  // Función para eliminar documento
   const handleDeleteDoc = async (documentId) => {
     if (!documentId) {
       setError('ID de documento no válido');
@@ -247,7 +231,6 @@ export default function Step6UploadDocs({ machineryId }) {
       setDeletingDoc(documentId);
       const response = await deleteMachineryDoc(documentId);
       
-      // Verificar respuesta de éxito
       if (response.status === "success") {
         // Actualizar lista de documentos - filtrar usando todos los posibles campos de ID
         setExistingDocs(existingDocs.filter(doc => {
@@ -257,7 +240,6 @@ export default function Step6UploadDocs({ machineryId }) {
         setSuccessMsg(response.message || 'Documento eliminado exitosamente');
         setTimeout(() => setSuccessMsg(''), 3000);
       } else {
-        // Manejar respuesta de error
         setError(response.message || 'Error al eliminar el documento');
         setTimeout(() => setError(''), 3000);
       }
@@ -302,9 +284,7 @@ export default function Step6UploadDocs({ machineryId }) {
       </h3>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-        {/* Columna izquierda - Formulario */}
         <div className="space-y-6">
-          {/* Nombre del documento */}
           <div>
             <label 
               className="block text-theme-sm text-secondary mb-1"
@@ -328,7 +308,6 @@ export default function Step6UploadDocs({ machineryId }) {
             )}
           </div>
 
-          {/* Selector de archivo */}
           <div>
             <label 
               className="block text-theme-sm text-secondary mb-2"
@@ -338,7 +317,6 @@ export default function Step6UploadDocs({ machineryId }) {
             </label>
             
             {!fileName ? (
-              // Mostrar zona de drop cuando no hay archivo
               <div className="group">
                 <input
                   aria-label="File Input"
@@ -401,7 +379,6 @@ export default function Step6UploadDocs({ machineryId }) {
                 </label>
               </div>
             ) : (
-              // Mostrar archivo cargado
               <div 
                 className="border rounded-theme-lg p-theme-md"
                 style={{
@@ -410,7 +387,6 @@ export default function Step6UploadDocs({ machineryId }) {
                 }}
               >
                 <div className="flex items-start space-x-4">
-                  {/* Preview del archivo */}
                   {previewFile ? (
                     <div className="flex-shrink-0">
                       <img 
@@ -447,7 +423,6 @@ export default function Step6UploadDocs({ machineryId }) {
                     </div>
                   )}
                   
-                  {/* Información del archivo */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
@@ -466,7 +441,6 @@ export default function Step6UploadDocs({ machineryId }) {
                         </p>
                       </div>
                       
-                      {/* Botones de acción - siempre visibles */}
                       <div className="flex items-center space-x-2 flex-shrink-0">
                         <button
                           aria-label="Change Button"
@@ -487,7 +461,6 @@ export default function Step6UploadDocs({ machineryId }) {
                       </div>
                     </div>
                     
-                    {/* Barra de progreso */}
                     <div className="mt-2">
                       <div 
                         className="rounded-full h-1.5"
@@ -508,7 +481,6 @@ export default function Step6UploadDocs({ machineryId }) {
                   </div>
                 </div>
 
-                {/* Input oculto para cambiar archivo */}
                 <input
                   aria-label="Hidden File Input"
                   type="file"
@@ -530,7 +502,6 @@ export default function Step6UploadDocs({ machineryId }) {
             )}
           </div>
 
-          {/* Mensajes de validación */}
           {error && (
             <p 
               className="text-theme-sm mt-2" 
@@ -548,7 +519,6 @@ export default function Step6UploadDocs({ machineryId }) {
             </p>
           )}
 
-          {/* Botón Agregar */}
           <div className="pt-4">
             <button
               type="button"
@@ -561,7 +531,6 @@ export default function Step6UploadDocs({ machineryId }) {
           </div>
         </div>
 
-        {/* Columna derecha - Documentos existentes */}
         <div className="space-y-4">
           <label 
             className="block text-theme-sm text-secondary mb-2"
@@ -591,7 +560,6 @@ export default function Step6UploadDocs({ machineryId }) {
           ) : (
             <div className="space-y-3">
               {existingDocs.map((doc, index) => {
-                // Obtener el ID del documento - puede venir como 'id', 'id_machinery_documentation', etc.
                 const documentId = doc.id_machinery_documentation || doc.id || doc.document_id;
                 const documentName = doc.document || doc.name || doc.document_name || 'Documento sin nombre';
                 
