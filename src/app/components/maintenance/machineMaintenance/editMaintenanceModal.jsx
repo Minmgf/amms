@@ -214,7 +214,7 @@ export default function EditMaintenanceModal({
         {/* Modal Content */}
         <form
           onSubmit={handleSubmit}
-          className="p-8 bg-white rounded-2xl shadow-xl"
+          className="p-8 rounded-2xl shadow-xl"
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
