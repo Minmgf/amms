@@ -452,7 +452,7 @@ export default function Step1GeneralData({
               </label>
               <textarea
                 aria-label="Justification Textarea"
-                {...register("justification")}
+                {...register("justificationGeneralData")}
                 className="parametrization-input"
                 rows={3}
                 placeholder="Describa la justificación del cambio..."

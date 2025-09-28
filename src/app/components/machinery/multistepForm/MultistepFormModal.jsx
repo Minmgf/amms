@@ -12,7 +12,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { FiX } from "react-icons/fi";
 import {
   getActiveMachinery, getActiveMachine, getModelsByBrandId, getMachineryBrands, getTelemetryDevices, registerGeneralData, registerInfoTracker, getMaintenanceTypes, getDistanceUnits, getTenureTypes, getUseStates, registerUsageInfo,
-  getMachineryStatus, getGeneralData, updateGeneralData
+  getMachineryStatus, getGeneralData, updateGeneralData, getUsageInfo, updateUsageInfo
 } from "@/services/machineryService";
 import { SuccessModal, ErrorModal } from "../../shared/SuccessErrorModal";
 
@@ -41,6 +41,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
   const [errorOpen, setErrorOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const [machineryStatuesList, setMachineryStatuesList] = useState([]);
+  const [idUsageSheet, setIdUsageSheet] = useState(null); // Para almacenar el ID de la hoja de uso
   // Hook del tema
   const { getCurrentTheme } = useTheme();
 
@@ -61,7 +62,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
       telemetry: "", // Este es opcional
       photo: null,
       machineryStatues: "",
-      justification: "",      
+      justificationGeneralData: "",      
 
       // Step 2 - Tracker Data
       terminalSerial: "",
@@ -123,6 +124,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
       tenure: "",
       ownership: false,
       contractEndDate: "",
+      justificationUsageInfo: "",
 
       // Step 5 - Maintenance Data
       maintenace: "",
@@ -159,7 +161,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
   useEffect(() => {
     if (isOpen && isEditMode && machineryToEdit && machineryList.length > 0) {
       // Aquí deberías hacer los GET de cada paso usando el ID
-      // Ejemplo para el paso 1:
+      // Paso 1:
       getGeneralData(machineryToEdit.id_machinery).then(data => {
         // Mapea los datos del backend a los nombres del formulario
         const mappedData = {
@@ -184,12 +186,31 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
         });
         setMachineryId(machineryToEdit.id_machinery);
       });
+      //Paso 4:
+      getUsageInfo(machineryToEdit.id_machinery).then(data => {
+        // Mapea los datos del backend a los nombres del formulario
+        const mappedData = {
+          acquisitionDate: data.acquisition_date,
+          usageState: data.usage_condition,
+          usedHours: data.usage_hours,
+          mileage: data.distance_value,
+          mileageUnit: data.distance_unit,
+          tenure: data.tenacy_type,
+          ownership: data.is_own,
+          contractEndDate: data.contract_end_date,  
+        };
+        methods.reset({
+          ...methods.getValues(),
+          ...mappedData
+        });
+        setIdUsageSheet(data.id_usage_sheet);
+      });
     }
     if (isOpen && !isEditMode) {
       methods.reset();
       setMachineryId(null);
     }
-  }, [isOpen, isEditMode, machineryToEdit, methods]);
+  }, [isOpen, isEditMode, machineryToEdit, methods, machineryList]);
 
   // Cuando cambia la marca, actualizamos los modelos
   useEffect(() => {
@@ -444,7 +465,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
       // Agregar estado operativo si existe
       if (data.justification) {
         formData.append('machinery_operational_status', data.machineryStatues);
-        formData.append('justification', data.justification);
+        formData.append('justification', data.justificationGeneralData);
       }
 
       // 1. GET datos actuales si es edición
@@ -564,8 +585,25 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
       formData.append('contract_end_date', data.contractEndDate);
       formData.append('responsible_user', id);
 
-      const response = await registerUsageInfo(formData);
+      if (data.justificationUsage) {
+        formData.append('justification', data.justificationUsageInfo);
+      }
 
+      let existingData = null;
+      if (isEditMode && machineryId) {
+        existingData = await getUsageInfo(machineryId);
+      }
+
+      const hasChanges = !existingData || Object.keys(data).some(
+        key => data[key] !== existingData[key]
+      );
+
+      if (!existingData) {
+        const response = await registerUsageInfo(formData);
+        setMachineryId(response.id || response.machinery_id);
+      } else if (hasChanges) {
+        await updateUsageInfo(idUsageSheet, formData);
+      }
       // Marcar paso como completado y avanzar
       setCompletedSteps(prev => [...prev, 3]);
       setStep(4);
@@ -577,29 +615,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
   };
 
   const nextStep = () => {
-    if (step === 0) {
-      // Validar paso 1 antes de enviar
-      if (!validateStep1()) {
-        return; // No avanzar si hay errores
-      }
-
-      // Enviar datos del paso 1
-      const currentData = methods.getValues();
-      submitStep1(currentData);
-    } else if (step === 1) {
-      if (!validateStep2()) {
-        return;
-      }
-      const currentData = methods.getValues();
-      submitStep2(currentData);
-    } else if (step === 3) {
-      if (!validateStep4()) {
-        return;
-      }
-
-      const currentData = methods.getValues();
-      submitStep4(currentData);
-    } else {
+    
       // Para los otros pasos, avanzar normalmente
       setStep((s) => {
         const newStep = Math.min(s + 1, steps.length - 1);
@@ -608,7 +624,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
         }
         return newStep;
       });
-    }
+    
   };
 
   const prevStep = () => setStep((s) => Math.max(s - 1, 0));
@@ -871,6 +887,8 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
                   distanceUnitsList={distanceUnitsList}
                   usageStatesList={usageStatesList}
                   tenureTypesList={tenureTypesList}
+                  machineryStatuesList={machineryStatuesList}
+                  currentStatusName={machineryToEdit?.machinery_operational_status_name?.toLowerCase()}
                 />
               }
               {step === 4 &&

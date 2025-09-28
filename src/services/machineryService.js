@@ -101,6 +101,20 @@ export const registerUsageInfo = async (formData) => {
     return data;
 };
 
+// traer información de uso por id de maquinaria
+export const getUsageInfo = async (machineryId) => {
+    const { data } = await apiMain.get(`/machinery-usage/by-machinery/${machineryId}`);
+    return data;
+};
+
+// actualizar información de uso por id de uso
+export const updateUsageInfo = async (usageId, formData) => {
+    const { data } = await apiMain.put(`/machinery-usage/${usageId}/update/`, formData,
+        {headers: {"Content-Type": "multipart/form-data"}}
+    );
+    return data;
+}
+
 // ===== PASO 5 =====
 
 //traer listado de tipos de mantenimiento activos
