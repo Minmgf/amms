@@ -588,6 +588,7 @@ const MachineryMainView = () => {
           setSelectedMachine(null)
         }}
         machineryToEdit={isEditModalOpen ? selectedMachine : null}
+        onSuccess={handleRefresh}
       />
       <MachineryHistoryModal
         isOpen={isHistoryModalOpen}

@@ -65,6 +65,113 @@ export const updateGeneralData = async (machineryId, formData) => {
     return data;
 };
 
+// ===== PASO 3 - FICHA TÉCNICA ESPECÍFICA =====
+
+// Crear ficha técnica específica
+export const createSpecificTechnicalSheet = async (payload) => {
+    const { data } = await apiMain.post("/machinery-specific-sheet/", payload);
+    return data;
+};
+
+// ENDPOINTS PARA UNIDADES (Units)
+
+// Unidades de Potencia
+export const getPowerUnits = async () => {
+    const { data } = await apiMain.get("/units/active/1/");
+    return data;
+};
+
+// Unidades de Capacidad/Volumen
+export const getVolumeUnits = async () => {
+    const { data } = await apiMain.get("/units/active/2/");
+    return data;
+};
+
+// Unidades de Caudal/Consumo
+export const getFlowConsumptionUnits = async () => {
+    const { data } = await apiMain.get("/units/active/3/");
+    return data;
+};
+
+// Unidades de Peso/Carga
+export const getWeightUnits = async () => {
+    const { data } = await apiMain.get("/units/active/4/");
+    return data;
+};
+
+// Unidades de Velocidad
+export const getSpeedUnits = async () => {
+    const { data } = await apiMain.get("/units/active/5/");
+    return data;
+};
+
+// Unidades de Fuerza
+export const getForceUnits = async () => {
+    const { data } = await apiMain.get("/units/active/6/");
+    return data;
+};
+
+// Unidades de Altitud/Dimensión
+export const getDimensionUnits = async () => {
+    const { data } = await apiMain.get("/units/active/7/");
+    return data;
+};
+
+// Unidades de Rendimiento (Frecuencia/Velocidad angular)
+export const getPerformanceUnits = async () => {
+    const { data } = await apiMain.get("/units/active/8/");
+    return data;
+};
+
+// Unidades de Presión
+export const getPressureUnits = async () => {
+    const { data } = await apiMain.get("/units/active/9/");
+    return data;
+};
+
+// ENDPOINTS PARA TIPOS (Types)
+
+// Tipos de Motores
+export const getEngineTypes = async () => {
+    const { data } = await apiMain.get("/types/list/active/4/");
+    return data;
+};
+
+// Tipos de Disposición de Cilindros
+export const getCylinderArrangementTypes = async () => {
+    const { data } = await apiMain.get("/types/list/active/5/");
+    return data;
+};
+
+// Tipos de Tracción
+export const getTractionTypes = async () => {
+    const { data } = await apiMain.get("/types/list/active/6/");
+    return data;
+};
+
+// Tipos de Sistemas de Transmisión
+export const getTransmissionSystemTypes = async () => {
+    const { data } = await apiMain.get("/types/list/active/7/");
+    return data;
+};
+
+// Tipos de Sistemas de Aire Acondicionado
+export const getAirConditioningSystemTypes = async () => {
+    const { data } = await apiMain.get("/types/list/active/8/");
+    return data;
+};
+
+// Tipos de Niveles de Emisión
+export const getEmissionLevelTypes = async () => {
+    const { data } = await apiMain.get("/types/list/active/9/");
+    return data;
+};
+
+// Tipos de Cabinas
+export const getCabinTypes = async () => {
+    const { data } = await apiMain.get("/types/list/active/10/");
+    return data;
+};
 // ===== PASO 2 =====
 export const registerInfoTracker = async (formData) => {
     const { data } = await apiMain.post("/machinery-tracker/create/", formData,
@@ -193,6 +300,12 @@ export const deleteMachineryDoc = async (documentId) => {
 // listar documentos de maquinaria
 export const getMachineryDocs = async (machineryId) => {
     const { data } = await apiMain.get(`/machinery-documentation/list/${machineryId}/`);
+    return data;
+};
+
+// ===== CONFIRMAR REGISTRO DE MAQUINARIA =====
+export const confirmMachineryRegistration = async (machineryId) => {
+    const { data } = await apiMain.post(`/machinery/${machineryId}/confirm-registration/`);
     return data;
 };
 

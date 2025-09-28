@@ -10,10 +10,43 @@ import Step6UploadDocs from "./Step6UploadDocs";
 import { getCountries, getStates, getCities } from "@/services/locationService";
 import { useTheme } from "@/contexts/ThemeContext";
 import { FiX } from "react-icons/fi";
-import {
-  getActiveMachinery, getActiveMachine, getModelsByBrandId, getMachineryBrands, getTelemetryDevices, registerGeneralData, registerInfoTracker, getMaintenanceTypes, getDistanceUnits, getTenureTypes, getUseStates, registerUsageInfo,
-  getMachineryStatus, getGeneralData, updateGeneralData, getUsageInfo, updateUsageInfo
-} from "@/services/machineryService";
+import { 
+  getActiveMachinery, 
+  getActiveMachine, 
+  getModelsByBrandId, 
+  getMachineryBrands, 
+  getTelemetryDevices, 
+  registerGeneralData, 
+  registerInfoTracker, 
+  getMaintenanceTypes, 
+  getDistanceUnits, 
+  getTenureTypes, 
+  getUseStates, 
+  registerUsageInfo,
+  getPowerUnits,
+  getVolumeUnits,
+  getFlowConsumptionUnits,
+  getWeightUnits,
+  getSpeedUnits,
+  getForceUnits,
+  getDimensionUnits,
+  getPerformanceUnits,
+  getPressureUnits,
+  getEngineTypes,
+  getCylinderArrangementTypes,
+  getTractionTypes,
+  getTransmissionSystemTypes,
+  getAirConditioningSystemTypes,
+  getEmissionLevelTypes,
+  getCabinTypes,
+  createSpecificTechnicalSheet,
+  confirmMachineryRegistration,
+  getMachineryStatus, 
+  getGeneralData, 
+  updateGeneralData, 
+  getUsageInfo, 
+  updateUsageInfo
+       } from "@/services/machineryService";
 import { SuccessModal, ErrorModal } from "../../shared/SuccessErrorModal";
 
 export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit }) {
@@ -37,6 +70,25 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
   const [isSubmittingStep, setIsSubmittingStep] = useState(false);
   const [machineryId, setMachineryId] = useState(null); // Para almacenar el ID devuelto por el backend
   const [id, setId] = useState(""); //id del usuario responsable
+  const [isConfirmingRegistration, setIsConfirmingRegistration] = useState(false);
+ 
+  const [powerUnitsList, setPowerUnitsList] = useState([]);
+  const [volumeUnitsList, setVolumeUnitsList] = useState([]);
+  const [flowConsumptionUnitsList, setFlowConsumptionUnitsList] = useState([]);
+  const [weightUnitsList, setWeightUnitsList] = useState([]);
+  const [speedUnitsList, setSpeedUnitsList] = useState([]);
+  const [forceUnitsList, setForceUnitsList] = useState([]);
+  const [dimensionUnitsList, setDimensionUnitsList] = useState([]);
+  const [performanceUnitsList, setPerformanceUnitsList] = useState([]);
+  const [pressureUnitsList, setPressureUnitsList] = useState([]);
+
+  const [engineTypesList, setEngineTypesList] = useState([]);
+  const [cylinderArrangementList, setCylinderArrangementList] = useState([]);
+  const [tractionTypesList, setTractionTypesList] = useState([]);
+  const [transmissionSystemList, setTransmissionSystemList] = useState([]);
+  const [airConditioningList, setAirConditioningList] = useState([]);
+  const [emissionLevelList, setEmissionLevelList] = useState([]);
+  const [cabinTypesList, setCabinTypesList] = useState([]);
   const [successOpen, setSuccessOpen] = useState(false);
   const [errorOpen, setErrorOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
@@ -99,7 +151,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
       performanceMax: "",
       dimensionsUnit: "",
       width: "",
-      lenght: "",
+      length: "",
       height: "",
       netWeight: "",
       netWeightUnit: "",
@@ -246,6 +298,27 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
         const maintenanceTypes = await getMaintenanceTypes();
         const telemetryDevices = await getTelemetryDevices();
         const machineryStatues = await getMachineryStatus();
+
+        // Units
+        const power = await getPowerUnits();
+        const volume = await getVolumeUnits();
+        const flow = await getFlowConsumptionUnits();
+        const weight = await getWeightUnits();
+        const speed = await getSpeedUnits();
+        const force = await getForceUnits();
+        const dimension = await getDimensionUnits();
+        const performance = await getPerformanceUnits();
+        const pressure = await getPressureUnits();
+
+        // Types
+        const engine = await getEngineTypes();
+        const cylinder = await getCylinderArrangementTypes();
+        const traction = await getTractionTypes();
+        const transmission = await getTransmissionSystemTypes();
+        const airCond = await getAirConditioningSystemTypes();
+        const emission = await getEmissionLevelTypes();
+        const cabin = await getCabinTypes();
+
         setMachineryList(machinery);
         setMachineList(machine);
         setBrandsList(brands.data);
@@ -255,6 +328,23 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
         setMaintenanceTypeList(maintenanceTypes.data);
         setTelemetryDevicesList(telemetryDevices);
         setMachineryStatuesList(machineryStatues);
+
+        setEngineTypesList(Array.isArray(engine.data || engine) ? engine.data || engine : []);
+        setCylinderArrangementList(Array.isArray(cylinder.data || cylinder) ? cylinder.data || cylinder : []);
+        setTractionTypesList(Array.isArray(traction.data || traction) ? traction.data || traction : []);
+        setTransmissionSystemList(Array.isArray(transmission.data || transmission) ? transmission.data || transmission : []);
+        setAirConditioningList(Array.isArray(airCond.data || airCond) ? airCond.data || airCond : []);
+        setEmissionLevelList(Array.isArray(emission.data || emission) ? emission.data || emission : []);
+        setCabinTypesList(Array.isArray(cabin.data || cabin) ? cabin.data || cabin : []);
+        setPowerUnitsList(power.data);
+        setVolumeUnitsList(volume.data);
+        setFlowConsumptionUnitsList(flow.data);
+        setWeightUnitsList(weight.data);
+        setSpeedUnitsList(speed.data);
+        setForceUnitsList(force.data);
+        setDimensionUnitsList(dimension.data);
+        setPerformanceUnitsList(performance.data);
+        setPressureUnitsList(pressure.data);
       } catch (error) {
         console.error("Error loading selects:", error);
       }
@@ -338,7 +428,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
     { id: 3, name: "Ficha técnica específica" },
     { id: 4, name: "Información de uso" },
     { id: 5, name: "Mantenimiento periódico" },
-    { id: 6, name: "Subir documentación" }
+    { id: 6, name: "Subir documentación" },
   ];
 
   // Función para validar el paso 1
@@ -352,17 +442,17 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
     ];
 
     // Verificar si todos los campos requeridos están completos
-    const missingFields = requiredFields.filter(field => {
+    const missingFields = requiredFields.filter((field) => {
       const value = currentValues[field];
-      return !value || (typeof value === 'string' && value.trim() === '');
+      return !value || (typeof value === "string" && value.trim() === "");
     });
 
     if (missingFields.length > 0) {
       // Establecer errores manualmente para los campos faltantes
-      missingFields.forEach(field => {
+      missingFields.forEach((field) => {
         methods.setError(field, {
-          type: 'required',
-          message: 'Este campo es obligatorio'
+          type: "required",
+          message: "Este campo es obligatorio",
         });
       });
       return false;
@@ -374,50 +464,100 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
   // Función para validar el paso 2
   const validateStep2 = () => {
     const currentValues = methods.getValues();
-    const requiredFields = [
-      'terminalSerial'
-    ];
+    const requiredFields = ["terminalSerial"];
 
     // Verificar si todos los campos requeridos están completos
-    const missingFields = requiredFields.filter(field => {
+    const missingFields = requiredFields.filter((field) => {
       const value = currentValues[field];
-      return !value || (typeof value === 'string' && value.trim() === '');
+      return !value || (typeof value === "string" && value.trim() === "");
     });
 
     if (missingFields.length > 0) {
       // Establecer errores manualmente para los campos faltantes
-      missingFields.forEach(field => {
+      missingFields.forEach((field) => {
         methods.setError(field, {
-          type: 'required',
-          message: 'Este campo es obligatorio'
+          type: "required",
+          message: "Este campo es obligatorio",
         });
       });
       return false;
     }
 
     return true;
-  }
+  };
+
+  // Función para validar el paso 3
+  const validateStep3 = () => {
+    const currentValues = methods.getValues();
+    const requiredFields = [
+      "enginePower",
+      "enginePowerUnit",
+      "engineType",
+      "cylinderCapacity",
+      "cylinderCapacityUnit",
+      "cylindersNumber",
+      "arrangement",
+      "fuelConsumption",
+      "fuelConsumptionUnit",
+      "transmissionSystem",
+      "operatingWeight",
+      "operatingWeightUnit",
+      "maxSpeed",
+      "maxSpeedUnit",
+      "dimensionsUnit",
+      "width",
+      "length",
+      "height",
+      "netWeight",
+      "netWeightUnit",
+    ];
+
+    // Justo después de recibir las props, agrega:
+    console.log("Engine Types List:", engineTypesList);
+    console.log("Cylinder Arrangement List:", cylinderArrangementList);
+    console.log("Traction Types List:", tractionTypesList);
+
+    const missingFields = requiredFields.filter((field) => {
+      const value = currentValues[field];
+      return !value || (typeof value === "string" && value.trim() === "");
+    });
+
+    if (missingFields.length > 0) {
+      missingFields.forEach((field) => {
+        methods.setError(field, {
+          type: "required",
+          message: "Este campo es obligatorio",
+        });
+      });
+      return false;
+    }
+
+    return true;
+  };
 
   // Función para validar el paso 4
   const validateStep4 = () => {
     const currentValues = methods.getValues();
     const requiredFields = [
-      'acquisitionDate', 'usageState', 'usedHours', 'mileage',
-      'mileageUnit'
+      "acquisitionDate",
+      "usageState",
+      "usedHours",
+      "mileage",
+      "mileageUnit",
     ];
 
     // Verificar si todos los campos requeridos están completos
-    const missingFields = requiredFields.filter(field => {
+    const missingFields = requiredFields.filter((field) => {
       const value = currentValues[field];
-      return !value || (typeof value === 'string' && value.trim() === '');
+      return !value || (typeof value === "string" && value.trim() === "");
     });
 
     if (missingFields.length > 0) {
       // Establecer errores manualmente para los campos faltantes
-      missingFields.forEach(field => {
+      missingFields.forEach((field) => {
         methods.setError(field, {
-          type: 'required',
-          message: 'Este campo es obligatorio'
+          type: "required",
+          message: "Este campo es obligatorio",
         });
       });
       return false;
@@ -442,24 +582,24 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
       const formData = new FormData();
 
       // Agregar todos los campos del paso 1
-      formData.append('machinery_name', data.name);
-      formData.append('manufacturing_year', data.manufactureYear);
-      formData.append('serial_number', data.serialNumber);
-      formData.append('machinery_secondary_type', data.machineryType);
-      formData.append('id_model', data.model);
-      formData.append('tariff_subheading', data.tariff);
-      formData.append('machinery_type', data.category);
-      formData.append('id_city', data.city);
-      formData.append('responsible_user', id);
+      formData.append("machinery_name", data.name);
+      formData.append("manufacturing_year", data.manufactureYear);
+      formData.append("serial_number", data.serialNumber);
+      formData.append("machinery_secondary_type", data.machineryType);
+      formData.append("id_model", data.model);
+      formData.append("tariff_subheading", data.tariff);
+      formData.append("machinery_type", data.category);
+      formData.append("id_city", data.city);
+      formData.append("responsible_user", id);
 
       // Telemetría es opcional
       if (data.telemetry) {
-        formData.append('id_device', data.telemetry);
+        formData.append("id_device", data.telemetry);
       }
 
       // Agregar foto si existe
       if (data.photo) {
-        formData.append('image', data.photo);
+        formData.append("image", data.photo);
       }
 
       // Agregar estado operativo si existe
@@ -527,44 +667,33 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
       const formData = new FormData();
 
       // Agregar todos los campos del paso 2
-      formData.append('id_machinery', machineryId);
-      formData.append('terminal_serial_number', data.terminalSerial);
-      formData.append('gps_serial_number', data.gpsSerial);
-      formData.append('chassis_number', data.chasisNumber);
-      formData.append('engine_number', data.engineNumber);
-      formData.append('responsible_user', id);
+      formData.append("id_machinery", machineryId);
+      formData.append("terminal_serial_number", data.terminalSerial);
+      formData.append("gps_serial_number", data.gpsSerial);
+      formData.append("chassis_number", data.chasisNumber);
+      formData.append("engine_number", data.engineNumber);
+      formData.append("responsible_user", id);
 
       const response = await registerInfoTracker(formData);
 
       // Marcar paso como completado y avanzar
-      setCompletedSteps(prev => [...prev, 1]);
+      setCompletedSteps((prev) => [...prev, 1]);
       setStep(2);
 
-      console.log('Step 2 submitted successfully:', response);
+      console.log("Step 2 submitted successfully:", response);
     } catch (error) {
-      console.error('Error submitting step 2:', error);
+      console.error("Error submitting step 2:", error);
 
-      // Mostrar error al usuario
-      if (error.response?.data) {
-        const errorData = error.response.data;
-
-        // Si el backend devuelve errores específicos por campo
-        Object.keys(errorData).forEach(field => {
-          if (errorData[field] && Array.isArray(errorData[field])) {
-            methods.setError(field, {
-              type: 'server',
-              message: errorData[field][0]
-            });
-          }
-        });
-      } else {
-        // Error genérico
-        alert('Error al guardar los datos. Por favor, inténtelo de nuevo.');
-      }
+      // Mostrar error modal igual que en Step 1
+      setModalMessage("El número de serie del terminal ya está registrado. Por favor, ingrese un número diferente.");
+      setErrorOpen(true);
+      
+      // CRÍTICO: Bloquear el avance al siguiente paso cuando hay error
+      return;
     } finally {
       setIsSubmittingStep(false);
     }
-  }
+  };
 
   const submitStep4 = async (data) => {
     try {
@@ -574,16 +703,16 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
       const formData = new FormData();
 
       // Agregar todos los campos del paso 1
-      formData.append('id_machinery', machineryId);
-      formData.append('is_own', data.ownership);
-      formData.append('acquisition_date', data.acquisitionDate);
-      formData.append('usage_condition', data.usageState);
-      formData.append('usage_hours', data.usedHours);
-      formData.append('distance_value', data.mileage);
-      formData.append('distance_unit', data.mileageUnit);
-      formData.append('tenancy_type', data.tenure);
-      formData.append('contract_end_date', data.contractEndDate);
-      formData.append('responsible_user', id);
+      formData.append("id_machinery", machineryId);
+      formData.append("is_own", data.ownership);
+      formData.append("acquisition_date", data.acquisitionDate);
+      formData.append("usage_condition", data.usageState);
+      formData.append("usage_hours", data.usedHours);
+      formData.append("distance_value", data.mileage);
+      formData.append("distance_unit", data.mileageUnit);
+      formData.append("tenancy_type", data.tenure);
+      formData.append("contract_end_date", data.contractEndDate);
+      formData.append("responsible_user", id);
 
       if (data.justificationUsage) {
         formData.append('justification', data.justificationUsageInfo);
@@ -605,17 +734,168 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
         await updateUsageInfo(idUsageSheet, formData);
       }
       // Marcar paso como completado y avanzar
-      setCompletedSteps(prev => [...prev, 3]);
+      setCompletedSteps((prev) => [...prev, 3]);
       setStep(4);
     } catch (error) {
-      console.error('Error submitting step 1:', error);
+      console.error("Error submitting step 1:", error);
+    } finally {
+      setIsSubmittingStep(false);
+    }
+  };
+
+  const submitStep3 = async (data) => {
+    try {
+      setIsSubmittingStep(true);
+
+      // Mapear los datos del formulario al formato del backend
+      const payload = {
+        // Motor y transmisión
+        power: parseFloat(data.enginePower),
+        power_unit: parseInt(data.enginePowerUnit),
+        engine_type: parseInt(data.engineType),
+        cylinder_capacity: parseFloat(data.cylinderCapacity),
+        cylinder_capacity_unit: parseInt(data.cylinderCapacityUnit),
+        cylinder_arrangement_type: parseInt(data.arrangement),
+        cylinder_count: parseInt(data.cylindersNumber),
+        traction_type: data.traction ? parseInt(data.traction) : null,
+        fuel_consumption: parseFloat(data.fuelConsumption),
+        fuel_consumption_unit: parseInt(data.fuelConsumptionUnit),
+        transmission_system_type: parseInt(data.transmissionSystem),
+
+        // Capacidad y rendimiento
+        fuel_capacity: data.tankCapacity ? parseFloat(data.tankCapacity) : null,
+        fuel_capacity_unit: data.tankCapacityUnit
+          ? parseInt(data.tankCapacityUnit)
+          : null,
+        carrying_capacity: data.carryingCapacity
+          ? parseFloat(data.carryingCapacity)
+          : null,
+        carrying_capacity_unit: data.carryingCapacityUnit
+          ? parseInt(data.carryingCapacityUnit)
+          : null,
+        operating_weight: parseFloat(data.operatingWeight),
+        operating_weight_unit: parseInt(data.operatingWeightUnit),
+        max_speed: parseFloat(data.maxSpeed),
+        max_speed_unit: parseInt(data.maxSpeedUnit),
+        draft_force: data.draftForce ? parseFloat(data.draftForce) : null,
+        draft_force_unit: data.draftForceUnit
+          ? parseInt(data.draftForceUnit)
+          : null,
+        maximum_altitude: data.maxOperatingAltitude
+          ? parseFloat(data.maxOperatingAltitude)
+          : null,
+        maximum_altitude_unit: data.maxOperatingAltitudeUnit
+          ? parseInt(data.maxOperatingAltitudeUnit)
+          : null,
+        minimum_performance: data.performanceMin
+          ? parseFloat(data.performanceMin)
+          : null,
+        maximum_performance: data.performanceMax
+          ? parseFloat(data.performanceMax)
+          : null,
+        performance_unit: data.performanceUnit
+          ? parseInt(data.performanceUnit)
+          : null,
+
+        // Dimensiones y peso
+        width: parseFloat(data.width),
+        length: parseFloat(data.length),
+        height: parseFloat(data.height),
+        dimension_unit: parseInt(data.dimensionsUnit),
+        net_weight: parseFloat(data.netWeight),
+        net_weight_unit: parseInt(data.netWeightUnit),
+
+        // Sistemas auxiliares
+        air_conditioning_system_type: data.airConditioning
+          ? parseInt(data.airConditioning)
+          : null,
+        air_conditioning_system_consumption: data.airConditioningConsumption
+          ? parseFloat(data.airConditioningConsumption)
+          : null,
+        air_conditioning_system_consumption_unit:
+          data.airConditioningConsumptionUnit
+            ? parseInt(data.airConditioningConsumptionUnit)
+            : null,
+        maximum_working_pressure: data.maxHydraulicPressure
+          ? parseFloat(data.maxHydraulicPressure)
+          : null,
+        maximum_working_pressure_unit: data.maxHydraulicPressureUnit
+          ? parseInt(data.maxHydraulicPressureUnit)
+          : null,
+        pump_flow: data.hydraulicPumpFlowRate
+          ? parseFloat(data.hydraulicPumpFlowRate)
+          : null,
+        pump_flow_unit: data.hydraulicPumpFlowRateUnit
+          ? parseInt(data.hydraulicPumpFlowRateUnit)
+          : null,
+        hydraulic_tank_capacity: data.hydraulicReservoirCapacity
+          ? parseFloat(data.hydraulicReservoirCapacity)
+          : null,
+        hydraulic_tank_capacity_unit: data.hydraulicReservoirCapacityUnit
+          ? parseInt(data.hydraulicReservoirCapacityUnit)
+          : null,
+
+        // Normatividad
+        emission_level_type: data.emissionLevel
+          ? parseInt(data.emissionLevel)
+          : null,
+        cabin_type: data.cabinType ? parseInt(data.cabinType) : null,
+
+        // IDs requeridos
+        id_machinery: machineryId,
+        id_responsible_user: parseInt(id),
+      };
+
+      const response = await createSpecificTechnicalSheet(payload);
+
+      // Marcar paso como completado y avanzar
+      setCompletedSteps((prev) => [...prev, 2]);
+      setStep(3);
+
+      console.log("Step 3 submitted successfully:", response);
+    } catch (error) {
+      console.error("Error submitting step 3:", error);
+
+      if (error.response?.data) {
+        alert(
+          "Error al guardar la ficha técnica específica. Por favor, verifique los datos."
+        );
+      }
     } finally {
       setIsSubmittingStep(false);
     }
   };
 
   const nextStep = () => {
-    
+    if (step === 0) {
+      // Validar paso 1 antes de enviar
+      if (!validateStep1()) {
+        return;
+      }
+      const currentData = methods.getValues();
+      submitStep1(currentData);
+    } else if (step === 1) {
+      // Validar y enviar paso 2
+      if (!validateStep2()) {
+        return;
+      }
+      const currentData = methods.getValues();
+      submitStep2(currentData);
+    } else if (step === 2) {
+      // Validar y enviar paso 3
+      if (!validateStep3()) {
+        return;
+      }
+      const currentData = methods.getValues();
+      submitStep3(currentData);
+    } else if (step === 3) {
+      // Validar y enviar paso 4
+      if (!validateStep4()) {
+        return;
+      }
+      const currentData = methods.getValues();
+      submitStep4(currentData);
+    } else {
       // Para los otros pasos, avanzar normalmente
       setStep((s) => {
         const newStep = Math.min(s + 1, steps.length - 1);
@@ -624,7 +904,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
         }
         return newStep;
       });
-    
+    }
   };
 
   const prevStep = () => setStep((s) => Math.max(s - 1, 0));
@@ -635,24 +915,41 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
     }
   };
 
-  const onSubmit = (data) => {
+  // Función para confirmar el registro de maquinaria
+  const confirmRegistration = async () => {
+    try {
+      setIsConfirmingRegistration(true);
+      
+      const response = await confirmMachineryRegistration(machineryId);
+      
+      if (response.success) {
+        // Mostrar alerta de confirmación exitosa
+        setModalMessage(response.message || "Registro de maquinaria confirmado exitosamente.");
+        setSuccessOpen(true);     
+        onSuccess();   
+        methods.reset();
+        setStep(0);
+        setCompletedSteps([]);
+        setMachineryId(null);
+        
+      }      
+    } catch (error) {
+      let message = "Error al confirmar el registro. Por favor, inténtelo de nuevo.";
+      setModalMessage(error.response.data.details || message);
+      setErrorOpen(true);      
+    } finally {
+      setIsConfirmingRegistration(false);
+    }
+  };
+
+  const onSubmit = () => {
     // Si estamos en el último paso, finalizar el proceso
     if (step === steps.length - 1) {
       if (!validateStep6()) {
         return;
       }
-
-      // El Step 6 ya maneja la creación de documentos directamente
-      // Aquí solo confirmamos que el proceso ha sido completado exitosamente
-      console.log("Machinery registration completed with ID:", machineryId);
-      console.log("Final form data:", data);
-      alert("¡Registro de maquinaria completado exitosamente!");
-      onClose();
-      methods.reset();
-      setStep(0);
-      setCompletedSteps([]);
-      setMachineryId(null);
-    }
+      confirmRegistration();
+    }      
   };
 
   // Función separada para manejar el evento de Next
@@ -686,20 +983,40 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
                   type="button"
                   onClick={() => goToStep(index)}
                   disabled={!completedSteps.includes(index) && index !== 0}
-                  className={`w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-xs sm:text-theme-sm font-theme-bold border-2 transition-all duration-300 ${isActive
-                    ? "bg-accent text-white"
-                    : isCompleted
+                  className={`w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-xs sm:text-theme-sm font-theme-bold border-2 transition-all duration-300 ${
+                    isActive
+                      ? "bg-accent text-white"
+                      : isCompleted
                       ? "bg-success text-white border-success"
                       : "bg-surface text-secondary border-primary"
-                    } ${!completedSteps.includes(index) && index !== 0 ? "cursor-not-allowed opacity-50" : "hover:shadow-md"}`}
+                  } ${
+                    !completedSteps.includes(index) && index !== 0
+                      ? "cursor-not-allowed opacity-50"
+                      : "hover:shadow-md"
+                  }`}
                   style={{
-                    backgroundColor: isActive ? 'var(--color-accent)' : isCompleted ? 'var(--color-success)' : 'var(--color-surface)',
-                    borderColor: isActive ? 'var(--color-accent)' : isCompleted ? 'var(--color-success)' : 'var(--color-border)',
-                    color: isActive || isCompleted ? 'white' : 'var(--color-text-secondary)'
+                    backgroundColor: isActive
+                      ? "var(--color-accent)"
+                      : isCompleted
+                      ? "var(--color-success)"
+                      : "var(--color-surface)",
+                    borderColor: isActive
+                      ? "var(--color-accent)"
+                      : isCompleted
+                      ? "var(--color-success)"
+                      : "var(--color-border)",
+                    color:
+                      isActive || isCompleted
+                        ? "white"
+                        : "var(--color-text-secondary)",
                   }}
                 >
                   {isCompleted && !isActive ? (
-                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <svg
+                      className="w-3 h-3 sm:w-4 sm:h-4"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
                       <path
                         fillRule="evenodd"
                         d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -713,36 +1030,42 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
 
                 <div className="mt-1 sm:mt-2 text-center max-w-20 sm:max-w-none">
                   <div
-                    className={`text-xs sm:text-theme-xs font-theme-medium ${status === "En progreso"
-                      ? "text-accent"
-                      : status === "Completo"
+                    className={`text-xs sm:text-theme-xs font-theme-medium ${
+                      status === "En progreso"
+                        ? "text-accent"
+                        : status === "Completo"
                         ? "text-success"
                         : "text-secondary"
-                      }`}
+                    }`}
                     style={{
-                      color: status === "En progreso"
-                        ? 'var(--color-accent)'
-                        : status === "Completo"
-                          ? 'var(--color-success)'
-                          : 'var(--color-text-secondary)'
+                      color:
+                        status === "En progreso"
+                          ? "var(--color-accent)"
+                          : status === "Completo"
+                          ? "var(--color-success)"
+                          : "var(--color-text-secondary)",
                     }}
                   >
                     <span className="hidden md:block">{stepItem.name}</span>
-                    <span className="block md:hidden text-center leading-tight">{stepItem.name.split(' ').slice(0, 2).join(' ')}</span>
+                    <span className="block md:hidden text-center leading-tight">
+                      {stepItem.name.split(" ").slice(0, 2).join(" ")}
+                    </span>
                   </div>
                   <div
-                    className={`text-xs sm:text-theme-xs mt-0.5 sm:mt-1 ${status === "En progreso"
-                      ? "text-accent"
-                      : status === "Completo"
+                    className={`text-xs sm:text-theme-xs mt-0.5 sm:mt-1 ${
+                      status === "En progreso"
+                        ? "text-accent"
+                        : status === "Completo"
                         ? "text-success"
                         : "text-secondary"
-                      }`}
+                    }`}
                     style={{
-                      color: status === "En progreso"
-                        ? 'var(--color-accent)'
-                        : status === "Completo"
-                          ? 'var(--color-success)'
-                          : 'var(--color-text-secondary)'
+                      color:
+                        status === "En progreso"
+                          ? "var(--color-accent)"
+                          : status === "Completo"
+                          ? "var(--color-success)"
+                          : "var(--color-text-secondary)",
                     }}
                   >
                     {status}
@@ -754,7 +1077,9 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
                 <div
                   className="h-0.5 w-8 sm:w-12 md:w-16 mx-2 sm:mx-4 transition-colors duration-300"
                   style={{
-                    backgroundColor: isCompleted ? 'var(--color-success)' : 'var(--color-border)'
+                    backgroundColor: isCompleted
+                      ? "var(--color-success)"
+                      : "var(--color-border)",
                   }}
                 />
               )}
@@ -776,20 +1101,40 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
                   type="button"
                   onClick={() => goToStep(index)}
                   disabled={!completedSteps.includes(index) && index !== 0}
-                  className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-theme-bold border-2 transition-all duration-300 ${isActive
-                    ? "bg-accent text-white"
-                    : isCompleted
+                  className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-theme-bold border-2 transition-all duration-300 ${
+                    isActive
+                      ? "bg-accent text-white"
+                      : isCompleted
                       ? "bg-success text-white border-success"
                       : "bg-surface text-secondary border-primary"
-                    } ${!completedSteps.includes(index) && index !== 0 ? "cursor-not-allowed opacity-50" : ""}`}
+                  } ${
+                    !completedSteps.includes(index) && index !== 0
+                      ? "cursor-not-allowed opacity-50"
+                      : ""
+                  }`}
                   style={{
-                    backgroundColor: isActive ? 'var(--color-accent)' : isCompleted ? 'var(--color-success)' : 'var(--color-surface)',
-                    borderColor: isActive ? 'var(--color-accent)' : isCompleted ? 'var(--color-success)' : 'var(--color-border)',
-                    color: isActive || isCompleted ? 'white' : 'var(--color-text-secondary)'
+                    backgroundColor: isActive
+                      ? "var(--color-accent)"
+                      : isCompleted
+                      ? "var(--color-success)"
+                      : "var(--color-surface)",
+                    borderColor: isActive
+                      ? "var(--color-accent)"
+                      : isCompleted
+                      ? "var(--color-success)"
+                      : "var(--color-border)",
+                    color:
+                      isActive || isCompleted
+                        ? "white"
+                        : "var(--color-text-secondary)",
                   }}
                 >
                   {isCompleted && !isActive ? (
-                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <svg
+                      className="w-3 h-3"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
                       <path
                         fillRule="evenodd"
                         d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -804,7 +1149,9 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
                   <div
                     className="h-0.5 w-4 mx-1 transition-colors duration-300"
                     style={{
-                      backgroundColor: isCompleted ? 'var(--color-success)' : 'var(--color-border)'
+                      backgroundColor: isCompleted
+                        ? "var(--color-success)"
+                        : "var(--color-border)",
                     }}
                   />
                 )}
@@ -829,20 +1176,23 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
   const isLastStep = step === steps.length - 1;
 
   return (
-    <div className="modal-overlay" style={{ padding: 'var(--spacing-sm)' }}>
+    <div className="modal-overlay" style={{ padding: "var(--spacing-sm)" }}>
       <div
         className="modal-theme"
         style={{
-          width: '100%',
-          minWidth: '280px',
-          maxWidth: 'min(95vw, 1200px)',
-          maxHeight: 'min(95vh, 900px)',
-          overflowY: 'auto',
-          margin: '0 auto'
+          width: "100%",
+          minWidth: "280px",
+          maxWidth: "min(95vw, 1200px)",
+          maxHeight: "min(95vh, 900px)",
+          overflowY: "auto",
+          margin: "0 auto",
         }}
       >
         <FormProvider {...methods}>
-          <form onSubmit={methods.handleSubmit(onSubmit)} className="p-3 sm:p-6 md:p-8 lg:p-theme-xl">
+          <form
+            onSubmit={methods.handleSubmit(onSubmit)}
+            className="p-3 sm:p-6 md:p-8 lg:p-theme-xl"
+          >
             {/* Header */}
             <div className="flex justify-between items-center mb-4 sm:mb-6 md:mb-8">
               <h2 className="text-lg sm:text-xl md:text-theme-xl font-theme-semibold text-primary">
@@ -861,8 +1211,8 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
             <StepIndicator steps={steps} currentStep={step} />
 
             {/* Step Content */}
-            <div style={{ minHeight: '300px' }} className="sm:min-h-[400px]">
-              {step === 0 &&
+            <div style={{ minHeight: "300px" }} className="sm:min-h-[400px]">
+              {step === 0 && (
                 <Step1GeneralData
                   countriesList={countriesList}
                   statesList={statesList}
@@ -878,10 +1228,30 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
                   machineryStatuesList={machineryStatuesList}
                   currentStatusName={machineryToEdit?.machinery_operational_status_name?.toLowerCase()}
                 />
-              }
+              )}
               {step === 1 && <Step2TrackerData machineryId={machineryId} />}
-              {step === 2 && <Step3SpecificData machineryId={machineryId} />}
-              {step === 3 &&
+              {step === 2 && (
+                <Step3SpecificData
+                  machineryId={machineryId}
+                  powerUnitsList={powerUnitsList}
+                  volumeUnitsList={volumeUnitsList}
+                  flowConsumptionUnitsList={flowConsumptionUnitsList}
+                  weightUnitsList={weightUnitsList}
+                  speedUnitsList={speedUnitsList}
+                  forceUnitsList={forceUnitsList}
+                  dimensionUnitsList={dimensionUnitsList}
+                  performanceUnitsList={performanceUnitsList}
+                  pressureUnitsList={pressureUnitsList}
+                  engineTypesList={engineTypesList}
+                  cylinderArrangementList={cylinderArrangementList}
+                  tractionTypesList={tractionTypesList}
+                  transmissionSystemList={transmissionSystemList}
+                  airConditioningList={airConditioningList}
+                  emissionLevelList={emissionLevelList}
+                  cabinTypesList={cabinTypesList}
+                />
+              )}
+              {step === 3 && (
                 <Step4UsageInfo
                   machineryId={machineryId}
                   distanceUnitsList={distanceUnitsList}
@@ -890,15 +1260,15 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
                   machineryStatuesList={machineryStatuesList}
                   currentStatusName={machineryToEdit?.machinery_operational_status_name?.toLowerCase()}
                 />
-              }
-              {step === 4 &&
+              )}
+              {step === 4 && (
                 <Step5Maintenance
                   machineryId={machineryId}
                   maintenanceTypeList={maintenanceTypeList}
                   isEditMode={isEditMode}
                   currentStatusName={machineryToEdit?.machinery_operational_status_name?.toLowerCase()} 
                 />
-              }
+              )}
               {step === 5 && <Step6UploadDocs machineryId={machineryId} />}
             </div>
 
@@ -923,7 +1293,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
                   disabled={isSubmittingStep}
                   className="btn-theme btn-primary w-auto"
                 >
-                  {isSubmittingStep ? 'Guardando...' : 'Guardar'}
+                  {isSubmittingStep ? "Guardando..." : "Guardar"}
                 </button>
               ) : (
                 <button
@@ -933,7 +1303,9 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
                   disabled={isSubmittingStep}
                   className="btn-theme btn-primary w-auto"
                 >
-                  {isSubmittingStep && step === 0 ? 'Guardando...' : 'Siguiente'}
+                  {isSubmittingStep && step === 0
+                    ? "Guardando..."
+                    : "Siguiente"}
                 </button>
               )}
             </div>
@@ -942,7 +1314,10 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
       </div>
       <SuccessModal
         isOpen={successOpen}
-        onClose={() => setSuccessOpen(false)}
+        onClose={() => {
+          setSuccessOpen(false);
+          onClose();
+        }}
         title="Éxito"
         message={modalMessage}
       />
