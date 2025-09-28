@@ -1,6 +1,7 @@
 "use client";
 import { useRouter } from 'next/navigation';
 import { usePermissions } from '../contexts/PermissionsContext';
+import { getToken, removeToken } from '@/utils/tokenManager';
 
 export const useAuth = () => {
   const router = useRouter();
@@ -13,15 +14,6 @@ export const useAuth = () => {
     isActiveUser,
     loginSuccess
   } = usePermissions();
-
-  // Helper para obtener el token desde cualquier storage
-  const getAuthToken = () => {
-    let token = localStorage.getItem("token");
-    if (!token) {
-      token = sessionStorage.getItem("token");
-    }
-    return token;
-  };
 
   // Función para verificar si el token está expirado
   const isTokenExpired = (token) => {
@@ -38,14 +30,13 @@ export const useAuth = () => {
   };
 
   const isAuthenticated = () => {
-    const token = getAuthToken();
+    const token = getToken();
     if (!token) return false;
     
     // Verificar si el token no está expirado
     if (isTokenExpired(token)) {
       // Limpiar tokens expirados
-      localStorage.removeItem('token');
-      sessionStorage.removeItem('token');
+      removeToken();
       localStorage.removeItem('userData');
       return false;
     }
@@ -71,8 +62,7 @@ export const useAuth = () => {
 
   const logout = () => {
     // Limpiar todos los storages
-    localStorage.removeItem('token');
-    sessionStorage.removeItem('token');
+    removeToken();
     localStorage.removeItem('userData');
     clearPermissions();
     

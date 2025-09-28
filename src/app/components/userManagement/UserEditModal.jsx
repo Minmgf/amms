@@ -8,19 +8,6 @@ import { getDocumentTypes, getGenderTypes, getRoleTypes, editUser, changeUserSta
 import { SuccessModal, ErrorModal } from '../shared/SuccessErrorModal';
 import PermissionGuard from '@/app/(auth)/PermissionGuard';
 
-// Función helper para obtener el token desde localStorage o sessionStorage
-const getAuthToken = () => {
-  // Primero intentar localStorage
-  let token = localStorage.getItem('token');
-  
-  // Si no está en localStorage, intentar sessionStorage
-  if (!token) {
-    token = sessionStorage.getItem('token');
-  }
-  
-  return token;
-};
-
 
 export default function UserEditModal({ isOpen, onClose, userData, onUserUpdated }) {
   useTheme();
@@ -406,9 +393,6 @@ export default function UserEditModal({ isOpen, onClose, userData, onUserUpdated
         gender_id: formData.gender_id?.value || formData.gender_id,
         roles: formData.roles.map(role => role.value || role)
       };
-
-      console.log('Datos a enviar:', userDataToSend);
-      console.log('Token actual:', getAuthToken());
 
       const response = await editUser(userData.id, userDataToSend);
 
