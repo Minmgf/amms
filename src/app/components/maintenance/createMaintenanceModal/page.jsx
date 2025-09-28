@@ -1,11 +1,12 @@
 "use client";
 import * as Dialog from "@radix-ui/react-dialog";
-import axios from "axios";
 import { useState, useMemo, useEffect } from "react";
 import { FaTimes } from "react-icons/fa";
 import { FiX } from "react-icons/fi";
-
-const BASE_URL = "https://api.inmero.co/sigma/main/maintenance/";
+import {
+  createMaintenance,
+  getMaintenanceTypes,
+} from "@/services/maintenanceService";
 
 const getAuthToken = () => {
   let token = localStorage.getItem("token");
@@ -29,41 +30,13 @@ export default function CreateMaintenanceModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const axiosAuth = useMemo(() => {
-    const token = authToken || getAuthToken();
-    return axios.create({
-      headers: token
-        ? {
-            Authorization: token.startsWith("Bearer")
-              ? token
-              : `Bearer ${token}`,
-          }
-        : {},
-    });
-  }, [authToken]);
-
   useEffect(() => {
     async function fetchTypes() {
       try {
-        const token = authToken || getAuthToken();
-        const { data } = await axios.get(
-          "https://api.inmero.co/sigma/main/types/list/active/12/",
-          {
-            headers: token
-              ? {
-                  Authorization: token.startsWith("Bearer")
-                    ? token
-                    : `Bearer ${token}`,
-                }
-              : {},
-          }
-        );
-        console.log("Tipos de mantenimiento API:", data);
-
-        // Usa id_types en vez de id
+        const data = await getMaintenanceTypes();
         const typeArray = Array.isArray(data) ? data : [];
         const options = typeArray.map((t) => ({
-          id: t.id_types, // <-- aquí el cambio
+          id: t.id_types,
           label: t.name,
         }));
         setTypeOptions(options);
@@ -74,7 +47,6 @@ export default function CreateMaintenanceModal({
       }
     }
     fetchTypes();
-    // Limpia el tipo al cerrar el modal
     if (!isOpen) setTypeId("");
   }, [authToken, isOpen]);
 
@@ -110,15 +82,16 @@ export default function CreateMaintenanceModal({
 
     try {
       setLoading(true);
-      // Body mínimo esperado por tu backend:
       const payload = {
         name: name.trim(),
         description: description?.trim() || "",
-        maintenance_type: typeId, // id numérico
+        maintenance_type: typeId,
         responsible_user: Number(responsibleUserId),
+        estado: "Inactivo",
+        id_estado: 2,
       };
 
-      const { data } = await axiosAuth.post(BASE_URL, payload);
+      const data = await createMaintenance(payload);
 
       onCreated?.(data);
       reset();
@@ -138,7 +111,6 @@ export default function CreateMaintenanceModal({
     }
   };
 
-  // Cerrar modal al hacer clic fuera del contenido
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) onClose();
   };
@@ -187,14 +159,13 @@ export default function CreateMaintenanceModal({
               />
             </div>
 
-            {/* Maintenance type */}
             <div>
               <label className="block text-sm text-gray-600 mb-2">
                 Seleccione el tipo
               </label>
               <select
                 className="parametrization-input"
-                arial-label="Maintenance type Select"
+                aria-label="Maintenance type Select"
                 value={typeId}
                 onChange={(e) => setTypeId(Number(e.target.value))}
               >
@@ -206,7 +177,6 @@ export default function CreateMaintenanceModal({
               </select>
             </div>
 
-            {/* Maintenance modal */}
             <div className="md:col-span-2">
               <label className="block text-sm text-gray-600 mb-2">
                 Descripción del mantenimiento
@@ -249,7 +219,7 @@ export default function CreateMaintenanceModal({
               className="btn-primary w-40 px-8 py-2 font-semibold rounded-lg text-white"
               aria-label="Request Button"
             >
-              {loading ? "Guardandos..." : "Crear"}
+              {loading ? "Guardando..." : "Crear"}
             </button>
           </div>
         </form>

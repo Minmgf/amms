@@ -1,17 +1,12 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import axios from "axios";
 import { FiX } from "react-icons/fi";
-
-const BASE_URL = "https://api.inmero.co/sigma/main/maintenance/";
-const TYPES_URL = "https://api.inmero.co/sigma/main/types/list/active/12/";
-
-const getAuthToken = () => {
-  let token = localStorage.getItem("token");
-  if (!token) token = sessionStorage.getItem("token");
-  return token;
-};
+import {
+  getMaintenanceTypes,
+  getMaintenanceDetail,
+  updateMaintenance,
+} from "@/services/maintenanceService";
 
 export default function EditMaintenanceModal({
   isOpen,
@@ -31,20 +26,10 @@ export default function EditMaintenanceModal({
   const [form, setForm] = useState({
     name: "",
     description: "",
-    maintenance_type: "", // id numérico
+    maintenance_type: "",
     responsible_user: "",
     id_estado: "",
   });
-
-  const headers = useMemo(() => {
-    const token = authToken || getAuthToken();
-    const h = { "Content-Type": "application/json" };
-    if (token)
-      h["Authorization"] = token.startsWith("Bearer")
-        ? token
-        : `Bearer ${token}`;
-    return h;
-  }, [authToken]);
 
   // Cargar tipos de mantenimiento dinámicamente
   useEffect(() => {
@@ -52,8 +37,7 @@ export default function EditMaintenanceModal({
     const fetchTypes = async () => {
       setLoadingTypes(true);
       try {
-        const { data } = await axios.get(TYPES_URL, { headers });
-        // Usa id_types como id y name como label
+        const data = await getMaintenanceTypes();
         const options = Array.isArray(data)
           ? data.map((t) => ({
               id: t.id_types,
@@ -61,7 +45,6 @@ export default function EditMaintenanceModal({
             }))
           : [];
         setTypeOptions(options);
-        // Selecciona el tipo actual o el primero
         setForm((f) => ({
           ...f,
           maintenance_type: options.length
@@ -82,8 +65,6 @@ export default function EditMaintenanceModal({
       }
     };
     fetchTypes();
-
-    if (!isOpen) setTypeId("");
   }, [authToken, isOpen]);
 
   // Cargar detalle del mantenimiento
@@ -93,17 +74,14 @@ export default function EditMaintenanceModal({
       setError(null);
       setLoadingDetail(true);
       try {
-        const { data } = await axios.get(
-          `${BASE_URL}${maintenance.id_maintenance}/`,
-          { headers }
-        );
+        const data = await getMaintenanceDetail(maintenance.id_maintenance);
         setForm({
           name: data.name ?? "",
           description: data.description ?? "",
           maintenance_type: data.maintenance_type ?? data.id_tipo_mantenimiento ?? "",
           responsible_user: data.responsible_user
             ? String(data.responsible_user)
-            : "1", // <-- valor por defecto si no viene
+            : "1",
           id_estado: data.id_estado ? String(data.id_estado) : "",
         });
       } catch (e) {
@@ -128,7 +106,7 @@ export default function EditMaintenanceModal({
       }
     };
     loadDetail();
-  }, [isOpen, maintenance?.id_maintenance, headers]);
+  }, [isOpen, maintenance?.id_maintenance]);
 
   const onChange = (k, v) => setForm((prev) => ({ ...prev, [k]: v }));
 
@@ -150,17 +128,10 @@ export default function EditMaintenanceModal({
     };
     const full = id_estado ? { ...base, id_estado } : base;
 
-    // quitar keys vacías/undefined
     return Object.fromEntries(
       Object.entries(full).filter(([_, v]) => v !== undefined && v !== "")
     );
   }, [form]);
-
-  const doPut = async (body) => {
-    return axios.put(`${BASE_URL}${maintenance.id_maintenance}/`, body, {
-      headers,
-    });
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -181,7 +152,7 @@ export default function EditMaintenanceModal({
 
     setSubmitting(true);
     try {
-      await doPut(payload);
+      await updateMaintenance(maintenance.id_maintenance, payload);
       onUpdated?.();
       onClose();
     } catch (err) {
@@ -199,7 +170,6 @@ export default function EditMaintenanceModal({
     }
   };
 
-  // Cerrar modal al hacer clic fuera del contenido
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) onClose();
   };
