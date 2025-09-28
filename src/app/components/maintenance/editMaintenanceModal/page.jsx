@@ -19,12 +19,7 @@ export default function EditMaintenanceModal({
   onUpdated,
   maintenance,
   typeOptions: initialTypeOptions = [],
-  statusOptions = [
-    { id: 1, label: "Habilitado" },
-    { id: 2, label: "Deshabilitado" },
-  ],
   authToken,
-  defaultTypeId = 14,
 }) {
   const [typeOptions, setTypeOptions] = useState(initialTypeOptions);
   const [loadingTypes, setLoadingTypes] = useState(false);
@@ -39,7 +34,6 @@ export default function EditMaintenanceModal({
     maintenance_type: "", // id numérico
     responsible_user: "",
     id_estado: "",
-    estado: "Habilitado",
   });
 
   const headers = useMemo(() => {
@@ -111,7 +105,6 @@ export default function EditMaintenanceModal({
             ? String(data.responsible_user)
             : "1", // <-- valor por defecto si no viene
           id_estado: data.id_estado ? String(data.id_estado) : "",
-          estado: data.estado ?? "Habilitado",
         });
       } catch (e) {
         setForm((f) => ({
@@ -128,7 +121,6 @@ export default function EditMaintenanceModal({
           id_estado: maintenance?.id_estado
             ? String(maintenance.id_estado)
             : "",
-          estado: maintenance?.estado ?? "Habilitado",
         }));
         setError("No se pudo cargar el detalle. Puedes editar igualmente.");
       } finally {
@@ -150,17 +142,13 @@ export default function EditMaintenanceModal({
       : undefined;
     const id_estado = form.id_estado ? Number(form.id_estado) : undefined;
 
-    let estadoTxt = form.estado;
-    if (id_estado === 1) estadoTxt = "Habilitado";
-    if (id_estado === 2) estadoTxt = "Deshabilitado";
-
     const base = {
       name: (form.name || "").trim(),
       description: form.description || "",
       maintenance_type,
       responsible_user,
     };
-    const full = id_estado ? { ...base, id_estado, estado: estadoTxt } : base;
+    const full = id_estado ? { ...base, id_estado } : base;
 
     // quitar keys vacías/undefined
     return Object.fromEntries(

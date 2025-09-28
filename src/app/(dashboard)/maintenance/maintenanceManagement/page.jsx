@@ -264,7 +264,8 @@ const GestorMantenimientos = () => {
         ),
         cell: ({ row }) => {
           const status = row.getValue("estado");
-          const status_id = row.getValue("id_estado");
+          const maintenance = row.original;
+          const status_id = maintenance.id_estado;
           return (
             <span
               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
@@ -335,11 +336,6 @@ const GestorMantenimientos = () => {
   const handleEdit = (maintenance) => {
     setSelectedMaintenance(maintenance);
     setIsEditModalOpen(true);
-  };
-
-  const handleView = (maintenance) => {
-    setSelectedMaintenance(maintenance);
-    setIsDetailsModalOpen(true);
   };
 
   const handleDelete = (maintenance) => {
