@@ -110,7 +110,13 @@ const SuccessModal = ({ isOpen, onClose, title = "Success", message = "Lorem ips
 };
 
 // Modal de Error
-const ErrorModal = ({ isOpen, onClose, title = "Error", message = "Lorem ipsum dolor sit amet, consectetur adipiscing elit." }) => {
+const ErrorModal = ({
+  isOpen,
+  onClose,
+  title = "Error",
+  message = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+  buttonText = "Intentar de nuevo", // <-- default
+}) => {
   
   useEffect(() => {
     if (isOpen) {
@@ -189,7 +195,6 @@ const ErrorModal = ({ isOpen, onClose, title = "Error", message = "Lorem ipsum d
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              console.log('Error button clicked'); // Debug
               onClose();
             }}
             onMouseDown={(e) => {
@@ -209,7 +214,7 @@ const ErrorModal = ({ isOpen, onClose, title = "Error", message = "Lorem ipsum d
               cursor: 'pointer'
             }}
           >
-            Intentar de nuevo
+            {buttonText}
           </button>
         </div>
       </div>

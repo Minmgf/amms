@@ -3,6 +3,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import axios from "axios";
 import { useState, useMemo, useEffect } from "react";
 import { FaTimes } from "react-icons/fa";
+import { FiX } from "react-icons/fi";
 
 const BASE_URL = "https://api.inmero.co/sigma/main/maintenance/";
 
@@ -77,7 +78,6 @@ export default function CreateMaintenanceModal({
     if (!isOpen) setTypeId("");
   }, [authToken, isOpen]);
 
-
   const reset = () => {
     setName("");
     setTypeId(typeOptions[0]?.id ?? "");
@@ -138,97 +138,122 @@ export default function CreateMaintenanceModal({
     }
   };
 
+  // Cerrar modal al hacer clic fuera del contenido
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) onClose();
+  };
+
+  if (!isOpen) return null;
+
   return (
-    <Dialog.Root open={isOpen} onOpenChange={(o) => !o && handleClose()}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-3xl z-50">
-          <form
-            onSubmit={handleSubmit}
-            className="p-8 bg-white rounded-2xl shadow-xl"
+    <div
+      className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+      onClick={handleBackdropClick}
+      id="Maintenance Request Modal"
+    >
+      <div
+        className="bg-background rounded-xl shadow-2xl w-full max-w-lg max-h-[95vh] overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h2 className="text-xl font-bold text-gray-900 text-primary">
+            Crear Mantenimiento
+          </h2>
+          <button
+            aria-label="Close modal Button"
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
           >
-            <div className="flex items-center justify-center mb-6">
-              <Dialog.Title className="text-2xl font-bold mb-2">
-                Add maintenance
-              </Dialog.Title>
-              {/* <button type="button" onClick={handleClose} className="text-gray-600 hover:text-black">
-                <FaTimes className="w-5 h-5" />
-              </button> */}
+            <FiX className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        {/* Modal Content */}
+        <form
+          onSubmit={handleSubmit}
+          className="p-8 bg-white rounded-2xl shadow-xl"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
+                Tipo de Mantenimiento
+              </label>
+              <input
+                onChange={(e) => setName(e.target.value)}
+                className="parametrization-input"
+                placeholder="Ej. Cambio de aceite"
+                aria-label="Maintenance type Select"
+              />
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm text-gray-600 mb-2">
-                  Maintenance name
-                </label>
-                <input
-                  className="w-full px-4 py-3 border-2 border-[#D7D7D7] rounded-lg focus:outline-none"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Ej. Cambio de aceite"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-600 mb-2">
-                  Maintenance type
-                </label>
-                <select
-                  className="w-full px-4 py-3 border-2 border-[#D7D7D7] rounded-lg bg-white"
-                  value={typeId}
-                  onChange={(e) => setTypeId(Number(e.target.value))}
-                >
-                  {typeOptions.map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm text-gray-600 mb-2">
-                  Description
-                </label>
-                <textarea
-                  className="w-full px-4 py-3 border-2 border-[#D7D7D7] rounded-lg min-h-[120px] resize-y"
-                  maxLength={300}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Description..."
-                />
-                <div className="text-xs text-gray-400 mt-1">
-                  {description?.length || 0}/300 characters
-                </div>
-              </div>
-            </div>
-
-            {error && (
-              <div className="mt-4 p-3 rounded-md bg-red-50 border border-red-200 text-red-700 whitespace-pre-line">
-                {error}
-              </div>
-            )}
-
-            <div className="flex gap-4 mt-8">
-              <button
-                type="button"
-                onClick={handleClose}
-                disabled={loading}
-                className="flex-1 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-60"
+            {/* Maintenance type */}            
+            <div>
+              <label className="block text-sm text-gray-600 mb-2">
+                Seleccione el tipo
+              </label>
+              <select
+                className="parametrization-input"
+                arial-label="Maintenance type Select"
+                value={typeId}
+                onChange={(e) => setTypeId(Number(e.target.value))}
               >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 py-3 bg-black text-white rounded-xl hover:bg-gray-800 disabled:opacity-60"
-              >
-                {loading ? "Saving..." : "Add"}
-              </button>
+                {typeOptions.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
             </div>
-          </form>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+ 
+            {/* Maintenance modal */}
+            <div className="md:col-span-2">
+              <label className="block text-sm text-gray-600 mb-2">
+                Descripción del mantenimiento
+              </label>
+              <textarea
+                className="parametrization-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-black resize-none"
+                maxLength={300}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                aria-label="Problem description Textarea"
+                placeholder="Describa el mantenimiento aquí..."
+              />
+              <div className="text-xs text-gray-400 mt-1">
+                {description?.length || 0}/300 characters
+              </div>
+            </div>
+
+          </div>
+
+          {error && (
+            <div className="mt-4 p-3 rounded-md bg-red-50 border border-red-200 text-red-700 whitespace-pre-line">
+              {error}
+            </div>
+          )}
+
+          {/* Footer buttons */}
+          <div className="flex gap-4 mt-8 justify-center">
+            <button
+              type="button"
+              onClick={handleClose}
+              disabled={loading}
+              className="btn-error btn-theme w-40 px-8 py-2 font-semibold rounded-lg"
+              aria-label="Cancel Button"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary w-40 px-8 py-2 font-semibold rounded-lg text-white"
+              aria-label="Request Button"
+            >
+              {loading ? "Guardandos..." : "Crear"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }

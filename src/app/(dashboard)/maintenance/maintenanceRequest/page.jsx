@@ -351,7 +351,7 @@ const SolicitudesMantenimientoView = () => {
       }
     },
     {
-      accessorKey: 'serial_number',
+      accessorKey: 'serial_number', 
       header: () => (
         <div className="flex items-center gap-1">
           <FaHashtag className="w-4 h-4" />
@@ -587,7 +587,7 @@ const SolicitudesMantenimientoView = () => {
       <div className="mb-6">
         <div className="flex justify-between items-center mb-2">
           <h1 className="text-2xl font-bold parametrization-text">Solicitudes de Mantenimiento</h1>
-        
+    
         </div>
         
         {/* Mostrar error si existe */}
