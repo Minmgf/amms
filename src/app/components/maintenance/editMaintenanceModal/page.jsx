@@ -106,11 +106,10 @@ export default function EditMaintenanceModal({
         setForm({
           name: data.name ?? "",
           description: data.description ?? "",
-          maintenance_type:
-            data.maintenance_type ?? data.id_tipo_mantenimiento ?? "",
+          maintenance_type: data.maintenance_type ?? data.id_tipo_mantenimiento ?? "",
           responsible_user: data.responsible_user
             ? String(data.responsible_user)
-            : "",
+            : "1", // <-- valor por defecto si no viene
           id_estado: data.id_estado ? String(data.id_estado) : "",
           estado: data.estado ?? "Habilitado",
         });
@@ -300,21 +299,6 @@ export default function EditMaintenanceModal({
                   </option>
                 ))}
               </select>
-            </div>
-
-            <div>
-              <label className="block text-sm text-gray-600 mb-2">
-                Responsible user (ID)
-              </label>
-              <input
-                type="number"
-                min="1"
-                value={form.responsible_user}
-                onChange={(e) => onChange("responsible_user", e.target.value)}
-                className="parametrization-input"
-                required
-                placeholder="ID de usuario responsable"
-              />
             </div>
 
             <div className="md:col-span-2">
