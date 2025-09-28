@@ -31,7 +31,13 @@ import PermissionGuard from "@/app/(auth)/PermissionGuard";
 import * as Dialog from "@radix-ui/react-dialog";
 import { FiLayers } from "react-icons/fi";
 import { IoCalendarOutline } from "react-icons/io5";
-import { getMaintenanceList } from "@/services/maintenanceService";
+import {
+  getMaintenanceList,
+  getMaintenanceTypes,
+  updateMaintenance,
+  toggleMaintenanceStatus,
+  deleteMaintenance,
+} from "@/services/maintenanceService";
 import { Edit } from "lucide-react";
 import CreateMaintenanceModal from "@/app/components/maintenance/createMaintenanceModal/page";
 import EditMaintenanceModal from "@/app/components/maintenance/editMaintenanceModal/page";
@@ -78,6 +84,9 @@ const GestorMantenimientos = () => {
   const [maintenanceToDelete, setMaintenanceToDelete] = useState(null);
   const [showWarning, setShowWarning] = useState(false);
 
+  // Nuevo estado para saber si hay que desactivar después del warning
+  const [pendingDeactivate, setPendingDeactivate] = useState(null);
+
   // Cargar datos al montar el componente
   useEffect(() => {
     loadMaintenanceData();
@@ -88,13 +97,33 @@ const GestorMantenimientos = () => {
     applyFilters();
   }, [maintenanceData]);
 
+  // Efecto para cargar tipos de mantenimiento
+  useEffect(() => {
+    async function fetchTypes() {
+      try {
+        const data = await getMaintenanceTypes();
+        // Ajusta el mapeo según la estructura real de la respuesta
+        const options = Array.isArray(data)
+          ? data.map((t) => ({
+              id: t.id_types || t.id,
+              label: t.name,
+            }))
+          : [];
+        setTypeOptions(options);
+        if (options.length) setTypeId(options[0].id);
+      } catch (e) {
+        setTypeOptions([]);
+      }
+    }
+    fetchTypes();
+  }, []);
+
   const loadMaintenanceData = async () => {
     setLoading(true);
     setError(null);
 
     try {
       const response = await getMaintenanceList();
-
       if (response && Array.isArray(response)) {
         setMaintenanceData(response);
 
@@ -111,7 +140,6 @@ const GestorMantenimientos = () => {
           ...new Set(response.map((item) => item.estado).filter(Boolean)),
         ];
         setAvailableStatuses(uniqueStatuses);
-
       } else {
         setError("Formato de datos inesperado del servidor.");
       }
@@ -180,17 +208,23 @@ const GestorMantenimientos = () => {
   const handleClearFilters = () => {
     setMaintenanceTypeFilter("");
     setStatusFilter("");
-    setFilteredData([])
-    setIsFilterModalOpen(false)
+    setFilteredData([]);
+    setIsFilterModalOpen(false);
   };
 
   // Función para obtener color del estado
   const getStatusColor = (status_id) => {
     const colors = {
-      1: "bg-green-100 text-green-800",
-      2: "bg-red-100 text-red-800",
+      1: "bg-green-100 text-green-800", // Habilitado
+      2: "bg-red-100 text-red-800",     // Inactivo
     };
     return colors[status_id] || "bg-gray-100 text-gray-800";
+  };
+
+  const statusLabel = (status) => {
+    if (status === "Habilitado" || status === "Activo") return "Habilitado";
+    if (status === "Inactivo" || status === "Deshabilitado") return "Inactivo";
+    return status;
   };
 
   // Definición de columnas para TanStack Table
@@ -268,9 +302,7 @@ const GestorMantenimientos = () => {
           const status_id = maintenance.id_estado;
           return (
             <span
-              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                status_id
-              )}`}
+              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(status_id)}`}
             >
               {status || "N/A"}
             </span>
@@ -287,11 +319,11 @@ const GestorMantenimientos = () => {
         ),
         cell: ({ row }) => {
           const maintenance = row.original;
-          const isActive = maintenance.estado === "Habilitado";
+          const isActive = maintenance.estado === "Activo";
+          const isInactive = maintenance.estado === "Inactivo";
 
           return (
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              {/* Botón Editar - siempre visible */}
               <button
                 onClick={() => handleEdit(maintenance)}
                 className="inline-flex items-center px-3 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-gray-500 hover:text-gray-600 cursor-pointer"
@@ -300,8 +332,6 @@ const GestorMantenimientos = () => {
                 <FaPen className="w-3 h-3" />
                 Editar
               </button>
-
-              {/* Botón Eliminar - solo visible si está activo */}
               {isActive && (
                 <button
                   onClick={() => handleDelete(maintenance)}
@@ -312,9 +342,7 @@ const GestorMantenimientos = () => {
                   Eliminar
                 </button>
               )}
-
-              {/* Botón Habilitar - solo visible si está inactivo */}
-              {!isActive && (
+              {isInactive && (
                 <button
                   onClick={() => handleEnable(maintenance)}
                   className="inline-flex items-center px-3 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 bg-green-50 text-green-600 hover:border-green-500 hover:bg-green-100"
@@ -348,105 +376,45 @@ const GestorMantenimientos = () => {
     const maintenance = maintenanceToDelete;
     if (!maintenance) return;
 
-    const token =
-      localStorage.getItem("token") || sessionStorage.getItem("token");
-    if (!token) {
-      setErrorMsg("No hay token de autenticación. Inicia sesión.");
-      setShowError(true);
-      return;
-    }
-
     try {
-      const response = await fetch(
-        `https://api.inmero.co/sigma/main/maintenance/${maintenance.id_maintenance}/`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: token.startsWith("Bearer")
-              ? token
-              : `Bearer ${token}`,
-          },
-        }
+      await deleteMaintenance(maintenance.id_maintenance);
+      setMaintenanceData((prevData) =>
+        prevData.filter(
+          (item) => item.id_maintenance !== maintenance.id_maintenance
+        )
       );
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        setMaintenanceData((prevData) =>
-          prevData.filter(
-            (item) => item.id_maintenance !== maintenance.id_maintenance
-          )
-        );
-        setSuccessMsg("Mantenimiento eliminado exitosamente."); // <-- Cambia el mensaje aquí
-        setShowSuccess(true);
-      } else if (response.status === 409) {
-        setMaintenanceData((prevData) =>
-          prevData.map((item) =>
-            item.id_maintenance === maintenance.id_maintenance
-              ? { ...item, id_estado: 2, estado: "Inactivo" }
-              : item
-          )
-        );
+      setSuccessMsg("Mantenimiento eliminado exitosamente.");
+      setShowSuccess(true);
+    } catch (error) {
+      // Si el error es 409 (Conflict), muestra advertencia y guarda el mantenimiento pendiente
+      if (error?.response?.status === 409) {
+        setPendingDeactivate(maintenance);
         setShowWarning(true);
       } else {
-        setErrorMsg(result.message || "No se pudo eliminar el mantenimiento.");
+        setErrorMsg("Error al eliminar el mantenimiento.");
         setShowError(true);
       }
-    } catch (error) {
-      setErrorMsg("Error al eliminar el mantenimiento.");
-      setShowError(true);
     }
   };
 
   const handleEnable = async (maintenance) => {
-    setSuccessMsg("");
-    setErrorMsg("");
-
-    const token =
-      localStorage.getItem("token") || sessionStorage.getItem("token");
-    if (!token) {
-      setErrorMsg("No hay token de autenticación. Inicia sesión.");
-      setShowError(true);
-      return;
-    }
-
     try {
-      const response = await fetch(
-        `https://api.inmero.co/sigma/main/maintenance/${maintenance.id_maintenance}/toggle-status/`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: token.startsWith("Bearer")
-              ? token
-              : `Bearer ${token}`,
-          },
-        }
-      );
-      const result = await response.json();
+      // Usa el endpoint toggle-status para activar/desactivar
+      const result = await toggleMaintenanceStatus(maintenance.id_maintenance);
 
-      if (response.ok && result.success) {
-        // Actualiza el estado local
-        setMaintenanceData((prevData) =>
-          prevData.map((item) =>
-            item.id_maintenance === maintenance.id_maintenance
-              ? {
-                  ...item,
-                  estado:
-                    item.estado === "Habilitado"
-                      ? "Deshabilitado"
-                      : "Habilitado",
-                  id_estado: item.estado === "Habilitado" ? 2 : 1,
-                }
-              : item
-          )
-        );
-        setSuccessMsg(result.message || "Estado actualizado correctamente.");
-        setShowSuccess(true);
-      } else {
-        setErrorMsg(result.message || "No se pudo actualizar el estado.");
-        setShowError(true);
-      }
+      setMaintenanceData((prevData) =>
+        prevData.map((item) =>
+          item.id_maintenance === maintenance.id_maintenance
+            ? {
+                ...item,
+                estado: item.estado === "Activo" ? "Inactivo" : "Activo",
+                id_estado: item.estado === "Activo" ? 2 : 1,
+              }
+            : item
+        )
+      );
+      setSuccessMsg(result.message || "Estado actualizado correctamente.");
+      setShowSuccess(true);
     } catch (error) {
       setErrorMsg("Error al actualizar el estado del mantenimiento.");
       setShowError(true);
@@ -467,46 +435,60 @@ const GestorMantenimientos = () => {
     const nuevoTextoEstado = nuevoEstado === 1 ? "Habilitado" : "Inactivo";
 
     try {
-      const token =
-        localStorage.getItem("token") || sessionStorage.getItem("token");
-      const response = await fetch(
-        `https://api.inmero.co/sigma/main/maintenance/${maintenance.id_maintenance}/`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: token.startsWith("Bearer")
-              ? token
-              : `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            id_estado: nuevoEstado,
-            estado: nuevoTextoEstado,
-          }),
-        }
-      );
-      const result = await response.json();
+      // Usa el servicio updateMaintenance
+      const result = await updateMaintenance(maintenance.id_maintenance, {
+        id_estado: nuevoEstado,
+        estado: nuevoTextoEstado,
+        name: maintenance.name,
+        description: maintenance.description,
+        maintenance_type: maintenance.maintenance_type ?? maintenance.tipo_mantenimiento,
+        responsible_user: maintenance.responsible_user,
+      });
 
-      if (response.ok && result.success) {
-        // Actualiza el estado local
+      if (result && result.success) {
         setMaintenanceData((prevData) =>
           prevData.map((item) =>
             item.id_maintenance === maintenance.id_maintenance
-              ? { ...item, id_estado: nuevoEstado, estado: nuevoTextoEstado }
+              ? {
+                  ...item,
+                  estado: result.data?.estado ?? item.estado,
+                  id_estado: result.data?.id_estado ?? item.id_estado,
+                }
               : item
           )
         );
-        setSuccessMsg("Estado actualizado correctamente.");
+        setSuccessMsg(result.message || "Estado actualizado correctamente.");
         setShowSuccess(true);
       } else {
         setErrorMsg(
-          result.message || "Error al actualizar el estado del mantenimiento."
+          result?.message || "Error al actualizar el estado del mantenimiento."
         );
         setShowError(true);
       }
     } catch (error) {
       setErrorMsg("Error de conexión al actualizar el estado.");
       setShowError(true);
+    }
+  };
+
+  const handleEditMaintenance = async (id, payload) => {
+    try {
+      await updateMaintenance(id, payload);
+      loadMaintenanceData(); // Recarga la lista
+      setSuccessMsg("Mantenimiento actualizado correctamente.");
+      setShowSuccess(true);
+    } catch (error) {
+      setErrorMsg("Error al actualizar el mantenimiento.");
+      setShowError(true);
+    }
+  };
+
+  // Cuando el usuario cierra el modal de advertencia, desactiva el mantenimiento
+  const handleWarningAccept = async () => {
+    setShowWarning(false);
+    if (pendingDeactivate) {
+      await handleEnable(pendingDeactivate); // Usa toggle-status
+      setPendingDeactivate(null);
     }
   };
 
@@ -654,7 +636,11 @@ const GestorMantenimientos = () => {
         onClose={() => setShowSuccess(false)}
         title={
           <span className="parametrization-text">
-            {successMsg.includes("eliminado") ? "¡Eliminado!" : "¡Activado!"}
+            {successMsg.includes("eliminado")
+              ? "¡Eliminado!"
+              : successMsg.includes("desactivado")
+              ? "¡Desactivado!"
+              : "¡Activado!"}
           </span>
         }
         message={<span className="parametrization-text">{successMsg}</span>}
@@ -670,7 +656,7 @@ const GestorMantenimientos = () => {
       {/* Modal de advertencia */}
       <ErrorModal
         isOpen={showWarning}
-        onClose={() => setShowWarning(false)}
+        onClose={handleWarningAccept}
         title={<span className="text-red-600 font-bold">Advertencia</span>}
         message={
           <span>
@@ -710,7 +696,6 @@ const GestorMantenimientos = () => {
               ))}
             </select>
           </div>
-
           {/* Estado */}
           <div>
             <label className="block text-sm font-medium text-primary mb-3 parametrization-text">
