@@ -109,8 +109,6 @@ export default function EditMaintenanceModal({
   }, [isOpen, maintenance?.id_maintenance]);
 
   const onChange = (k, v) => setForm((prev) => ({ ...prev, [k]: v }));
-
-  // Construir payload limpio
   const payload = useMemo(() => {
     const maintenance_type = form.maintenance_type
       ? Number(form.maintenance_type)
