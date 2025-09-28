@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { FiSearch } from 'react-icons/fi'
 import { CiFilter } from 'react-icons/ci'
 import TableList from '@/app/components/shared/TableList'
-import MaintenanceFiltersModal from '@/app/components/machinery/history/FiltersModal'
+import MaintenanceFiltersModal from '@/app/components/machinery/history/MaintenanceFiltersModal'
 
 const fallbackRequests = [
   {
