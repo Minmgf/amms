@@ -210,7 +210,7 @@ export const registerUsageInfo = async (formData) => {
 
 // traer información de uso por id de maquinaria
 export const getUsageInfo = async (machineryId) => {
-    const { data } = await apiMain.get(`/machinery-usage/by-machinery/${machineryId}`);
+    const { data } = await apiMain.get(`/machinery-usage/by-machinery/${machineryId}/`);
     return data;
 };
 
