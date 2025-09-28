@@ -597,6 +597,9 @@ export default function MultiStepFormModal({ isOpen, onClose, onSuccess }) {
       // Mostrar error modal igual que en Step 1
       setModalMessage("El número de serie del terminal ya está registrado. Por favor, ingrese un número diferente.");
       setErrorOpen(true);
+      
+      // CRÍTICO: Bloquear el avance al siguiente paso cuando hay error
+      return;
     } finally {
       setIsSubmittingStep(false);
     }
