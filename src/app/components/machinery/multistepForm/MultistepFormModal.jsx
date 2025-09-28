@@ -41,8 +41,10 @@ import {
   getCabinTypes,
   createSpecificTechnicalSheet,
 } from "@/services/machineryService";
-import { SuccessModal, ErrorModal} from "@/app/components/shared/SuccessErrorModal";
-
+import {
+  SuccessModal,
+  ErrorModal,
+} from "@/app/components/shared/SuccessErrorModal";
 
 export default function MultiStepFormModal({ isOpen, onClose }) {
   const [step, setStep] = useState(0);
@@ -448,6 +450,9 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
   const validateStep3 = async () => {
     const currentValues = methods.getValues();
 
+    // Limpiar errores existentes
+    methods.clearErrors();
+
     // Campos obligatorios base
     const requiredFields = [
       "enginePower",
@@ -473,17 +478,21 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       "netWeightUnit",
     ];
 
-    const errors = [];
+    let hasErrors = false;
 
     // Validar campos obligatorios
     requiredFields.forEach((field) => {
       const value = currentValues[field];
-      if (!value || (typeof value === "string" && value.trim() === "")) {
+      if (
+        !value ||
+        value === "" ||
+        (typeof value === "string" && value.trim() === "")
+      ) {
         methods.setError(field, {
           type: "required",
           message: "Este campo es obligatorio",
         });
-        errors.push(field);
+        hasErrors = true;
       }
     });
 
@@ -514,7 +523,7 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
           type: "required",
           message: "Debe seleccionar una unidad cuando hay un valor",
         });
-        errors.push(unit);
+        hasErrors = true;
       }
     });
 
@@ -528,18 +537,87 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
           type: "validate",
           message: "El RPM mínimo debe ser menor al máximo",
         });
-        errors.push("performanceMin");
+        hasErrors = true;
       }
     }
 
-    // Trigger validation para actualizar UI
-    if (errors.length > 0) {
-      await methods.trigger(errors);
+    // Validar valores numéricos
+    const numericValidations = [
+      {
+        field: "enginePower",
+        min: 0.1,
+        max: 10000,
+        name: "La potencia del motor",
+      },
+      { field: "cylinderCapacity", min: 1, max: 50000, name: "El cilindraje" },
+      {
+        field: "cylindersNumber",
+        min: 1,
+        max: 32,
+        name: "El número de cilindros",
+        integer: true,
+      },
+      {
+        field: "fuelConsumption",
+        min: 0.1,
+        max: 1000,
+        name: "El consumo de combustible",
+      },
+      {
+        field: "operatingWeight",
+        min: 0.1,
+        max: 1000000,
+        name: "El peso operativo",
+      },
+      { field: "maxSpeed", min: 0.1, max: 500, name: "La velocidad máxima" },
+      { field: "width", min: 0.01, max: 100, name: "El ancho" },
+      { field: "length", min: 0.01, max: 100, name: "El largo" },
+      { field: "height", min: 0.01, max: 50, name: "El alto" },
+      { field: "netWeight", min: 0.1, max: 1000000, name: "El peso neto" },
+    ];
+
+    numericValidations.forEach(({ field, min, max, name, integer }) => {
+      const value = currentValues[field];
+      if (value && value !== "") {
+        const numValue = parseFloat(value);
+
+        if (isNaN(numValue)) {
+          methods.setError(field, {
+            type: "validate",
+            message: `${name} debe ser un número válido`,
+          });
+          hasErrors = true;
+        } else if (numValue < min) {
+          methods.setError(field, {
+            type: "validate",
+            message: `${name} debe ser mayor a ${min}`,
+          });
+          hasErrors = true;
+        } else if (numValue > max) {
+          methods.setError(field, {
+            type: "validate",
+            message: `${name} no puede exceder ${max}`,
+          });
+          hasErrors = true;
+        } else if (integer && !Number.isInteger(numValue)) {
+          methods.setError(field, {
+            type: "validate",
+            message: `${name} debe ser un número entero`,
+          });
+          hasErrors = true;
+        }
+      }
+    });
+
+    // Trigger validation para actualizar UI si hay errores
+    if (hasErrors) {
+      await methods.trigger();
       return false;
     }
 
     return true;
   };
+
   // Función para validar el paso 4
   const validateStep4 = () => {
     const currentValues = methods.getValues();
@@ -727,119 +805,125 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
     try {
       setIsSubmittingStep(true);
 
-      // Validar integridad de datos antes de enviar
-      const validationErrors = [];
-
-      // Verificar que los campos opcionales con valor tengan unidad
-      if (data.tankCapacity && !data.tankCapacityUnit) {
-        validationErrors.push("Capacidad del tanque requiere unidad");
-      }
-
-      if (validationErrors.length > 0) {
-        alert(`Errores de validación:\n${validationErrors.join("\n")}`);
-        return;
-      }
+      // Crear FormData para mantener consistencia con otros pasos
+      const formData = new FormData();
 
       // Mapear los datos del formulario al formato del backend
-      const payload = {
-        // Motor y transmisión
-        power: parseFloat(data.enginePower),
-        power_unit: parseInt(data.enginePowerUnit),
-        engine_type: parseInt(data.engineType),
-        cylinder_capacity: parseFloat(data.cylinderCapacity),
-        cylinder_capacity_unit: parseInt(data.cylinderCapacityUnit),
-        cylinder_arrangement_type: parseInt(data.arrangement),
-        cylinder_count: parseInt(data.cylindersNumber),
-        traction_type: data.traction ? parseInt(data.traction) : null,
-        fuel_consumption: parseFloat(data.fuelConsumption),
-        fuel_consumption_unit: parseInt(data.fuelConsumptionUnit),
-        transmission_system_type: parseInt(data.transmissionSystem),
+      // Motor y transmisión - campos obligatorios
+      formData.append("power", data.enginePower);
+      formData.append("power_unit", data.enginePowerUnit);
+      formData.append("engine_type", data.engineType);
+      formData.append("cylinder_capacity", data.cylinderCapacity);
+      formData.append("cylinder_capacity_unit", data.cylinderCapacityUnit);
+      formData.append("cylinder_arrangement_type", data.arrangement);
+      formData.append("cylinder_count", data.cylindersNumber);
+      formData.append("fuel_consumption", data.fuelConsumption);
+      formData.append("fuel_consumption_unit", data.fuelConsumptionUnit);
+      formData.append("transmission_system_type", data.transmissionSystem);
 
-        // Capacidad y rendimiento
-        fuel_capacity: data.tankCapacity ? parseFloat(data.tankCapacity) : null,
-        fuel_capacity_unit: data.tankCapacityUnit
-          ? parseInt(data.tankCapacityUnit)
-          : null,
-        carrying_capacity: data.carryingCapacity
-          ? parseFloat(data.carryingCapacity)
-          : null,
-        carrying_capacity_unit: data.carryingCapacityUnit
-          ? parseInt(data.carryingCapacityUnit)
-          : null,
-        operating_weight: parseFloat(data.operatingWeight),
-        operating_weight_unit: parseInt(data.operatingWeightUnit),
-        max_speed: parseFloat(data.maxSpeed),
-        max_speed_unit: parseInt(data.maxSpeedUnit),
-        draft_force: data.draftForce ? parseFloat(data.draftForce) : null,
-        draft_force_unit: data.draftForceUnit
-          ? parseInt(data.draftForceUnit)
-          : null,
-        maximum_altitude: data.maxOperatingAltitude
-          ? parseFloat(data.maxOperatingAltitude)
-          : null,
-        maximum_altitude_unit: data.maxOperatingAltitudeUnit
-          ? parseInt(data.maxOperatingAltitudeUnit)
-          : null,
-        minimum_performance: data.performanceMin
-          ? parseFloat(data.performanceMin)
-          : null,
-        maximum_performance: data.performanceMax
-          ? parseFloat(data.performanceMax)
-          : null,
-        performance_unit: data.performanceUnit
-          ? parseInt(data.performanceUnit)
-          : null,
+      // Campos opcionales con validación
+      if (data.traction) {
+        formData.append("traction_type", data.traction);
+      }
 
-        // Dimensiones y peso
-        width: parseFloat(data.width),
-        length: parseFloat(data.length),
-        height: parseFloat(data.height),
-        dimension_unit: parseInt(data.dimensionsUnit),
-        net_weight: parseFloat(data.netWeight),
-        net_weight_unit: parseInt(data.netWeightUnit),
+      if (data.tankCapacity) {
+        formData.append("fuel_capacity", data.tankCapacity);
+        formData.append("fuel_capacity_unit", data.tankCapacityUnit);
+      }
 
-        // Sistemas auxiliares
-        air_conditioning_system_type: data.airConditioning
-          ? parseInt(data.airConditioning)
-          : null,
-        air_conditioning_system_consumption: data.airConditioningConsumption
-          ? parseFloat(data.airConditioningConsumption)
-          : null,
-        air_conditioning_system_consumption_unit:
+      if (data.carryingCapacity) {
+        formData.append("carrying_capacity", data.carryingCapacity);
+        formData.append("carrying_capacity_unit", data.carryingCapacityUnit);
+      }
+
+      // Capacidad y rendimiento - campos obligatorios
+      formData.append("operating_weight", data.operatingWeight);
+      formData.append("operating_weight_unit", data.operatingWeightUnit);
+      formData.append("max_speed", data.maxSpeed);
+      formData.append("max_speed_unit", data.maxSpeedUnit);
+      formData.append("performance_unit", data.performanceUnit);
+
+      // Campos opcionales de rendimiento
+      if (data.draftForce) {
+        formData.append("draft_force", data.draftForce);
+        formData.append("draft_force_unit", data.draftForceUnit);
+      }
+
+      if (data.maxOperatingAltitude) {
+        formData.append("maximum_altitude", data.maxOperatingAltitude);
+        formData.append("maximum_altitude_unit", data.maxOperatingAltitudeUnit);
+      }
+
+      if (data.performanceMin) {
+        formData.append("minimum_performance", data.performanceMin);
+      }
+
+      if (data.performanceMax) {
+        formData.append("maximum_performance", data.performanceMax);
+      }
+
+      // Dimensiones y peso - campos obligatorios
+      formData.append("width", data.width);
+      formData.append("length", data.length);
+      formData.append("height", data.height);
+      formData.append("dimension_unit", data.dimensionsUnit);
+      formData.append("net_weight", data.netWeight);
+      formData.append("net_weight_unit", data.netWeightUnit);
+
+      // Sistemas auxiliares - campos opcionales
+      if (data.airConditioning) {
+        formData.append("air_conditioning_system_type", data.airConditioning);
+      }
+
+      if (data.airConditioningConsumption) {
+        formData.append(
+          "air_conditioning_system_consumption",
+          data.airConditioningConsumption
+        );
+        formData.append(
+          "air_conditioning_system_consumption_unit",
           data.airConditioningConsumptionUnit
-            ? parseInt(data.airConditioningConsumptionUnit)
-            : null,
-        maximum_working_pressure: data.maxHydraulicPressure
-          ? parseFloat(data.maxHydraulicPressure)
-          : null,
-        maximum_working_pressure_unit: data.maxHydraulicPressureUnit
-          ? parseInt(data.maxHydraulicPressureUnit)
-          : null,
-        pump_flow: data.hydraulicPumpFlowRate
-          ? parseFloat(data.hydraulicPumpFlowRate)
-          : null,
-        pump_flow_unit: data.hydraulicPumpFlowRateUnit
-          ? parseInt(data.hydraulicPumpFlowRateUnit)
-          : null,
-        hydraulic_tank_capacity: data.hydraulicReservoirCapacity
-          ? parseFloat(data.hydraulicReservoirCapacity)
-          : null,
-        hydraulic_tank_capacity_unit: data.hydraulicReservoirCapacityUnit
-          ? parseInt(data.hydraulicReservoirCapacityUnit)
-          : null,
+        );
+      }
 
-        // Normatividad
-        emission_level_type: data.emissionLevel
-          ? parseInt(data.emissionLevel)
-          : null,
-        cabin_type: data.cabinType ? parseInt(data.cabinType) : null,
+      if (data.maxHydraulicPressure) {
+        formData.append("maximum_working_pressure", data.maxHydraulicPressure);
+        formData.append(
+          "maximum_working_pressure_unit",
+          data.maxHydraulicPressureUnit
+        );
+      }
 
-        // IDs requeridos
-        id_machinery: machineryId,
-        id_responsible_user: parseInt(id),
-      };
+      if (data.hydraulicPumpFlowRate) {
+        formData.append("pump_flow", data.hydraulicPumpFlowRate);
+        formData.append("pump_flow_unit", data.hydraulicPumpFlowRateUnit);
+      }
 
-      const response = await createSpecificTechnicalSheet(payload);
+      if (data.hydraulicReservoirCapacity) {
+        formData.append(
+          "hydraulic_tank_capacity",
+          data.hydraulicReservoirCapacity
+        );
+        formData.append(
+          "hydraulic_tank_capacity_unit",
+          data.hydraulicReservoirCapacityUnit
+        );
+      }
+
+      // Normatividad - campos opcionales
+      if (data.emissionLevel) {
+        formData.append("emission_level_type", data.emissionLevel);
+      }
+
+      if (data.cabinType) {
+        formData.append("cabin_type", data.cabinType);
+      }
+
+      // IDs requeridos
+      formData.append("id_machinery", machineryId);
+      formData.append("id_responsible_user", id);
+
+      const response = await createSpecificTechnicalSheet(formData);
 
       // Marcar paso como completado y avanzar
       setCompletedSteps((prev) => [...prev, 2]);
@@ -848,12 +932,71 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       console.log("Step 3 submitted successfully:", response);
     } catch (error) {
       console.error("Error submitting step 3:", error);
+
+      // Mostrar error al usuario
+      if (error.response?.data) {
+        const errorData = error.response.data;
+
+        // Si el backend devuelve errores específicos por campo
+        if (errorData.errors) {
+          Object.keys(errorData.errors).forEach((field) => {
+            if (
+              errorData.errors[field] &&
+              Array.isArray(errorData.errors[field])
+            ) {
+              // Mapear nombres de campo del backend a nombres del frontend
+              const fieldMapping = {
+                power: "enginePower",
+                power_unit: "enginePowerUnit",
+                engine_type: "engineType",
+                cylinder_capacity: "cylinderCapacity",
+                cylinder_capacity_unit: "cylinderCapacityUnit",
+                cylinder_arrangement_type: "arrangement",
+                cylinder_count: "cylindersNumber",
+                fuel_consumption: "fuelConsumption",
+                fuel_consumption_unit: "fuelConsumptionUnit",
+                transmission_system_type: "transmissionSystem",
+                operating_weight: "operatingWeight",
+                operating_weight_unit: "operatingWeightUnit",
+                max_speed: "maxSpeed",
+                max_speed_unit: "maxSpeedUnit",
+                performance_unit: "performanceUnit",
+                width: "width",
+                length: "length",
+                height: "height",
+                dimension_unit: "dimensionsUnit",
+                net_weight: "netWeight",
+                net_weight_unit: "netWeightUnit",
+              };
+
+              const frontendField = fieldMapping[field] || field;
+              methods.setError(frontendField, {
+                type: "server",
+                message: errorData.errors[field][0],
+              });
+            }
+          });
+        }
+
+        // Mostrar mensaje de error general
+        const message =
+          errorData.message ||
+          "Error al guardar los datos técnicos específicos.";
+        setModalMessage(message);
+        setErrorOpen(true);
+      } else {
+        // Error genérico
+        const message =
+          "Error al guardar los datos. Por favor, inténtelo de nuevo.";
+        setModalMessage(message);
+        setErrorOpen(true);
+      }
     } finally {
       setIsSubmittingStep(false);
     }
   };
 
-  const nextStep = () => {
+  const nextStep = async () => {
     if (step === 0) {
       // Validar paso 1 antes de enviar
       if (!validateStep1()) {
