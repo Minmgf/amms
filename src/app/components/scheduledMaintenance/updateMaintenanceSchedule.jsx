@@ -9,7 +9,7 @@ const mockData = {
   maintenanceDetails:
     "The excavator makes strange engine noises during start-up and operation.",
   scheduleDate: "2025-03-21",
-  scheduleHour: "08",
+  scheduleHour: "00",
   scheduleMinute: "00",
   schedulePeriod: "AM",
   assignedTechnician: "Jaime Peña",
