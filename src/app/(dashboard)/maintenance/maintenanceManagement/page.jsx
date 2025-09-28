@@ -40,7 +40,7 @@ import {
   ErrorModal,
   ConfirmModal,
 } from "@/app/components/shared/SuccessErrorModal";
-import MaintenanceFilterModal from "@/app/components/shared/MaintenanceFilterModal";
+import MaintenanceFilterModal from "@/app/components/shared/FilterModal";
 
 const GestorMantenimientos = () => {
   // Estado para el filtro global
@@ -367,7 +367,7 @@ const GestorMantenimientos = () => {
               {/* Botón Editar - siempre visible */}
               <button
                 onClick={() => handleEdit(maintenance)}
-                className="inline-flex items-center px-3 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-gray-500 hover:text-gray-600"
+                className="inline-flex items-center px-3 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-gray-500 hover:text-gray-600 cursor-pointer"
                 title="Editar mantenimiento"
               >
                 <FaPen className="w-3 h-3" />
@@ -378,7 +378,7 @@ const GestorMantenimientos = () => {
               {isActive && (
                 <button
                   onClick={() => handleDelete(maintenance)}
-                  className="inline-flex items-center px-3 py-1.5 gap-2 border text-xs font-medium rounded border-red-300 bg-red-50 text-red-600 hover:border-red-500 hover:bg-red-100"
+                  className="inline-flex items-center px-3 py-1.5 gap-2 border text-xs font-medium rounded border-red-300 bg-red-50 text-red-600 hover:border-red-500 hover:bg-red-100 cursor-pointer"
                   title="Eliminar mantenimiento"
                 >
                   <FaTrash className="w-3 h-3" />
@@ -758,7 +758,7 @@ const GestorMantenimientos = () => {
             disponible en futuros formularios.
           </span>
         }
-        buttonText="Aceptar" // <-- Cambia el texto del botón aquí
+        buttonText="Aceptar"
       />
 
       {/* Modal de filtros - componente separado */}
@@ -805,70 +805,6 @@ const GestorMantenimientos = () => {
                 </option>
               ))}
             </select>
-          </div>
-
-          {/* Prioridad */}
-          <div>
-            <label className="block text-sm font-medium text-primary mb-3 parametrization-text">
-              Prioridad
-            </label>
-            <select
-              value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
-            >
-              <option value="">Todas las prioridades</option>
-              {availablePriorities.map((priority) => (
-                <option key={priority} value={priority}>
-                  {priority}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Solicitante */}
-          <div>
-            <label className="block text-sm font-medium text-primary mb-3 parametrization-text">
-              Solicitante
-            </label>
-            <select
-              value={requesterFilter}
-              onChange={(e) => setRequesterFilter(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
-            >
-              <option value="">Todos los solicitantes</option>
-              {availableRequesters.map((requester) => (
-                <option key={requester} value={requester}>
-                  {requester}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Fecha de Inicio */}
-          <div>
-            <label className="block text-sm font-medium text-primary mb-3 parametrization-text">
-              Fecha de Inicio
-            </label>
-            <input
-              type="date"
-              value={startDateFilter}
-              onChange={(e) => setStartDateFilter(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
-            />
-          </div>
-
-          {/* Fecha de Fin */}
-          <div>
-            <label className="block text-sm font-medium text-primary mb-3 parametrization-text">
-              Fecha de Fin
-            </label>
-            <input
-              type="date"
-              value={endDateFilter}
-              onChange={(e) => setEndDateFilter(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
-            />
           </div>
         </div>
       </MaintenanceFilterModal>
