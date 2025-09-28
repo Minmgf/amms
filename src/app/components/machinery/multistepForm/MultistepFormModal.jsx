@@ -594,23 +594,12 @@ export default function MultiStepFormModal({ isOpen, onClose, onSuccess }) {
     } catch (error) {
       console.error("Error submitting step 2:", error);
 
-      // Mostrar error al usuario
-      if (error.response?.data) {
-        const errorData = error.response.data;
-
-        // Si el backend devuelve errores específicos por campo
-        Object.keys(errorData).forEach((field) => {
-          if (errorData[field] && Array.isArray(errorData[field])) {
-            methods.setError(field, {
-              type: "server",
-              message: errorData[field][0],
-            });
-          }
-        });
-      } else {
-        // Error genérico
-        alert("Error al guardar los datos. Por favor, inténtelo de nuevo.");
-      }
+      // Mostrar error modal igual que en Step 1
+      setModalMessage("El número de serie del terminal ya está registrado. Por favor, ingrese un número diferente.");
+      setErrorOpen(true);
+      
+      // CRÍTICO: Bloquear el avance al siguiente paso cuando hay error
+      return;
     } finally {
       setIsSubmittingStep(false);
     }
