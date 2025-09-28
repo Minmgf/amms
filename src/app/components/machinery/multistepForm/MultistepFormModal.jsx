@@ -41,6 +41,8 @@ import {
   getCabinTypes,
   createSpecificTechnicalSheet,
 } from "@/services/machineryService";
+import { SuccessModal, ErrorModal} from "@/app/components/shared/SuccessErrorModal";
+
 
 export default function MultiStepFormModal({ isOpen, onClose }) {
   const [step, setStep] = useState(0);
@@ -846,12 +848,6 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       console.log("Step 3 submitted successfully:", response);
     } catch (error) {
       console.error("Error submitting step 3:", error);
-
-      if (error.response?.data) {
-        alert(
-          "Error al guardar la ficha técnica específica. Por favor, verifique los datos."
-        );
-      }
     } finally {
       setIsSubmittingStep(false);
     }
@@ -917,7 +913,8 @@ export default function MultiStepFormModal({ isOpen, onClose }) {
       // Aquí solo confirmamos que el proceso ha sido completado exitosamente
       console.log("Machinery registration completed with ID:", machineryId);
       console.log("Final form data:", data);
-      alert("¡Registro de maquinaria completado exitosamente!");
+      setModalMessage("¡Registro de maquinaria completado exitosamente!");
+      setSuccessOpen(true);
       onClose();
       methods.reset();
       setStep(0);
