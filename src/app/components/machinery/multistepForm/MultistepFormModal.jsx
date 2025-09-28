@@ -151,7 +151,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
   }, []);
 
   useEffect(() => {
-    if (isOpen && isEditMode && machineryToEdit) {
+    if (isOpen && isEditMode && machineryToEdit && machineryList.length > 0) {
       // Aquí deberías hacer los GET de cada paso usando el ID
       // Ejemplo para el paso 1:
       getGeneralData(machineryToEdit.id_machinery).then(data => {
@@ -170,13 +170,13 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
           city: data.id_city,
           telemetry: data.id_device,
           photo: null, // No puedes setear archivos directamente, solo si tienes la URL y lógica para cargarla
-          // ...agrega los demás campos que necesites mapear...
+          machineryStatues: data.machinery_operational_status,
         };
         methods.reset({
           ...methods.getValues(),
           ...mappedData
         });
-        setMachineryId(machineryToEdit.id);
+        setMachineryId(machineryToEdit.id_machinery);
       });
     }
     if (isOpen && !isEditMode) {
@@ -433,6 +433,12 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
       // Agregar foto si existe
       if (data.photo) {
         formData.append('image', data.photo);
+      }
+
+      // Agregar estado operativo si existe
+      if (data.justification) {
+        formData.append('machinery_operational_status', data.machineryStatues);
+        formData.append('justification', data.justification);
       }
 
       // 1. GET datos actuales si es edición
@@ -818,7 +824,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
             {/* Header */}
             <div className="flex justify-between items-center mb-4 sm:mb-6 md:mb-8">
               <h2 className="text-lg sm:text-xl md:text-theme-xl font-theme-semibold text-primary">
-                Añadir maquinaria
+                {isEditMode ? "Actualizar maquinaria" : "Añadir maquinaria"}
               </h2>
               <button
                 type="button"

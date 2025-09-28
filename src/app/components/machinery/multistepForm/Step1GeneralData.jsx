@@ -425,7 +425,7 @@ export default function Step1GeneralData({
             {/* Select de estado */}
             <div>
               <label className="block text-theme-sm text-secondary mb-1">
-                Estado de la maquinaria
+                Estado operacional
               </label>
               <select
                 aria-label="Machinery Status Select"
