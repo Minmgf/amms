@@ -32,7 +32,7 @@ from pathlib import Path
 # Agregar el directorio raíz al path para importar los módulos
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from flows.auth.login.selenium_login_flow import perform_login
+from flows.auth.login.selenium_login_flow import perform_login, save_browser_logs
 from flows.navigation.machinery_navigation import navigate_to_machinery
 
 # Importar funciones del paso anterior (IT-MAQ-003)
@@ -48,10 +48,30 @@ setup_test_environment = it_maq_003.setup_test_environment
 run_it_maq_003_step1 = it_maq_003.run_it_maq_003_step1
 run_it_maq_003_step2 = it_maq_003.run_it_maq_003_step2
 run_it_maq_003_step3 = it_maq_003.run_it_maq_003_step3
-cleanup_test_environment = it_maq_003.cleanup_test_environment
+# cleanup_test_environment = it_maq_003.cleanup_test_environment  # Comentado para usar versión local
 test_data = it_maq_003.test_data
 step2_test_data = it_maq_003.step2_test_data
 step3_test_data = it_maq_003.step3_test_data
+
+def cleanup_test_environment(driver, test_name="IT-MAQ-004"):
+    """
+    Limpia el entorno de prueba cerrando el navegador y guardando logs.
+
+    Args:
+        driver: Instancia de WebDriver a cerrar
+        test_name: Nombre del test para guardar logs
+    """
+    try:
+        if driver:
+            # Capturar y guardar logs del navegador antes de cerrar
+            print(f"Guardando logs de consola del navegador para {test_name}...")
+            save_browser_logs(driver, test_name)
+
+            print("Cerrando navegador...")
+            driver.quit()
+            print("Entorno de prueba limpiado")
+    except Exception as e:
+        print(f"Error limpiando entorno: {str(e)}")
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -303,7 +323,7 @@ def run_it_maq_004(headless=False):
         return False
 
     finally:
-        cleanup_test_environment(driver)
+        cleanup_test_environment(driver, "IT-MAQ-004")
 
 if __name__ == "__main__":
     success = run_it_maq_004(headless=False)  # Cambiar a True para modo headless

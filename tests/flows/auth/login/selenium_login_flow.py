@@ -4,6 +4,7 @@ Este módulo proporciona una función reutilizable para realizar login en la apl
 """
 
 import os
+import time
 from pathlib import Path
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -16,6 +17,45 @@ from dotenv import load_dotenv
 # Cargar variables de entorno desde .env
 PROJECT_ROOT = Path(__file__).parent.parent.parent.parent  # Navegar a la raíz del proyecto
 load_dotenv(PROJECT_ROOT / '.env')
+
+def save_browser_logs(driver, test_name):
+    """
+    Captura y guarda los logs de la consola del navegador en un archivo.
+
+    Args:
+        driver: Instancia de WebDriver
+        test_name: Nombre del test para el archivo de logs (ej: 'IT-MAQ-001')
+    """
+    try:
+        # Crear directorio de logs si no existe
+        logs_dir = PROJECT_ROOT / 'logs'
+        logs_dir.mkdir(exist_ok=True)
+
+        # Obtener logs del navegador
+        browser_logs = driver.get_log('browser')
+
+        # Crear archivo de logs
+        log_file_path = logs_dir / f"{test_name}_browser_console.log"
+
+        with open(log_file_path, 'w', encoding='utf-8') as f:
+            f.write(f"Browser Console Logs for {test_name}\n")
+            f.write("=" * 50 + "\n")
+            f.write(f"Generated at: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write("=" * 50 + "\n\n")
+
+            if browser_logs:
+                for log_entry in browser_logs:
+                    timestamp = time.strftime('%H:%M:%S', time.localtime(log_entry['timestamp'] / 1000))
+                    level = log_entry['level']
+                    message = log_entry['message']
+                    f.write(f"[{timestamp}] {level}: {message}\n")
+            else:
+                f.write("No browser console logs captured.\n")
+
+        print(f"Browser console logs saved to: {log_file_path}")
+
+    except Exception as e:
+        print(f"Error saving browser logs: {str(e)}")
 
 def perform_login(driver=None, headless=None):
     """
@@ -52,6 +92,13 @@ def perform_login(driver=None, headless=None):
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--disable-dev-shm-usage')
         chrome_options.add_argument('--start-maximized')  # Maximizar ventana al iniciar
+
+        # Habilitar logging de consola del navegador
+        chrome_options.add_experimental_option("useAutomationExtension", False)
+        chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        chrome_options.add_argument("--enable-logging")
+        chrome_options.add_argument("--log-level=0")
+        chrome_options.add_argument("--v=1")
 
         # Configurar path del chromedriver
         chromedriver_path = PROJECT_ROOT / 'chromedriver' / 'driver.exe'
@@ -132,6 +179,13 @@ def create_maximized_driver(headless=None):
     chrome_options.add_argument('--no-sandbox')
     chrome_options.add_argument('--disable-dev-shm-usage')
     chrome_options.add_argument('--start-maximized')  # Maximizar ventana al iniciar
+
+    # Habilitar logging de consola del navegador
+    chrome_options.add_experimental_option("useAutomationExtension", False)
+    chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    chrome_options.add_argument("--enable-logging")
+    chrome_options.add_argument("--log-level=0")
+    chrome_options.add_argument("--v=1")
 
     # Configurar path del chromedriver
     chromedriver_path = PROJECT_ROOT / 'chromedriver' / 'driver.exe'
