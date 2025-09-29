@@ -180,6 +180,21 @@ export const registerInfoTracker = async (formData) => {
     return data;
 };
 
+// ===== STEP 2 - TRACKER DATA EDIT FUNCTIONS =====
+// traer información del tracker por ID de maquinaria
+export const getTrackerInfo = async (machineryId) => {
+    const { data } = await apiMain.get(`/machinery-tracker/by-machinery/${machineryId}/`);
+    return data;
+};
+
+// actualizar información del tracker
+export const updateInfoTracker = async (trackerId, formData) => {
+    const { data } = await apiMain.put(`/machinery-tracker/${trackerId}/update/`, formData, 
+        {headers: {"Content-Type": "multipart/form-data"}}
+    );
+    return data;
+};
+
 // ===== PASO 4 =====
 
 // traer estados de uso
