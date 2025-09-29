@@ -1,9 +1,13 @@
 "use client";
 import React, { useState } from "react";
 import UpdateMaintenanceSchedule from "@/app/components/scheduledMaintenance/UpdateMaintenanceSchedule";
+import ScheduleMaintenanceModal from "@/app/components/scheduledMaintenance/CreateScheduleMaintenance";
+import CancelScheduledMaintenance from "@/app/components/scheduledMaintenance/CancelScheduledMaintenance";
 
 const PruebaPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
@@ -17,8 +21,31 @@ const PruebaPage = () => {
       >
         Visualizar Modal de Mantenimiento
       </button>
+      <button
+        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        aria-label="Abrir modal de crear de mantenimiento"
+        onClick={() => setIsCreateModalOpen(true)}
+      >
+        crear matenimiento programado
+      </button>
+      <button
+        className="mt-5 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        aria-label="Abrir modal de cancelar de mantenimiento"
+        onClick={()=>setIsCancelModalOpen(true)}
+      >
+        Cancelar Mantenimiento Programado
+      </button>
       {isModalOpen && (
         <UpdateMaintenanceSchedule onClose={handleCloseModal} />
+      )}
+      <ScheduleMaintenanceModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+      />
+      {isCancelModalOpen && (
+        <CancelScheduledMaintenance 
+          isOpen={isCancelModalOpen}
+          onClose={() => setIsCancelModalOpen(false)} />
       )}
     </div>
   );

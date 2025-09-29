@@ -6,17 +6,16 @@ const mockData = {
   serialNumber: "EXC-2024-0012",
   machineName: "Excavadora Caterpillar 320D",
   requestDate: "14 Mar 2025, 9:23 pm",
-  maintenanceDetails:
-    "The excavator makes strange engine noises during start-up and operation.",
-  scheduleDate: "2025-03-21",
+  maintenanceDetails: "",
+  scheduleDate: "",
   scheduleHour: "00",
   scheduleMinute: "00",
-  schedulePeriod: "AM",
-  assignedTechnician: "Jaime Peña",
-  maintenanceType: "Preventivo",
+  schedulePeriod: "",
+  assignedTechnician: "",
+  maintenanceType: "",
 };
 
-const technicians = ["Cesar Ramirez", "Luigy Rodriguez", "Luis Gómez"];
+const technicians = ["Cesar Ramirez", "Luigy Rodriguez", "Luis Gómez", "Jaime Peña"];
 const maintenanceTypes = ["Preventivo", "Correctivo", "Predictivo"];
 
 const UpdateMaintenanceSchedule = ({ onClose }) => {
@@ -48,19 +47,36 @@ const UpdateMaintenanceSchedule = ({ onClose }) => {
     setIsSubmitting(true);
     
     try {
-      // Validaciones básicas
-      if (
-        !scheduleDate ||
-        !hour ||
-        !minute ||
-        !period ||
-        !assignedTechnician ||
-        !maintenanceDetails ||
-        !maintenanceType
-      ) {
-        throw new Error("Todos los campos marcados con * son obligatorios.");
+      // Validaciones de campos obligatorios
+      if (!scheduleDate || scheduleDate === "" || scheduleDate === "2000-00-00") {
+        throw new Error("Debe seleccionar una fecha programada.");
       }
       
+      if (!hour || hour === "00" || hour === "") {
+        throw new Error("Debe ingresar una hora válida.");
+      }
+      
+      if (!minute || minute === "") {
+        throw new Error("Debe ingresar los minutos.");
+      }
+      
+      if (!period || period === "") {
+        throw new Error("Debe seleccionar AM o PM.");
+      }
+      
+      if (!assignedTechnician || assignedTechnician === "" || assignedTechnician === "Selecciona tu tecnico") {
+        throw new Error("Debe seleccionar un técnico asignado.");
+      }
+      
+      if (!maintenanceDetails || maintenanceDetails.trim() === "" || maintenanceDetails === "Descripcion....") {
+        throw new Error("Debe ingresar los detalles del mantenimiento.");
+      }
+      
+      if (!maintenanceType || maintenanceType === "" || maintenanceType === "Tipo de mantenimiento") {
+        throw new Error("Debe seleccionar un tipo de mantenimiento.");
+      }
+      
+      // Validación de longitud de detalles
       if (maintenanceDetails.length > 350) {
         throw new Error("Los detalles no pueden superar los 350 caracteres.");
       }
@@ -98,11 +114,11 @@ const UpdateMaintenanceSchedule = ({ onClose }) => {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-theme w-full max-w-4xl p-6 relative">
+      <div className="modal-theme w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 relative">
         <button
           aria-label="Cerrar"
           onClick={onClose}
-          className="absolute top-4 right-4 text-2xl text-secondary hover:text-primary"
+          className="absolute top-4 right-4 text-2xl text-secondary hover:text-primary z-10"
         >
           ×
         </button>
@@ -196,10 +212,12 @@ const UpdateMaintenanceSchedule = ({ onClose }) => {
                     <select
                       value={period}
                       onChange={(e) => setPeriod(e.target.value)}
-                      className="input-theme px-4 py-2 pr-8 min-w-[80px] appearance-none text-center font-theme-medium"
+                      className="input-theme px-4 py-2 pr-8 min-w-[70px] appearance-none text-center font-theme-medium"
+                      
                     > 
                       <option value="AM">AM</option>
                       <option value="PM">PM</option>
+                      
                     </select>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -234,6 +252,7 @@ const UpdateMaintenanceSchedule = ({ onClose }) => {
                     }
                     className="input-theme w-full pr-8 appearance-none"
                   >
+                    <option value="">Seleccione un técnico...</option>
                     {technicians.map((t) => (
                       <option key={t} value={t}>
                         {t}
@@ -269,6 +288,7 @@ const UpdateMaintenanceSchedule = ({ onClose }) => {
                   onChange={(e) =>
                     setMaintenanceDetails(e.target.value)
                   }
+                  placeholder="Ingrese los detalles del mantenimiento..."
                   maxLength={350}
                   rows={4}
                   className="input-theme w-full resize-none"
@@ -289,6 +309,7 @@ const UpdateMaintenanceSchedule = ({ onClose }) => {
                     }
                     className="input-theme w-full pr-8 appearance-none"
                   >
+                    <option value="">Seleccione un tipo...</option>
                     {maintenanceTypes.map((type) => (
                       <option key={type} value={type}>
                         {type}

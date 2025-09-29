@@ -1,15 +1,5 @@
+import { getToken } from "@/utils/tokenManager";
 import axios from "axios";
-
-// Función helper para obtener el token desde localStorage o sessionStorage
-const getAuthToken = () => {
-  // Primero intentar localStorage
-  let token = localStorage.getItem('token');
-  // Si no está en localStorage, intentar sessionStorage
-  if (!token) {
-    token = sessionStorage.getItem('token');
-  }
-  return token;
-};
 
 // Función para verificar si el token está expirado
 const isTokenExpired = (token) => {
@@ -92,7 +82,7 @@ const addInterceptors = (instance) => {
         return config;
       }
 
-      const token = getAuthToken();
+      const token = getToken();
       
       if (token) {
         // Verificar si el token está expirado antes de usarlo

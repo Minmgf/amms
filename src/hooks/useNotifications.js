@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef } from "react";
 import { getNotifications } from "@/services/notificationService";
+import { getToken } from "@/utils/tokenManager";
 
 export default function useNotifications() {
-  const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+  const token = getToken();
   const [notifications, setNotifications] = useState([]);
   const [status, setStatus] = useState("conectando...");
   const wsRef = useRef(null);
