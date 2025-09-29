@@ -10,7 +10,7 @@ const mockData = {
   scheduleDate: "",
   scheduleHour: "00",
   scheduleMinute: "00",
-  schedulePeriod: "AM",
+  schedulePeriod: "",
   assignedTechnician: "",
   maintenanceType: "",
 };
@@ -213,9 +213,11 @@ const UpdateMaintenanceSchedule = ({ onClose }) => {
                       value={period}
                       onChange={(e) => setPeriod(e.target.value)}
                       className="input-theme px-4 py-2 pr-8 min-w-[70px] appearance-none text-center font-theme-medium"
+                      
                     > 
                       <option value="AM">AM</option>
                       <option value="PM">PM</option>
+                      
                     </select>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
