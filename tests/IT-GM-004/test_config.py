@@ -5,7 +5,7 @@ Configuracion para la prueba IT-GM-004: Eliminar Mantenimiento
 """
 
 # URL de la aplicacion
-APP_URL = "http://localhost:3000/sigma"
+APP_URL = "http://localhost:3001/sigma"
 
 # Credenciales de login
 LOGIN_EMAIL = "diegosamboni2001@gmail.com"
@@ -23,3 +23,4 @@ SCREENSHOT_ON_ERROR = True
 SCREENSHOT_ON_SUCCESS = True
 
 print("Configuracion cargada desde test_config.py")
+

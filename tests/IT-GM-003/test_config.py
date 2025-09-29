@@ -2,7 +2,7 @@
 # Ajusta estos valores según tu entorno
 
 # URL de la aplicación (con prefijo /sigma)
-APP_URL = "http://localhost:3000/sigma"
+APP_URL = "http://localhost:3001/sigma"
 
 # Credenciales de login
 LOGIN_EMAIL = "diegosamboni2001@gmail.com"
@@ -23,3 +23,4 @@ CHROME_OPTIONS = [
 TEST_MAINTENANCE_NAME = "Mantenimiento_Test"
 TEST_MAINTENANCE_DESCRIPTION = "Descripción de prueba para mantenimiento"
 TEST_MAINTENANCE_TYPE = "Preventivo"
+
