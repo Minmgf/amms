@@ -114,11 +114,11 @@ const UpdateMaintenanceSchedule = ({ onClose }) => {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-theme w-full max-w-4xl p-6 relative">
+      <div className="modal-theme w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 relative">
         <button
           aria-label="Cerrar"
           onClick={onClose}
-          className="absolute top-4 right-4 text-2xl text-secondary hover:text-primary"
+          className="absolute top-4 right-4 text-2xl text-secondary hover:text-primary z-10"
         >
           ×
         </button>
@@ -212,7 +212,7 @@ const UpdateMaintenanceSchedule = ({ onClose }) => {
                     <select
                       value={period}
                       onChange={(e) => setPeriod(e.target.value)}
-                      className="input-theme px-4 py-2 pr-8 min-w-[80px] appearance-none text-center font-theme-medium"
+                      className="input-theme px-4 py-2 pr-8 min-w-[70px] appearance-none text-center font-theme-medium"
                     > 
                       <option value="AM">AM</option>
                       <option value="PM">PM</option>
