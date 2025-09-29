@@ -2,7 +2,7 @@
 # Ajusta estos valores según tu entorno
 
 # URL de la aplicación (con prefijo /sigma)
-APP_URL = "http://localhost:3001/sigma"
+APP_URL = "http://localhost:3000/sigma"
 
 # Credenciales de login
 LOGIN_EMAIL = "diegosamboni2001@gmail.com"
