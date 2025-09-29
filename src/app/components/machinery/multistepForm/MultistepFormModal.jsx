@@ -292,6 +292,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
     if (isOpen && !isEditMode) {
       methods.reset();
       setMachineryId(null);
+      setIdUsageSheet(null);
       setIdTrackerSheet(null); // Reset tracker ID
     }
   }, [isOpen, isEditMode, machineryToEdit, methods, machineryList]);
