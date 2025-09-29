@@ -180,6 +180,21 @@ export const registerInfoTracker = async (formData) => {
     return data;
 };
 
+// ===== STEP 2 - TRACKER DATA EDIT FUNCTIONS =====
+// traer información del tracker por ID de maquinaria
+export const getTrackerInfo = async (machineryId) => {
+    const { data } = await apiMain.get(`/machinery-tracker/by-machinery/${machineryId}/`);
+    return data;
+};
+
+// actualizar información del tracker
+export const updateInfoTracker = async (trackerId, formData) => {
+    const { data } = await apiMain.put(`/machinery-tracker/${trackerId}/update/`, formData, 
+        {headers: {"Content-Type": "multipart/form-data"}}
+    );
+    return data;
+};
+
 // ===== PASO 4 =====
 
 // traer estados de uso
@@ -207,6 +222,20 @@ export const registerUsageInfo = async (formData) => {
     );
     return data;
 };
+
+// traer información de uso por id de maquinaria
+export const getUsageInfo = async (machineryId) => {
+    const { data } = await apiMain.get(`/machinery-usage/by-machinery/${machineryId}/`);
+    return data;
+};
+
+// actualizar información de uso por id de uso
+export const updateUsageInfo = async (usageId, formData) => {
+    const { data } = await apiMain.put(`/machinery-usage/${usageId}/update/`, formData,
+        {headers: {"Content-Type": "multipart/form-data"}}
+    );
+    return data;
+}
 
 // ===== PASO 5 =====
 
@@ -286,6 +315,12 @@ export const deleteMachineryDoc = async (documentId) => {
 // listar documentos de maquinaria
 export const getMachineryDocs = async (machineryId) => {
     const { data } = await apiMain.get(`/machinery-documentation/list/${machineryId}/`);
+    return data;
+};
+
+// ===== CONFIRMAR REGISTRO DE MAQUINARIA =====
+export const confirmMachineryRegistration = async (machineryId) => {
+    const { data } = await apiMain.post(`/machinery/${machineryId}/confirm-registration/`);
     return data;
 };
 

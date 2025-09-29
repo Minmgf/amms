@@ -40,11 +40,13 @@ import {
   getEmissionLevelTypes,
   getCabinTypes,
   createSpecificTechnicalSheet,
-  getMachineryStatus,
-  getGeneralData,
-  updateGeneralData
+  confirmMachineryRegistration,
+  getMachineryStatus, 
+  getGeneralData, 
+  updateGeneralData, 
+  getUsageInfo, 
+  updateUsageInfo
        } from "@/services/machineryService";
-       
 import { SuccessModal, ErrorModal } from "../../shared/SuccessErrorModal";
 
 export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit }) {
@@ -68,6 +70,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
   const [isSubmittingStep, setIsSubmittingStep] = useState(false);
   const [machineryId, setMachineryId] = useState(null); // Para almacenar el ID devuelto por el backend
   const [id, setId] = useState(""); //id del usuario responsable
+  const [isConfirmingRegistration, setIsConfirmingRegistration] = useState(false);
  
   const [powerUnitsList, setPowerUnitsList] = useState([]);
   const [volumeUnitsList, setVolumeUnitsList] = useState([]);
@@ -90,6 +93,8 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
   const [errorOpen, setErrorOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const [machineryStatuesList, setMachineryStatuesList] = useState([]);
+  const [idUsageSheet, setIdUsageSheet] = useState(null); // Para almacenar el ID de la hoja de uso
+  const [idTrackerSheet, setIdTrackerSheet] = useState(null); // Para almacenar el ID del tracker
   // Hook del tema
   const { getCurrentTheme } = useTheme();
 
@@ -110,7 +115,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
       telemetry: "", // Este es opcional
       photo: null,
       machineryStatues: "",
-      justification: "",      
+      justificationGeneralData: "",      
 
       // Step 2 - Tracker Data
       terminalSerial: "",
@@ -172,6 +177,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
       tenure: "",
       ownership: false,
       contractEndDate: "",
+      justificationUsageInfo: "",
 
       // Step 5 - Maintenance Data
       maintenace: "",
@@ -201,6 +207,9 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
 
   useEffect(() => {
     if (!isOpen) {
+      methods.reset();
+      setStep(0);
+      setCompletedSteps([]);
       setMachineryId(null);
     }
   }, [isOpen]);
@@ -208,7 +217,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
   useEffect(() => {
     if (isOpen && isEditMode && machineryToEdit && machineryList.length > 0) {
       // Aquí deberías hacer los GET de cada paso usando el ID
-      // Ejemplo para el paso 1:
+      // Paso 1:
       getGeneralData(machineryToEdit.id_machinery).then(data => {
         // Mapea los datos del backend a los nombres del formulario
         const mappedData = {
@@ -233,12 +242,58 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
         });
         setMachineryId(machineryToEdit.id_machinery);
       });
+
+      // **NUEVO: Paso 2 - Cargar datos del tracker**
+      getTrackerInfo(machineryToEdit.id_machinery).then(trackerData => {
+        if (trackerData) {
+          const trackerMappedData = {
+            terminalSerial: trackerData.terminal_serial_number || "",
+            gpsSerial: trackerData.gps_serial_number || "",
+            chasisNumber: trackerData.chassis_number || "",
+            engineNumber: trackerData.engine_number || "",
+          };
+          
+          // Aplicar datos del tracker al formulario
+          Object.entries(trackerMappedData).forEach(([key, value]) => {
+            methods.setValue(key, value);
+          });
+          
+          // Guardar ID del tracker para futuras actualizaciones
+          setIdTrackerSheet(trackerData.id_tracker_sheet);
+        }
+      }).catch(error => {
+        console.warn("No tracker data found for this machinery:", error);
+        // No es un error crítico, puede ser que no tenga tracker aún
+        setIdTrackerSheet(null);
+      });
+
+      //Paso 4:
+      getUsageInfo(machineryToEdit.id_machinery).then(data => {
+        // Mapea los datos del backend a los nombres del formulario
+        const mappedData = {
+          acquisitionDate: data.acquisition_date,
+          usageState: data.usage_condition,
+          usedHours: data.usage_hours,
+          mileage: data.distance_value,
+          mileageUnit: data.distance_unit,
+          tenure: data.tenacy_type,
+          ownership: data.is_own,
+          contractEndDate: data.contract_end_date,  
+        };
+        methods.reset({
+          ...methods.getValues(),
+          ...mappedData
+        });
+        setIdUsageSheet(data.id_usage_sheet);
+      });
     }
     if (isOpen && !isEditMode) {
       methods.reset();
       setMachineryId(null);
+      setIdUsageSheet(null);
+      setIdTrackerSheet(null); // Reset tracker ID
     }
-  }, [isOpen, isEditMode, machineryToEdit, methods]);
+  }, [isOpen, isEditMode, machineryToEdit, methods, machineryList]);
 
   // Cuando cambia la marca, actualizamos los modelos
   useEffect(() => {
@@ -351,7 +406,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
     if (isOpen) {
       fetchSelects();
     }
-  }, [isOpen, step]);
+  }, [isOpen]);
 
   // Cargar países al montar el componente
   useEffect(() => {
@@ -735,7 +790,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
       // Agregar estado operativo si existe
       if (data.justification) {
         formData.append('machinery_operational_status', data.machineryStatues);
-        formData.append('justification', data.justification);
+        formData.append('justification', data.justificationGeneralData);
       }
 
       // 1. GET datos actuales si es edición
@@ -753,7 +808,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
       if (!existingData) {
         // No hay datos previos: POST
         const response = await registerGeneralData(formData);
-        setMachineryId(response.id || response.machinery_id);
+        setMachineryId(response.machinery_id);
       } else if (hasChanges) {
         // Hay datos previos y cambios: PUT
         await updateGeneralData(machineryId, formData);
@@ -793,44 +848,60 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
   const submitStep2 = async (data) => {
     try {
       setIsSubmittingStep(true);
-      // Crear FormData para enviar el archivo
+      
+      // Crear FormData para enviar los datos
       const formData = new FormData();
-
-      // Agregar todos los campos del paso 2
-      formData.append("id_machinery", machineryId);
       formData.append("terminal_serial_number", data.terminalSerial);
       formData.append("gps_serial_number", data.gpsSerial);
       formData.append("chassis_number", data.chasisNumber);
       formData.append("engine_number", data.engineNumber);
       formData.append("responsible_user", id);
 
-      const response = await registerInfoTracker(formData);
+      // Decidir si es CREATE o UPDATE
+      if (isEditMode && idTrackerSheet) {
+        // MODO EDICIÓN: Actualizar tracker existente
+        console.log("=== STEP 2 PUT (Update Mode) ===");
+        console.log("Updating tracker with ID:", idTrackerSheet);
+        
+        // Para UPDATE no necesitamos id_machinery en el FormData
+        await updateInfoTracker(idTrackerSheet, formData);
+        
+      } else {
+        // MODO CREACIÓN: Crear nuevo tracker
+        console.log("=== STEP 2 POST (Creation Mode) ===");
+        console.log("Creating new tracker for machinery:", machineryId);
+        
+        // Para CREATE sí necesitamos id_machinery
+        formData.append("id_machinery", machineryId);
+        const response = await registerInfoTracker(formData);
+        
+        // Guardar el ID del tracker recién creado
+        setIdTrackerSheet(response.id_tracker_sheet || response.id);
+      }
 
       // Marcar paso como completado y avanzar
       setCompletedSteps((prev) => [...prev, 1]);
       setStep(2);
 
-      console.log("Step 2 submitted successfully:", response);
     } catch (error) {
       console.error("Error submitting step 2:", error);
-
-      // Mostrar error al usuario
-      if (error.response?.data) {
-        const errorData = error.response.data;
-
-        // Si el backend devuelve errores específicos por campo
-        Object.keys(errorData).forEach((field) => {
-          if (errorData[field] && Array.isArray(errorData[field])) {
-            methods.setError(field, {
-              type: "server",
-              message: errorData[field][0],
-            });
-          }
-        });
-      } else {
-        // Error genérico
-        alert("Error al guardar los datos. Por favor, inténtelo de nuevo.");
+      
+      let errorMessage = "Error al guardar la información del tracker.";
+      
+      if (error.response?.data?.terminal_serial_number) {
+        errorMessage = "El número de serie del terminal ya está registrado. Por favor, ingrese un número diferente.";
+      } else if (error.response?.data?.details) {
+        errorMessage = Object.values(error.response.data.details).flat().join(" ");
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
       }
+      
+      setModalMessage(errorMessage);
+      setErrorOpen(true);
+      
+      // CRÍTICO: Bloquear el avance al siguiente paso cuando hay error
+      return;
+      
     } finally {
       setIsSubmittingStep(false);
     }
@@ -855,13 +926,50 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
       formData.append("contract_end_date", data.contractEndDate);
       formData.append("responsible_user", id);
 
-      const response = await registerUsageInfo(formData);
+      if (data.justificationUsage) {
+        formData.append('justification', data.justificationUsageInfo);
+      }
 
+      let existingData = null;
+      if (isEditMode && machineryId) {
+        existingData = await getUsageInfo(machineryId);
+      }
+
+      const hasChanges = !existingData || Object.keys(data).some(
+        key => data[key] !== existingData[key]
+      );
+
+      if (!existingData) {
+        await registerUsageInfo(formData);
+      } else if (hasChanges) {
+        await updateUsageInfo(idUsageSheet, formData);
+      }
       // Marcar paso como completado y avanzar
       setCompletedSteps((prev) => [...prev, 3]);
       setStep(4);
     } catch (error) {
-      console.error("Error submitting step 1:", error);
+      let message = "Error al guardar los datos. Por favor, inténtelo de nuevo.";
+
+      if (error.response?.data?.details) {
+        const details = error.response.data.details;
+        // Recorre cada campo y concatena los mensajes
+        message = Object.entries(details)
+          .map(([field, value]) => {
+            if (Array.isArray(value)) {
+              // Si es un array de mensajes
+              return value.join(" ");
+            } else if (typeof value === "object" && value !== null) {
+              // Si es un objeto anidado (como image.image)
+              return Object.values(value).join(" ");
+            } else {
+              // Mensaje simple
+              return value;
+            }
+          })
+          .join(" ");
+      }
+      setModalMessage(message);
+      setErrorOpen(true);
     } finally {
       setIsSubmittingStep(false);
     }
@@ -995,7 +1103,6 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
       setCompletedSteps((prev) => [...prev, 2]);
       setStep(3);
 
-      console.log("Step 3 submitted successfully:", response);
     } catch (error) {
       console.error("Error submitting step 3:", error);
 
@@ -1098,7 +1205,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
         if (!completedSteps.includes(s)) {
           setCompletedSteps((prev) => [...prev, s]);
         }
-        return newStep;
+        return newStep;        
       });
     }
   };
@@ -1111,7 +1218,34 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
     }
   };
 
-  const onSubmit = (data) => {
+  // Función para confirmar el registro de maquinaria
+  const confirmRegistration = async () => {
+    try {
+      setIsConfirmingRegistration(true);
+      
+      const response = await confirmMachineryRegistration(machineryId);
+      
+      if (response.success) {
+        // Mostrar alerta de confirmación exitosa
+        setModalMessage(response.message || "Registro de maquinaria confirmado exitosamente.");
+        setSuccessOpen(true);     
+        onSuccess();   
+        methods.reset();
+        setStep(0);
+        setCompletedSteps([]);
+        setMachineryId(null);
+        
+      }      
+    } catch (error) {
+      let message = "Error al confirmar el registro. Por favor, inténtelo de nuevo.";
+      setModalMessage(error.response.data.details || message);
+      setErrorOpen(true);      
+    } finally {
+      setIsConfirmingRegistration(false);
+    }
+  };
+
+  const onSubmit = () => {
     // Si estamos en el último paso, finalizar el proceso
     if (step === steps.length - 1) {
       if (!validateStep6()) {
@@ -1437,6 +1571,8 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
                   distanceUnitsList={distanceUnitsList}
                   usageStatesList={usageStatesList}
                   tenureTypesList={tenureTypesList}
+                  machineryStatuesList={machineryStatuesList}
+                  currentStatusName={machineryToEdit?.machinery_operational_status_name?.toLowerCase()}
                 />
               )}
               {step === 4 && (
@@ -1492,7 +1628,10 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
       </div>
       <SuccessModal
         isOpen={successOpen}
-        onClose={() => setSuccessOpen(false)}
+        onClose={() => {
+          setSuccessOpen(false);
+          onClose();
+        }}
         title="Éxito"
         message={modalMessage}
       />

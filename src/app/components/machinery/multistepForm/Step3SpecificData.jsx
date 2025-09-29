@@ -403,11 +403,14 @@ export default function Step3SpecificData({
                     className="parametrization-input"
                   >
                     <option value="">Unidad</option>
-                    {powerUnitsList.map((unit) => (
-                      <option key={unit.id_units} value={unit.id_units}>
-                        {unit.symbol}
-                      </option>
-                    ))}
+                    {powerUnitsList.map(
+                      (unit) => 
+                        (
+                          <option key={unit.id_units} value={unit.id_units}>
+                            {unit.symbol}
+                          </option>
+                        )
+                    )}
                   </select>
                   {errors.enginePowerUnit && (
                     <span
@@ -434,11 +437,14 @@ export default function Step3SpecificData({
                   className="parametrization-input"
                 >
                   <option value="">Seleccionar tipo</option>
-                  {engineTypesList.map((type) => (
-                    <option key={type.id_types} value={type.id_types}>
-                      {type.name}
-                    </option>
-                  ))}
+                  {engineTypesList.map(
+                    (type) => 
+                      (
+                        <option key={type.id_types} value={type.id_types}>
+                          {type.name}
+                        </option>
+                      )
+                  )}
                 </select>
                 {errors.engineType && (
                   <span
