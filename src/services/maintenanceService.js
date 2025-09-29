@@ -41,3 +41,12 @@ export const getMaintenanceDetail = async (id) => {
     const { data } = await apiMain.get(`/maintenance/${id}/`);
     return data;
 };
+
+// Rechazar solicitud de mantenimiento
+export const rejectMaintenanceRequest = async (id, justification) => {
+    const { data } = await apiMain.post(
+        `/maintenance_request/${id}/reject/`,
+        { justification }
+    );
+    return data;
+};
