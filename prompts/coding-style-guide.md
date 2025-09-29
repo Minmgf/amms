@@ -66,23 +66,72 @@ La estructura del proyecto está organizada por funcionalidad. Es crucial manten
 
 -   **Componentes Reutilizables:** Antes de crear un componente nuevo, revisa siempre la carpeta `src/components/shared`. Contiene elementos de UI genéricos (botones, modales, tablas, etc.) que deben ser utilizados para mantener la consistencia visual y funcional en toda la aplicación.
     -   **Notificaciones y Alertas:** Para mostrar mensajes de éxito o error al usuario, utiliza siempre los modales `SuccessModal` y `ErrorModal` que se encuentran en `@/app/components/shared/SuccessErrorModal`.
+
 ---
 
-## 5. Estilos y Temas
+## 5. Documentación de Componentes Compartidos
+
+A continuación se documentan los componentes compartidos más importantes. Es obligatorio usarlos para las funcionalidades que se describen.
+
+### 5.1. Modales de Notificación (`SuccessErrorModal.jsx`)
+
+Este archivo exporta tres componentes para manejar notificaciones al usuario: `SuccessModal`, `ErrorModal`, y `ConfirmModal`.
+
+-   **`SuccessModal`**: Muestra un mensaje de éxito.
+-   **`ErrorModal`**: Muestra un mensaje de error.
+-   **`ConfirmModal`**: Pide confirmación al usuario antes de una acción crítica (ej. eliminar un registro).
+
+-   **Props Principales (`SuccessModal`, `ErrorModal`):**
+    -   `isOpen`: Booleano para controlar la visibilidad.
+    -   `onClose`: Función para cerrar el modal.
+    -   `title`: (Opcional) El texto del título.
+    -   `message`: (Opcional) El cuerpo del mensaje.
+-   **Props Adicionales (`ConfirmModal`):**
+    -   `onConfirm`: Función que se ejecuta cuando el usuario confirma la acción.
+
+### 5.2. Tabla Genérica (`TableList.jsx`)
+
+Es un componente basado en `@tanstack/react-table` que renderiza una tabla con paginación, ordenamiento y filtro global. Se le debe pasar la configuración de las columnas y los datos a mostrar.
+
+-   **Props Principales:**
+    -   `columns`: Un array que define la estructura de las columnas (siguiendo el formato de TanStack Table).
+    -   `data`: El array de objetos a mostrar en la tabla.
+    -   `loading`: Un booleano para mostrar un indicador de carga mientras se obtienen los datos.
+
+### 5.3. Modal de Filtros (`FilterModal.jsx`)
+
+Proporciona una estructura base para un modal de filtros con botones de "Aplicar" y "Limpiar". Los campos y la lógica del filtro se le deben pasar como elementos hijos (`children`).
+
+-   **Props Principales:**
+    -   `open`: Booleano para controlar la visibilidad del modal.
+    -   `onClose`: Función para cerrar el modal.
+    -   `onApply`: Función que se ejecuta al presionar el botón "Aplicar".
+    -   `onClear`: Función que se ejecuta al presionar el botón "Limpiar".
+    -   `children`: Los componentes (inputs, selects, etc.) que conforman el formulario de filtro.
+
+### 5.4. Base para Modales y Diálogos (`@radix-ui/react-dialog`)
+
+Radix UI es la librería fundamental que utilizamos para construir cualquier tipo de modal o diálogo en la aplicación. Proporciona la base de accesibilidad y funcionalidad (manejo del foco, cierre con la tecla `Esc`, etc.), permitiéndonos construir sobre ella nuestros propios componentes estilizados, como el `FilterModal` o `ConfirmModal`.
+
+-   **Cuándo usarlo:** Siempre que necesites crear un nuevo componente de tipo modal que no se ajuste a los ya existentes (`SuccessModal`, `FilterModal`, etc.), debes usar Radix UI como base para asegurar la consistencia y accesibilidad.
+
+---
+
+## 6. Estilos y Temas
 
 -   **Tailwind CSS:** Utiliza las clases de utilidad de Tailwind CSS directamente en el atributo `className`. Evita usar valores arbitrarios (ej. `top-[13px]`).
 -   **Sistema de Temas:** Todos los componentes deben ser compatibles con el sistema de temas del proyecto. Utiliza las variables CSS definidas en `src/styles/theme.css` para colores, fuentes y otros aspectos visuales para asegurar que los componentes se adapten correctamente al tema activo.
 
 ---
 
-## 6. Manejo de Estado
+## 7. Manejo de Estado
 
 -   **Estado Local:** Usa el hook `useState` para el estado que solo afecta a un componente.
 -   **Estado Global:** Usa `useContext` para el estado que necesita ser compartido por múltiples componentes (ej. datos de usuario autenticado, tema de la aplicación). El `PermissionsContext` es el lugar central para gestionar los permisos y roles del usuario.
 
 ---
 
-## 7. Peticiones a la API (Services)
+## 8. Peticiones a la API (Services)
 
 -   **Toda la lógica de API debe estar en `src/services/`**. Los componentes no deben hacer llamadas a `axios` directamente.
 -   Cada archivo de servicio debe agrupar funciones relacionadas con un recurso de la API (ej. `authService.js`, `machineryService.js`).
@@ -120,14 +169,14 @@ La estructura del proyecto está organizada por funcionalidad. Es crucial manten
 
 ---
 
-## 8. Hooks Personalizados (`use...`)
+## 9. Hooks Personalizados (`use...`)
 
 -   Encapsula lógica compleja o reutilizable en hooks personalizados. Por ejemplo, `useAuth` es el lugar correcto para centralizar la lógica de `isAuthenticated`, `logout`, etc.
 -   **Mejora recomendada (`useAuth`):** El hook `useAuth` debe ser la única fuente de verdad sobre el estado de autenticación. Lógica como la decodificación del token o la comprobación de expiración que se encuentra en la página de login debería moverse a este hook o a un helper para ser reutilizada.
 
 ---
 
-## 9. Funciones de Utilidad (Utils)
+## 10. Funciones de Utilidad (Utils)
 
 -   Crea una carpeta `src/utils` para centralizar funciones puras y reutilizables que no son específicas de un componente o servicio.
 -   **Agrupa por dominio:** Organiza las utilidades en archivos según su funcionalidad.
@@ -151,14 +200,14 @@ La estructura del proyecto está organizada por funcionalidad. Es crucial manten
 
 ---
 
-## 10. Formularios
+## 11. Formularios
 
 -   Usa la librería `react-hook-form` para todos los formularios.
 -   Define las reglas de validación en el objeto que se pasa a la función `register`.
 
 ---
 
-## 11. Código Limpio
+## 12. Código Limpio
 
 -   **Elimina código no utilizado:** Antes de hacer commit, elimina `console.log`, comentarios de código antiguo y variables no utilizadas.
 -   **Comentarios:** Escribe comentarios solo para explicar lógica de negocio compleja o algoritmos que no son evidentes a simple vista. No comentes lo obvio.
@@ -166,7 +215,7 @@ La estructura del proyecto está organizada por funcionalidad. Es crucial manten
 
 ---
 
-## 12. Reglas Generales de Desarrollo
+## 13. Reglas Generales de Desarrollo
 
 -   **Idioma:** Todos los textos visibles para el usuario en la interfaz (labels, botones, mensajes de error, etc.) deben estar en **español**.
 -   **Accesibilidad y Pruebas:** Todo elemento interactivo (botones, enlaces, inputs, etc.) debe tener un atributo `aria-label` descriptivo. Esto es fundamental para la accesibilidad y facilita la creación de pruebas automatizadas.
@@ -175,7 +224,7 @@ La estructura del proyecto está organizada por funcionalidad. Es crucial manten
 
 ---
 
-## 13. Flujo de Trabajo con Git
+## 14. Flujo de Trabajo con Git
 
 -   **Nomenclatura de Ramas:** Para mantener un historial claro, las ramas deben seguir la siguiente convención:
     -   **Nuevas funcionalidades:** `feature/descripcion-corta-de-la-funcionalidad` (ej. `feature/login-con-google`)

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import React from "react";
+import { getToken } from "@/utils/tokenManager";
 
 export default function DashboardLayout({ children }) {
   const [isOpen, setIsOpen] = useState(true);
@@ -11,7 +12,7 @@ export default function DashboardLayout({ children }) {
   const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    const token = getToken();
     if (!token) {
       router.replace("/login");
     } else {
