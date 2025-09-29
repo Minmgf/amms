@@ -941,7 +941,35 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
   };
 
   const nextStep = () => {
- 
+    if (step === 0) {
+      // Validar paso 1 antes de enviar
+      if (!validateStep1()) {
+        return;
+      }
+      const currentData = methods.getValues();
+      submitStep1(currentData);
+    } else if (step === 1) {
+      // Validar y enviar paso 2
+      if (!validateStep2()) {
+        return;
+      }
+      const currentData = methods.getValues();
+      submitStep2(currentData);
+    } else if (step === 2) {
+      // Validar y enviar paso 3
+      if (!validateStep3()) {
+        return;
+      }
+      const currentData = methods.getValues();
+      submitStep3(currentData);
+    } else if (step === 3) {
+      // Validar y enviar paso 4
+      if (!validateStep4()) {
+        return;
+      }
+      const currentData = methods.getValues();
+      submitStep4(currentData);
+    } else {
       // Para los otros pasos, avanzar normalmente
       setStep((s) => {
         const newStep = Math.min(s + 1, steps.length - 1);
@@ -950,7 +978,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
         }
         return newStep;        
       });
-    
+    }
   };
 
   const prevStep = () => setStep((s) => Math.max(s - 1, 0));
