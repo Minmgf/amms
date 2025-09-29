@@ -1,4 +1,5 @@
 "use client";
+import { getToken } from '@/utils/tokenManager';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const PermissionsContext = createContext();
@@ -67,7 +68,7 @@ export const PermissionsProvider = ({ children }) => {
 
   // Inicialización al montar el componente (silenciosa)
   useEffect(() => {
-    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    const token = getToken();
     if (token) {
       // Carga silenciosa sin loading
       updateFromToken(token, false);
@@ -108,7 +109,7 @@ export const PermissionsProvider = ({ children }) => {
 
   const refreshPermissions = () => {
     setLoading(true);
-    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    const token = getToken();
     if (token) {
       const result = updateFromToken(token);
       setLoading(false);

@@ -190,7 +190,7 @@ export default function EditMaintenanceModal({
             Editar Mantenimiento
           </h2>
           <button
-            aria-label="Close modal Button"
+            aria-label="Close maintenance modal"
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
           >
@@ -229,7 +229,7 @@ export default function EditMaintenanceModal({
                 required
                 maxLength={100}
                 placeholder="Ej. Cambio de aceite"
-                aria-label="Maintenance type Select"
+                aria-label="Maintenance name input"
               />
             </div>
 
@@ -242,7 +242,7 @@ export default function EditMaintenanceModal({
                 value={form.maintenance_type}
                 onChange={(e) => onChange("maintenance_type", e.target.value)}
                 className="parametrization-input"
-                aria-label="Maintenance type Select"
+                aria-label="Maintenance type select"
                 required
               >
                 {typeOptions.map((o) => (
@@ -265,7 +265,7 @@ export default function EditMaintenanceModal({
                 className="parametrization-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-black resize-none"
                 value={form.description}
                 onChange={(e) => onChange("description", e.target.value)}
-                aria-label="Problem description Textarea"
+                aria-label="Maintenance description textarea"
                 placeholder="Describa el mantenimiento aquí..."
                 rows={4}
                 maxLength={300}
@@ -281,6 +281,7 @@ export default function EditMaintenanceModal({
                 onClick={onClose}
                 className="btn-error btn-theme w-40 px-8 py-2 font-semibold rounded-lg"
                 disabled={submitting}
+                aria-label="Cancel maintenance editing"
               >
                 Cancelar
               </button>
@@ -288,6 +289,7 @@ export default function EditMaintenanceModal({
                 type="submit"
                 className="btn-primary w-40 px-8 py-2 font-semibold rounded-lg text-white"
                 disabled={submitting}
+                aria-label="Submit maintenance editing"
               >
                 {submitting ? "Editando..." : "Editar"}
               </button>

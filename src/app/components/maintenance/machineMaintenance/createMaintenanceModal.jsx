@@ -133,7 +133,7 @@ export default function CreateMaintenanceModal({
             Crear Mantenimiento
           </h2>
           <button
-            aria-label="Close modal Button"
+            aria-label="Close maintenance modal"
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
           >

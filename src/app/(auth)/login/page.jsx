@@ -12,6 +12,7 @@ import {
   SuccessModal,
   ErrorModal,
 } from "@/app/components/shared/SuccessErrorModal";
+import { getToken } from "@/utils/tokenManager";
 
 const Page = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -41,18 +42,9 @@ const Page = () => {
     }
   }
 
-  // Función helper para obtener el token desde localStorage o sessionStorage
-  const getAuthToken = () => {
-    let token = localStorage.getItem("token");
-    if (!token) {
-      token = sessionStorage.getItem("token");
-    }
-    return token;
-  };
-
   useEffect(() => {
     // Usar la misma lógica que usa el interceptor de axios
-    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    const token = getToken();
     if (token) {
       // Verificar si el token es válido antes de redirigir
       try {

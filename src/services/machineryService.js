@@ -73,6 +73,17 @@ export const createSpecificTechnicalSheet = async (payload) => {
     return data;
 };
 
+export const getSpecificTechnicalSheet = async (machineryId) => {
+    const { data } = await apiMain.get(`/machinery-specific-sheet/machinery/${machineryId}/`);
+    return data.data;
+};
+
+// Actualizar ficha técnica específica
+export const updateSpecificTechnicalSheet = async (specificTechnicalSheetId, payload) => {
+    const { data } = await apiMain.put(`/specific-technical-sheets/${specificTechnicalSheetId}/`, payload);
+    return data;
+};
+
 // ENDPOINTS PARA UNIDADES (Units)
 
 // Unidades de Potencia
@@ -199,8 +210,8 @@ export const updateInfoTracker = async (trackerId, formData) => {
 
 // traer estados de uso
 export const getUseStates = async () => {
-    const { data } = await apiMain.get("/statues/list/3/");
-    return data;
+    const { data } = await apiMain.get("/statues/list/2/");
+    return Array.isArray(data) ? data : [];
 };
 
 // traer unidades de distancia
@@ -357,4 +368,11 @@ export const getMachineryList = async () => {
             error: error.response?.data || error.message
         };
     }
+};
+
+// obtener foto de maquinaria
+export const getMachineryPhoto = async (machineryId) => {
+    const { data } = await apiMain.get(`/machinery/${machineryId}/photo/`);
+    // Supón que el endpoint devuelve { url: "https://..." }
+    return data?.url || null;
 };
