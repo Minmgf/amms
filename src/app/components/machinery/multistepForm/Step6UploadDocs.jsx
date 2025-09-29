@@ -30,14 +30,7 @@ export default function Step6UploadDocs({ machineryId }) {
       try {
         setLoadingDocs(true);
         const response = await getMachineryDocs(machineryId);
-        const documents = response.data || response || [];
-        
-        // Debug: mostrar la estructura de los documentos
-        console.log('Documentos recibidos del backend:', documents);
-        if (documents.length > 0) {
-          console.log('Estructura del primer documento:', documents[0]);
-          console.log('Claves disponibles:', Object.keys(documents[0]));
-        }
+        const documents = response.data || response || [];        
         
         setExistingDocs(documents);
       } catch (error) {

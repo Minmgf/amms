@@ -512,11 +512,6 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
       "netWeightUnit",
     ];
 
-    // Justo después de recibir las props, agrega:
-    console.log("Engine Types List:", engineTypesList);
-    console.log("Cylinder Arrangement List:", cylinderArrangementList);
-    console.log("Traction Types List:", tractionTypesList);
-
     const missingFields = requiredFields.filter((field) => {
       const value = currentValues[field];
       return !value || (typeof value === "string" && value.trim() === "");
@@ -623,7 +618,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
       if (!existingData) {
         // No hay datos previos: POST
         const response = await registerGeneralData(formData);
-        setMachineryId(response.id || response.machinery_id);
+        setMachineryId(response.machinery_id);
       } else if (hasChanges) {
         // Hay datos previos y cambios: PUT
         await updateGeneralData(machineryId, formData);
@@ -680,7 +675,6 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
       setCompletedSteps((prev) => [...prev, 1]);
       setStep(2);
 
-      console.log("Step 2 submitted successfully:", response);
     } catch (error) {
       console.error("Error submitting step 2:", error);
 
@@ -728,8 +722,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
       );
 
       if (!existingData) {
-        const response = await registerUsageInfo(formData);
-        setMachineryId(response.id || response.machinery_id);
+        await registerUsageInfo(formData);
       } else if (hasChanges) {
         await updateUsageInfo(idUsageSheet, formData);
       }
@@ -737,7 +730,28 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
       setCompletedSteps((prev) => [...prev, 3]);
       setStep(4);
     } catch (error) {
-      console.error("Error submitting step 1:", error);
+      let message = "Error al guardar los datos. Por favor, inténtelo de nuevo.";
+
+      if (error.response?.data?.details) {
+        const details = error.response.data.details;
+        // Recorre cada campo y concatena los mensajes
+        message = Object.entries(details)
+          .map(([field, value]) => {
+            if (Array.isArray(value)) {
+              // Si es un array de mensajes
+              return value.join(" ");
+            } else if (typeof value === "object" && value !== null) {
+              // Si es un objeto anidado (como image.image)
+              return Object.values(value).join(" ");
+            } else {
+              // Mensaje simple
+              return value;
+            }
+          })
+          .join(" ");
+      }
+      setModalMessage(message);
+      setErrorOpen(true);
     } finally {
       setIsSubmittingStep(false);
     }
@@ -852,7 +866,6 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
       setCompletedSteps((prev) => [...prev, 2]);
       setStep(3);
 
-      console.log("Step 3 submitted successfully:", response);
     } catch (error) {
       console.error("Error submitting step 3:", error);
 
@@ -902,7 +915,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
         if (!completedSteps.includes(s)) {
           setCompletedSteps((prev) => [...prev, s]);
         }
-        return newStep;
+        return newStep;        
       });
     }
   };

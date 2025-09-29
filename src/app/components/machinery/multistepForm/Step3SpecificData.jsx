@@ -158,14 +158,12 @@ export default function Step3SpecificData({
                   >
                     <option value="">Unidad</option>
                     {powerUnitsList.map(
-                      (unit) => (
-                        console.log(unit),
+                      (unit) => 
                         (
                           <option key={unit.id_units} value={unit.id_units}>
                             {unit.symbol}
                           </option>
                         )
-                      )
                     )}
                   </select>
                 </div>
@@ -186,14 +184,12 @@ export default function Step3SpecificData({
                 >
                   <option value="">Seleccionar tipo</option>
                   {engineTypesList.map(
-                    (type) => (
-                      console.log(type),
+                    (type) => 
                       (
                         <option key={type.id_types} value={type.id_types}>
                           {type.name}
                         </option>
                       )
-                    )
                   )}
                 </select>
                 {errors.engineType && (
