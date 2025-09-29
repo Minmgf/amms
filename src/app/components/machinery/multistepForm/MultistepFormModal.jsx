@@ -346,17 +346,11 @@ export default function MultiStepFormModal({
             setSpecificTechnicalSheetId(data.id_specific_technical_sheet);
           } else {
             // No hay ficha técnica, pero NO es un error - es una situación normal
-            console.log(
-              "No specific technical sheet found - will create new when user fills Step 3"
-            );
             setSpecificTechnicalSheetId(null);
           }
         })
         .catch((error) => {
           // CAMBIO IMPORTANTE: No mostrar error, solo log
-          console.log(
-            "No specific technical sheet found - will create new when user fills Step 3"
-          );
           setSpecificTechnicalSheetId(null);
           // NO llamar setErrorOpen ni setModalMessage aquí
         });
@@ -962,15 +956,11 @@ export default function MultiStepFormModal({
       // Decidir si es CREATE o UPDATE
       if (isEditMode && idTrackerSheet) {
         // MODO EDICIÓN: Actualizar tracker existente
-        console.log("=== STEP 2 PUT (Update Mode) ===");
-        console.log("Updating tracker with ID:", idTrackerSheet);
 
         // Para UPDATE no necesitamos id_machinery en el FormData
         await updateInfoTracker(idTrackerSheet, formData);
       } else {
         // MODO CREACIÓN: Crear nuevo tracker
-        console.log("=== STEP 2 POST (Creation Mode) ===");
-        console.log("Creating new tracker for machinery:", machineryId);
 
         // Para CREATE sí necesitamos id_machinery
         formData.append("id_machinery", machineryId);
@@ -1208,8 +1198,7 @@ export default function MultiStepFormModal({
         try {
           existingStep3Data = await getSpecificTechnicalSheet(machineryId);
         } catch (error) {
-          // Si no hay datos, existingStep3Data permanece null
-          console.log("No existing Step3 data found, will create new");
+          existingStep3Data = null;
         }
       }
 
@@ -1304,10 +1293,7 @@ export default function MultiStepFormModal({
       // Marcar paso como completado y avanzar
       setCompletedSteps((prev) => [...prev, 2]);
       setStep(3);
-
-      console.log("Step 3 submitted successfully:", response);
     } catch (error) {
-      console.error("Error submitting step 3:", error);
 
       // Mostrar error al usuario
       if (error.response?.data) {
@@ -1463,8 +1449,6 @@ export default function MultiStepFormModal({
 
       // El Step 6 ya maneja la creación de documentos directamente
       // Aquí solo confirmamos que el proceso ha sido completado exitosamente
-      console.log("Machinery registration completed with ID:", machineryId);
-      console.log("Final form data:", data);
       setModalMessage("¡Registro de maquinaria completado exitosamente!");
       setSuccessOpen(true);
       onClose();
