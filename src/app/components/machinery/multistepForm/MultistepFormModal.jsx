@@ -593,8 +593,7 @@ export default function MultiStepFormModal({
       "category",
       "country",
       "department",
-      "city",
-      "telemetry",
+      "city"
       // 'telemetry' no está incluido porque es opcional
     ];
 
@@ -843,13 +842,6 @@ export default function MultiStepFormModal({
       return false;
     }
 
-    return true;
-  };
-
-  // Función para validar el paso 6
-  const validateStep6 = () => {
-    // El Step 6 maneja su propia validación y envío de documentos
-    // No requiere validación adicional aquí ya que los documentos se gestionan directamente
     return true;
   };
 
@@ -1443,20 +1435,8 @@ export default function MultiStepFormModal({
   const onSubmit = () => {
     // Si estamos en el último paso, finalizar el proceso
     if (step === steps.length - 1) {
-      if (!validateStep6()) {
-        return;
-      }
-
-      // El Step 6 ya maneja la creación de documentos directamente
-      // Aquí solo confirmamos que el proceso ha sido completado exitosamente
-      setModalMessage("¡Registro de maquinaria completado exitosamente!");
-      setSuccessOpen(true);
-      onClose();
-      methods.reset();
-      setStep(0);
-      setCompletedSteps([]);
-      setMachineryId(null);
-    }
+      confirmRegistration();
+    }      
   };
 
   // Función separada para manejar el evento de Next

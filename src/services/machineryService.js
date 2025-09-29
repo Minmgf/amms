@@ -210,7 +210,7 @@ export const updateInfoTracker = async (trackerId, formData) => {
 
 // traer estados de uso
 export const getUseStates = async () => {
-    const { data } = await apiMain.get("/statues/list/2/");
+    const { data } = await apiMain.get("/statues/list/3/");
     return Array.isArray(data) ? data : [];
 };
 
