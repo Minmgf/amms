@@ -48,6 +48,8 @@ import {
   updateUsageInfo,
   getSpecificTechnicalSheet,
   updateSpecificTechnicalSheet,
+  getTrackerInfo,
+  updateInfoTracker
 } from "@/services/machineryService";
 import { SuccessModal, ErrorModal } from "../../shared/SuccessErrorModal";
 

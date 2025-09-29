@@ -73,6 +73,17 @@ export const createSpecificTechnicalSheet = async (payload) => {
     return data;
 };
 
+export const getSpecificTechnicalSheet = async (machineryId) => {
+    const { data } = await apiMain.get(`/specific-technical-sheets/machinery/${machineryId}/`);
+    return data.data;
+};
+
+// Actualizar ficha técnica específica
+export const updateSpecificTechnicalSheet = async (specificTechnicalSheetId, payload) => {
+    const { data } = await apiMain.put(`/specific-technical-sheets/${specificTechnicalSheetId}/`, payload);
+    return data;
+};
+
 // ENDPOINTS PARA UNIDADES (Units)
 
 // Unidades de Potencia
