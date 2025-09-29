@@ -3,7 +3,25 @@ import { useFormContext } from "react-hook-form";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { useTheme } from "@/contexts/ThemeContext";
 
-export default function Step3SpecificData() {
+export default function Step3SpecificData({
+  machineryId,
+  powerUnitsList = [],
+  volumeUnitsList = [],
+  flowConsumptionUnitsList = [],
+  weightUnitsList = [],
+  speedUnitsList = [],
+  forceUnitsList = [],
+  dimensionUnitsList = [],
+  performanceUnitsList = [],
+  pressureUnitsList = [],
+  engineTypesList = [],
+  cylinderArrangementList = [],
+  tractionTypesList = [],
+  transmissionSystemList = [],
+  airConditioningList = [],
+  emissionLevelList = [],
+  cabinTypesList = [],
+}) {
   const {
     register,
     formState: { errors },
@@ -138,9 +156,17 @@ export default function Step3SpecificData() {
                     {...register("enginePowerUnit", { required: "Requerido" })}
                     className="parametrization-input"
                   >
-                    <option value="HP">HP</option>
-                    <option value="CV">CV</option>
-                    <option value="kW">kW</option>
+                    <option value="">Unidad</option>
+                    {powerUnitsList.map(
+                      (unit) => (
+                        console.log(unit),
+                        (
+                          <option key={unit.id_units} value={unit.id_units}>
+                            {unit.symbol}
+                          </option>
+                        )
+                      )
+                    )}
                   </select>
                 </div>
               </div>
@@ -159,13 +185,16 @@ export default function Step3SpecificData() {
                   className="parametrization-input"
                 >
                   <option value="">Seleccionar tipo</option>
-                  <option value="diesel">Diésel</option>
-                  <option value="gasoline">Gasolina</option>
-                  <option value="electric">Eléctrico</option>
-                  <option value="hybrid">Híbrido</option>
-                  <option value="lpg">Gas LP</option>
-                  <option value="hydrogen">Hidrógeno</option>
-                  <option value="other">Otro</option>
+                  {engineTypesList.map(
+                    (type) => (
+                      console.log(type),
+                      (
+                        <option key={type.id_types} value={type.id_types}>
+                          {type.name}
+                        </option>
+                      )
+                    )
+                  )}
                 </select>
                 {errors.engineType && (
                   <span
@@ -217,8 +246,12 @@ export default function Step3SpecificData() {
                     })}
                     className="parametrization-input"
                   >
-                    <option value="cc">cc</option>
-                    <option value="ci">ci</option>
+                    <option value="">Unidad</option>
+                    {volumeUnitsList.map((unit) => (
+                      <option key={unit.id_units} value={unit.id_units}>
+                        {unit.symbol}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -262,11 +295,14 @@ export default function Step3SpecificData() {
                   className="parametrization-input"
                 >
                   <option value="">Seleccionar disposición</option>
-                  <option value="L">L (En línea)</option>
-                  <option value="V">V</option>
-                  <option value="B">B (Boxer)</option>
-                  <option value="R">R (Rotativo)</option>
-                  <option value="E">E</option>
+                  {cylinderArrangementList.map((arrangement) => (
+                    <option
+                      key={arrangement.id_types}
+                      value={arrangement.id_types}
+                    >
+                      {arrangement.name}
+                    </option>
+                  ))}
                 </select>
                 {errors.arrangement && (
                   <span
@@ -292,11 +328,11 @@ export default function Step3SpecificData() {
                   className="parametrization-input"
                 >
                   <option value="">Seleccionar tracción</option>
-                  <option value="4x2">4x2</option>
-                  <option value="4x4">4x4</option>
-                  <option value="tracks">Orugas</option>
-                  <option value="6x4">6x4</option>
-                  <option value="6x6">6x6</option>
+                  {tractionTypesList.map((traction) => (
+                    <option key={traction.id_types} value={traction.id_types}>
+                      {traction.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -340,9 +376,12 @@ export default function Step3SpecificData() {
                     })}
                     className="parametrization-input"
                   >
-                    <option value="L/h">L/h</option>
-                    <option value="km/L">km/L</option>
-                    <option value="mpg">mpg</option>
+                    <option value="">Unidad</option>
+                    {flowConsumptionUnitsList.map((unit) => (
+                      <option key={unit.id_units} value={unit.id_units}>
+                        {unit.symbol}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -361,11 +400,11 @@ export default function Step3SpecificData() {
                   className="parametrization-input"
                 >
                   <option value="">Seleccionar transmisión</option>
-                  <option value="manual">Manual</option>
-                  <option value="automatic">Automática</option>
-                  <option value="hydrostatic">Hidrostática</option>
-                  <option value="cvt">CVT</option>
-                  <option value="other">Otro</option>
+                  {transmissionSystemList.map((system) => (
+                    <option key={system.id_types} value={system.id_types}>
+                      {system.name}
+                    </option>
+                  ))}
                 </select>
                 {errors.transmissionSystem && (
                   <span
@@ -427,8 +466,12 @@ export default function Step3SpecificData() {
                     {...register("tankCapacityUnit")}
                     className="parametrization-input"
                   >
-                    <option value="L">L</option>
-                    <option value="gal">Gal</option>
+                    <option value="">Unidad</option>
+                    {volumeUnitsList.map((unit) => (
+                      <option key={unit.id_units} value={unit.id_units}>
+                        {unit.symbol}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -463,9 +506,12 @@ export default function Step3SpecificData() {
                     {...register("carryingCapacityUnit")}
                     className="parametrization-input"
                   >
-                    <option value="ton">Ton</option>
-                    <option value="kg">Kg</option>
-                    <option value="lb">Lb</option>
+                    <option value="">Unidad</option>
+                    {weightUnitsList.map((unit) => (
+                      <option key={unit.id_units} value={unit.id_units}>
+                        {unit.symbol}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -500,8 +546,12 @@ export default function Step3SpecificData() {
                     {...register("draftForceUnit")}
                     className="parametrization-input"
                   >
-                    <option value="kN">kN</option>
-                    <option value="lbf">lbf</option>
+                    <option value="">Unidad</option>
+                    {forceUnitsList.map((unit) => (
+                      <option key={unit.id_units} value={unit.id_units}>
+                        {unit.symbol}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -546,9 +596,12 @@ export default function Step3SpecificData() {
                     })}
                     className="parametrization-input"
                   >
-                    <option value="kg">Kg</option>
-                    <option value="ton">Ton</option>
-                    <option value="lb">Lb</option>
+                    <option value="">Unidad</option>
+                    {weightUnitsList.map((unit) => (
+                      <option key={unit.id_units} value={unit.id_units}>
+                        {unit.symbol}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -591,8 +644,12 @@ export default function Step3SpecificData() {
                     {...register("maxSpeedUnit", { required: "Requerido" })}
                     className="parametrization-input"
                   >
-                    <option value="km/h">Km/h</option>
-                    <option value="mph">mph</option>
+                    <option value="">Unidad</option>
+                    {speedUnitsList.map((unit) => (
+                      <option key={unit.id_units} value={unit.id_units}>
+                        {unit.symbol}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -626,8 +683,12 @@ export default function Step3SpecificData() {
                     {...register("maxOperatingAltitudeUnit")}
                     className="parametrization-input"
                   >
-                    <option value="msnm">msnm</option>
-                    <option value="ft">ft</option>
+                    <option value="">Unidad</option>
+                    {dimensionUnitsList.map((unit) => (
+                      <option key={unit.id_units} value={unit.id_units}>
+                        {unit.symbol}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -638,8 +699,33 @@ export default function Step3SpecificData() {
                   className="block text-theme-sm font-theme-medium mb-1"
                   style={{ color: "var(--color-text-secondary)" }}
                 >
-                  Rendimiento (RPM)
+                  Rendimiento (RPM) *
                 </label>
+
+                {/* AGREGAR este select para la unidad */}
+                <div className="mb-2">
+                  <select
+                    aria-label="Performance Unit Select"
+                    {...register("performanceUnit", { required: "Requerido" })}
+                    className="parametrization-input w-48"
+                  >
+                    <option value="">Seleccionar unidad</option>
+                    {performanceUnitsList.map((unit) => (
+                      <option key={unit.id_units} value={unit.id_units}>
+                        {unit.symbol}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.performanceUnit && (
+                    <span
+                      className="text-theme-xs mt-1 block"
+                      style={{ color: "var(--color-error)" }}
+                    >
+                      {errors.performanceUnit.message}
+                    </span>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-[auto_1fr_auto_1fr] gap-4 items-center">
                   <span
                     className="text-theme-sm"
@@ -703,8 +789,12 @@ export default function Step3SpecificData() {
                   {...register("dimensionsUnit", { required: "Requerido" })}
                   className="parametrization-input w-32"
                 >
-                  <option value="m">m</option>
-                  <option value="ft">ft</option>
+                  <option value="">Unidad</option>
+                  {dimensionUnitsList.map((unit) => (
+                    <option key={unit.id_units} value={unit.id_units}>
+                      {unit.symbol}
+                    </option>
+                  ))}
                 </select>
                 {errors.dimensionsUnit && (
                   <span
@@ -832,9 +922,12 @@ export default function Step3SpecificData() {
                     {...register("netWeightUnit", { required: "Requerido" })}
                     className="parametrization-input"
                   >
-                    <option value="kg">Kg</option>
-                    <option value="ton">Ton</option>
-                    <option value="lb">Lb</option>
+                    <option value="">Unidad</option>
+                    {weightUnitsList.map((unit) => (
+                      <option key={unit.id_units} value={unit.id_units}>
+                        {unit.symbol}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -873,10 +966,11 @@ export default function Step3SpecificData() {
                   className="parametrization-input"
                 >
                   <option value="">Seleccionar tipo</option>
-                  <option value="heating">Calefacción</option>
-                  <option value="cooling">Aire Acondicionado</option>
-                  <option value="both">Ambos</option>
-                  <option value="none">Ninguno</option>
+                  {airConditioningList.map((type) => (
+                    <option key={type.id_types} value={type.id_types}>
+                      {type.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -910,9 +1004,12 @@ export default function Step3SpecificData() {
                     {...register("airConditioningConsumptionUnit")}
                     className="parametrization-input"
                   >
-                    <option value="kWh">kWh</option>
-                    <option value="L/h">L/h</option>
-                    <option value="gal/h">gal/h</option>
+                    <option value="">Unidad</option>
+                    {flowConsumptionUnitsList.map((unit) => (
+                      <option key={unit.id_units} value={unit.id_units}>
+                        {unit.symbol}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -947,9 +1044,12 @@ export default function Step3SpecificData() {
                     {...register("maxHydraulicPressureUnit")}
                     className="parametrization-input"
                   >
-                    <option value="bar">bar</option>
-                    <option value="psi">psi</option>
-                    <option value="Pa">Pa</option>
+                    <option value="">Unidad</option>
+                    {pressureUnitsList.map((unit) => (
+                      <option key={unit.id_units} value={unit.id_units}>
+                        {unit.symbol}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -984,8 +1084,12 @@ export default function Step3SpecificData() {
                     {...register("hydraulicPumpFlowRateUnit")}
                     className="parametrization-input"
                   >
-                    <option value="L/min">L/min</option>
-                    <option value="gal/min">gal/min</option>
+                    <option value="">Unidad</option>
+                    {flowConsumptionUnitsList.map((unit) => (
+                      <option key={unit.id_units} value={unit.id_units}>
+                        {unit.symbol}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -1020,8 +1124,12 @@ export default function Step3SpecificData() {
                     {...register("hydraulicReservoirCapacityUnit")}
                     className="parametrization-input"
                   >
-                    <option value="L">L</option>
-                    <option value="gal">Gal</option>
+                    <option value="">Unidad</option>
+                    {volumeUnitsList.map((unit) => (
+                      <option key={unit.id_units} value={unit.id_units}>
+                        {unit.symbol}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -1060,18 +1168,11 @@ export default function Step3SpecificData() {
                   className="parametrization-input"
                 >
                   <option value="">Seleccionar nivel</option>
-                  <option value="euro1">Euro 1</option>
-                  <option value="euro2">Euro 2</option>
-                  <option value="euro3">Euro 3</option>
-                  <option value="euro4">Euro 4</option>
-                  <option value="euro5">Euro 5</option>
-                  <option value="euro6">Euro 6</option>
-                  <option value="tier1">Tier 1</option>
-                  <option value="tier2">Tier 2</option>
-                  <option value="tier3">Tier 3</option>
-                  <option value="tier4">Tier 4</option>
-                  <option value="phase1">Fase I</option>
-                  <option value="phase2">Fase II</option>
+                  {emissionLevelList.map((level) => (
+                    <option key={level.id_types} value={level.id_types}>
+                      {level.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -1089,11 +1190,11 @@ export default function Step3SpecificData() {
                   className="parametrization-input"
                 >
                   <option value="">Seleccionar tipo</option>
-                  <option value="open">Abierta</option>
-                  <option value="closed">Cerrada</option>
-                  <option value="rops">ROPS</option>
-                  <option value="fops">FOPS</option>
-                  <option value="rops-fops">ROPS/FOPS</option>
+                  {cabinTypesList.map((type) => (
+                    <option key={type.id_types} value={type.id_types}>
+                      {type.name}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>

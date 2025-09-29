@@ -1,26 +1,10 @@
 import { apiUsers } from "@/lib/axios";
-
-// Helper para obtener el token desde localStorage o sessionStorage
-const getAuthToken = () => {
-    let token = localStorage.getItem("token");
-    if (!token) {
-        token = sessionStorage.getItem("token");
-    }
-    return token;
-};
+import { setToken, getToken, removeToken } from '@/utils/tokenManager';
 
 export const login = async (payload, rememberMe = false) => {
     const { data } = await apiUsers.post("/auth/login/", payload);
+    setToken(data.access_token, rememberMe);
 
-    if (rememberMe) {
-        localStorage.setItem("token", data.access_token);
-        // Limpiar sessionStorage si existe
-        sessionStorage.removeItem("token");
-    } else {
-        sessionStorage.setItem("token", data.access_token);
-        // Limpiar localStorage si existe
-        localStorage.removeItem("token");
-    }
     return data;
 };
 
@@ -33,8 +17,7 @@ export const logout = async () => {
         console.error("Error en logout del servidor:", error);
     } finally {
         // Siempre limpiar los tokens locales
-        localStorage.removeItem("token");
-        sessionStorage.removeItem("token");
+        removeToken();
         localStorage.removeItem("userData");
     }
 };
@@ -145,7 +128,7 @@ const validateToken = async () => {
 export const createUser = async (userData) => {
     try {
         // Verificar token antes de hacer la petición
-        const token = getAuthToken();
+        const token = getToken();
         if (!token) {
             throw new Error("No hay token disponible");
         }
@@ -188,7 +171,7 @@ export const createUser = async (userData) => {
 export const editUser = async (userId, userData) => {
     try {
         // Verificar token antes de hacer la petición
-        const token = getAuthToken();
+        const token = getToken();
         if (!token) {
             throw new Error("No hay token disponible");
         }
@@ -227,7 +210,7 @@ export const editUser = async (userId, userData) => {
 export const changeUserStatus = async (userId, newStatus) => {
     try {
         // Verificar token antes de hacer la petición
-        const token = getAuthToken();
+        const token = getToken();
         if (!token) {
             throw new Error("No hay token disponible");
         }

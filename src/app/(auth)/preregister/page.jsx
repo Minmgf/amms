@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { validateDocument, getTypeDocuments } from "@/services/authService";
 import Link from "next/link";
+import { setValidationToken } from "@/utils/tokenManager";
 
 const Page = () => {
   const [identificationTypes, setIdentificationTypes] = useState([]);
@@ -54,7 +55,7 @@ const Page = () => {
       const response = await validateDocument(payload);
       
       // Guardar el token de validación
-      localStorage.setItem("validationToken", response.token);
+      setValidationToken(response.token);
       
       setModalMessage(response.message || "Documento validado exitosamente");
       setSuccessOpen(true);
