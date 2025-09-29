@@ -21,6 +21,8 @@ export default function Step3SpecificData({
   airConditioningList = [],
   emissionLevelList = [],
   cabinTypesList = [],
+  isEditMode = false,
+  currentStatusName = "",
 }) {
   const {
     register,
@@ -403,14 +405,11 @@ export default function Step3SpecificData({
                     className="parametrization-input"
                   >
                     <option value="">Unidad</option>
-                    {powerUnitsList.map(
-                      (unit) => 
-                        (
-                          <option key={unit.id_units} value={unit.id_units}>
-                            {unit.symbol}
-                          </option>
-                        )
-                    )}
+                    {powerUnitsList.map((unit) => (
+                      <option key={unit.id_units} value={unit.id_units}>
+                        {unit.symbol}
+                      </option>
+                    ))}
                   </select>
                   {errors.enginePowerUnit && (
                     <span
@@ -437,14 +436,11 @@ export default function Step3SpecificData({
                   className="parametrization-input"
                 >
                   <option value="">Seleccionar tipo</option>
-                  {engineTypesList.map(
-                    (type) => 
-                      (
-                        <option key={type.id_types} value={type.id_types}>
-                          {type.name}
-                        </option>
-                      )
-                  )}
+                  {engineTypesList.map((type) => (
+                    <option key={type.id_types} value={type.id_types}>
+                      {type.name}
+                    </option>
+                  ))}
                 </select>
                 {errors.engineType && (
                   <span
@@ -1700,6 +1696,47 @@ export default function Step3SpecificData({
           </div>
         )}
       </div>
+
+      {isEditMode && currentStatusName === "activa" && (
+        <div
+          className="rounded-theme-lg overflow-hidden"
+          style={{ border: `1px solid var(--color-border)` }}
+        >
+          <div
+            className="p-4"
+            style={{ backgroundColor: "var(--color-background)" }}
+          >
+            <div>
+              <label
+                className="block text-theme-sm font-theme-medium mb-1"
+                style={{ color: "var(--color-text-secondary)" }}
+              >
+                Justificación del cambio *
+              </label>
+              <textarea
+                aria-label="Justification Textarea"
+                {...register("justification", {
+                  required:
+                    isEditMode && currentStatusName === "activa"
+                      ? "La justificación es obligatoria cuando la maquinaria está en estado 'Activa'"
+                      : false,
+                })}
+                className="parametrization-input"
+                rows={3}
+                placeholder="Describa la justificación del cambio en la ficha técnica específica..."
+              />
+              {errors.justification && (
+                <span
+                  className="text-theme-xs mt-1 block"
+                  style={{ color: "var(--color-error)" }}
+                >
+                  {errors.justification.message}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Mensaje informativo sobre validaciones */}
       <div
