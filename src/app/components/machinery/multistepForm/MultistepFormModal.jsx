@@ -49,7 +49,7 @@ import {
   getSpecificTechnicalSheet,
   updateSpecificTechnicalSheet,
   getTrackerInfo,
-  updateInfoTracker
+  updateInfoTracker,
 } from "@/services/machineryService";
 import { SuccessModal, ErrorModal } from "../../shared/SuccessErrorModal";
 
@@ -227,24 +227,22 @@ export default function MultiStepFormModal({
 
   useEffect(() => {
     if (isOpen && isEditMode && machineryToEdit && machineryList.length > 0) {
-      // Aquí deberías hacer los GET de cada paso usando el ID
-      // Paso 1:
+      // Cargar datos del Paso 1
       getGeneralData(machineryToEdit.id_machinery).then((data) => {
-        // Mapea los datos del backend a los nombres del formulario
         const mappedData = {
           name: data.machinery_name,
           manufactureYear: data.manufacturing_year,
           serialNumber: data.serial_number,
           machineryType: data.machinery_secondary_type,
-          brand: data.brand, // Ajusta si el backend devuelve otro nombre
+          brand: data.brand,
           model: data.id_model,
           tariff: data.tariff_subheading,
           category: data.machinery_type,
-          country: data.country, // Ajusta si el backend devuelve otro nombre
-          department: data.department, // Ajusta si el backend devuelve otro nombre
+          country: data.country,
+          department: data.department,
           city: data.id_city,
           telemetry: data.id_device,
-          photo: null, // No puedes setear archivos directamente, solo si tienes la URL y lógica para cargarla
+          photo: null,
           machineryStatues: data.machinery_operational_status,
         };
         methods.reset({
@@ -254,7 +252,7 @@ export default function MultiStepFormModal({
         setMachineryId(machineryToEdit.id_machinery);
       });
 
-      // **NUEVO: Paso 2 - Cargar datos del tracker**
+      // Cargar datos del Paso 2 - Tracker
       getTrackerInfo(machineryToEdit.id_machinery)
         .then((trackerData) => {
           if (trackerData) {
@@ -265,25 +263,24 @@ export default function MultiStepFormModal({
               engineNumber: trackerData.engine_number || "",
             };
 
-            // Aplicar datos del tracker al formulario
             Object.entries(trackerMappedData).forEach(([key, value]) => {
               methods.setValue(key, value);
             });
 
-            // Guardar ID del tracker para futuras actualizaciones
             setIdTrackerSheet(trackerData.id_tracker_sheet);
           }
         })
         .catch((error) => {
           console.warn("No tracker data found for this machinery:", error);
-          // No es un error crítico, puede ser que no tenga tracker aún
           setIdTrackerSheet(null);
         });
 
-      // Cargar datos del Paso 3 (NUEVO)
+      // Cargar datos del Paso 3 - Ficha Técnica Específica
       getSpecificTechnicalSheet(machineryToEdit.id_machinery)
-        .then((data) => {
-          if (data) {
+        .then((response) => {
+          // IMPORTANTE: Verificar si la respuesta es exitosa Y tiene datos
+          if (response && response.success !== false) {
+            const data = response;
             const mappedStep3Data = {
               // Motor y Transmisión
               enginePower: data.power,
@@ -341,51 +338,64 @@ export default function MultiStepFormModal({
               cabinType: data.cabin_type,
             };
 
-            // Actualizar el formulario con los datos del Step3
             methods.reset({
               ...methods.getValues(),
               ...mappedStep3Data,
             });
 
-            // Guardar el ID de la ficha técnica específica
             setSpecificTechnicalSheetId(data.id_specific_technical_sheet);
+          } else {
+            // No hay ficha técnica, pero NO es un error - es una situación normal
+            console.log(
+              "No specific technical sheet found - will create new when user fills Step 3"
+            );
+            setSpecificTechnicalSheetId(null);
           }
         })
         .catch((error) => {
-          console.error("Error loading specific technical sheet data:", error);
-          // Si no hay datos del Step3, es normal en modo edición
-          // No mostrar error ya que puede ser un paso incompleto
+          // CAMBIO IMPORTANTE: No mostrar error, solo log
+          console.log(
+            "No specific technical sheet found - will create new when user fills Step 3"
+          );
+          setSpecificTechnicalSheetId(null);
+          // NO llamar setErrorOpen ni setModalMessage aquí
         });
 
-      //Paso 4:
-      getUsageInfo(machineryToEdit.id_machinery).then((data) => {
-        // Mapea los datos del backend a los nombres del formulario
-        const mappedData = {
-          acquisitionDate: data.acquisition_date,
-          usageState: data.usage_condition,
-          usedHours: data.usage_hours,
-          mileage: data.distance_value,
-          mileageUnit: data.distance_unit,
-          tenure: data.tenacy_type,
-          ownership: data.is_own,
-          contractEndDate: data.contract_end_date,
-        };
-        methods.reset({
-          ...methods.getValues(),
-          ...mappedData,
+      // Cargar datos del Paso 4 - Información de Uso
+      getUsageInfo(machineryToEdit.id_machinery)
+        .then((data) => {
+          if (data) {
+            const mappedData = {
+              acquisitionDate: data.acquisition_date,
+              usageState: data.usage_condition,
+              usedHours: data.usage_hours,
+              mileage: data.distance_value,
+              mileageUnit: data.distance_unit,
+              tenure: data.tenacy_type,
+              ownership: data.is_own,
+              contractEndDate: data.contract_end_date,
+            };
+            methods.reset({
+              ...methods.getValues(),
+              ...mappedData,
+            });
+            setIdUsageSheet(data.id_usage_sheet);
+          }
+        })
+        .catch((error) => {
+          console.warn("No usage info found for this machinery:", error);
+          setIdUsageSheet(null);
         });
-        setIdUsageSheet(data.id_usage_sheet);
-      });
     }
+
     if (isOpen && !isEditMode) {
       methods.reset();
       setMachineryId(null);
       setIdUsageSheet(null);
       setSpecificTechnicalSheetId(null);
-      setIdTrackerSheet(null); // Reset tracker ID
+      setIdTrackerSheet(null);
     }
   }, [isOpen, isEditMode, machineryToEdit, methods, machineryList]);
-
   // Cuando cambia la marca, actualizamos los modelos
   useEffect(() => {
     const fetchModels = async () => {
@@ -1203,7 +1213,7 @@ export default function MultiStepFormModal({
         }
       }
 
-      // 2. Comparar si hay cambios (función helper)
+      // 2. Comparar si hay cambios
       const hasChanges =
         !existingStep3Data ||
         Object.keys(data).some((key) => {
@@ -1271,8 +1281,12 @@ export default function MultiStepFormModal({
         );
       } else if (hasChanges) {
         // Hay datos previos y cambios: PUT (actualizar)
+        // CORRECCIÓN: Obtener el estado actual de la maquinaria
+        const currentStatus =
+          machineryToEdit?.machinery_operational_status_name?.toLowerCase();
+
         // Agregar justificación si es necesario para el estado activo
-        if (currentStatusName === "activa") {
+        if (isEditMode && currentStatus === "activa") {
           if (!data.justification || data.justification.trim() === "") {
             throw new Error(
               "La justificación es obligatoria cuando la maquinaria está en estado 'Activa'"
@@ -1329,6 +1343,7 @@ export default function MultiStepFormModal({
                 dimension_unit: "dimensionsUnit",
                 net_weight: "netWeight",
                 net_weight_unit: "netWeightUnit",
+                justification: "justification",
               };
 
               const frontendField = fieldMapping[field] || field;
@@ -1345,6 +1360,9 @@ export default function MultiStepFormModal({
           errorData.message ||
           "Error al guardar los datos técnicos específicos.";
         setModalMessage(message);
+        setErrorOpen(true);
+      } else if (error.message) {
+        setModalMessage(error.message);
         setErrorOpen(true);
       } else {
         // Error genérico

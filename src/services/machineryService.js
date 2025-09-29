@@ -74,7 +74,7 @@ export const createSpecificTechnicalSheet = async (payload) => {
 };
 
 export const getSpecificTechnicalSheet = async (machineryId) => {
-    const { data } = await apiMain.get(`/specific-technical-sheets/machinery/${machineryId}/`);
+    const { data } = await apiMain.get(`/machinery-specific-sheet/machinery/${machineryId}/`);
     return data.data;
 };
 
