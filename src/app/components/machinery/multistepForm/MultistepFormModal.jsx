@@ -17,7 +17,9 @@ import {
   getMachineryBrands, 
   getTelemetryDevices, 
   registerGeneralData, 
-  registerInfoTracker, 
+  registerInfoTracker,
+  getTrackerInfo,
+  updateInfoTracker,
   getMaintenanceTypes, 
   getDistanceUnits, 
   getTenureTypes, 
@@ -94,6 +96,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
   const [modalMessage, setModalMessage] = useState("");
   const [machineryStatuesList, setMachineryStatuesList] = useState([]);
   const [idUsageSheet, setIdUsageSheet] = useState(null); // Para almacenar el ID de la hoja de uso
+  const [idTrackerSheet, setIdTrackerSheet] = useState(null); // Para almacenar el ID del tracker
   // Hook del tema
   const { getCurrentTheme } = useTheme();
 
@@ -241,6 +244,31 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
         });
         setMachineryId(machineryToEdit.id_machinery);
       });
+
+      // **NUEVO: Paso 2 - Cargar datos del tracker**
+      getTrackerInfo(machineryToEdit.id_machinery).then(trackerData => {
+        if (trackerData) {
+          const trackerMappedData = {
+            terminalSerial: trackerData.terminal_serial_number || "",
+            gpsSerial: trackerData.gps_serial_number || "",
+            chasisNumber: trackerData.chassis_number || "",
+            engineNumber: trackerData.engine_number || "",
+          };
+          
+          // Aplicar datos del tracker al formulario
+          Object.entries(trackerMappedData).forEach(([key, value]) => {
+            methods.setValue(key, value);
+          });
+          
+          // Guardar ID del tracker para futuras actualizaciones
+          setIdTrackerSheet(trackerData.id_tracker_sheet);
+        }
+      }).catch(error => {
+        console.warn("No tracker data found for this machinery:", error);
+        // No es un error crítico, puede ser que no tenga tracker aún
+        setIdTrackerSheet(null);
+      });
+
       //Paso 4:
       getUsageInfo(machineryToEdit.id_machinery).then(data => {
         // Mapea los datos del backend a los nombres del formulario
@@ -264,6 +292,7 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
     if (isOpen && !isEditMode) {
       methods.reset();
       setMachineryId(null);
+      setIdTrackerSheet(null); // Reset tracker ID
     }
   }, [isOpen, isEditMode, machineryToEdit, methods, machineryList]);
 
@@ -661,18 +690,36 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
   const submitStep2 = async (data) => {
     try {
       setIsSubmittingStep(true);
-      // Crear FormData para enviar el archivo
+      
+      // Crear FormData para enviar los datos
       const formData = new FormData();
-
-      // Agregar todos los campos del paso 2
-      formData.append("id_machinery", machineryId);
       formData.append("terminal_serial_number", data.terminalSerial);
       formData.append("gps_serial_number", data.gpsSerial);
       formData.append("chassis_number", data.chasisNumber);
       formData.append("engine_number", data.engineNumber);
       formData.append("responsible_user", id);
 
-      const response = await registerInfoTracker(formData);
+      // Decidir si es CREATE o UPDATE
+      if (isEditMode && idTrackerSheet) {
+        // MODO EDICIÓN: Actualizar tracker existente
+        console.log("=== STEP 2 PUT (Update Mode) ===");
+        console.log("Updating tracker with ID:", idTrackerSheet);
+        
+        // Para UPDATE no necesitamos id_machinery en el FormData
+        await updateInfoTracker(idTrackerSheet, formData);
+        
+      } else {
+        // MODO CREACIÓN: Crear nuevo tracker
+        console.log("=== STEP 2 POST (Creation Mode) ===");
+        console.log("Creating new tracker for machinery:", machineryId);
+        
+        // Para CREATE sí necesitamos id_machinery
+        formData.append("id_machinery", machineryId);
+        const response = await registerInfoTracker(formData);
+        
+        // Guardar el ID del tracker recién creado
+        setIdTrackerSheet(response.id_tracker_sheet || response.id);
+      }
 
       // Marcar paso como completado y avanzar
       setCompletedSteps((prev) => [...prev, 1]);
@@ -680,13 +727,23 @@ export default function MultiStepFormModal({ isOpen, onClose, machineryToEdit })
 
     } catch (error) {
       console.error("Error submitting step 2:", error);
-
-      // Mostrar error modal igual que en Step 1
-      setModalMessage("El número de serie del terminal ya está registrado. Por favor, ingrese un número diferente.");
+      
+      let errorMessage = "Error al guardar la información del tracker.";
+      
+      if (error.response?.data?.terminal_serial_number) {
+        errorMessage = "El número de serie del terminal ya está registrado. Por favor, ingrese un número diferente.";
+      } else if (error.response?.data?.details) {
+        errorMessage = Object.values(error.response.data.details).flat().join(" ");
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      setModalMessage(errorMessage);
       setErrorOpen(true);
       
       // CRÍTICO: Bloquear el avance al siguiente paso cuando hay error
       return;
+      
     } finally {
       setIsSubmittingStep(false);
     }
