@@ -108,96 +108,97 @@ export default function MultiStepFormModal({
   const [idTrackerSheet, setIdTrackerSheet] = useState(null); // Para almacenar el ID del tracker
   // Hook del tema
   const { getCurrentTheme } = useTheme();
+  const defaultValues = {
+    // Step 1 - General Data
+    name: "",
+    manufactureYear: "",
+    serialNumber: "",
+    machineryType: "",
+    brand: "",
+    model: "",
+    tariff: "",
+    category: "",
+    country: "",
+    department: "",
+    city: "",
+    telemetry: "", // Este es opcional
+    photo: null,
+    machineryStatues: "",
+    justificationGeneralData: "",
+
+    // Step 2 - Tracker Data
+    terminalSerial: "",
+    chasisNumber: "",
+    gpsSerial: "",
+    engineNumber: "",
+
+    // Step 3 - Specific Data
+    enginePower: "",
+    enginePowerUnit: "",
+    engineType: "",
+    cylinderCapacity: "",
+    cylinderCapacityUnit: "",
+    cylindersNumber: "",
+    arrangement: "",
+    traction: "",
+    fuelConsumption: "",
+    fuelConsumptionUnit: "",
+    transmissionSystem: "",
+    tankCapacity: "",
+    tankCapacityUnit: "",
+    carryingCapacity: "",
+    carryingCapacityUnit: "",
+    darftForce: "",
+    darftForceUnit: "",
+    operatingWeight: "",
+    operatingWeightUnit: "",
+    maxSpeed: "",
+    maxSpeedUnit: "",
+    maxOperatingAltitud: "",
+    maxOperatingAltitudUnit: "",
+    performanceUnit: "",
+    performanceMin: "",
+    performanceMax: "",
+    dimensionsUnit: "",
+    width: "",
+    length: "",
+    height: "",
+    netWeight: "",
+    netWeightUnit: "",
+    airConditioning: "",
+    airConditioningConsumption: "",
+    airConditioningConsumptionUnit: "",
+    maximumOperatingHydraulicPressure: "",
+    maximumOperatingHydraulicPressureUnit: "",
+    hydraulicPumpFlowRate: "",
+    hydraulicPumpFlowRateUnit: "",
+    hydraulicReservoryCapacity: "",
+    hydraulicReservoryCapacityUnit: "",
+    emissionLevel: "",
+    cabinType: "",
+
+    // Step 4 - Usage Information
+    acquisitionDate: "",
+    usageState: "",
+    usedHours: "",
+    mileage: "",
+    mileageUnit: "",
+    tenure: "",
+    ownership: false,
+    contractEndDate: "",
+    justificationUsageInfo: "",
+
+    // Step 5 - Maintenance Data
+    maintenace: "",
+    usageHours: "",
+
+    // Step 6 - Documentation
+    documentName: "",
+    file: "",
+  };
 
   const methods = useForm({
-    defaultValues: {
-      // Step 1 - General Data
-      name: "",
-      manufactureYear: "",
-      serialNumber: "",
-      machineryType: "",
-      brand: "",
-      model: "",
-      tariff: "",
-      category: "",
-      country: "",
-      department: "",
-      city: "",
-      telemetry: "", // Este es opcional
-      photo: null,
-      machineryStatues: "",
-      justificationGeneralData: "",
-
-      // Step 2 - Tracker Data
-      terminalSerial: "",
-      chasisNumber: "",
-      gpsSerial: "",
-      engineNumber: "",
-
-      // Step 3 - Specific Data
-      enginePower: "",
-      enginePowerUnit: "",
-      engineType: "",
-      cylinderCapacity: "",
-      cylinderCapacityUnit: "",
-      cylindersNumber: "",
-      arrangement: "",
-      traction: "",
-      fuelConsumption: "",
-      fuelConsumptionUnit: "",
-      transmissionSystem: "",
-      tankCapacity: "",
-      tankCapacityUnit: "",
-      carryingCapacity: "",
-      carryingCapacityUnit: "",
-      darftForce: "",
-      darftForceUnit: "",
-      operatingWeight: "",
-      operatingWeightUnit: "",
-      maxSpeed: "",
-      maxSpeedUnit: "",
-      maxOperatingAltitud: "",
-      maxOperatingAltitudUnit: "",
-      performanceUnit: "",
-      performanceMin: "",
-      performanceMax: "",
-      dimensionsUnit: "",
-      width: "",
-      length: "",
-      height: "",
-      netWeight: "",
-      netWeightUnit: "",
-      airConditioning: "",
-      airConditioningConsumption: "",
-      airConditioningConsumptionUnit: "",
-      maximumOperatingHydraulicPressure: "",
-      maximumOperatingHydraulicPressureUnit: "",
-      hydraulicPumpFlowRate: "",
-      hydraulicPumpFlowRateUnit: "",
-      hydraulicReservoryCapacity: "",
-      hydraulicReservoryCapacityUnit: "",
-      emissionLevel: "",
-      cabinType: "",
-
-      // Step 4 - Usage Information
-      acquisitionDate: "",
-      usageState: "",
-      usedHours: "",
-      mileage: "",
-      mileageUnit: "",
-      tenure: "",
-      ownership: false,
-      contractEndDate: "",
-      justificationUsageInfo: "",
-
-      // Step 5 - Maintenance Data
-      maintenace: "",
-      usageHours: "",
-
-      // Step 6 - Documentation
-      documentName: "",
-      file: "",
-    },
+    defaultValues: defaultValues,
   });
 
   const watchCountry = methods.watch("country");
@@ -216,16 +217,20 @@ export default function MultiStepFormModal({
     }
   }, []);
 
+
   useEffect(() => {
     if (!isOpen) {
-      methods.reset();
+      // Cuando el modal se cierra, resetear todo
+      methods.reset(defaultValues);
       setStep(0);
       setCompletedSteps([]);
       setMachineryId(null);
+      setIdUsageSheet(null);
+      setSpecificTechnicalSheetId(null);
+      setIdTrackerSheet(null);
+      return;
     }
-  }, [isOpen]);
 
-  useEffect(() => {
     if (isOpen && isEditMode && machineryToEdit && machineryList.length > 0) {
       // Cargar datos del Paso 1
       getGeneralData(machineryToEdit.id_machinery).then((data) => {
@@ -246,7 +251,7 @@ export default function MultiStepFormModal({
           machineryStatues: data.machinery_operational_status,
         };
         methods.reset({
-          ...methods.getValues(),
+          ...defaultValues,  // ← CAMBIO: Partir de valores limpios
           ...mappedData,
         });
         setMachineryId(machineryToEdit.id_machinery);
@@ -263,10 +268,10 @@ export default function MultiStepFormModal({
               engineNumber: trackerData.engine_number || "",
             };
 
-            Object.entries(trackerMappedData).forEach(([key, value]) => {
-              methods.setValue(key, value);
+            methods.reset({
+              ...methods.getValues(),
+              ...trackerMappedData,
             });
-
             setIdTrackerSheet(trackerData.id_tracker_sheet);
           }
         })
@@ -380,16 +385,16 @@ export default function MultiStepFormModal({
           console.warn("No usage info found for this machinery:", error);
           setIdUsageSheet(null);
         });
-    }
-
-    if (isOpen && !isEditMode) {
-      methods.reset();
+    } else {
+      // MODO CREACIÓN: Resetear a valores por defecto
+      methods.reset(defaultValues);
       setMachineryId(null);
       setIdUsageSheet(null);
       setSpecificTechnicalSheetId(null);
       setIdTrackerSheet(null);
     }
   }, [isOpen, isEditMode, machineryToEdit, methods, machineryList]);
+  
   // Cuando cambia la marca, actualizamos los modelos
   useEffect(() => {
     const fetchModels = async () => {
@@ -1436,7 +1441,7 @@ export default function MultiStepFormModal({
     // Si estamos en el último paso, finalizar el proceso
     if (step === steps.length - 1) {
       confirmRegistration();
-    }      
+    }
   };
 
   // Función separada para manejar el evento de Next
@@ -1470,28 +1475,26 @@ export default function MultiStepFormModal({
                   type="button"
                   onClick={() => goToStep(index)}
                   disabled={!completedSteps.includes(index) && index !== 0}
-                  className={`w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-xs sm:text-theme-sm font-theme-bold border-2 transition-all duration-300 ${
-                    isActive
+                  className={`w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-xs sm:text-theme-sm font-theme-bold border-2 transition-all duration-300 ${isActive
                       ? "bg-accent text-white"
                       : isCompleted
-                      ? "bg-success text-white border-success"
-                      : "bg-surface text-secondary border-primary"
-                  } ${
-                    !completedSteps.includes(index) && index !== 0
+                        ? "bg-success text-white border-success"
+                        : "bg-surface text-secondary border-primary"
+                    } ${!completedSteps.includes(index) && index !== 0
                       ? "cursor-not-allowed opacity-50"
                       : "hover:shadow-md"
-                  }`}
+                    }`}
                   style={{
                     backgroundColor: isActive
                       ? "var(--color-accent)"
                       : isCompleted
-                      ? "var(--color-success)"
-                      : "var(--color-surface)",
+                        ? "var(--color-success)"
+                        : "var(--color-surface)",
                     borderColor: isActive
                       ? "var(--color-accent)"
                       : isCompleted
-                      ? "var(--color-success)"
-                      : "var(--color-border)",
+                        ? "var(--color-success)"
+                        : "var(--color-border)",
                     color:
                       isActive || isCompleted
                         ? "white"
@@ -1517,20 +1520,19 @@ export default function MultiStepFormModal({
 
                 <div className="mt-1 sm:mt-2 text-center max-w-20 sm:max-w-none">
                   <div
-                    className={`text-xs sm:text-theme-xs font-theme-medium ${
-                      status === "En progreso"
+                    className={`text-xs sm:text-theme-xs font-theme-medium ${status === "En progreso"
                         ? "text-accent"
                         : status === "Completo"
-                        ? "text-success"
-                        : "text-secondary"
-                    }`}
+                          ? "text-success"
+                          : "text-secondary"
+                      }`}
                     style={{
                       color:
                         status === "En progreso"
                           ? "var(--color-accent)"
                           : status === "Completo"
-                          ? "var(--color-success)"
-                          : "var(--color-text-secondary)",
+                            ? "var(--color-success)"
+                            : "var(--color-text-secondary)",
                     }}
                   >
                     <span className="hidden md:block">{stepItem.name}</span>
@@ -1539,20 +1541,19 @@ export default function MultiStepFormModal({
                     </span>
                   </div>
                   <div
-                    className={`text-xs sm:text-theme-xs mt-0.5 sm:mt-1 ${
-                      status === "En progreso"
+                    className={`text-xs sm:text-theme-xs mt-0.5 sm:mt-1 ${status === "En progreso"
                         ? "text-accent"
                         : status === "Completo"
-                        ? "text-success"
-                        : "text-secondary"
-                    }`}
+                          ? "text-success"
+                          : "text-secondary"
+                      }`}
                     style={{
                       color:
                         status === "En progreso"
                           ? "var(--color-accent)"
                           : status === "Completo"
-                          ? "var(--color-success)"
-                          : "var(--color-text-secondary)",
+                            ? "var(--color-success)"
+                            : "var(--color-text-secondary)",
                     }}
                   >
                     {status}
@@ -1588,28 +1589,26 @@ export default function MultiStepFormModal({
                   type="button"
                   onClick={() => goToStep(index)}
                   disabled={!completedSteps.includes(index) && index !== 0}
-                  className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-theme-bold border-2 transition-all duration-300 ${
-                    isActive
+                  className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-theme-bold border-2 transition-all duration-300 ${isActive
                       ? "bg-accent text-white"
                       : isCompleted
-                      ? "bg-success text-white border-success"
-                      : "bg-surface text-secondary border-primary"
-                  } ${
-                    !completedSteps.includes(index) && index !== 0
+                        ? "bg-success text-white border-success"
+                        : "bg-surface text-secondary border-primary"
+                    } ${!completedSteps.includes(index) && index !== 0
                       ? "cursor-not-allowed opacity-50"
                       : ""
-                  }`}
+                    }`}
                   style={{
                     backgroundColor: isActive
                       ? "var(--color-accent)"
                       : isCompleted
-                      ? "var(--color-success)"
-                      : "var(--color-surface)",
+                        ? "var(--color-success)"
+                        : "var(--color-surface)",
                     borderColor: isActive
                       ? "var(--color-accent)"
                       : isCompleted
-                      ? "var(--color-success)"
-                      : "var(--color-border)",
+                        ? "var(--color-success)"
+                        : "var(--color-border)",
                     color:
                       isActive || isCompleted
                         ? "white"
