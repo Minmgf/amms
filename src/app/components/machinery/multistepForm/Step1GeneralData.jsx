@@ -15,7 +15,7 @@ export default function Step1GeneralData({
   telemetryDevicesList = [],
   machineryStatuesList = [],
   isEditMode = false,
-  currentStatusName = "",
+  currentStatusId = null,
 }) {
   const { register, formState: { errors }, setValue, watch } = useFormContext();
   const [previewImage, setPreviewImage] = useState(null);
@@ -420,7 +420,7 @@ export default function Step1GeneralData({
           )}
         </div>
         {/* Mostrar solo si está en modo edición y el estado es activo */}
-        {isEditMode && currentStatusName === "activa" && (
+        {isEditMode && currentStatusId !== 3 && (
           <>
             {/* Select de estado */}
             <div>
