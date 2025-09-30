@@ -1,46 +1,14 @@
 "use client";
 import React from "react";
 import { FiX } from "react-icons/fi";
+import RequestInfoCard from "@/app/components/maintenance/RequestInfoCard";
 
 const RequestDetailModal = ({
   isOpen,
   onClose,
-  request // Objeto con toda la información a mostrar
+  request
 }) => {
   if (!isOpen || !request) return null;
-
-  // Utilidades para mostrar valores
-  const getStatusBadge = (status) => {
-    if (status === "Pendiente") {
-      return (
-        <span className="parametrization-badge parametrization-badge-5 ml-2">
-          Pendiente
-        </span>
-      );
-    }
-    if (status === "Programado") {
-      return (
-        <span className="parametrization-badge parametrization-badge-5 ml-2">
-          Programado
-        </span>
-      );
-    }
-    if (status === "En Progreso") {
-      return (
-        <span className="parametrization-badge parametrization-badge-5 ml-2">
-          En Progreso
-        </span>
-      );
-    }
-    if (status === "Completado") {
-      return (
-        <span className="parametrization-badge parametrization-badge-5 ml-2">
-          Completado
-        </span>
-      );
-    }
-    return null;
-  };
 
   const getPriorityBadge = (priority) => {
     if (priority === "Low" || priority === "Baja") {
@@ -67,7 +35,6 @@ const RequestDetailModal = ({
     return null;
   };
 
-  // Cerrar modal al hacer clic fuera del contenido
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) onClose();
   };
@@ -87,7 +54,7 @@ const RequestDetailModal = ({
         {/* Header */}
         <div className="sticky top-0 z-10 bg-background flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 py-5 border-b border-primary">
           <h2 className="text-theme-xl text-primary font-theme-semibold break-words">
-            Detalles de Solicitud: {request.consecutiveNumber}
+            Detalles de Solicitud: {request.consecutiveNumber || request.id}
           </h2>
           <button
             onClick={onClose}
@@ -100,32 +67,8 @@ const RequestDetailModal = ({
 
         {/* Modal Content */}
         <div className="p-2 sm:p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-90px)]">
-          {/* Request information */}
-          <section className="card-theme">
-            <div className="font-theme-semibold text-theme-base mb-4">
-              Información de la solicitud
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-6">
-              <div>
-                <span className="text-theme-sm text-secondary">Número Consecutivo</span>
-                <div className="font-theme-medium">{request.consecutiveNumber} SOL-1234 </div>
-              </div>
-              <div>
-                <span className="text-theme-sm text-secondary">Fecha de la Solicitud</span>
-                <div className="font-theme-medium">{request.requestDate} - 30 - Febrero - 2025</div>
-              </div>
-              <div>
-                <span className="text-theme-sm text-secondary">Solicitante</span>
-                <div className="font-theme-medium">{request.requester}</div>
-              </div>
-              <div>
-                <span className="text-theme-sm text-secondary">Estado de Solicitud</span>
-                <div className="flex items-center font-theme-medium mt-1">
-                  {getStatusBadge(request.status)}
-                </div>
-              </div>
-            </div>
-          </section>
+          {/* Request information - Usando componente reutilizable */}
+          <RequestInfoCard request={request} showMachineInfo={false} />
 
           {/* Machine information */}
           <section className="card-theme">
@@ -135,11 +78,11 @@ const RequestDetailModal = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-6">
               <div>
                 <span className="text-theme-sm text-secondary">Número Serial</span>
-                <div className="font-theme-medium">{request.serialNumber} SN-121314-AZ</div>
+                <div className="font-theme-medium">{request.serialNumber || request.serial_number}</div>
               </div>
               <div>
                 <span className="text-theme-sm text-secondary">Nombre de la máquina</span>
-                <div className="font-theme-medium">{request.machineName} Tractor Ejemplo</div>
+                <div className="font-theme-medium">{request.machineName || request.machine_name}</div>
               </div>
             </div>
           </section>
@@ -152,7 +95,7 @@ const RequestDetailModal = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-6">
               <div>
                 <span className="text-theme-sm text-secondary">Tipo de Mantenimiento</span>
-                <div className="font-theme-medium">{request.maintenanceType} Mantenimiento Ejemplo</div>
+                <div className="font-theme-medium">{request.maintenanceType}</div>
               </div>
               <div>
                 <span className="text-theme-sm text-secondary">Prioridad</span>
@@ -162,7 +105,7 @@ const RequestDetailModal = ({
               </div>
               <div className="col-span-1 sm:col-span-2">
                 <span className="text-theme-sm text-secondary">Descripción del Problema</span>
-                <div className="font-theme-medium whitespace-pre-line">{request.problemDescription} Ejemplo de la descripción del problema mientras se traen datos reales</div>
+                <div className="font-theme-medium whitespace-pre-line">{request.problemDescription}</div>
               </div>
             </div>
           </section>
