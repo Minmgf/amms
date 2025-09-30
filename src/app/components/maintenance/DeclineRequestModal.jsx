@@ -49,8 +49,8 @@ const DeclineRequestModal = ({ isOpen, onClose, onDecline, request }) => {
 
       // Si la respuesta es exitosa
       if (response.success) {
-        // Llamar a la función de rechazo pasada por props
-        onDecline({
+        // Llamar a la función de rechazo pasada por props con los datos correctos
+        await onDecline({
           requestId: request.id,
           justification: justification.trim(),
           response: response,
@@ -60,12 +60,11 @@ const DeclineRequestModal = ({ isOpen, onClose, onDecline, request }) => {
         setJustification("");
         setError("");
 
-        // Mostrar modal de éxito
+        // Mostrar modal de éxito con el mensaje del backend
         setModalMessage(response.message || "Solicitud rechazada exitosamente");
         setShowSuccessModal(true);
       }
     } catch (error) {
-
       let errorMessage =
         "Error al rechazar la solicitud. Por favor, intenta de nuevo.";
 

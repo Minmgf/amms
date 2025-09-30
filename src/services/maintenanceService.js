@@ -51,6 +51,11 @@ export const rejectMaintenanceRequest = async (id, justification) => {
     return data;
 };
 
+export const getMaintenanceRequests = async () => {
+    const { data } = await apiMain.get("/maintenance_request/");
+    return data;
+};
+
 export const getActiveTechnicians = async () => {
     try {
         // Cuando el endpoint esté en producción, cambiar a:
