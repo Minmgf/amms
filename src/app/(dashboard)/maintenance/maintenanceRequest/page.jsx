@@ -39,10 +39,11 @@ import {
   ErrorModal,
 } from "@/app/components/shared/SuccessErrorModal";
 import {
-  getMaintenanceRequests,
+  getMaintenanceRequests, // Agregar esta línea
   getActiveTechnicians,
   getMaintenanceTypes,
   createMaintenanceScheduling,
+  rejectMaintenanceRequest, // Agregar si no está
 } from "@/services/maintenanceService";
 
 const SolicitudesMantenimientoView = () => {
@@ -202,40 +203,56 @@ const SolicitudesMantenimientoView = () => {
     setError(null);
 
     try {
-      // Simulando carga de datos
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Cargar datos reales desde el backend
+      //const response = await getMaintenanceRequests();
+
+      // Mapear la respuesta al formato esperado por la tabla
+      // const formattedData =
+      //   response.data?.map((item) => ({
+      //     id: item.id_maintenance_request,
+      //     machine_id: item.id_machinery,
+      //     machine_name: item.machinery_name || "N/A",
+      //     serial_number: item.machinery_serial || "N/A",
+      //     requester: item.requester_name || "N/A",
+      //     maintenance_type: item.maintenance_type_name || "N/A",
+      //     request_date: item.created_at,
+      //     priority: item.priority || "Media",
+      //     status: item.status_name || "Pendiente",
+      //     description: item.description || "",
+      //     justification: item.justification || null,
+      //   })) || [];
+
+      //setMaintenanceData(formattedData);
       setMaintenanceData(sampleMaintenanceData);
 
-      // Cargar datos para los selectores de filtros
-      // En un caso real, estos datos vendrían de la API/BD
-      const requestersFromDB = [
-        "Hernan Torres",
-        "Jairo Rojas",
-        "Maria Gonzalez",
-        "Carlos Rodriguez",
-        "Ana Martinez",
-        "Luis Fernandez",
-      ];
+      // Extraer valores únicos para los filtros
+      // const requesters = [
+      //   ...new Set(formattedData.map((item) => item.requester).filter(Boolean)),
+      // ];
+      // const types = [
+      //   ...new Set(
+      //     formattedData.map((item) => item.maintenance_type).filter(Boolean)
+      //   ),
+      // ];
+      // const priorities = [
+      //   ...new Set(formattedData.map((item) => item.priority).filter(Boolean)),
+      // ];
 
-      const maintenanceTypesFromDB = [
-        "Preventivo",
-        "Correctivo",
-        "Emergencia",
-        "Predictivo",
-      ];
-
-      const prioritiesFromDB = ["Alta", "Media", "Baja", "Crítica"];
-
-      setAvailableRequesters(requestersFromDB);
-      setAvailableMaintenanceTypes(maintenanceTypesFromDB);
-      setAvailablePriorities(prioritiesFromDB);
+      // setAvailableRequesters(requesters);
+      // setAvailableMaintenanceTypes(types);
+      // setAvailablePriorities(priorities);
     } catch (err) {
+      console.error("Error cargando solicitudes:", err);
+
+      // Si falla, usar datos de ejemplo
+      setMaintenanceData(sampleMaintenanceData);
+
       setErrorModal({
         isOpen: true,
         title: "Error al cargar datos",
-        message: `No se pudo aprobar la solicitud: ${
-          error.message || error
-        }. Por favor, intenta de nuevo.`,
+        message: `No se pudieron cargar las solicitudes: ${
+          err.message || "Error desconocido"
+        }. Mostrando datos de ejemplo.`,
       });
     } finally {
       setLoading(false);
@@ -634,13 +651,15 @@ const SolicitudesMantenimientoView = () => {
 
               {/* Renderizado condicional para cancelar */}
               {canCancel && (
-                <button
-                  onClick={() => handleCancel(request)}
-                  className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-red-300 hover:border-red-500 hover:text-red-600 text-red-600"
-                  title="Cancelar solicitud"
-                >
-                  <FaBan className="w-3 h-3" /> Rechazar
-                </button>
+                <PermissionGuard permission="maintenance_request.reject">
+                  <button
+                    onClick={() => handleCancel(request)}
+                    className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-red-300 hover:border-red-500 hover:text-red-600 text-red-600"
+                    title="Rechazar solicitud"
+                  >
+                    <FaBan className="w-3 h-3" /> Rechazar
+                  </button>
+                </PermissionGuard>
               )}
             </div>
           );
@@ -663,7 +682,6 @@ const SolicitudesMantenimientoView = () => {
 
   const handleApprove = async (request) => {
     try {
-
       // Actualizar el estado local
       setMaintenanceData((prevData) =>
         prevData.map((item) =>
@@ -694,12 +712,26 @@ const SolicitudesMantenimientoView = () => {
 
   const handleCancel = (request) => {
     // Validar que el estado permita el rechazo
-    const allowedStatuses = ["Pendiente", "Programado"];
-    if (!allowedStatuses.includes(request.status)) {
+    const allowedStatuses = ["Pendiente"];
+    const notAllowedStatuses = ["Rechazada", "Completado", "En Progreso"];
+
+    if (notAllowedStatuses.includes(request.status)) {
+      let message = "Esta solicitud no puede ser rechazada.";
+
+      if (request.status === "Rechazada") {
+        message = "Esta solicitud ya fue rechazada previamente.";
+      } else if (request.status === "Completado") {
+        message = "No se puede rechazar una solicitud completada.";
+      } else if (request.status === "En Progreso") {
+        message = "No se puede rechazar una solicitud en progreso.";
+      } else if (request.status === "Programado") {
+        message = "No se puede rechazar una solicitud que ya fue programada.";
+      }
+
       setErrorModal({
         isOpen: true,
         title: "Acción No Permitida",
-        message: "Esta solicitud no puede ser rechazada en su estado actual",
+        message: message,
       });
       return;
     }
@@ -766,33 +798,45 @@ const SolicitudesMantenimientoView = () => {
     response,
   }) => {
     try {
-      // Actualizar el estado local con los datos del backend
+      // Actualizar el estado local inmediatamente para feedback rápido
       setMaintenanceData((prevData) =>
         prevData.map((item) =>
           item.id === requestId
             ? {
                 ...item,
-                status: "Rechazado",
-                rejectionReason: justification,
+                status: "Rechazada",
+                justification: justification,
               }
             : item
         )
       );
 
-      // Recargar los datos desde el servidor para asegurar sincronización
-      // await loadInitialData();
+      // Mostrar mensaje de éxito
+      setSuccessModal({
+        isOpen: true,
+        title: "Solicitud Rechazada",
+        message: `La solicitud #${requestId} ha sido rechazada exitosamente.`,
+      });
+
+      // Recargar los datos después de un breve delay para sincronizar con el servidor
+      setTimeout(async () => {
+        await loadInitialData();
+      }, 1500);
     } catch (error) {
+      console.error("Error en handleDeclineRequest:", error);
+
+      // Revertir cambios en caso de error
+      await loadInitialData();
+
       setErrorModal({
         isOpen: true,
         title: "Error al rechazar la solicitud",
-        message: `No se pudo aprobar la solicitud: ${
-          error.message || error
+        message: `No se pudo rechazar la solicitud: ${
+          error.message || "Error desconocido"
         }. Por favor, intenta de nuevo.`,
       });
-      // El error ya fue manejado en el modal hijo
     }
   };
-
   const handleOpenAddRequestModal = () => {
     setIsCreateModalOpen(true);
   };
