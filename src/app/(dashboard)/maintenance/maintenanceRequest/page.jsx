@@ -651,7 +651,7 @@ const SolicitudesMantenimientoView = () => {
 
               {/* Renderizado condicional para cancelar */}
               {canCancel && (
-                <PermissionGuard permission="maintenance_request.reject">
+                //<PermissionGuard permission="maintenance_request.reject">
                   <button
                     onClick={() => handleCancel(request)}
                     className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-red-300 hover:border-red-500 hover:text-red-600 text-red-600"
@@ -659,7 +659,7 @@ const SolicitudesMantenimientoView = () => {
                   >
                     <FaBan className="w-3 h-3" /> Rechazar
                   </button>
-                </PermissionGuard>
+                //</PermissionGuard>
               )}
             </div>
           );
