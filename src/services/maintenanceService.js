@@ -41,3 +41,23 @@ export const getMaintenanceDetail = async (id) => {
     const { data } = await apiMain.get(`/maintenance/${id}/`);
     return data;
 };
+
+//SERVICIOS PARA SOLICITUDES DE MANTENIMIENTO
+
+//Obtener lista de prioridades
+export const getPrioritiesList = async () => {
+    const { data } = await apiMain.get("/types/list/active/13/");
+    return data;
+};
+
+//Obtener listado de maquinarias activas
+export const getActiveMachineries = async () => {
+    const { data } = await apiMain.get("/machinery/active/");
+    return data;
+};
+
+//Crear solicitud de mantenimiento
+export const createMaintenanceRequest = async (payload) => {
+    const { data } = await apiMain.post("/maintenance_request/create/", payload);
+    return data;
+};
