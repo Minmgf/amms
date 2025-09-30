@@ -91,7 +91,7 @@ export const createMaintenanceScheduling = async (payload) => {
         console.error("Error creando programación:", error);
         throw error;
     }
-}; // <--- ESTA LLAVE FALTABA
+};
 
 //SERVICIOS PARA SOLICITUDES DE MANTENIMIENTO
 
