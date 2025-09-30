@@ -193,6 +193,7 @@ class ITSM005RejectMaintenanceRequest:
             print(f"URL actual después del login: {current_url}")
             
             if "login" not in current_url and ("dashboard" in current_url or "home" in current_url):
+                self.take_screenshot("login_success")
                 self.log_test_result("Login", True, "Login exitoso")
                 return True
             else:
@@ -220,6 +221,7 @@ class ITSM005RejectMaintenanceRequest:
             print(f"URL actual: {current_url}")
             
             if "maintenanceRequest" in current_url or "solicitud" in current_url.lower():
+                self.take_screenshot("navigation_success")
                 self.log_test_result("Navegación", True, "Navegación exitosa a solicitudes")
                 return True
             else:
@@ -306,6 +308,7 @@ class ITSM005RejectMaintenanceRequest:
                     continue
             
             if rows_found > 0:
+                self.take_screenshot("requests_list_success")
                 self.log_test_result("Verificación Lista", True, f"Lista de solicitudes encontrada con {rows_found} elementos")
                 return True
             else:
@@ -375,6 +378,7 @@ class ITSM005RejectMaintenanceRequest:
             print("Clic realizado en botón de rechazar")
             time.sleep(2)
             
+            self.take_screenshot("reject_button_clicked")
             self.log_test_result("Selección Solicitud", True, "Solicitud seleccionada para rechazo")
             return True
             
