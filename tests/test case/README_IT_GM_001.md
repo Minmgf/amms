@@ -12,11 +12,8 @@ Se detalla la validación del flujo de registro de mantenimiento, cubriendo esce
 - Usuario con credenciales autorizadas genéricas.
 - Acceso al módulo de gestión de mantenimientos.
 - Navegador de preferencia configurado para Selenium.
-- Recomendaciones:
-  - Mantener la validación de errores en el frontend alineada con los mensajes esperados por el test.
-  - Revisar los límites de longitud en el backend y frontend para evitar inconsistencias.
-  - Mejorar la accesibilidad de los modales de error para facilitar la automatización y el diagnóstico.
-  - Documentar los mensajes de error en el manual de usuario para mayor claridad.
+- Recomendaciones: Mantener la validación de errores en el frontend alineada con los mensajes esperados por el test.
+
 
 # Datos de Entrada
 ```json
@@ -62,20 +59,16 @@ Descripción del comportamiento esperado si la función o método opera correcta
 ```json
 {
   "exito": true,
-  "duplicidad": "Mensaje de error por nombre duplicado mostrado correctamente.",
-  "longitud": "Mensaje de error por longitud mostrado correctamente.",
-  "obligatorios": "Mensaje de error por campos obligatorios mostrado correctamente."
+  "duplicidad": "• name: Ya existe un mantenimiento con este nombre.",
+  "longitud": "name: El nombre no puede exceder 100 caracteres.",
+  "obligatorios": "• description: La descripción es obligatoria." "El nombre es obligatorio."
 }
 ```
 
 # Estado
-Pendiente/Completado
-
+Aprobado
 # Fecha Ejecución
-28/09/2025
+28/09/2025 - 8:00 PM
 
 # Ejecutado por
-GitHub Copilot
-
-# Evidencias
-- Capturas de pantalla y logs generados por Selenium en caso de fallo.
+Alejandro Saenz
