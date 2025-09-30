@@ -7,7 +7,7 @@ export default function Step4UsageInfo({
   usageStatesList = [],
   tenureTypesList = [],
   isEditMode = false,
-  currentStatusName = "",
+  currentStatusId = null,
 }) {
   const { register, formState: { errors }, watch } = useFormContext();
   const { getCurrentTheme } = useTheme();
@@ -151,6 +151,7 @@ export default function Step4UsageInfo({
             aria-label="Tenure Select"
             {...register("tenure")}
             className="parametrization-input"
+            disabled={watchOwnership}
           >
             <option value="">Seleccione una opción...</option>
             {tenureTypesList.map((tenure) => (
@@ -226,7 +227,7 @@ export default function Step4UsageInfo({
           )}
         </div>
         {/* Mostrar solo si está en modo edición y el estado es activo */}
-        {isEditMode && currentStatusName === "activa" && (
+        {isEditMode && currentStatusId !== 3 && (
           <>            
             {/* Textarea de justificación */}
             <div className="col-span-1 sm:col-span-2 lg:col-span-4">
