@@ -91,4 +91,24 @@ export const createMaintenanceScheduling = async (payload) => {
         console.error("Error creando programación:", error);
         throw error;
     }
+}; // <--- ESTA LLAVE FALTABA
+
+//SERVICIOS PARA SOLICITUDES DE MANTENIMIENTO
+
+//Obtener lista de prioridades
+export const getPrioritiesList = async () => {
+    const { data } = await apiMain.get("/types/list/active/13/");
+    return data;
+};
+
+//Obtener listado de maquinarias activas
+export const getActiveMachineries = async () => {
+    const { data } = await apiMain.get("/machinery/active/");
+    return data;
+};
+
+//Crear solicitud de mantenimiento
+export const createMaintenanceRequest = async (payload) => {
+    const { data } = await apiMain.post("/maintenance_request/create/", payload);
+    return data;
 };
