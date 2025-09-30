@@ -2,18 +2,17 @@
 import React, { useState } from "react";
 import { FiX } from "react-icons/fi";
 import { rejectMaintenanceRequest } from "@/services/maintenanceService";
-import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
+import {
+  SuccessModal,
+  ErrorModal,
+} from "@/app/components/shared/SuccessErrorModal";
+import RequestInfoCard from "@/app/components/maintenance/RequestInfoCard";
 
-const DeclineRequestModal = ({
-  isOpen,
-  onClose,
-  onDecline,
-  request
-}) => {
+const DeclineRequestModal = ({ isOpen, onClose, onDecline, request }) => {
   const [justification, setJustification] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Estados para los modales de feedback
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
@@ -54,26 +53,26 @@ const DeclineRequestModal = ({
         onDecline({
           requestId: request.id,
           justification: justification.trim(),
-          response: response
+          response: response,
         });
 
         // Limpiar campos
         setJustification("");
         setError("");
-        
+
         // Mostrar modal de éxito
         setModalMessage(response.message || "Solicitud rechazada exitosamente");
         setShowSuccessModal(true);
       }
     } catch (error) {
-      console.error("Error al rechazar solicitud:", error);
-      
-      let errorMessage = "Error al rechazar la solicitud. Por favor, intenta de nuevo.";
-      
+
+      let errorMessage =
+        "Error al rechazar la solicitud. Por favor, intenta de nuevo.";
+
       // Manejar errores de validación del backend (422)
       if (error.response?.status === 422) {
         const details = error.response.data?.details;
-        
+
         if (details?.non_field_errors) {
           errorMessage = details.non_field_errors[0];
         } else if (details?.justification) {
@@ -84,7 +83,7 @@ const DeclineRequestModal = ({
       } else if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       }
-      
+
       // Mostrar modal de error
       setModalMessage(errorMessage);
       setShowErrorModal(true);
@@ -109,42 +108,6 @@ const DeclineRequestModal = ({
     onClose();
   };
 
-  // Formatear fecha
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('es-ES', { 
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
-      }) + ', ' + date.toLocaleTimeString('es-ES', { 
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      });
-    } catch (error) {
-      return 'Fecha inválida';
-    }
-  };
-
-  // Obtener badge de estado
-  const getStatusBadge = (status) => {
-    const statusColors = {
-      'Pendiente': 'bg-yellow-100 text-yellow-800',
-      'Programado': 'bg-blue-100 text-blue-800',
-      'En Progreso': 'bg-purple-100 text-purple-800',
-      'Completado': 'bg-green-100 text-green-800',
-      'Rechazado': 'bg-red-100 text-red-800'
-    };
-    
-    return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[status] || 'bg-gray-100 text-gray-800'}`}>
-        {status}
-      </span>
-    );
-  };
-
   const maxCharacters = 350;
   const remainingCharacters = maxCharacters - justification.length;
 
@@ -158,11 +121,11 @@ const DeclineRequestModal = ({
         role="dialog"
       >
         <div
-          className="bg-background rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden"
+          className="bg-background rounded-xl shadow-2xl w-full max-w-2xl max-h-[95vh] overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <h2 className="text-xl font-bold text-primary">
               Rechazar Solicitud
             </h2>
@@ -177,49 +140,19 @@ const DeclineRequestModal = ({
           </div>
 
           {/* Modal Content */}
-          <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
+          <div className="p-6 overflow-y-auto max-h-[calc(95vh-180px)]">
             {/* Request information */}
-            <section className="bg-gray-50 rounded-lg p-4 mb-6">
-              <h3 className="text-sm font-semibold text-gray-900 mb-4">
-                Información de la Solicitud
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <span className="text-xs text-gray-600 block mb-1">Número Consecutivo</span>
-                  <div className="text-sm font-medium text-gray-900">{request.id || 'N/A'}</div>
-                </div>
-                <div>
-                  <span className="text-xs text-gray-600 block mb-1">Fecha de Solicitud</span>
-                  <div className="text-sm font-medium text-gray-900">{formatDate(request.request_date)}</div>
-                </div>
-                <div>
-                  <span className="text-xs text-gray-600 block mb-1">Solicitante</span>
-                  <div className="text-sm font-medium text-gray-900">{request.requester || 'N/A'}</div>
-                </div>
-                <div>
-                  <span className="text-xs text-gray-600 block mb-1">Estado</span>
-                  <div className="mt-1">
-                    {getStatusBadge(request.status)}
-                  </div>
-                </div>
-                <div>
-                  <span className="text-xs text-gray-600 block mb-1">Número de Serie</span>
-                  <div className="text-sm font-medium text-gray-900">{request.serial_number || 'N/A'}</div>
-                </div>
-                <div>
-                  <span className="text-xs text-gray-600 block mb-1">Nombre de Máquina</span>
-                  <div className="text-sm font-medium text-gray-900">{request.machine_name || 'N/A'}</div>
-                </div>
-              </div>
-            </section>
+            <div className="mb-6">
+              <RequestInfoCard request={request} showMachineInfo={true} />
+            </div>
 
             {/* Decline Maintenance Section */}
-            <section>
-              <h3 className="text-sm font-semibold text-gray-900 mb-4">
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-primary mb-4">
                 Rechazar Mantenimiento
               </h3>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
                   Justificación <span className="text-red-500">*</span>
                 </label>
                 <textarea
@@ -232,37 +165,45 @@ const DeclineRequestModal = ({
                   }}
                   disabled={isSubmitting}
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none ${
-                    error ? 'border-red-500' : 'border-gray-300'
-                  } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    error ? "border-red-500" : "border-gray-300"
+                  } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
                   rows={5}
                   placeholder="Ingrese la razón por la cual se rechaza esta solicitud de mantenimiento..."
                   aria-label="Justificación de rechazo"
                 />
                 <div className="flex items-center justify-between mt-1">
-                  <span className={`text-xs ${remainingCharacters < 50 ? 'text-red-600' : 'text-gray-500'}`}>
-                    {remainingCharacters}/{maxCharacters} caracteres
+                  <div>
+                    {error && (
+                      <span className="text-xs text-red-600">{error}</span>
+                    )}
+                  </div>
+                  <span
+                    className={`text-xs ${
+                      remainingCharacters < 50
+                        ? "text-red-600"
+                        : "text-gray-500"
+                    }`}
+                  >
+                    {justification.length}/{maxCharacters} caracteres
                   </span>
-                  {error && (
-                    <span className="text-xs text-red-600">{error}</span>
-                  )}
                 </div>
               </div>
-            </section>
+            </div>
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-gray-200 flex justify-center">
+          <div className="flex justify-center gap-4 p-6 border-t border-gray-200">
             <button
               onClick={handleDecline}
               disabled={!justification.trim() || isSubmitting}
-              className={`px-8 py-2.5 rounded-lg font-semibold text-white transition-colors ${
+              className={`px-8 py-3 rounded-lg font-semibold text-white transition-colors ${
                 justification.trim() && !isSubmitting
-                  ? 'bg-red-500 hover:bg-red-600 cursor-pointer' 
-                  : 'bg-gray-300 cursor-not-allowed'
+                  ? "bg-red-500 hover:bg-red-600 cursor-pointer"
+                  : "bg-gray-300 cursor-not-allowed"
               }`}
               aria-label="Confirmar rechazo"
             >
-              {isSubmitting ? 'Rechazando...' : 'Rechazar'}
+              {isSubmitting ? "Rechazando..." : "Rechazar"}
             </button>
           </div>
         </div>
