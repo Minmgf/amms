@@ -33,7 +33,17 @@ import { IoCalendarOutline } from "react-icons/io5";
 import MaintenanceRequestModal from "@/app/components/maintenance/MaintenanceRequestModal";
 import RequestDetailModal from "@/app/components/maintenance/RequestDetailModal";
 import DeclineRequestModal from "@/app/components/maintenance/DeclineRequestModal";
-import { rejectMaintenanceRequest } from "@/services/maintenanceService";
+import ScheduleMaintenanceModal from "@/app/components/maintenance/ScheduleMaintenanceModal";
+import {
+  SuccessModal,
+  ErrorModal,
+} from "@/app/components/shared/SuccessErrorModal";
+import {
+  getMaintenanceRequests,
+  getActiveTechnicians,
+  getMaintenanceTypes,
+  createMaintenanceScheduling,
+} from "@/services/maintenanceService";
 
 const SolicitudesMantenimientoView = () => {
   // Estado para el filtro global
@@ -43,6 +53,18 @@ const SolicitudesMantenimientoView = () => {
   // Estados para datos
   const [maintenanceData, setMaintenanceData] = useState([]);
   const [error, setError] = useState(null);
+
+  // Estados para modales de feedback
+  const [successModal, setSuccessModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+  });
+  const [errorModal, setErrorModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+  });
 
   // Estados para el modal de filtros
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
@@ -61,6 +83,8 @@ const SolicitudesMantenimientoView = () => {
     []
   );
   const [availablePriorities, setAvailablePriorities] = useState([]);
+  const [technicians, setTechnicians] = useState([]);
+  const [maintenanceTypes, setMaintenanceTypes] = useState([]);
 
   // Estados para modales de detalles y edición
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -69,11 +93,15 @@ const SolicitudesMantenimientoView = () => {
   const [isDeclineModalOpen, setIsDeclineModalOpen] = useState(false);
   const [selectedRequestForDecline, setSelectedRequestForDecline] =
     useState(null);
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [selectedRequestForSchedule, setSelectedRequestForSchedule] =
+    useState(null);
 
   // Datos de ejemplo
   const sampleMaintenanceData = [
     {
       id: "2025-01",
+      machine_id: 1,
       machine_name: "Tractor",
       serial_number: "CAT00D5GPWGB01070",
       requester: "Hernan Torres",
@@ -84,6 +112,7 @@ const SolicitudesMantenimientoView = () => {
     },
     {
       id: "2025-02",
+      machine_id: 1,
       machine_name: "Cosechadora",
       serial_number: "ZAR00D5GPWGB01070",
       requester: "Jairo Rojas",
@@ -94,6 +123,7 @@ const SolicitudesMantenimientoView = () => {
     },
     {
       id: "2025-03",
+      machine_id: 1,
       machine_name: "Excavadora",
       serial_number: "JCB00X8HMWN02150",
       requester: "Maria Gonzalez",
@@ -104,6 +134,7 @@ const SolicitudesMantenimientoView = () => {
     },
     {
       id: "2025-04",
+      machine_id: 1,
       machine_name: "Bulldozer",
       serial_number: "CAT00D8TPWGB03280",
       requester: "Carlos Rodriguez",
@@ -114,9 +145,43 @@ const SolicitudesMantenimientoView = () => {
     },
   ];
 
+  const loadModalData = async () => {
+    try {
+      // Cargar técnicos
+      const techniciansList = await getActiveTechnicians();
+      setTechnicians(techniciansList);
+
+      // Cargar tipos de mantenimiento
+      const types = await getMaintenanceTypes();
+      // Formatear los tipos según tu necesidad
+      const formattedTypes = types?.data?.map((type) => type.name) || [
+        "Preventivo",
+        "Correctivo",
+        "Emergencia",
+        "Predictivo",
+      ];
+      setMaintenanceTypes(formattedTypes);
+    } catch (error) {
+      setErrorModal({
+        isOpen: true,
+        title: "Error al cargar datos",
+        message: `No se pudo aprobar la solicitud: ${
+          error.message || error
+        }. Por favor, intenta de nuevo.`,
+      });
+      // Usar datos de respaldo si falla
+      setTechnicians([
+        { value: "1", label: "Técnico 1" },
+        { value: "2", label: "Técnico 2" },
+      ]);
+      setMaintenanceTypes(["Preventivo", "Correctivo", "Emergencia"]);
+    }
+  };
+
   // Cargar datos al montar el componente
   useEffect(() => {
     loadInitialData();
+    loadModalData();
   }, []);
 
   // Aplicar filtros cuando cambien los datos o los filtros
@@ -165,8 +230,13 @@ const SolicitudesMantenimientoView = () => {
       setAvailableMaintenanceTypes(maintenanceTypesFromDB);
       setAvailablePriorities(prioritiesFromDB);
     } catch (err) {
-      console.error("Error loading data:", err);
-      setError("Error al cargar los datos. Por favor, intenta de nuevo.");
+      setErrorModal({
+        isOpen: true,
+        title: "Error al cargar datos",
+        message: `No se pudo aprobar la solicitud: ${
+          error.message || error
+        }. Por favor, intenta de nuevo.`,
+      });
     } finally {
       setLoading(false);
     }
@@ -554,7 +624,7 @@ const SolicitudesMantenimientoView = () => {
               {/* Renderizado condicional para aprobar */}
               {canApprove && (
                 <button
-                  onClick={() => handleApprove(request)}
+                  onClick={() => handleOpenScheduleModal(request)} // Cambio aquí
                   className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 hover:border-green-500 hover:text-green-600 text-green-600"
                   title="Aprobar solicitud"
                 >
@@ -593,8 +663,6 @@ const SolicitudesMantenimientoView = () => {
 
   const handleApprove = async (request) => {
     try {
-      // Aquí irá la llamada a la API para aprobar
-      console.log("Aprobando solicitud:", request.id);
 
       // Actualizar el estado local
       setMaintenanceData((prevData) =>
@@ -603,11 +671,24 @@ const SolicitudesMantenimientoView = () => {
         )
       );
 
+      setSelectedRequestForSchedule(request);
+      setIsScheduleModalOpen(true);
+
       // Mostrar mensaje de éxito (puedes usar un toast aquí)
-      alert("Solicitud aprobada exitosamente");
+      setSuccessModal({
+        isOpen: true,
+        title: "Solicitud Aprobada",
+        message:
+          "La solicitud ha sido aprobada y está lista para ser programada",
+      });
     } catch (error) {
-      console.error("Error al aprobar solicitud:", error);
-      alert("Error al aprobar la solicitud");
+      setErrorModal({
+        isOpen: true,
+        title: "Error al Aprobar",
+        message: `No se pudo aprobar la solicitud: ${
+          error.message || error
+        }. Por favor, intenta de nuevo.`,
+      });
     }
   };
 
@@ -615,12 +696,68 @@ const SolicitudesMantenimientoView = () => {
     // Validar que el estado permita el rechazo
     const allowedStatuses = ["Pendiente", "Programado"];
     if (!allowedStatuses.includes(request.status)) {
-      alert("Esta solicitud no puede ser rechazada en su estado actual");
+      setErrorModal({
+        isOpen: true,
+        title: "Acción No Permitida",
+        message: "Esta solicitud no puede ser rechazada en su estado actual",
+      });
       return;
     }
 
     setSelectedRequestForDecline(request);
     setIsDeclineModalOpen(true);
+  };
+
+  const handleOpenScheduleModal = (request) => {
+    // Guardar la solicitud seleccionada
+    setSelectedRequestForSchedule(request);
+    // Abrir el modal
+    setIsScheduleModalOpen(true);
+  };
+
+  const handleSubmitSchedule = async (scheduleData) => {
+    try {
+      // Aquí usamos selectedRequestForSchedule que tiene los datos de la solicitud
+      const payload = {
+        id_machinery: selectedRequestForSchedule?.machine_id || 2, // Necesitas agregar machine_id a tus datos
+        scheduled_at: `${scheduleData.scheduleDate}T${scheduleData.scheduleTime}:00Z`,
+        details: scheduleData.maintenanceDetails,
+        assigned_technician: parseInt(scheduleData.technician),
+        maintenance_type: 35, // Este ID debe venir del tipo seleccionado
+        // Si necesitas asociar con la solicitud original:
+        maintenance_request_id: selectedRequestForSchedule?.id,
+      };
+
+      // Llamar al servicio cuando esté disponible
+      const response = await createMaintenanceScheduling(payload);
+
+      if (response.success) {
+        // Actualizar el estado local
+        setMaintenanceData((prevData) =>
+          prevData.map((item) =>
+            item.id === selectedRequestForSchedule.id
+              ? { ...item, status: "Programado" }
+              : item
+          )
+        );
+
+        // Cerrar modal
+        setIsScheduleModalOpen(false);
+        setSelectedRequestForSchedule(null);
+
+        // Recargar datos si es necesario
+        await loadInitialData();
+      }
+    } catch (error) {
+      setErrorModal({
+        isOpen: true,
+        title: "Error al programar el mantenimiento",
+        message: `No se pudo aprobar la solicitud: ${
+          error.message || error
+        }. Por favor, intenta de nuevo.`,
+      });
+      // El error se maneja en el modal
+    }
   };
 
   const handleDeclineRequest = async ({
@@ -642,14 +779,20 @@ const SolicitudesMantenimientoView = () => {
         )
       );
 
-      // Opcional: recargar los datos desde el servidor para asegurar sincronización
+      // Recargar los datos desde el servidor para asegurar sincronización
       // await loadInitialData();
     } catch (error) {
-      console.error("Error en handleDeclineRequest:", error);
+      setErrorModal({
+        isOpen: true,
+        title: "Error al rechazar la solicitud",
+        message: `No se pudo aprobar la solicitud: ${
+          error.message || error
+        }. Por favor, intenta de nuevo.`,
+      });
       // El error ya fue manejado en el modal hijo
     }
   };
-  
+
   const handleOpenAddRequestModal = () => {
     setIsCreateModalOpen(true);
   };
@@ -949,6 +1092,29 @@ const SolicitudesMantenimientoView = () => {
           }}
           onDecline={handleDeclineRequest}
           request={selectedRequestForDecline}
+        />
+        <ScheduleMaintenanceModal
+          isOpen={isScheduleModalOpen}
+          onClose={() => {
+            setIsScheduleModalOpen(false);
+            setSelectedRequestForSchedule(null);
+          }}
+          onSubmit={handleSubmitSchedule} // Handler para el submit
+          request={selectedRequestForSchedule} // La solicitud seleccionada
+          technicians={technicians}
+          maintenanceTypes={maintenanceTypes}
+        />
+        <SuccessModal
+          isOpen={successModal.isOpen}
+          onClose={() => setSuccessModal({ ...successModal, isOpen: false })}
+          title={successModal.title}
+          message={successModal.message}
+        />
+        <ErrorModal
+          isOpen={errorModal.isOpen}
+          onClose={() => setErrorModal({ ...errorModal, isOpen: false })}
+          title={errorModal.title}
+          message={errorModal.message}
         />
       </Dialog.Root>
     </div>
