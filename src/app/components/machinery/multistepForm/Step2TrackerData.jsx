@@ -2,7 +2,10 @@
 import { useFormContext } from "react-hook-form";
 import { useTheme } from "@/contexts/ThemeContext";
 
-export default function Step2TrackerData() {
+export default function Step2TrackerData({
+  isEditMode = false,
+  currentStatusId = null,
+}) {
   const { register, formState: { errors } } = useFormContext();
   const { getCurrentTheme } = useTheme();
 
@@ -59,7 +62,7 @@ export default function Step2TrackerData() {
                 {errors.gpsSerial.message}
               </span>
             )}
-          </div>
+          </div>          
         </div>
 
         {/* Columna derecha */}
@@ -108,8 +111,31 @@ export default function Step2TrackerData() {
                 {errors.engineNumber.message}
               </span>
             )}
-          </div>
+          </div>          
         </div>
+        {/* Mostrar solo si está en modo edición y el estado es activo */}
+          {isEditMode && currentStatusId !== 3 && (
+            <>            
+              {/* Textarea de justificación */}
+              <div className="col-span-1 sm:col-span-2 lg:col-span-4">
+                <label className="block text-theme-sm text-secondary mb-1">
+                  Justificación de cambio
+                </label>
+                <textarea
+                  aria-label="Justification Textarea"
+                  {...register("justificationTrackerInfo")}
+                  className="parametrization-input"
+                  rows={3}
+                  placeholder="Describa la justificación del cambio..."
+                />
+                {errors.justification && (
+                  <span className="text-theme-xs mt-1 block" style={{ color: 'var(--color-error)' }}>
+                    {errors.justification.message}
+                  </span>
+                )}
+              </div>
+            </>
+          )}
       </div>
     </div>
   );

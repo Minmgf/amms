@@ -22,7 +22,7 @@ export default function Step3SpecificData({
   emissionLevelList = [],
   cabinTypesList = [],
   isEditMode = false,
-  currentStatusName = "",
+  currentStatusId = null,
 }) {
   const {
     register,
@@ -1697,7 +1697,7 @@ export default function Step3SpecificData({
         )}
       </div>
 
-      {isEditMode && currentStatusName === "activa" && (
+      {isEditMode && currentStatusId !== 3 && (
         <div
           className="rounded-theme-lg overflow-hidden"
           style={{ border: `1px solid var(--color-border)` }}
@@ -1717,7 +1717,7 @@ export default function Step3SpecificData({
                 aria-label="Justification Textarea"
                 {...register("justification", {
                   required:
-                    isEditMode && currentStatusName === "activa"
+                    isEditMode && currentStatusId !== 3
                       ? "La justificación es obligatoria cuando la maquinaria está en estado 'Activa'"
                       : false,
                 })}
