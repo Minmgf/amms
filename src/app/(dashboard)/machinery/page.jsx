@@ -375,21 +375,21 @@ const MachineryMainView = () => {
             <button
               aria-label="Edit Button"
               onClick={() => handleEdit(row.original)}
-              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black"
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black cursor-pointer"
             >
               <FaPen /> Editar
             </button>
             <button
               aria-label="History Button"
               onClick={() => handleHistory(row.original)}
-              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black"
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black cursor-pointer"
             >
               <FaHistory /> Historial
             </button>
             <button
               aria-label="View Button"
               onClick={() => handleView(row.original)}
-              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black"
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black cursor-pointer"
             >
               <FaEye /> Ver
             </button>

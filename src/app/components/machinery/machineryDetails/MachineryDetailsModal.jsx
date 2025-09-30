@@ -4,12 +4,12 @@ import React, { useEffect, useState } from "react";
 import { FaTimes, FaTools } from "react-icons/fa";
 import { FiChevronDown, FiDownload, FiFileText, FiX } from "react-icons/fi";
 import {
-  getActiveMachinery,
-  getActiveMachine,
+  getGeneralData,
+  getMachineryType,
+  getMachinerySecondaryType,
   getMachineryBrands,
   getModelsByBrandId,
-  getMachineryPhoto,
-  getUseStates,
+  getMachineryStatus, // <--- usa este nombre
 } from "@/services/machineryService";
 
 export default function MachineryDetailsModal({
@@ -37,13 +37,13 @@ export default function MachineryDetailsModal({
     if (!selectedMachine) return;
 
     // Tipo principal
-    getActiveMachinery().then((data) => {
+    getMachineryType().then((data) => {
       const found = data?.find((t) => t.id === selectedMachine.machinery_type);
       setTypeName(found?.name || "");
     });
 
     // Tipo secundario
-    getActiveMachine().then((data) => {
+    getMachinerySecondaryType().then((data) => {
       const found = data?.find(
         (t) => t.id === selectedMachine.machinery_secondary_type
       );
@@ -65,18 +65,12 @@ export default function MachineryDetailsModal({
     }
 
     // Estado operacional
-    getUseStates().then((data) => {
+    getMachineryStatus().then((data) => {
       const found = data?.find(
         (s) => s.id === selectedMachine.machinery_operational_status
       );
       setStatusName(found?.name || "");
     });
-
-    // Foto de la maquinaria
-    if (selectedMachine.id_maintenance || selectedMachine.id_machinery) {
-      const id = selectedMachine.id_maintenance || selectedMachine.id_machinery;
-      getMachineryPhoto(id).then((url) => setPhotoUrl(url));
-    }
   }, [selectedMachine]);
 
   if (!isOpen) return null;
@@ -142,14 +136,15 @@ export default function MachineryDetailsModal({
             <>
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="bg-[#737373] h-full rounded-md flex items-center justify-center">
-                  {photoUrl ? (
+                  {selectedMachine?.image_path ? (
                     <img
-                      src={photoUrl}
-                      alt="Foto de maquinaria"
+                      src={selectedMachine.image_path}
+                      alt="Machinery photo"
                       className="object-contain max-h-80 w-full rounded-md"
+                      aria-label="Machinery photo"
                     />
                   ) : (
-                    <span className="text-white">Foto aquí</span>
+                    <span className="text-white">Photo here</span>
                   )}
                 </div>
 
@@ -209,20 +204,20 @@ export default function MachineryDetailsModal({
                 <div className="border rounded-xl p-4 border-[#E5E7EB]">
                   <h4 className="font-semibold mb-3">Tracker Data Sheet</h4>
                   <div className="flex flex-col gap-3">
-                    <Row label="Serial Number" value="TRM-789456" />
-                    <Row label="GPS Serial Number" value="GPS-123789" />
-                    <Row label="Chassis Number" value="CHS-456123" />
-                    <Row label="Engine Number" value="MTR-789123" />
+                    <Row label="Serial Number" value={selectedMachine?.tracker_serial_number || "—"} />
+                    <Row label="GPS Serial Number" value={selectedMachine?.gps_serial_number || "—"} />
+                    <Row label="Chassis Number" value={selectedMachine?.chassis_number || "—"} />
+                    <Row label="Engine Number" value={selectedMachine?.engine_number || "—"} />
                   </div>
                 </div>
                 <div className="border rounded-xl p-4 border-[#E5E7EB]">
                   <h4 className="font-semibold mb-3">Usage Information</h4>
                   <div className="flex flex-col gap-3">
-                    <Row label="Acquisition Date" value="15/03/2024" />
-                    <Row label="Usage Status" value="Operativo" />
-                    <Row label="Used Hours" value="1,245 hrs" />
-                    <Row label="Mileage" value="8,750 km" />
-                    <Row label="Tenure" value="Propia" />
+                    <Row label="Acquisition Date" value={formatDate?.(selectedMachine?.acquisition_date) || "—"} />
+                    <Row label="Usage Status" value={selectedMachine?.usage_status || "—"} />
+                    <Row label="Used Hours" value={selectedMachine?.used_hours || "—"} />
+                    <Row label="Mileage" value={selectedMachine?.mileage || "—"} />
+                    <Row label="Tenure" value={selectedMachine?.tenure || "—"} />
                   </div>
                 </div>
               </div>
