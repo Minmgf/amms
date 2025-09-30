@@ -1,0 +1,47 @@
+{
+  "test_name": "IT-GM-002: Verificar listado de mantenimientos con filtros y paginación",
+  "timestamp": "20250929_200028",
+  "results": [
+    {
+      "step": "Setup",
+      "success": true,
+      "message": "Entorno configurado exitosamente",
+      "timestamp": "2025-09-29T20:00:07.838344"
+    },
+    {
+      "step": "Lista_Display",
+      "success": true,
+      "message": "Lista de mantenimientos verificada (11 elementos)",
+      "timestamp": "2025-09-29T20:00:11.150543"
+    },
+    {
+      "step": "Paginacion",
+      "success": true,
+      "message": "Navegación entre páginas probada exitosamente",
+      "timestamp": "2025-09-29T20:00:16.539600"
+    },
+    {
+      "step": "Busqueda",
+      "success": true,
+      "message": "Funcionalidad de búsqueda probada exitosamente",
+      "timestamp": "2025-09-29T20:00:20.897052"
+    },
+    {
+      "step": "Filtros",
+      "success": true,
+      "message": "Filtros por tipo y estado probados exitosamente",
+      "timestamp": "2025-09-29T20:00:24.116909"
+    },
+    {
+      "step": "Botones_Accion",
+      "success": true,
+      "message": "Botones de acción verificados (4 botones encontrados)",
+      "timestamp": "2025-09-29T20:00:27.477548"
+    }
+  ],
+  "summary": {
+    "total_steps": 6,
+    "passed": 6,
+    "failed": 0
+  }
+}
