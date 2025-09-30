@@ -1,12 +1,13 @@
 "use client";
-import React, { useState, useEffect, useMemo } from "react";
-import { FiX, FiTrash2, FiClock } from "react-icons/fi";
+import React, { useState, useMemo } from "react";
+import { IoClose } from "react-icons/io5";
+import { FiTrash2, FiClock } from "react-icons/fi";
 
 export default function MaintenanceReportModal({
-  isOpen,
-  onClose,
-  onSave,
-  maintenance,
+  isOpen = true,
+  onClose = () => {},
+  onSave = () => {},
+  maintenance = {},
   authToken,
 }) {
   // Estado inicial del formulario
@@ -85,6 +86,16 @@ export default function MaintenanceReportModal({
 
   const handleTimeChange = (field, value) => {
     const numValue = value.replace(/\D/g, "");
+    
+    // Validar rangos
+    if (field === "hours") {
+      const hours = parseInt(numValue) || 0;
+      if (hours > 23) return;
+    } else if (field === "minutes") {
+      const minutes = parseInt(numValue) || 0;
+      if (minutes > 59) return;
+    }
+    
     setForm({
       ...form,
       investedTime: { ...form.investedTime, [field]: numValue },
@@ -136,7 +147,6 @@ export default function MaintenanceReportModal({
       performedMaintenances: [...form.performedMaintenances, performedMaint],
     });
 
-    // Limpiar el formulario temporal
     setNewMaintenance({ maintenance: "", technician: "", cost: "" });
     setError(null);
   };
@@ -179,7 +189,6 @@ export default function MaintenanceReportModal({
       spareParts: [...form.spareParts, sparePart],
     });
 
-    // Limpiar el formulario temporal
     setNewSparePart({ name: "", brand: "", quantity: "", unitCost: "" });
     setError(null);
   };
@@ -241,179 +250,198 @@ export default function MaintenanceReportModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
       onClick={handleBackdropClick}
-      id="maintenance-report-modal"
     >
       <div
-        className="bg-background rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden"
+        className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border">
-          <h2 className="text-xl font-bold text-primary">Maintenance report</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <h2 className="text-xl font-semibold text-gray-900">Reporte de mantenimiento</h2>
           <button
-            aria-label="Close report modal"
             onClick={onClose}
-            className="p-2 hover:bg-hover rounded-full transition-colors cursor-pointer"
+            aria-label="Cerrar modal"
+            className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <FiX className="w-5 h-5 text-text-secondary" />
+            <IoClose className="w-5 h-5 text-gray-500" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(95vh-180px)]">
+        <div className="overflow-y-auto max-h-[calc(90vh-140px)]">
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* Maintenance Information */}
+            {/* Maintenance Information Section */}
             <div>
-              <h3 className="text-lg font-semibold text-text mb-4">
-                Maintenance information
+              <h3 className="text-base font-semibold text-gray-900 mb-4">
+                Información del mantenimiento
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="md:col-span-2 grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm text-text-secondary mb-1">
-                      Serial number
-                    </label>
-                    <p className="font-medium text-text">
-                      {maintenance?.serial || "EXC-2024-0012"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-sm text-text-secondary mb-1">
-                      Machine name
-                    </label>
-                    <p className="font-medium text-text">
-                      {maintenance?.machineName || "Excavadora Caterpillar 320D"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-sm text-text-secondary mb-1">
-                      Machinery type
-                    </label>
-                    <p className="font-medium text-text">
-                      {maintenance?.type || "Bulldozer"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-sm text-text-secondary mb-1">
-                      Invested time
-                    </label>
-                    <div className="flex gap-2 items-center">
+              
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {/* Left Column - Info Fields */}
+                <div className="lg:col-span-2 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">
+                        Número de serie
+                      </label>
                       <input
                         type="text"
-                        value={form.investedTime.hours}
-                        onChange={(e) => handleTimeChange("hours", e.target.value)}
-                        placeholder="hh"
-                        maxLength="2"
-                        className="w-16 px-2 py-1 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                        aria-label="Hours"
+                        value="EXC-2024-0012"
+                        readOnly
+                        aria-label="Número de serie de la máquina"
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
                       />
-                      <span className="text-text-secondary">:</span>
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">
+                        Nombre de la máquina
+                      </label>
                       <input
                         type="text"
-                        value={form.investedTime.minutes}
-                        onChange={(e) => handleTimeChange("minutes", e.target.value)}
-                        placeholder="mm"
-                        maxLength="2"
-                        className="w-16 px-2 py-1 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                        aria-label="Minutes"
+                        value="Excavadora Caterpillar 320D"
+                        readOnly
+                        aria-label="Nombre de la máquina"
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
                       />
-                      <FiClock className="w-4 h-4 text-text-secondary" />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">
+                        Tipo de maquinaria
+                      </label>
+                      <input
+                        type="text"
+                        value="Bulldozer"
+                        readOnly
+                        aria-label="Tipo de maquinaria"
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">
+                        Tiempo invertido
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={form.investedTime.hours}
+                          onChange={(e) => handleTimeChange("hours", e.target.value)}
+                          placeholder="hh"
+                          maxLength="2"
+                          aria-label="Horas invertidas"
+                          className="w-16 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <span className="text-gray-400">:</span>
+                        <input
+                          type="text"
+                          value={form.investedTime.minutes}
+                          onChange={(e) => handleTimeChange("minutes", e.target.value)}
+                          placeholder="mm"
+                          maxLength="2"
+                          aria-label="Minutos invertidos"
+                          className="w-16 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <FiClock className="w-4 h-4 text-gray-400" />
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center justify-center">
-                  <div className="w-32 h-32 bg-surface rounded-lg flex items-center justify-center text-text-secondary">
-                    <span className="text-sm">Machine photo here</span>
+
+                {/* Right Column - Machine Photo */}
+                <div className="flex justify-center lg:justify-end">
+                  <div className="w-32 h-32 bg-gray-200 rounded-lg flex items-center justify-center">
+                    <span className="text-xs text-gray-500">Foto de la máquina</span>
                   </div>
+                </div>
+              </div>
+
+              {/* Maintenance Description */}
+              <div className="mt-4">
+                <label className="block text-sm text-gray-600 mb-1">
+                  Descripción del mantenimiento
+                </label>
+                <textarea
+                  value={form.description}
+                  onChange={handleDescriptionChange}
+                  placeholder="Describe el mantenimiento realizado..."
+                  rows={3}
+                  aria-label="Descripción del mantenimiento"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+                <div className="text-xs text-gray-400 mt-1">
+                  {form.description.length}/600 caracteres
+                </div>
+              </div>
+
+              {/* Attending Technicians */}
+              <div className="mt-4">
+                <label className="block text-sm text-gray-600 mb-2">
+                  Técnicos asistentes
+                </label>
+                <div className="flex gap-2">
+                  <select
+                    onChange={(e) => handleTechnicianSelect(e.target.value)}
+                    value=""
+                    aria-label="Seleccionar técnico"
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Seleccionar un técnico</option>
+                    {techniciansOptions
+                      .filter((t) => !form.technicians.find((ft) => ft.id === t.id))
+                      .map((tech) => (
+                        <option key={tech.id} value={tech.id}>
+                          {tech.name}
+                        </option>
+                      ))}
+                  </select>
+                  <button
+                    type="button"
+                    aria-label="Agregar técnico seleccionado"
+                    className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 text-sm"
+                  >
+                    Agregar
+                  </button>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {form.technicians.map((tech) => (
+                    <div
+                      key={tech.id}
+                      className="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-lg"
+                    >
+                      <span className="text-sm text-gray-700">{tech.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeTechnician(tech.id)}
+                        aria-label={`Eliminar técnico ${tech.name}`}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <FiTrash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
 
-            {/* Maintenance Description */}
+            {/* Performed Maintenance Section */}
             <div>
-              <label className="block text-sm text-text-secondary mb-2">
-                Maintenance description
-              </label>
-              <textarea
-                value={form.description}
-                onChange={handleDescriptionChange}
-                placeholder="Describe the maintenance performed..."
-                rows={3}
-                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                aria-label="Maintenance description"
-              />
-              <div className="text-xs text-text-secondary mt-1">
-                {form.description.length}/600 characters
-              </div>
-            </div>
-
-            {/* Attending Technicians */}
-            <div>
-              <label className="block text-sm text-text-secondary mb-2">
-                Attending technicians
-              </label>
-              <div className="flex gap-2 items-start">
-                <select
-                  onChange={(e) => handleTechnicianSelect(e.target.value)}
-                  value=""
-                  className="flex-1 px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  aria-label="Select technician"
-                >
-                  <option value="">Select a technician</option>
-                  {techniciansOptions
-                    .filter((t) => !form.technicians.find((ft) => ft.id === t.id))
-                    .map((tech) => (
-                      <option key={tech.id} value={tech.id}>
-                        {tech.name}
-                      </option>
-                    ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => {}}
-                  className="px-4 py-2 bg-surface text-text-secondary border border-border rounded-md hover:bg-hover"
-                  aria-label="Add technician"
-                >
-                  Add
-                </button>
-              </div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {form.technicians.map((tech) => (
-                  <div
-                    key={tech.id}
-                    className="flex items-center gap-2 px-3 py-1 bg-surface rounded-md border border-border"
-                  >
-                    <span className="text-sm text-text">{tech.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeTechnician(tech.id)}
-                      className="text-error hover:text-error/80"
-                      aria-label={`Remove ${tech.name}`}
-                    >
-                      <FiTrash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Performed Maintenance */}
-            <div>
-              <h3 className="text-lg font-semibold text-text mb-4">
-                Performed maintenance
+              <h3 className="text-base font-semibold text-gray-900 mb-4">
+                Mantenimientos realizados
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
                 <select
                   value={newMaintenance.maintenance}
                   onChange={(e) =>
                     setNewMaintenance({ ...newMaintenance, maintenance: e.target.value })
                   }
-                  className="px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  aria-label="Select maintenance type"
+                  aria-label="Seleccionar tipo de mantenimiento"
+                  className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Maintenance</option>
+                  <option value="">Mantenimiento</option>
                   {maintenanceOptions.map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.name}
@@ -425,18 +453,18 @@ export default function MaintenanceReportModal({
                   onChange={(e) =>
                     setNewMaintenance({ ...newMaintenance, technician: e.target.value })
                   }
-                  className="px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  aria-label="Select responsible technician"
+                  aria-label="Seleccionar técnico responsable"
+                  className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   disabled={form.technicians.length === 0}
                 >
-                  <option value="">Responsible Technician</option>
+                  <option value="">Técnico responsable</option>
                   {form.technicians.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.name}
                     </option>
                   ))}
                 </select>
-                <div className="flex items-center gap-2">
+                <div className="flex gap-1">
                   <input
                     type="number"
                     value={newMaintenance.cost}
@@ -444,16 +472,16 @@ export default function MaintenanceReportModal({
                       setNewMaintenance({ ...newMaintenance, cost: e.target.value })
                     }
                     placeholder="0.00"
-                    className="flex-1 px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                    aria-label="Maintenance cost"
+                    aria-label="Costo del mantenimiento"
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     step="0.01"
                     min="0"
                   />
                   <select
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
-                    className="px-2 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                    aria-label="Currency"
+                    aria-label="Seleccionar moneda"
+                    className="px-2 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="USD">USD</option>
                     <option value="EUR">EUR</option>
@@ -463,51 +491,51 @@ export default function MaintenanceReportModal({
                 <button
                   type="button"
                   onClick={addPerformedMaintenance}
-                  className="px-4 py-2 bg-surface text-text-secondary border border-border rounded-md hover:bg-hover"
-                  aria-label="Add maintenance"
+                  aria-label="Agregar mantenimiento realizado"
+                  className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 text-sm"
                 >
-                  Add
+                  Agregar
                 </button>
               </div>
 
-              {/* Maintenance List */}
+              {/* Maintenance Table */}
               {form.performedMaintenances.length > 0 && (
-                <div className="border border-border rounded-md overflow-hidden">
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
                   <table className="w-full">
-                    <thead className="bg-surface">
+                    <thead className="bg-gray-50">
                       <tr>
-                        <th className="text-left px-4 py-2 text-sm font-medium text-text">
-                          Maintenance
+                        <th className="text-left px-4 py-2 text-sm font-medium text-gray-700">
+                          Mantenimiento
                         </th>
-                        <th className="text-left px-4 py-2 text-sm font-medium text-text">
-                          Technician
+                        <th className="text-left px-4 py-2 text-sm font-medium text-gray-700">
+                          Técnico
                         </th>
-                        <th className="text-left px-4 py-2 text-sm font-medium text-text">
-                          Cost
+                        <th className="text-left px-4 py-2 text-sm font-medium text-gray-700">
+                          Costo
                         </th>
-                        <th className="text-left px-4 py-2 text-sm font-medium text-text">
-                          Actions
+                        <th className="text-center px-4 py-2 text-sm font-medium text-gray-700">
+                          Acciones
                         </th>
                       </tr>
                     </thead>
                     <tbody>
                       {form.performedMaintenances.map((m) => (
-                        <tr key={m.id} className="border-t border-border">
-                          <td className="px-4 py-2 text-sm text-text">
+                        <tr key={m.id} className="border-t border-gray-200">
+                          <td className="px-4 py-2 text-sm text-gray-900">
                             {m.maintenance.name}
                           </td>
-                          <td className="px-4 py-2 text-sm text-text">
+                          <td className="px-4 py-2 text-sm text-gray-900">
                             {m.technician.name}
                           </td>
-                          <td className="px-4 py-2 text-sm text-text">
+                          <td className="px-4 py-2 text-sm text-gray-900">
                             ${m.cost.toFixed(2)} {currency}
                           </td>
-                          <td className="px-4 py-2">
+                          <td className="px-4 py-2 text-center">
                             <button
                               type="button"
                               onClick={() => removePerformedMaintenance(m.id)}
-                              className="text-error hover:text-error/80"
-                              aria-label="Remove maintenance"
+                              aria-label={`Eliminar mantenimiento ${m.maintenance.name}`}
+                              className="text-red-500 hover:text-red-700"
                             >
                               <FiTrash2 className="w-4 h-4" />
                             </button>
@@ -520,29 +548,31 @@ export default function MaintenanceReportModal({
               )}
             </div>
 
-            {/* Spare Parts Used */}
+            {/* Spare Parts Section */}
             <div>
-              <h3 className="text-lg font-semibold text-text mb-4">Spare parts used</h3>
-              <div className="grid grid-cols-1 md:grid-cols-6 gap-2 mb-3">
+              <h3 className="text-base font-semibold text-gray-900 mb-4">
+                Repuestos utilizados
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 mb-3">
                 <input
                   type="text"
                   value={newSparePart.name}
                   onChange={(e) =>
                     setNewSparePart({ ...newSparePart, name: e.target.value })
                   }
-                  placeholder="Spare part name"
-                  className="md:col-span-2 px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  aria-label="Spare part name"
+                  placeholder="Nombre del repuesto"
+                  aria-label="Nombre del repuesto"
+                  className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <select
                   value={newSparePart.brand}
                   onChange={(e) =>
                     setNewSparePart({ ...newSparePart, brand: e.target.value })
                   }
-                  className="px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  aria-label="Select brand"
+                  aria-label="Seleccionar marca del repuesto"
+                  className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Brand</option>
+                  <option value="">Marca</option>
                   {brandsOptions.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name}
@@ -555,12 +585,12 @@ export default function MaintenanceReportModal({
                   onChange={(e) =>
                     setNewSparePart({ ...newSparePart, quantity: e.target.value })
                   }
-                  placeholder="Quantity"
-                  className="px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  aria-label="Quantity"
+                  placeholder="Cantidad"
+                  aria-label="Cantidad del repuesto"
+                  className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   min="1"
                 />
-                <div className="flex items-center gap-2">
+                <div className="flex gap-1">
                   <input
                     type="number"
                     value={newSparePart.unitCost}
@@ -568,16 +598,16 @@ export default function MaintenanceReportModal({
                       setNewSparePart({ ...newSparePart, unitCost: e.target.value })
                     }
                     placeholder="0.00"
-                    className="flex-1 px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                    aria-label="Unit cost"
+                    aria-label="Costo unitario del repuesto"
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     step="0.01"
                     min="0"
                   />
                   <select
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
-                    className="px-2 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                    aria-label="Currency"
+                    aria-label="Seleccionar moneda"
+                    className="px-2 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="USD">USD</option>
                     <option value="EUR">EUR</option>
@@ -587,70 +617,70 @@ export default function MaintenanceReportModal({
                 <button
                   type="button"
                   onClick={addSparePart}
-                  className="px-4 py-2 bg-surface text-text-secondary border border-border rounded-md hover:bg-hover"
-                  aria-label="Add spare part"
+                  aria-label="Agregar repuesto"
+                  className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 text-sm"
                 >
-                  Add
+                  Agregar
                 </button>
               </div>
 
-              {/* Spare Parts List */}
+              {/* Spare Parts Table */}
               {form.spareParts.length > 0 && (
-                <div className="border border-border rounded-md overflow-hidden">
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
                   <table className="w-full">
-                    <thead className="bg-surface">
+                    <thead className="bg-gray-50">
                       <tr>
-                        <th className="text-left px-4 py-2 text-sm font-medium text-text">
-                          Spare part
+                        <th className="text-left px-4 py-2 text-sm font-medium text-gray-700">
+                          Repuesto
                         </th>
-                        <th className="text-left px-4 py-2 text-sm font-medium text-text">
-                          Brand
+                        <th className="text-left px-4 py-2 text-sm font-medium text-gray-700">
+                          Marca
                         </th>
-                        <th className="text-left px-4 py-2 text-sm font-medium text-text">
-                          Quantity
+                        <th className="text-left px-4 py-2 text-sm font-medium text-gray-700">
+                          Cantidad
                         </th>
-                        <th className="text-left px-4 py-2 text-sm font-medium text-text">
-                          Unit cost
+                        <th className="text-left px-4 py-2 text-sm font-medium text-gray-700">
+                          Costo unitario
                         </th>
-                        <th className="text-left px-4 py-2 text-sm font-medium text-text">
+                        <th className="text-left px-4 py-2 text-sm font-medium text-gray-700">
                           Total
                         </th>
-                        <th className="text-left px-4 py-2 text-sm font-medium text-text">
-                          Actions
+                        <th className="text-center px-4 py-2 text-sm font-medium text-gray-700">
+                          Acciones
                         </th>
                       </tr>
                     </thead>
                     <tbody>
                       {form.spareParts.map((part) => (
-                        <tr key={part.id} className="border-t border-border">
-                          <td className="px-4 py-2 text-sm text-text">{part.name}</td>
-                          <td className="px-4 py-2 text-sm text-text">
+                        <tr key={part.id} className="border-t border-gray-200">
+                          <td className="px-4 py-2 text-sm text-gray-900">{part.name}</td>
+                          <td className="px-4 py-2 text-sm text-gray-900">
                             {part.brand.name}
                           </td>
-                          <td className="px-4 py-2 text-sm text-text">{part.quantity}</td>
-                          <td className="px-4 py-2 text-sm text-text">
+                          <td className="px-4 py-2 text-sm text-gray-900">{part.quantity}</td>
+                          <td className="px-4 py-2 text-sm text-gray-900">
                             ${part.unitCost.toFixed(2)}
                           </td>
-                          <td className="px-4 py-2 text-sm text-text">
+                          <td className="px-4 py-2 text-sm text-gray-900">
                             ${(part.quantity * part.unitCost).toFixed(2)}
                           </td>
-                          <td className="px-4 py-2">
+                          <td className="px-4 py-2 text-center">
                             <button
                               type="button"
                               onClick={() => removeSparePart(part.id)}
-                              className="text-error hover:text-error/80"
-                              aria-label="Remove spare part"
+                              aria-label={`Eliminar repuesto ${part.name}`}
+                              className="text-red-500 hover:text-red-700"
                             >
                               <FiTrash2 className="w-4 h-4" />
                             </button>
                           </td>
                         </tr>
                       ))}
-                      <tr className="border-t-2 border-border bg-surface">
-                        <td colSpan="4" className="px-4 py-2 text-sm font-medium text-text text-right">
-                          Total Cost:
+                      <tr className="border-t-2 border-gray-300 bg-gray-50">
+                        <td colSpan="4" className="px-4 py-2 text-sm font-medium text-gray-700 text-right">
+                          Costo Total:
                         </td>
-                        <td className="px-4 py-2 text-sm font-bold text-text">
+                        <td className="px-4 py-2 text-sm font-bold text-gray-900">
                           ${sparePartsTotalCost.toFixed(2)} {currency}
                         </td>
                         <td></td>
@@ -661,33 +691,35 @@ export default function MaintenanceReportModal({
               )}
             </div>
 
-            {/* Recommendations */}
+            {/* Recommendations Section */}
             <div>
-              <h3 className="text-lg font-semibold text-text mb-2">Recommendations</h3>
+              <h3 className="text-base font-semibold text-gray-900 mb-2">
+                Recomendaciones
+              </h3>
               <textarea
                 value={form.recommendations}
                 onChange={(e) => setForm({ ...form, recommendations: e.target.value })}
-                placeholder="Enter recommendations for future maintenance..."
+                placeholder="Ingresa recomendaciones para futuros mantenimientos..."
                 rows={3}
-                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                aria-label="Recommendations"
+                aria-label="Recomendaciones para futuros mantenimientos"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
             </div>
 
             {/* Error Message */}
             {error && (
-              <div className="p-3 bg-error/10 text-error border border-error/20 rounded-md text-sm">
+              <div className="p-3 bg-red-50 text-red-600 border border-red-200 rounded-lg text-sm">
                 {error}
               </div>
             )}
 
-            {/* Total Maintenance Cost */}
-            <div className="p-4 bg-surface rounded-lg border border-border">
+            {/* Total Cost Section */}
+            <div className="p-4 bg-gray-50 rounded-lg">
               <div className="flex justify-between items-center">
-                <span className="text-lg font-medium text-text">
-                  Total Maintenance Cost:
+                <span className="text-base font-medium text-gray-700">
+                  Costo Total del Mantenimiento:
                 </span>
-                <span className="text-2xl font-bold text-primary">
+                <span className="text-2xl font-bold text-gray-900">
                   ${totalMaintenanceCost.toFixed(2)} {currency}
                 </span>
               </div>
@@ -696,15 +728,15 @@ export default function MaintenanceReportModal({
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-border bg-surface">
+        <div className="px-6 py-4 border-t bg-white">
           <button
             type="submit"
             onClick={handleSubmit}
             disabled={submitting}
-            className="w-full py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            aria-label="Save maintenance report"
+            aria-label="Guardar reporte de mantenimiento"
+            className="w-full py-3 bg-black text-white font-medium rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {submitting ? "Saving report..." : "Save report"}
+            {submitting ? "Guardando reporte..." : "Guardar reporte"}
           </button>
         </div>
       </div>
