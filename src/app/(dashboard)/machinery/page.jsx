@@ -633,8 +633,13 @@ const MachineryMainView = () => {
         </Dialog.Portal>
       </Dialog.Root>
       <MultiStepFormModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
+        isOpen={isCreateModalOpen || isEditModalOpen}
+        onClose={() => {
+          setIsCreateModalOpen(false)
+          setIsEditModalOpen(false)
+          setSelectedMachine(null)
+        }}
+        machineryToEdit={isEditModalOpen ? selectedMachine : null}
         onSuccess={handleRefresh}
       />
       <MachineryHistoryModal
