@@ -371,7 +371,7 @@ const MachineryMainView = () => {
           </div>
         ),
         cell: ({ row }) => (
-          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <div className="flex items-center gap-2 opacity-50 md:opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <button
               aria-label="Edit Button"
               onClick={() => handleEdit(row.original)}

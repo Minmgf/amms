@@ -32,6 +32,7 @@ export default function MachineryDetailsModal({
   const [modelName, setModelName] = useState("");
   const [statusName, setStatusName] = useState("");
   const [photoUrl, setPhotoUrl] = useState(null);
+  const [cityName, setCityName] = useState("");
 
   useEffect(() => {
     if (!selectedMachine) return;
@@ -71,6 +72,12 @@ export default function MachineryDetailsModal({
       );
       setStatusName(found?.name || "");
     });
+
+    // Ciudad (nuevo)
+    getGeneralData().then((data) => {
+      const found = data?.find((c) => c.id === selectedMachine.id_city);
+      setCityName(found?.name || "");
+    });
   }, [selectedMachine]);
 
   if (!isOpen) return null;
@@ -85,7 +92,7 @@ export default function MachineryDetailsModal({
       onClick={handleBackdropClick}
       id="Machinery Details Modal"
     >
-      <div className="bg-background rounded-xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-y-auto">
+      <div className="modal-theme rounded-xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-bold text-gray-900 text-primary">
@@ -169,7 +176,7 @@ export default function MachineryDetailsModal({
                     />
                     <Row label="Tipo" value={typeName} />
                     <Row label="Tipo secundario" value={secondaryTypeName} />
-                    <Row label="Origen" value={selectedMachine?.id_city} />
+                    <Row label="Origen" value={cityName} />
                     <Row
                       label="Subpartida arancelaria"
                       value={selectedMachine?.tariff_subheading}
@@ -181,7 +188,7 @@ export default function MachineryDetailsModal({
               {/* Mapa y badges */}
               <div className="mt-8">
                 <h3 className="font-semibold text-lg mb-2">Ubicación GPS</h3>
-                <div className="border border-[#E5E7EB] rounded-xl p-4">
+                <div className="border border-primary rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1.5">
                       <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
@@ -201,23 +208,52 @@ export default function MachineryDetailsModal({
 
               {/* NUEVO: Tracker Data Sheet y Usage Information */}
               <div className="grid md:grid-cols-2 gap-6 mt-8">
-                <div className="border rounded-xl p-4 border-[#E5E7EB]">
+                <div className="border rounded-xl p-4 border-primary">
                   <h4 className="font-semibold mb-3">Tracker Data Sheet</h4>
                   <div className="flex flex-col gap-3">
-                    <Row label="Serial Number" value={selectedMachine?.tracker_serial_number || "—"} />
-                    <Row label="GPS Serial Number" value={selectedMachine?.gps_serial_number || "—"} />
-                    <Row label="Chassis Number" value={selectedMachine?.chassis_number || "—"} />
-                    <Row label="Engine Number" value={selectedMachine?.engine_number || "—"} />
+                    <Row
+                      label="Serial Number"
+                      value={selectedMachine?.tracker_serial_number || "—"}
+                    />
+                    <Row
+                      label="GPS Serial Number"
+                      value={selectedMachine?.gps_serial_number || "—"}
+                    />
+                    <Row
+                      label="Chassis Number"
+                      value={selectedMachine?.chassis_number || "—"}
+                    />
+                    <Row
+                      label="Engine Number"
+                      value={selectedMachine?.engine_number || "—"}
+                    />
                   </div>
                 </div>
-                <div className="border rounded-xl p-4 border-[#E5E7EB]">
+                <div className="border rounded-xl p-4 border-primary">
                   <h4 className="font-semibold mb-3">Usage Information</h4>
                   <div className="flex flex-col gap-3">
-                    <Row label="Acquisition Date" value={formatDate?.(selectedMachine?.acquisition_date) || "—"} />
-                    <Row label="Usage Status" value={selectedMachine?.usage_status || "—"} />
-                    <Row label="Used Hours" value={selectedMachine?.used_hours || "—"} />
-                    <Row label="Mileage" value={selectedMachine?.mileage || "—"} />
-                    <Row label="Tenure" value={selectedMachine?.tenure || "—"} />
+                    <Row
+                      label="Acquisition Date"
+                      value={
+                        formatDate?.(selectedMachine?.acquisition_date) || "—"
+                      }
+                    />
+                    <Row
+                      label="Usage Status"
+                      value={selectedMachine?.usage_status || "—"}
+                    />
+                    <Row
+                      label="Used Hours"
+                      value={selectedMachine?.used_hours || "—"}
+                    />
+                    <Row
+                      label="Mileage"
+                      value={selectedMachine?.mileage || "—"}
+                    />
+                    <Row
+                      label="Tenure"
+                      value={selectedMachine?.tenure || "—"}
+                    />
                   </div>
                 </div>
               </div>
@@ -228,19 +264,19 @@ export default function MachineryDetailsModal({
           {activeTab === "tech" && (
             <div className="grid md:grid-cols-2 gap-6">
               {/* Capacidad y Rendimiento */}
-              <div className="border rounded-xl p-4 border-[#E5E7EB]">
+              <div className="border rounded-xl p-4 border-primary">
                 <h3 className="font-semibold text-lg mb-3">
                   Capacidad y Rendimiento
                 </h3>
                 <div className="flex flex-col gap-3">
-                  <Row label="Capacidad del tanque" value="410 L" />
-                  <Row label="Capacidad de carga" value="1.2 m³" />
-                  <Row label="Peso operativo" value="20,500 kg" />
-                  <Row label="Velocidad máxima" value="5.5 km/h" />
-                  <Row label="Fuerza de tiro" value="186 kN" />
-                  <Row label="Altura máxima de operación" value="4,500 m" />
-                  <Row label="Rendimiento mínimo" value="500 kg" />
-                  <Row label="Rendimiento máximo" value="3,600 kg" />
+                  <Row label="Capacidad del tanque" value={selectedMachine?.tank_capacity || "—"} />
+                  <Row label="Capacidad de carga" value={selectedMachine?.load_capacity || "—"} />
+                  <Row label="Peso operativo" value={selectedMachine?.operating_weight || "—"} />
+                  <Row label="Velocidad máxima" value={selectedMachine?.max_speed || "—"} />
+                  <Row label="Fuerza de tiro" value={selectedMachine?.drawbar_pull || "—"} />
+                  <Row label="Altura máxima de operación" value={selectedMachine?.max_operating_height || "—"} />
+                  <Row label="Rendimiento mínimo" value={selectedMachine?.min_performance || "—"} />
+                  <Row label="Rendimiento máximo" value={selectedMachine?.max_performance || "—"} />
                 </div>
               </div>
               {/* ...más tarjetas técnicas aquí... */}
@@ -250,15 +286,17 @@ export default function MachineryDetailsModal({
           {/* === Documentos y Mantenimiento (DESKTOP) === */}
           {activeTab === "docs" && (
             <div className="grid md:grid-cols-2 gap-6">
-              <div className="border rounded-xl p-4 border-[#E5E7EB]">
-                <h3 className="font-semibold text-lg mb-3">Documentación</h3>
+              <div className="border rounded-xl p-4 border-primary">
+                <h3 className="text-secondary font-semibold text-lg mb-3">
+                  Documentación
+                </h3>
                 <ul className="flex flex-col gap-3">
                   <DocItem label="Manual de Operador" />
                   <DocItem label="Certificado de Importación" />
                 </ul>
               </div>
-              <div className="border rounded-xl p-4 border-[#E5E7EB]">
-                <h3 className="font-semibold text-lg mb-3">
+              <div className="border rounded-xl p-4 border-primary">
+                <h3 className="text-secondaryfont-semibold text-lg mb-3">
                   Mantenimiento Periódico
                 </h3>
                 <ul className="flex flex-col gap-3">
@@ -270,7 +308,7 @@ export default function MachineryDetailsModal({
                   ].map(([label, hours]) => (
                     <li
                       key={label}
-                      className="flex items-center justify-between p-2.5 rounded-lg border border-[#E5E7EB] hover:bg-gray-50"
+                      className="flex items-center justify-between p-2.5 rounded-lg border border-primary hover:bg-gray-50"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
@@ -288,15 +326,23 @@ export default function MachineryDetailsModal({
         </div>
 
         {/* ============== MOBILE ============== */}
-        <div className="md:hidden bg-[#F0F0F0]">
-          <div className="px-4 bg-white">
-            {/* Imagen / placeholder */}
-            <div className="w-full aspect-[16/9] bg-gray-200 rounded-lg flex items-center justify-center mb-4">
-              <span className="text-gray-400">Foto aquí</span>
-            </div>
-
+        <div className="md:hidden bg-background">
+          {/* Imagen / placeholder */}
+          <div className="w-full aspect-[16/9] bg-gray-200 flex items-center justify-center">
+            {selectedMachine?.image_path ? (
+              <img
+                src={selectedMachine.image_path}
+                alt="Machinery photo"
+                className="object-contain max-h-60 w-full rounded-md"
+                aria-label="Machinery photo"
+              />
+            ) : (
+              <span className="text-secondary">Photo here</span>
+            )}
+          </div>
+          <div className="px-4 pt-4 bg-surface">
             {/* General Technical Data */}
-            <h3 className="text-xl font-semibold mb-3">
+            <h3 className="text-primary text-xl font-semibold mb-3">
               Datos Técnicos Generales
             </h3>
             <div className="rounded-xl overflow-hidden">
@@ -319,12 +365,12 @@ export default function MachineryDetailsModal({
                   key={label}
                   className={`flex items-center justify-between px-4 py-3 ${
                     idx !== 0 ? "border-t" : ""
-                  } border-gray-200`}
+                  } border-primary`}
                 >
                   <span className="text-sm text-gray-900 font-[500]">
                     {label}
                   </span>
-                  <span className="text-sm text-gray-600">{value}</span>
+                  <span className="text-sm text-secondary">{value}</span>
                 </div>
               ))}
             </div>
@@ -350,15 +396,17 @@ export default function MachineryDetailsModal({
             <button
               type="button"
               onClick={() => setAccTrackerOpen((v) => !v)}
-              className="w-full flex items-center justify-between px-4 py-5 bg-white"
+              className="w-full flex items-center justify-between px-4 py-5 bg-surface"
             >
-              <span className="font-bold text-lg">Datos del Tracker</span>
+              <span className="text-primary font-bold text-lg ">
+                Datos del Tracker
+              </span>
               <FiChevronDown
                 className={`transition ${accTrackerOpen ? "rotate-180" : ""}`}
               />
             </button>
             {accTrackerOpen && (
-              <div className="bg-white">
+              <div className="bg-surface">
                 {[
                   ["Terminal Serial Number", "TRK-2024-987654"],
                   ["GPS Device Serial Number", "GPS-AXT-56789"],
@@ -369,7 +417,7 @@ export default function MachineryDetailsModal({
                     key={label}
                     className={`flex items-center justify-between px-4 py-3 ${
                       idx !== 0 ? "border-t" : ""
-                    } border-gray-200`}
+                    } border-primary`}
                   >
                     <span className="text-sm text-gray-900 font-[500]">
                       {label}
@@ -386,7 +434,7 @@ export default function MachineryDetailsModal({
             <button
               type="button"
               onClick={() => setAccUsageOpen((v) => !v)}
-              className="w-full flex items-center justify-between px-4 py-5 bg-white"
+              className="w-full flex items-center justify-between px-4 py-5 bg-surface"
             >
               <span className="font-bold text-lg">Información de Uso</span>
               <FiChevronDown
@@ -394,7 +442,7 @@ export default function MachineryDetailsModal({
               />
             </button>
             {accUsageOpen && (
-              <div className="bg-white">
+              <div className="bg-surface">
                 {[
                   [
                     "Fecha adquisición",
@@ -410,12 +458,12 @@ export default function MachineryDetailsModal({
                     key={label}
                     className={`flex items-center justify-between px-4 py-3 ${
                       idx !== 0 ? "border-t" : ""
-                    } border-gray-200`}
+                    } border-primary`}
                   >
-                    <span className="text-sm text-gray-900 font-[500]">
+                    <span className="text-sm text-primary font-[500]">
                       {label}
                     </span>
-                    <span className="text-sm text-gray-600">{value}</span>
+                    <span className="text-sm text-secondary">{value}</span>
                   </div>
                 ))}
               </div>
@@ -427,7 +475,7 @@ export default function MachineryDetailsModal({
             <button
               type="button"
               onClick={() => setAccSpecificOpen((v) => !v)}
-              className="w-full flex items-center justify-between px-4 py-5 bg-white"
+              className="w-full flex items-center justify-between px-4 py-5 bg-surface"
             >
               <span className="font-bold text-lg">
                 Datos Técnicos Específicos
@@ -437,7 +485,7 @@ export default function MachineryDetailsModal({
               />
             </button>
             {accSpecificOpen && (
-              <div className="bg-white">
+              <div className="bg-surface">
                 {[
                   ["Potencia Motor", "158 HP"],
                   ["Presión Hidráulica", "350 bar"],
@@ -447,12 +495,12 @@ export default function MachineryDetailsModal({
                     key={label}
                     className={`flex items-center justify-between px-4 py-3 ${
                       idx !== 0 ? "border-t" : ""
-                    } border-gray-200`}
+                    } border-primary`}
                   >
-                    <span className="text-sm text-gray-900 font-[500]">
+                    <span className="text-sm text-primary font-[500]">
                       {label}
                     </span>
-                    <span className="text-sm text-gray-600">{value}</span>
+                    <span className="text-sm text-secondary">{value}</span>
                   </div>
                 ))}
               </div>
@@ -460,18 +508,18 @@ export default function MachineryDetailsModal({
           </div>
 
           {/* Documentation */}
-          <div className="mt-2 overflow-hidden bg-white">
+          <div className="mt-2 overflow-hidden bg-surface">
             <div className="px-4 py-5 font-bold text-lg">Documentación</div>
-            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
-              <span className="text-sm text-gray-600">Manual de operación</span>
-              <button className="px-3 py-1.5 rounded-md text-white bg-black text-sm">
+            <div className="flex items-center justify-between px-4 py-3 border-t border-primary">
+              <span className="text-sm text-secondary">Manual de operación</span>
+              <button className="px-3 py-1.5 rounded-md button-seconday text-sm">
                 Ver
               </button>
             </div>
           </div>
 
           {/* Periodic maintenance (lista tipo chips) */}
-          <div className="mt-3 bg-white p-4 md:p-0">
+          <div className="mt-3 bg-surface p-4 md:p-0">
             <div className="font-bold text-lg mb-4">
               Mantenimiento periódico
             </div>
@@ -517,7 +565,7 @@ function Row({ label, value }) {
 
 function DocItem({ label }) {
   return (
-    <li className="flex items-center justify-between p-2.5 rounded-lg border border-[#E5E7EB] hover:bg-gray-50">
+    <li className="flex items-center justify-between p-2.5 rounded-lg border border-primary hover:bg-gray-50">
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
           <FiFileText className="w-4 h-4 text-gray-600" />
