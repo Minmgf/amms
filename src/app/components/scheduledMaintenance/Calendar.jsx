@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { useTheme } from '@/contexts/ThemeContext';
 
-const Calendar = ({ maintenanceData = [], selectedDateRange, onDateRangeChange }) => {
+const Calendar = ({ maintenanceData = [], selectedDateRange, onDateRangeChange, disableRangeSelection = false }) => {
   const { currentTheme } = useTheme();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isSelectingRange, setIsSelectingRange] = useState(false);
@@ -104,7 +104,9 @@ const Calendar = ({ maintenanceData = [], selectedDateRange, onDateRangeChange }
     const isEndDate = selectedDateRange.endDate && 
       date.getTime() === new Date(selectedDateRange.endDate).getTime();
 
-    let classes = 'w-12 h-12 flex items-center justify-center text-sm font-medium cursor-pointer transition-colors relative rounded-lg ';
+    let classes = `w-12 h-12 flex items-center justify-center text-sm font-medium transition-colors relative rounded-lg ${
+      disableRangeSelection ? 'cursor-default' : 'cursor-pointer'
+    } `;
 
     // Estado base
     if (isToday) {
@@ -117,7 +119,7 @@ const Calendar = ({ maintenanceData = [], selectedDateRange, onDateRangeChange }
     } else if (isInRange) {
       classes += 'bg-blue-200 text-blue-900 ';
     } else {
-      classes += 'hover:bg-gray-100 ';
+      classes += disableRangeSelection ? '' : 'hover:bg-gray-100 ';
     }
 
     // Estado de mantenimiento
@@ -140,6 +142,11 @@ const Calendar = ({ maintenanceData = [], selectedDateRange, onDateRangeChange }
 
   // Manejar clic en día
   const handleDayClick = (day) => {
+    // Si la selección de rango está desactivada, no hacer nada
+    if (disableRangeSelection) {
+      return;
+    }
+    
     const clickedDate = new Date(monthData.year, monthData.month, day);
     
     if (!isSelectingRange && (!selectedDateRange.startDate || selectedDateRange.endDate)) {

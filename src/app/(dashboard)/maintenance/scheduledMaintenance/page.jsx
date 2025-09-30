@@ -1,11 +1,15 @@
 "use client";
 import React, { useState, useMemo, useEffect } from 'react';
 import { FaSearch, FaFilter, FaPlus, FaCalendarAlt } from 'react-icons/fa';
-import { FiEdit3, FiX, FiCheck, FiFile, FiDownload, FiEye } from 'react-icons/fi';
+import { FiEdit3, FiX, FiCheck, FiEye } from 'react-icons/fi';
 import Calendar from '@/app/components/scheduledMaintenance/Calendar';
 import FilterModal from '@/app/components/shared/FilterModal';
 import MaintenanceDetailModal from '@/app/components/scheduledMaintenance/MaintenanceDetailModal';
+import UpdateMaintenanceSchedule from '@/app/components/scheduledMaintenance/UpdateMaintenanceSchedule';
+import ScheduleMaintenanceModal from '@/app/components/scheduledMaintenance/CreateScheduleMaintenance';
+import CancelScheduledMaintenance from '@/app/components/scheduledMaintenance/CancelScheduledMaintenance';
 import { SuccessModal, ErrorModal } from '@/app/components/shared/SuccessErrorModal';
+import TableList from '@/app/components/shared/TableList';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getMaintenanceList } from '@/services/maintenanceService';
 
@@ -140,6 +144,19 @@ const mockMaintenanceData = [
     status: "Realizado",
     type: "Correctivo",
     details: "Reparación completada del sistema de dirección. Se calibraron los sensores y se verificó el funcionamiento."
+  },
+  {
+    id: 11,
+    machinery: {
+      name: "Camión Volquete",
+      serial: "CAT99D5GPWGB01289",
+      image: "/images/machinery11.jpg"
+    },
+    maintenanceDate: "2025-09-26", // Mantenimiento para el 26
+    technician: "Juan Carlos Bodden",
+    status: "Pendiente",
+    type: "Preventivo",
+    details: "Mantenimiento preventivo programado para el 26. Revisión de frenos y sistema de volteo."
   }
 ];
 
@@ -160,6 +177,9 @@ const ScheduledMaintenancePage = () => {
   const { currentTheme } = useTheme();
   
   // Estados principales
+  const [maintenanceData, setMaintenanceData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [selectedDateRange, setSelectedDateRange] = useState({ 
     startDate: null, 
     endDate: null 
@@ -171,10 +191,6 @@ const ScheduledMaintenancePage = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [technicianFilter, setTechnicianFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
-  
-  // Estados de paginación
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(5);
 
   // Estados de modales
   const [successOpen, setSuccessOpen] = useState(false);
@@ -182,6 +198,35 @@ const ScheduledMaintenancePage = () => {
   const [modalMessage, setModalMessage] = useState('');
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedMaintenance, setSelectedMaintenance] = useState(null);
+  
+  // Estados para los nuevos modales de acciones
+  const [updateModalOpen, setUpdateModalOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+
+  // Función para cargar mantenimientos
+  const loadMaintenanceData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Por ahora seguimos usando datos mock, en el futuro será:
+      // const data = await getMaintenanceList();
+      // setMaintenanceData(data);
+      
+      // Usando datos mock por ahora
+      setMaintenanceData(mockMaintenanceData);
+    } catch (err) {
+      setError('Error al cargar los mantenimientos programados');
+      console.error('Error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Cargar datos al montar el componente
+  useEffect(() => {
+    loadMaintenanceData();
+  }, []);
 
   // Función para obtener el estado de fecha (color)
   const getDateStatus = (maintenanceDate) => {
@@ -206,16 +251,192 @@ const ScheduledMaintenancePage = () => {
     }
   };
 
+  // Funciones de acciones
+  const handleViewDetails = (maintenanceId) => {
+    const maintenance = maintenanceData.find(m => m.id === maintenanceId);
+    setSelectedMaintenance(maintenance);
+    setDetailModalOpen(true);
+  };
+
+  const handleUpdateMaintenance = (maintenanceId) => {
+    const maintenance = maintenanceData.find(m => m.id === maintenanceId);
+    setSelectedMaintenance(maintenance);
+    setUpdateModalOpen(true);
+  };
+
+  const handleCancelMaintenance = (maintenanceId) => {
+    const maintenance = maintenanceData.find(m => m.id === maintenanceId);
+    setSelectedMaintenance(maintenance);
+    setCancelModalOpen(true);
+  };
+
+  const handleCreateMaintenance = () => {
+    setCreateModalOpen(true);
+  };
+
+  // Funciones de callback para modales
+  const handleModalSuccess = (message) => {
+    setModalMessage(message);
+    setSuccessOpen(true);
+    loadMaintenanceData(); // Refrescar datos
+  };
+
+  const handleModalError = (message) => {
+    setModalMessage(message);
+    setErrorOpen(true);
+  };
+
+  // Componente de acciones con hover
+  const ActionsCell = ({ maintenance }) => {
+    return (
+      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        {/* Ver detalles - siempre disponible */}
+        <button
+          onClick={() => handleViewDetails(maintenance.id)}
+          className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600"
+          title="Ver detalles del mantenimiento"
+        >
+          <FiEye className="w-3 h-3" /> Detalles
+        </button>
+        
+        {/* Actualizar - solo para pendientes */}
+        {maintenance.status === 'Pendiente' && (
+          <button
+            onClick={() => handleUpdateMaintenance(maintenance.id)}
+            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 hover:border-green-500 hover:text-green-600 text-green-600"
+            title="Actualizar mantenimiento"
+          >
+            <FiEdit3 className="w-3 h-3" /> Actualizar
+          </button>
+        )}
+        
+        {/* Cancelar - solo para pendientes */}
+        {maintenance.status === 'Pendiente' && (
+          <button
+            onClick={() => handleCancelMaintenance(maintenance.id)}
+            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-red-300 hover:border-red-500 hover:text-red-600 text-red-600"
+            title="Cancelar mantenimiento"
+          >
+            <FiX className="w-3 h-3" /> Cancelar
+          </button>
+        )}
+      </div>
+    );
+  };
+
+  // Definición de columnas para TableList
+  const columns = useMemo(() => [
+    {
+      id: 'machinery',
+      header: 'Maquinaria',
+      accessorFn: row => row.machinery.name,
+      cell: ({ row }) => (
+        <div className="flex items-center">
+          <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
+            <span className="text-xs font-semibold text-gray-600">
+              {row.original.machinery.name.charAt(0)}
+            </span>
+          </div>
+          <div>
+            <div className="text-sm font-medium parametrization-text">
+              {row.original.machinery.name}
+            </div>
+            <div className="text-sm parametrization-text">
+              {row.original.type}
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'serial',
+      header: 'Serial',
+      accessorKey: 'machinery.serial',
+      cell: ({ getValue }) => (
+        <span className="text-sm parametrization-text font-mono">
+          {getValue()}
+        </span>
+      ),
+    },
+    {
+      id: 'technician',
+      header: 'Técnico',
+      accessorKey: 'technician',
+      cell: ({ getValue }) => (
+        <span className="text-sm parametrization-text">
+          {getValue()}
+        </span>
+      ),
+    },
+    {
+      id: 'maintenanceDate',
+      header: 'Fecha Mantenimiento',
+      accessorKey: 'maintenanceDate',
+      cell: ({ getValue, row }) => {
+        const dateStatus = getDateStatus(getValue());
+        const dateStatusClass = getDateStatusClass(dateStatus);
+        return (
+          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${dateStatusClass}`}>
+            {new Date(getValue()).toLocaleDateString('es-ES')}
+          </span>
+        );
+      },
+    },
+    {
+      id: 'status',
+      header: 'Estado',
+      accessorKey: 'status',
+      cell: ({ getValue }) => (
+        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+          getValue() === 'Pendiente' ? 'text-yellow-800 bg-yellow-100' :
+          getValue() === 'Realizado' ? 'text-green-800 bg-green-100' :
+          'text-red-800 bg-red-100'
+        }`}>
+          {getValue()}
+        </span>
+      ),
+    },
+    {
+      id: 'actions',
+      header: 'Acciones',
+      cell: ({ row }) => <ActionsCell maintenance={row.original} />,
+      enableSorting: false,
+    },
+  ], [maintenanceData]);
+
   // Filtrar datos
   const filteredData = useMemo(() => {
-    return mockMaintenanceData.filter(maintenance => {
+    return maintenanceData.filter(maintenance => {
       // Filtro por rango de fechas
       if (selectedDateRange.startDate && selectedDateRange.endDate) {
         const maintenanceDate = new Date(maintenance.maintenanceDate);
         const startDate = new Date(selectedDateRange.startDate);
         const endDate = new Date(selectedDateRange.endDate);
         
+        // Ajustar la fecha de inicio al comienzo del día (00:00:00)
+        startDate.setHours(0, 0, 0, 0);
+        // Ajustar la fecha de fin al final del día (23:59:59)
+        endDate.setHours(23, 59, 59, 999);
+        
         if (maintenanceDate < startDate || maintenanceDate > endDate) {
+          return false;
+        }
+      } else if (selectedDateRange.startDate) {
+        // Solo fecha de inicio - mostrar desde esa fecha en adelante
+        const maintenanceDate = new Date(maintenance.maintenanceDate);
+        const startDate = new Date(selectedDateRange.startDate);
+        startDate.setHours(0, 0, 0, 0);
+        
+        if (maintenanceDate < startDate) {
+          return false;
+        }
+      } else if (selectedDateRange.endDate) {
+        // Solo fecha de fin - mostrar hasta esa fecha
+        const maintenanceDate = new Date(maintenance.maintenanceDate);
+        const endDate = new Date(selectedDateRange.endDate);
+        endDate.setHours(23, 59, 59, 999);
+        
+        if (maintenanceDate > endDate) {
           return false;
         }
       }
@@ -233,20 +454,7 @@ const ScheduledMaintenancePage = () => {
 
       return matchesGlobal && matchesStatus && matchesTechnician && matchesType;
     });
-  }, [mockMaintenanceData, selectedDateRange, globalFilter, statusFilter, technicianFilter, typeFilter]);
-
-  // Paginación
-  const paginatedData = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredData.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredData, currentPage, itemsPerPage]);
-
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-
-  // Reset página cuando cambian los filtros
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [globalFilter, statusFilter, technicianFilter, typeFilter, selectedDateRange]);
+  }, [maintenanceData, selectedDateRange, globalFilter, statusFilter, technicianFilter, typeFilter]);
 
   // Calcular estadísticas
   const statistics = useMemo(() => {
@@ -279,100 +487,6 @@ const ScheduledMaintenancePage = () => {
     // Los filtros ya se aplican automáticamente a través de useMemo
   };
 
-  // Mostrar detalles del mantenimiento
-  const handleViewDetails = (maintenance) => {
-    setSelectedMaintenance(maintenance);
-    setDetailModalOpen(true);
-  };
-
-  // Acciones de mantenimiento
-  const handleUpdateMaintenance = (id) => {
-    setModalMessage('Función de actualización en desarrollo');
-    setSuccessOpen(true);
-  };
-
-  const handleCancelMaintenance = (id) => {
-    setModalMessage('Mantenimiento cancelado exitosamente');
-    setSuccessOpen(true);
-  };
-
-  const handleRegisterReport = (id) => {
-    setModalMessage('Función de registro de reporte en desarrollo');
-    setSuccessOpen(true);
-  };
-
-  const handleGenerateReport = (id) => {
-    setModalMessage('Función de generación de reporte en desarrollo');
-    setSuccessOpen(true);
-  };
-
-  // Renderizar acciones según estado y permisos
-  const renderActions = (maintenance) => {
-    const actions = [];
-    
-    // Botón de ver detalles (siempre disponible)
-    actions.push(
-      <button
-        key="view"
-        onClick={() => handleViewDetails(maintenance)}
-        className="text-blue-600 hover:text-blue-800 p-1 rounded"
-        title="Ver detalles"
-      >
-        <FiEye className="w-4 h-4" />
-      </button>
-    );
-    
-    if (maintenance.status === 'Pendiente') {
-      actions.push(
-        <button
-          key="update"
-          onClick={() => handleUpdateMaintenance(maintenance.id)}
-          className="text-green-600 hover:text-green-800 p-1 rounded"
-          title="Actualizar"
-        >
-          <FiEdit3 className="w-4 h-4" />
-        </button>
-      );
-      
-      actions.push(
-        <button
-          key="cancel"
-          onClick={() => handleCancelMaintenance(maintenance.id)}
-          className="text-red-600 hover:text-red-800 p-1 rounded"
-          title="Cancelar"
-        >
-          <FiX className="w-4 h-4" />
-        </button>
-      );
-      
-      actions.push(
-        <button
-          key="register"
-          onClick={() => handleRegisterReport(maintenance.id)}
-          className="text-purple-600 hover:text-purple-800 p-1 rounded"
-          title="Registrar reporte"
-        >
-          <FiFile className="w-4 h-4" />
-        </button>
-      );
-    }
-    
-    if (maintenance.status === 'Realizado') {
-      actions.push(
-        <button
-          key="generate"
-          onClick={() => handleGenerateReport(maintenance.id)}
-          className="text-orange-600 hover:text-orange-800 p-1 rounded"
-          title="Generar reporte"
-        >
-          <FiDownload className="w-4 h-4" />
-        </button>
-      );
-    }
-    
-    return <div className="flex gap-1">{actions}</div>;
-  };
-
   return (
     <div className="p-6">
       {/* Header */}
@@ -380,7 +494,25 @@ const ScheduledMaintenancePage = () => {
         <h1 className="text-2xl font-bold parametrization-text">
           Mantenimientos Programados
         </h1>
+        <button 
+          onClick={loadMaintenanceData}
+          disabled={loading}
+          className={`px-4 py-2 rounded-md text-white font-medium transition-colors ${
+            loading 
+              ? 'bg-gray-400 cursor-not-allowed' 
+              : 'bg-blue-600 hover:bg-blue-700'
+          }`}
+        >
+          {loading ? 'Cargando...' : 'Actualizar'}
+        </button>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-6">
+          {error}
+        </div>
+      )}
 
       {/* Panel de estadísticas detalladas */}
       {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -434,7 +566,7 @@ const ScheduledMaintenancePage = () => {
       </div> */}
 
       {/* Búsqueda y Filtros */}
-      <div className="card-theme rounded-lg shadow mb-6">
+      <div className=" rounded-lg  mb-6">
         <div className="">
           {/* Búsqueda */}
           <div className="relative max-w-md flex gap-2 w-full">
@@ -449,10 +581,7 @@ const ScheduledMaintenancePage = () => {
 
             {/* Acciones rápidas */}
             <button
-              onClick={() => {
-                setModalMessage('Función de nuevo mantenimiento en desarrollo');
-                setSuccessOpen(true);
-              }}
+              onClick={handleCreateMaintenance}
               className="w-full parametrization-filter-button flex items-center justify-center space-x-2 px-4 py-2 transition-colors"
             >
               <FaPlus className="w-4 h-4" />
@@ -472,7 +601,7 @@ const ScheduledMaintenancePage = () => {
           {(globalFilter || statusFilter || technicianFilter || typeFilter || selectedDateRange.startDate) && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
               <p className="text-sm text-blue-800">
-                Mostrando {filteredData.length} de {mockMaintenanceData.length} mantenimientos
+                Mostrando {filteredData.length} de {maintenanceData.length} mantenimientos
                 {globalFilter && ` • Búsqueda: "${globalFilter}"`}
                 {statusFilter && ` • Estado: ${statusFilter}`}
                 {technicianFilter && ` • Técnico: ${technicianFilter}`}
@@ -501,18 +630,19 @@ const ScheduledMaintenancePage = () => {
             {/* Calendario - Columna Izquierda */}
             <div className="xl:col-span-2">
               <Calendar
-                maintenanceData={mockMaintenanceData}
+                maintenanceData={maintenanceData}
                 selectedDateRange={selectedDateRange}
                 onDateRangeChange={setSelectedDateRange}
+                disableRangeSelection={true}
               />
             </div>
             
             {/* Controles y Rango de Fechas - Columna Derecha */}
             <div className="space-y-4">
               {/* Información de fecha actual */}
-              <div className="bg-blue-50 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-blue-900 mb-2">Hoy</h3>
-                <p className="text-lg font-bold text-blue-700">
+              <div className="card-secondary bg-accent rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-white mb-2">Hoy</h3>
+                <p className="text-lg font-bold text-white">
                   {new Date().toLocaleDateString('es-ES', {
                     weekday: 'long',
                     day: 'numeric',
@@ -521,57 +651,146 @@ const ScheduledMaintenancePage = () => {
                 </p>
               </div>
 
-              {/* Rango de fechas seleccionado */}
+              {/* Controles de Rango de Fechas */}
+              <div className="card-secondary rounded-lg p-4">
+                <h3 className="text-sm font-semibold parametrization-text mb-4">Seleccionar Rango de Fechas</h3>
+                
+                <div className="space-y-4">
+                  {/* Fecha de inicio */}
+                  <div>
+                    <label className="block text-xs font-medium parametrization-text mb-2">
+                      Fecha de Inicio
+                    </label>
+                    <input
+                      type="date"
+                      value={selectedDateRange.startDate || ''}
+                      onChange={(e) => setSelectedDateRange(prev => ({
+                        ...prev,
+                        startDate: e.target.value
+                      }))}
+                      className="parametrization-input text-sm"
+                    />
+                  </div>
+
+                  {/* Fecha de fin */}
+                  <div>
+                    <label className="block text-xs font-medium parametrization-text mb-2">
+                      Fecha de Fin
+                    </label>
+                    <input
+                      type="date"
+                      value={selectedDateRange.endDate || ''}
+                      onChange={(e) => setSelectedDateRange(prev => ({
+                        ...prev,
+                        endDate: e.target.value
+                      }))}
+                      min={selectedDateRange.startDate || undefined}
+                      className="parametrization-input text-sm"
+                    />
+                  </div>
+
+                  {/* Botones de acción */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        const today = new Date().toISOString().split('T')[0];
+                        setSelectedDateRange({ startDate: today, endDate: today });
+                      }}
+                      className="flex-1 parametrization-button px-3 py-2 text-xs bg-accent text-white hover:bg-accent-hover transition-colors"
+                    >
+                      Hoy
+                    </button>
+                    <button
+                      onClick={() => {
+                        const today = new Date();
+                        const nextWeek = new Date(today);
+                        nextWeek.setDate(today.getDate() + 7);
+                        setSelectedDateRange({
+                          startDate: today.toISOString().split('T')[0],
+                          endDate: nextWeek.toISOString().split('T')[0]
+                        });
+                      }}
+                      className="flex-1 parametrization-button px-3 py-2 text-xs bg-success text-white hover:bg-success-hover transition-colors"
+                    >
+                      7 días
+                    </button>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        const today = new Date();
+                        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+                        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                        setSelectedDateRange({
+                          startDate: firstDay.toISOString().split('T')[0],
+                          endDate: lastDay.toISOString().split('T')[0]
+                        });
+                      }}
+                      className="flex-1 parametrization-button px-3 py-2 text-xs bg-warning text-white hover:bg-warning-hover transition-colors"
+                    >
+                      Este mes
+                    </button>
+                    <button
+                      onClick={() => setSelectedDateRange({ startDate: null, endDate: null })}
+                      className="flex-1 parametrization-button px-3 py-2 text-xs parametrization-text hover:bg-hover transition-colors"
+                    >
+                      Limpiar
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Información del rango seleccionado */}
               {(selectedDateRange.startDate || selectedDateRange.endDate) && (
-                <div className="bg-green-50 rounded-lg p-4">
-                  <h3 className="text-sm font-semibold text-green-900 mb-2">Rango Seleccionado</h3>
+                <div className="card-secondary bg-success rounded-lg p-4">
+                  <h3 className="text-sm font-semibold text-white mb-2">Rango Seleccionado</h3>
                   {selectedDateRange.startDate && selectedDateRange.endDate ? (
                     <div className="space-y-1">
-                      <p className="text-sm text-green-800">
+                      <p className="text-sm text-white">
                         <span className="font-medium">Desde:</span> {new Date(selectedDateRange.startDate).toLocaleDateString('es-ES')}
                       </p>
-                      <p className="text-sm text-green-800">
+                      <p className="text-sm text-white">
                         <span className="font-medium">Hasta:</span> {new Date(selectedDateRange.endDate).toLocaleDateString('es-ES')}
                       </p>
-                      <p className="text-xs text-green-600 mt-2">
+                      <p className="text-xs text-white opacity-90 mt-2">
                         {Math.ceil((new Date(selectedDateRange.endDate) - new Date(selectedDateRange.startDate)) / (1000 * 60 * 60 * 24)) + 1} días seleccionados
                       </p>
                     </div>
                   ) : selectedDateRange.startDate ? (
-                    <p className="text-sm text-green-800">
+                    <p className="text-sm text-white">
                       <span className="font-medium">Inicio:</span> {new Date(selectedDateRange.startDate).toLocaleDateString('es-ES')}
                       <br />
-                      <span className="text-xs text-green-600">Selecciona fecha final</span>
+                      <span className="text-xs text-white opacity-90">Selecciona fecha final</span>
+                    </p>
+                  ) : selectedDateRange.endDate ? (
+                    <p className="text-sm text-white">
+                      <span className="font-medium">Fin:</span> {new Date(selectedDateRange.endDate).toLocaleDateString('es-ES')}
+                      <br />
+                      <span className="text-xs text-white opacity-90">Selecciona fecha inicial</span>
                     </p>
                   ) : null}
-                  
-                  <button
-                    onClick={() => setSelectedDateRange({ startDate: null, endDate: null })}
-                    className="mt-3 text-xs text-green-700 hover:text-green-900 underline"
-                  >
-                    Limpiar selección
-                  </button>
                 </div>
               )}
 
               {/* Estadísticas rápidas del rango */}
               {selectedDateRange.startDate && selectedDateRange.endDate && (
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-2">En este rango</h3>
+                <div className="card-secondary rounded-lg p-4">
+                  <h3 className="text-sm font-semibold parametrization-text mb-2">En este rango</h3>
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Total:</span>
-                      <span className="font-medium">{filteredData.length}</span>
+                      <span className="parametrization-text">Total:</span>
+                      <span className="font-medium parametrization-text">{filteredData.length}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Pendientes:</span>
-                      <span className="font-medium text-yellow-600">
+                      <span className="parametrization-text">Pendientes:</span>
+                      <span className="font-medium text-warning">
                         {filteredData.filter(m => m.status === 'Pendiente').length}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Vencidos:</span>
-                      <span className="font-medium text-red-600">
+                      <span className="parametrization-text">Vencidos:</span>
+                      <span className="font-medium text-error">
                         {filteredData.filter(m => 
                           m.status === 'Pendiente' && getDateStatus(m.maintenanceDate) === 'overdue'
                         ).length}
@@ -588,131 +807,13 @@ const ScheduledMaintenancePage = () => {
 
       {/* Lista de mantenimientos */}
       <div className="card-theme rounded-lg shadow">
-        <div className="overflow-x-auto">
-          {filteredData.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              {globalFilter || statusFilter || technicianFilter || typeFilter || selectedDateRange.startDate
-                ? "No se encontraron resultados"
-                : "No hay mantenimientos programados"
-              }
-            </div>
-          ) : (
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Maquinaria
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Serial
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Técnico
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Fecha Mantenimiento
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Estado
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Acciones
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {paginatedData.map((maintenance) => {
-                  const dateStatus = getDateStatus(maintenance.maintenanceDate);
-                  const dateStatusClass = getDateStatusClass(dateStatus);
-                  
-                  return (
-                    <tr key={maintenance.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center">
-                          <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
-                            <span className="text-xs font-semibold text-gray-600">
-                              {maintenance.machinery.name.charAt(0)}
-                            </span>
-                          </div>
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {maintenance.machinery.name}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {maintenance.type}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900 font-mono">
-                        {maintenance.machinery.serial}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        {maintenance.technician}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${dateStatusClass}`}>
-                          {new Date(maintenance.maintenanceDate).toLocaleDateString('es-ES')}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          maintenance.status === 'Pendiente' ? 'text-yellow-800 bg-yellow-100' :
-                          maintenance.status === 'Realizado' ? 'text-green-800 bg-green-100' :
-                          'text-red-800 bg-red-100'
-                        }`}>
-                          {maintenance.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        {renderActions(maintenance)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
-        
-        {/* Paginación */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
-            <div className="text-sm text-gray-700">
-              Mostrando {Math.min((currentPage - 1) * itemsPerPage + 1, filteredData.length)} al{' '}
-              {Math.min(currentPage * itemsPerPage, filteredData.length)} de {filteredData.length} resultados
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setCurrentPage(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Anterior
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`px-3 py-1 text-sm border border-gray-300 rounded-lg ${
-                    page === currentPage 
-                      ? 'bg-blue-500 text-white border-blue-500' 
-                      : 'hover:bg-gray-50'
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-              <button
-                onClick={() => setCurrentPage(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Siguiente
-              </button>
-            </div>
-          </div>
-        )}
+        <TableList
+          columns={columns}
+          data={filteredData}
+          loading={loading}
+          globalFilter={globalFilter}
+          onGlobalFilterChange={setGlobalFilter}
+        />
       </div>
 
       {/* Modal de Filtros */}
@@ -783,6 +884,33 @@ const ScheduledMaintenancePage = () => {
         onClose={() => setDetailModalOpen(false)}
         maintenance={selectedMaintenance}
       />
+
+      {/* Modales de Acciones */}
+      {updateModalOpen && (
+        <UpdateMaintenanceSchedule 
+          onClose={() => setUpdateModalOpen(false)}
+          maintenanceData={selectedMaintenance}
+          onSuccess={handleModalSuccess}
+          onError={handleModalError}
+        />
+      )}
+
+      <ScheduleMaintenanceModal
+        isOpen={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onSuccess={handleModalSuccess}
+        onError={handleModalError}
+      />
+
+      {cancelModalOpen && (
+        <CancelScheduledMaintenance 
+          isOpen={cancelModalOpen}
+          onClose={() => setCancelModalOpen(false)}
+          maintenanceData={selectedMaintenance}
+          onSuccess={handleModalSuccess}
+          onError={handleModalError}
+        />
+      )}
 
       {/* Modales de éxito y error */}
       <SuccessModal
