@@ -9,13 +9,157 @@ import { SuccessModal, ErrorModal } from '@/app/components/shared/SuccessErrorMo
 import { useTheme } from '@/contexts/ThemeContext';
 import { getMaintenanceList } from '@/services/maintenanceService';
 
+// Datos de prueba
+const mockMaintenanceData = [
+  {
+    id: 1,
+    machinery: {
+      name: "Trilladora",
+      serial: "CAT99D5GPWGB01279",
+      image: "/images/machinery1.jpg"
+    },
+    maintenanceDate: "2025-09-25", // Vencido
+    technician: "Cristiano Ronaldo",
+    status: "Pendiente",
+    type: "Preventivo",
+    details: "Mantenimiento preventivo rutinario de la trilladora. Incluye revisión de filtros, cambio de aceite y verificación de sistemas hidráulicos."
+  },
+  {
+    id: 2,
+    machinery: {
+      name: "Tractor para remolque",
+      serial: "CAT99D5GPWGB01280",
+      image: "/images/machinery2.jpg"
+    },
+    maintenanceDate: "2025-09-29", // Hoy
+    technician: "Juan Manuel",
+    status: "Pendiente",
+    type: "Correctivo",
+    details: "Reparación urgente del sistema de transmisión. Se detectaron ruidos anormales durante la operación."
+  },
+  {
+    id: 3,
+    machinery: {
+      name: "Tractor Agrícola",
+      serial: "CAT99D5GPWGB01281",
+      image: "/images/machinery3.jpg"
+    },
+    maintenanceDate: "2025-10-05", // Próximo (vigente)
+    technician: "Kaleth Morales",
+    status: "Pendiente",
+    type: "Preventivo",
+    details: "Revisión general programada. Verificación de todos los sistemas operativos y componentes de seguridad."
+  },
+  {
+    id: 4,
+    machinery: {
+      name: "Excavadora",
+      serial: "CAT99D5GPWGB01282",
+      image: "/images/machinery4.jpg"
+    },
+    maintenanceDate: "2025-09-28", // Ayer (realizado)
+    technician: "Ana García",
+    status: "Realizado",
+    type: "Correctivo",
+    details: "Mantenimiento completado exitosamente. Se reemplazó el sistema hidráulico y se calibraron los controles."
+  },
+  {
+    id: 5,
+    machinery: {
+      name: "Grúa Móvil",
+      serial: "CAT99D5GPWGB01283",
+      image: "/images/machinery5.jpg"
+    },
+    maintenanceDate: "2025-08-15", // Vencido
+    technician: "Pedro López",
+    status: "Cancelado",
+    type: "Preventivo",
+    details: "Mantenimiento cancelado debido a la indisponibilidad de repuestos críticos."
+  },
+  {
+    id: 6,
+    machinery: {
+      name: "Bulldozer",
+      serial: "CAT99D5GPWGB01284",
+      image: "/images/machinery6.jpg"
+    },
+    maintenanceDate: "2025-10-12", // Próximo
+    technician: "Carlos Rodríguez",
+    status: "Pendiente",
+    type: "Preventivo",
+    details: "Mantenimiento preventivo de 500 horas. Incluye cambio de filtros, aceites y revisión completa de orugas."
+  },
+  {
+    id: 7,
+    machinery: {
+      name: "Cargadora Frontal",
+      serial: "CAT99D5GPWGB01285",
+      image: "/images/machinery7.jpg"
+    },
+    maintenanceDate: "2025-10-08", // Próximo
+    technician: "María González",
+    status: "Pendiente",
+    type: "Correctivo",
+    details: "Reparación del sistema de levante. Se detectó fuga de aceite hidráulico en cilindros principales."
+  },
+  {
+    id: 8,
+    machinery: {
+      name: "Retroexcavadora",
+      serial: "CAT99D5GPWGB01286",
+      image: "/images/machinery8.jpg"
+    },
+    maintenanceDate: "2025-09-20", // Vencido
+    technician: "Luis Martínez",
+    status: "Pendiente",
+    type: "Preventivo",
+    details: "Mantenimiento preventivo trimestral. Verificación de sistemas operativos y componentes de desgaste."
+  },
+  {
+    id: 9,
+    machinery: {
+      name: "Compactadora",
+      serial: "CAT99D5GPWGB01287",
+      image: "/images/machinery9.jpg"
+    },
+    maintenanceDate: "2025-10-15", // Próximo
+    technician: "Andrea Silva",
+    status: "Pendiente",
+    type: "Preventivo",
+    details: "Mantenimiento de rodillo compactador. Revisión de sistemas vibratorios y cambio de filtros."
+  },
+  {
+    id: 10,
+    machinery: {
+      name: "Motoniveladora",
+      serial: "CAT99D5GPWGB01288",
+      image: "/images/machinery10.jpg"
+    },
+    maintenanceDate: "2025-09-27", // Realizado ayer
+    technician: "Roberto Torres",
+    status: "Realizado",
+    type: "Correctivo",
+    details: "Reparación completada del sistema de dirección. Se calibraron los sensores y se verificó el funcionamiento."
+  }
+];
+
+const mockTechnicians = [
+  "Cristiano Ronaldo",
+  "Juan Manuel", 
+  "Kaleth Morales",
+  "Ana García",
+  "Pedro López",
+  "Carlos Rodríguez",
+  "María González",
+  "Luis Martínez",
+  "Andrea Silva",
+  "Roberto Torres"
+];
+
 const ScheduledMaintenancePage = () => {
   const { currentTheme } = useTheme();
   
   // Estados principales
-  const [maintenanceData, setMaintenanceData] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [selectedDateRange, setSelectedDateRange] = useState({ 
     startDate: null, 
     endDate: null 
@@ -38,49 +182,6 @@ const ScheduledMaintenancePage = () => {
   const [modalMessage, setModalMessage] = useState('');
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedMaintenance, setSelectedMaintenance] = useState(null);
-
-  // Cargar datos del API
-  useEffect(() => {
-    loadMaintenanceData();
-  }, []);
-
-  const loadMaintenanceData = async () => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const response = await getMaintenanceList();
-      
-      if (response.success && response.data) {
-        // Mapear los datos del API a la estructura esperada por el componente
-        const mappedData = response.data.map(item => ({
-          id: item.id,
-          machinery: {
-            name: item.machinery_name || 'N/A',
-            serial: item.machinery_serial || 'N/A',
-            image: item.machinery_image || null
-          },
-          maintenanceDate: item.scheduled_date || item.fecha_mantenimiento,
-          technician: item.technician_name || item.tecnico || 'N/A',
-          status: item.status_name || item.estado || 'Pendiente',
-          type: item.maintenance_type_name || item.tipo_mantenimiento || 'N/A',
-          details: item.description || item.descripcion || 'Sin descripción disponible'
-        }));
-        
-        setMaintenanceData(mappedData);
-      } else {
-        setError('Error al cargar los datos del servidor');
-        setMaintenanceData([]);
-      }
-      
-    } catch (err) {
-      console.error('Error loading maintenance data:', err);
-      setError('Error al cargar los datos. Por favor, intenta de nuevo.');
-      setMaintenanceData([]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Función para obtener el estado de fecha (color)
   const getDateStatus = (maintenanceDate) => {
@@ -105,22 +206,9 @@ const ScheduledMaintenancePage = () => {
     }
   };
 
-  // Obtener valores únicos para los filtros
-  const availableTechnicians = useMemo(() => {
-    return [...new Set(maintenanceData.map(m => m.technician).filter(Boolean))];
-  }, [maintenanceData]);
-
-  const availableTypes = useMemo(() => {
-    return [...new Set(maintenanceData.map(m => m.type).filter(Boolean))];
-  }, [maintenanceData]);
-
-  const availableStatuses = useMemo(() => {
-    return [...new Set(maintenanceData.map(m => m.status).filter(Boolean))];
-  }, [maintenanceData]);
-
   // Filtrar datos
   const filteredData = useMemo(() => {
-    return maintenanceData.filter(maintenance => {
+    return mockMaintenanceData.filter(maintenance => {
       // Filtro por rango de fechas
       if (selectedDateRange.startDate && selectedDateRange.endDate) {
         const maintenanceDate = new Date(maintenance.maintenanceDate);
@@ -145,7 +233,7 @@ const ScheduledMaintenancePage = () => {
 
       return matchesGlobal && matchesStatus && matchesTechnician && matchesType;
     });
-  }, [maintenanceData, selectedDateRange, globalFilter, statusFilter, technicianFilter, typeFilter]);
+  }, [mockMaintenanceData, selectedDateRange, globalFilter, statusFilter, technicianFilter, typeFilter]);
 
   // Paginación
   const paginatedData = useMemo(() => {
@@ -295,7 +383,7 @@ const ScheduledMaintenancePage = () => {
       </div>
 
       {/* Panel de estadísticas detalladas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="card-theme rounded-lg shadow p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -343,6 +431,63 @@ const ScheduledMaintenancePage = () => {
             </div>
           </div>
         </div>
+      </div> */}
+
+      {/* Búsqueda y Filtros */}
+      <div className="card-theme rounded-lg shadow mb-6">
+        <div className="">
+          {/* Búsqueda */}
+          <div className="relative max-w-md flex gap-2 w-full">
+            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Buscar por consecutivo, maquinaria o serial..."
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              className="w-full min-w-lg pl-10 pr-16 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+
+            {/* Acciones rápidas */}
+            <button
+              onClick={() => {
+                setModalMessage('Función de nuevo mantenimiento en desarrollo');
+                setSuccessOpen(true);
+              }}
+              className="w-full parametrization-filter-button flex items-center justify-center space-x-2 px-4 py-2 transition-colors"
+            >
+              <FaPlus className="w-4 h-4" />
+              <span className="text-sm">Nuevo Mantenimiento</span>
+            </button>
+
+            <button
+              onClick={() => setFilterModalOpen(true)}
+              className="w-full parametrization-filter-button flex items-center justify-center space-x-2 px-4 py-2 transition-colors"
+            >
+              <FaFilter className="w-4 h-4" />
+              <span className="text-sm">Filtros Avanzados</span>
+            </button>
+          </div>
+
+          {/* Indicador de filtros activos */}
+          {(globalFilter || statusFilter || technicianFilter || typeFilter || selectedDateRange.startDate) && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
+              <p className="text-sm text-blue-800">
+                Mostrando {filteredData.length} de {mockMaintenanceData.length} mantenimientos
+                {globalFilter && ` • Búsqueda: "${globalFilter}"`}
+                {statusFilter && ` • Estado: ${statusFilter}`}
+                {technicianFilter && ` • Técnico: ${technicianFilter}`}
+                {typeFilter && ` • Tipo: ${typeFilter}`}
+                {selectedDateRange.startDate && ` • Rango de fechas aplicado`}
+              </p>
+              <button
+                onClick={handleClearFilters}
+                className="text-blue-600 hover:text-blue-800 text-sm mt-1"
+              >
+                Limpiar todos los filtros
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Sección del Calendario - Layout según mockup */}
@@ -356,7 +501,7 @@ const ScheduledMaintenancePage = () => {
             {/* Calendario - Columna Izquierda */}
             <div className="xl:col-span-2">
               <Calendar
-                maintenanceData={maintenanceData}
+                maintenanceData={mockMaintenanceData}
                 selectedDateRange={selectedDateRange}
                 onDateRangeChange={setSelectedDateRange}
               />
@@ -441,90 +586,10 @@ const ScheduledMaintenancePage = () => {
         </div>
       </div>
 
-      {/* Búsqueda y Filtros */}
-      <div className="card-theme rounded-lg shadow mb-6">
-        <div className="p-4">
-          {/* Búsqueda */}
-          <div className="relative max-w-md flex gap-2 w-full">
-            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Buscar por consecutivo, maquinaria o serial..."
-              value={globalFilter}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              className="w-full min-w-lg pl-10 pr-16 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-
-            {/* Acciones rápidas */}
-            <button
-              onClick={() => {
-                setModalMessage('Función de nuevo mantenimiento en desarrollo');
-                setSuccessOpen(true);
-              }}
-              className="w-full parametrization-filter-button flex items-center justify-center space-x-2 px-4 py-2 transition-colors"
-            >
-              <FaPlus className="w-4 h-4" />
-              <span className="text-sm">Nuevo Mantenimiento</span>
-            </button>
-
-            <button
-              onClick={() => setFilterModalOpen(true)}
-              className="w-full parametrization-filter-button flex items-center justify-center space-x-2 px-4 py-2 transition-colors"
-            >
-              <FaFilter className="w-4 h-4" />
-              <span className="text-sm">Filtros Avanzados</span>
-            </button>
-
-            <button
-              onClick={loadMaintenanceData}
-              disabled={loading}
-              className="w-full parametrization-filter-button flex items-center justify-center space-x-2 px-4 py-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <FaSearch className="w-4 h-4" />
-              <span className="text-sm">{loading ? 'Actualizando...' : 'Actualizar'}</span>
-            </button>
-          </div>
-
-          {/* Indicador de filtros activos */}
-          {(globalFilter || statusFilter || technicianFilter || typeFilter || selectedDateRange.startDate) && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
-              <p className="text-sm text-blue-800">
-                Mostrando {filteredData.length} de {maintenanceData.length} mantenimientos
-                {globalFilter && ` • Búsqueda: "${globalFilter}"`}
-                {statusFilter && ` • Estado: ${statusFilter}`}
-                {technicianFilter && ` • Técnico: ${technicianFilter}`}
-                {typeFilter && ` • Tipo: ${typeFilter}`}
-                {selectedDateRange.startDate && ` • Rango de fechas aplicado`}
-              </p>
-              <button
-                onClick={handleClearFilters}
-                className="text-blue-600 hover:text-blue-800 text-sm mt-1"
-              >
-                Limpiar todos los filtros
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* Lista de mantenimientos */}
       <div className="card-theme rounded-lg shadow">
         <div className="overflow-x-auto">
-          {loading ? (
-            <div className="p-8 text-center text-gray-500">
-              Cargando mantenimientos...
-            </div>
-          ) : error ? (
-            <div className="p-8 text-center">
-              <div className="text-red-600 mb-2">{error}</div>
-              <button
-                onClick={loadMaintenanceData}
-                className="text-blue-600 hover:text-blue-800 underline"
-              >
-                Reintentar
-              </button>
-            </div>
-          ) : filteredData.length === 0 ? (
+          {filteredData.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
               {globalFilter || statusFilter || technicianFilter || typeFilter || selectedDateRange.startDate
                 ? "No se encontraron resultados"
@@ -669,11 +734,8 @@ const ScheduledMaintenancePage = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">Todos los tipos</option>
-              {availableTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
+              <option value="Preventivo">Preventivo</option>
+              <option value="Correctivo">Correctivo</option>
             </select>
           </div>
 
@@ -688,7 +750,7 @@ const ScheduledMaintenancePage = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">Todos los técnicos</option>
-              {availableTechnicians.map((technician) => (
+              {mockTechnicians.map((technician) => (
                 <option key={technician} value={technician}>
                   {technician}
                 </option>
@@ -707,11 +769,9 @@ const ScheduledMaintenancePage = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">Todos los estados</option>
-              {availableStatuses.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
+              <option value="Pendiente">Pendiente</option>
+              <option value="Realizado">Realizado</option>
+              <option value="Cancelado">Cancelado</option>
             </select>
           </div>
         </div>

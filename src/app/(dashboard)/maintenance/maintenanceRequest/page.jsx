@@ -10,6 +10,7 @@ import { IoCalendarOutline } from 'react-icons/io5'
 import MaintenanceRequestModal from "@/app/components/maintenance/MaintenanceRequestModal";
 import RequestDetailModal from "@/app/components/maintenance/RequestDetailModal";
 import { getMaintenanceRequestList } from '@/services/maintenanceService'
+import { SuccessModal, ErrorModal, ConfirmModal } from '@/app/components/shared/SuccessErrorModal'
 
 const SolicitudesMantenimientoView = () => {
   // Estado para el filtro global
@@ -40,6 +41,14 @@ const SolicitudesMantenimientoView = () => {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [selectedRequest, setSelectedRequest] = useState(null)
+
+  // Estados para modales de éxito, error y confirmación
+  const [successModalOpen, setSuccessModalOpen] = useState(false)
+  const [errorModalOpen, setErrorModalOpen] = useState(false)
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false)
+  const [modalMessage, setModalMessage] = useState('')
+  const [modalTitle, setModalTitle] = useState('')
+  const [pendingAction, setPendingAction] = useState(null)
 
   // Cargar datos al montar el componente
   useEffect(() => {
@@ -494,19 +503,27 @@ const SolicitudesMantenimientoView = () => {
         )
       )
       
-      // Mostrar mensaje de éxito (puedes usar un toast aquí)
-      alert('Solicitud aprobada exitosamente')
+      // Mostrar mensaje de éxito
+      setModalTitle('¡Éxito!')
+      setModalMessage('Solicitud aprobada exitosamente')
+      setSuccessModalOpen(true)
     } catch (error) {
       console.error('Error al aprobar solicitud:', error)
-      alert('Error al aprobar la solicitud')
+      setModalTitle('Error')
+      setModalMessage('Error al aprobar la solicitud')
+      setErrorModalOpen(true)
     }
   }
 
   const handleCancel = async (request) => {
-    if (!confirm('¿Estás seguro de que quieres cancelar esta solicitud?')) {
-      return
-    }
+    // Mostrar modal de confirmación
+    setModalTitle('Confirmar Cancelación')
+    setModalMessage('¿Estás seguro de que quieres cancelar esta solicitud?')
+    setPendingAction(() => () => confirmCancel(request))
+    setConfirmModalOpen(true)
+  }
 
+  const confirmCancel = async (request) => {
     try {
       // Aquí irá la llamada a la API para cancelar
       console.log('Cancelando solicitud:', request.id)
@@ -521,10 +538,14 @@ const SolicitudesMantenimientoView = () => {
       )
       
       // Mostrar mensaje de éxito
-      alert('Solicitud cancelada exitosamente')
+      setModalTitle('¡Éxito!')
+      setModalMessage('Solicitud cancelada exitosamente')
+      setSuccessModalOpen(true)
     } catch (error) {
       console.error('Error al cancelar solicitud:', error)
-      alert('Error al cancelar la solicitud')
+      setModalTitle('Error')
+      setModalMessage('Error al cancelar la solicitud')
+      setErrorModalOpen(true)
     }
   }
 
@@ -785,6 +806,42 @@ const SolicitudesMantenimientoView = () => {
           request={selectedRequest}
         />
       </Dialog.Root>
+
+      {/* Modales de Notificación */}
+      <SuccessModal
+        isOpen={successModalOpen}
+        onClose={() => setSuccessModalOpen(false)}
+        title={modalTitle}
+        message={modalMessage}
+      />
+
+      <ErrorModal
+        isOpen={errorModalOpen}
+        onClose={() => setErrorModalOpen(false)}
+        title={modalTitle}
+        message={modalMessage}
+      />
+
+      <ConfirmModal
+        isOpen={confirmModalOpen}
+        onClose={() => {
+          setConfirmModalOpen(false)
+          setPendingAction(null)
+        }}
+        onConfirm={() => {
+          if (pendingAction) {
+            pendingAction()
+          }
+          setConfirmModalOpen(false)
+          setPendingAction(null)
+        }}
+        title={modalTitle}
+        message={modalMessage}
+        confirmText="Sí, cancelar"
+        cancelText="No, mantener"
+        confirmColor="btn-error"
+        cancelColor="btn-secondary"
+      />
     </div>
   )
 }
