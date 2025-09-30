@@ -130,7 +130,7 @@ const UpdateMaintenanceSchedule = ({ onClose }) => {
             Información de la solicitud
           </h3>
           <div className="divide-y border-primary">
-            <div className="grid grid-cols-2 border-primary text-theme-sm">
+            <div className="grid grid-cols-2 divide-x border-primary text-theme-sm">
               <div className="px-6 py-3">
                 <p className="text-secondary">Número de serie</p>
                 <p className="mt-1 font-theme-medium text-primary">{mockData.serialNumber}</p>
@@ -277,84 +277,76 @@ const UpdateMaintenanceSchedule = ({ onClose }) => {
               </div>
             </div>
 
-            {/* Detalles del mantenimiento completo horizontalmente */}
-            <div className="mb-4">
-              <label className="block text-theme-sm text-secondary mb-1">
-                Detalles del mantenimiento*
-              </label>
-              <textarea
-                value={maintenanceDetails}
-                onChange={(e) =>
-                  setMaintenanceDetails(e.target.value)
-                }
-                placeholder="Ingrese los detalles del mantenimiento..."
-                maxLength={350}
-                rows={4}
-                className="input-theme w-full resize-none"
-              />
-              <div className="text-theme-xs text-secondary mt-1">
-                {maintenanceDetails.length}/350 caracteres
-              </div>
-            </div>
-
-            {/* Tipo de mantenimiento debajo */}
-            <div>
-              <label className="block text-theme-sm text-secondary mb-1">
-                Tipo de mantenimiento*
-              </label>
-              <div className="relative">
-                <select
-                  value={maintenanceType}
+            {/* Detalles del mantenimiento y tipo en una sola fila */}
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <label className="block text-theme-sm text-secondary mb-1">
+                  Detalles del mantenimiento*
+                </label>
+                <textarea
+                  value={maintenanceDetails}
                   onChange={(e) =>
-                    setMaintenanceType(e.target.value)
+                    setMaintenanceDetails(e.target.value)
                   }
-                  className="input-theme w-full pr-8 appearance-none"
-                >
-                  <option value="">Seleccione un tipo...</option>
-                  {maintenanceTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-secondary pointer-events-none"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
+                  placeholder="Ingrese los detalles del mantenimiento..."
+                  maxLength={350}
+                  rows={4}
+                  className="input-theme w-full resize-none"
+                />
+                <div className="text-theme-xs text-secondary mt-1">
+                  {maintenanceDetails.length}/350 caracteres
+                </div>
+              </div>
+              <div>
+                <label className="block text-theme-sm text-secondary mb-1">
+                  Tipo de mantenimiento*
+                </label>
+                <div className="relative">
+                  <select
+                    value={maintenanceType}
+                    onChange={(e) =>
+                      setMaintenanceType(e.target.value)
+                    }
+                    className="input-theme w-full pr-8 appearance-none"
+                  >
+                    <option value="">Seleccione un tipo...</option>
+                    {maintenanceTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-secondary pointer-events-none"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="flex justify-center pt-4">
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className={`btn-theme btn-primary ${
-              isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-            style={{
-              padding: '0.75rem 3rem',
-              borderRadius: 'var(--border-radius-md)',
-              fontSize: '0.9rem',
-              fontWeight: '500'
-            }}
-            aria-label="Actualizar programación de mantenimiento"
-          >
-            {isSubmitting ? 'Actualizando...' : 'Actualizar'}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+          className={`btn-theme btn-primary w-full py-3 text-theme-lg font-theme-semibold ${
+            isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
+          aria-label="Actualizar programación de mantenimiento"
+        >
+          {isSubmitting ? 'Actualizando...' : 'Actualizar'}
+        </button>
 
         <SuccessModal
           isOpen={showSuccess}
