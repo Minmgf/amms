@@ -9,7 +9,7 @@ import {
   getMachinerySecondaryType,
   getMachineryBrands,
   getModelsByBrandId,
-  getMachineryStatus, // <--- usa este nombre
+  getMachineryStatus,
 } from "@/services/machineryService";
 
 export default function MachineryDetailsModal({
@@ -110,7 +110,7 @@ export default function MachineryDetailsModal({
         {/* ============== DESKTOP ============== */}
         <div className="hidden md:block p-6">
           {/* --- TABS --- */}
-          <div className="flex justify-center border-b border-[#737373] mb-6">
+          <div className="flex justify-center border-b border-primary mb-6">
             {["general", "tech", "docs"].map((key, idx) => {
               const labels = [
                 "Ficha General",
@@ -125,12 +125,12 @@ export default function MachineryDetailsModal({
                   type="button"
                   aria-label={`Show ${label} tab`}
                   className={`w-40 px-4 py-2 -mb-px border-b-2 text-sm font-medium
-                                         whitespace-normal text-center leading-snug cursor-pointer
-                                         ${
-                                           activeTab === key
-                                             ? "border-secondary text-secondary"
-                                             : "border-transparent text-gray-500"
-                                         }`}
+        whitespace-normal text-center leading-snug cursor-pointer
+        ${
+          activeTab === key
+            ? "border-secondary text-secondary"
+            : "border-transparent text-gray-500"
+        }`}
                 >
                   {label}
                 </button>
@@ -397,6 +397,7 @@ export default function MachineryDetailsModal({
               type="button"
               onClick={() => setAccTrackerOpen((v) => !v)}
               className="w-full flex items-center justify-between px-4 py-5 bg-surface"
+              aria-label="Toggle Tracker Data"
             >
               <span className="text-primary font-bold text-lg ">
                 Datos del Tracker
@@ -435,6 +436,7 @@ export default function MachineryDetailsModal({
               type="button"
               onClick={() => setAccUsageOpen((v) => !v)}
               className="w-full flex items-center justify-between px-4 py-5 bg-surface"
+              aria-label="Toggle Usage Information"
             >
               <span className="font-bold text-lg">Información de Uso</span>
               <FiChevronDown
@@ -476,6 +478,7 @@ export default function MachineryDetailsModal({
               type="button"
               onClick={() => setAccSpecificOpen((v) => !v)}
               className="w-full flex items-center justify-between px-4 py-5 bg-surface"
+              aria-label="Toggle Specific Technical Data"
             >
               <span className="font-bold text-lg">
                 Datos Técnicos Específicos
@@ -512,7 +515,7 @@ export default function MachineryDetailsModal({
             <div className="px-4 py-5 font-bold text-lg">Documentación</div>
             <div className="flex items-center justify-between px-4 py-3 border-t border-primary">
               <span className="text-sm text-secondary">Manual de operación</span>
-              <button className="px-3 py-1.5 rounded-md button-seconday text-sm">
+              <button className="px-3 py-1.5 rounded-md button- text-sm">
                 Ver
               </button>
             </div>
@@ -572,7 +575,11 @@ function DocItem({ label }) {
         </div>
         <span className="text-sm text-[#525252]">{label}</span>
       </div>
-      <button className="p-2 rounded-md hover:bg-gray-100" title="Download">
+      <button
+        className="p-2 rounded-md hover:bg-gray-100"
+        title="Download"
+        aria-label="Download document"
+      >
         <FiDownload className="w-5 h-5 text-gray-600" />
       </button>
     </li>
