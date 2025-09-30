@@ -107,6 +107,7 @@ const Page = () => {
 
       // Guardar en localStorage
       localStorage.setItem("userData", JSON.stringify(payload));
+      localStorage.setItem("token", response.access_token);
 
       // Mostrar mensaje de éxito
       setModalMessage("Ha iniciado sesión correctamente.");

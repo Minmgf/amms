@@ -198,3 +198,6 @@ La prueba genera reportes detallados en JSON con:
 - Screenshots de cada paso
 - Logs detallados de ejecución
 - Análisis de funcionalidades implementadas vs. requeridas
+
+
+
