@@ -41,3 +41,9 @@ export const getMaintenanceDetail = async (id) => {
     const { data } = await apiMain.get(`/maintenance/${id}/`);
     return data;
 };
+
+// Lista de solicitudes de mantenimientos 
+export const getMaintenanceRequestList = async () => {
+    const { data } = await apiMain.get("/maintenance_request/list/");
+    return data;
+};
