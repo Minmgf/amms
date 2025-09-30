@@ -45,11 +45,42 @@ export const registerGeneralData = async (formData) => {
     return data;
 };
 
+// traer estado de una maquinaria
+export const getMachineryStatus = async () => {
+    const { data } = await apiMain.get("/statues/list/2/");
+    return data;
+};
+
+// traer datos generales de una maquinaria por id
+export const getGeneralData = async (machineryId) => {
+    const { data } = await apiMain.get(`/machinery/${machineryId}/`);
+    return data.data;
+};
+
+// actualizar datos generales de una maquinaria por id
+export const updateGeneralData = async (machineryId, formData) => {
+    const { data } = await apiMain.put(`/machinery/${machineryId}/update/`, formData,
+        {headers: {"Content-Type": "multipart/form-data"}}
+    );
+    return data;
+};
+
 // ===== PASO 3 - FICHA TÉCNICA ESPECÍFICA =====
 
 // Crear ficha técnica específica
 export const createSpecificTechnicalSheet = async (payload) => {
     const { data } = await apiMain.post("/machinery-specific-sheet/", payload);
+    return data;
+};
+
+export const getSpecificTechnicalSheet = async (machineryId) => {
+    const { data } = await apiMain.get(`/machinery-specific-sheet/machinery/${machineryId}/`);
+    return data.data;
+};
+
+// Actualizar ficha técnica específica
+export const updateSpecificTechnicalSheet = async (specificTechnicalSheetId, payload) => {
+    const { data } = await apiMain.put(`/specific-technical-sheets/${specificTechnicalSheetId}/`, payload);
     return data;
 };
 
@@ -160,11 +191,26 @@ export const registerInfoTracker = async (formData) => {
     return data;
 };
 
+// ===== STEP 2 - TRACKER DATA EDIT FUNCTIONS =====
+// traer información del tracker por ID de maquinaria
+export const getTrackerInfo = async (machineryId) => {
+    const { data } = await apiMain.get(`/machinery-tracker/by-machinery/${machineryId}/`);
+    return data;
+};
+
+// actualizar información del tracker
+export const updateInfoTracker = async (trackerId, formData) => {
+    const { data } = await apiMain.put(`/machinery-tracker/${trackerId}/update/`, formData, 
+        {headers: {"Content-Type": "multipart/form-data"}}
+    );
+    return data;
+};
+
 // ===== PASO 4 =====
 
 // traer estados de uso
 export const getUseStates = async () => {
-    const { data } = await apiMain.get("/statues/list/2/");
+    const { data } = await apiMain.get("/statues/list/3/");
     return Array.isArray(data) ? data : [];
 };
 
@@ -188,6 +234,20 @@ export const registerUsageInfo = async (formData) => {
     return data;
 };
 
+// traer información de uso por id de maquinaria
+export const getUsageInfo = async (machineryId) => {
+    const { data } = await apiMain.get(`/machinery-usage/by-machinery/${machineryId}/`);
+    return data;
+};
+
+// actualizar información de uso por id de uso
+export const updateUsageInfo = async (usageId, formData) => {
+    const { data } = await apiMain.put(`/machinery-usage/${usageId}/update/`, formData,
+        {headers: {"Content-Type": "multipart/form-data"}}
+    );
+    return data;
+}
+
 // ===== PASO 5 =====
 
 //traer listado de tipos de mantenimiento activos
@@ -199,6 +259,11 @@ export const getMaintenanceTypes = async () => {
 //registrar mantenimiento periodico de una maquinaria
 export const registerPeriodicMaintenance = async (payload) => {
     const { data } = await apiMain.post("/periodic-maintenance/", payload);
+    return data;
+};
+//actualizar mantenimiento periodico de una maquinaria
+export const updatePeriodicMaintenance = async (id_periodic_maintenance, payload) => {
+    const { data } = await apiMain.put(`/periodic-maintenance/${id_periodic_maintenance}/`, payload);
     return data;
 };
 
