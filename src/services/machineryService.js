@@ -80,7 +80,7 @@ export const getSpecificTechnicalSheet = async (machineryId) => {
 
 // Actualizar ficha técnica específica
 export const updateSpecificTechnicalSheet = async (specificTechnicalSheetId, payload) => {
-    const { data } = await apiMain.put(`/specific-technical-sheets/${specificTechnicalSheetId}/`, payload);
+    const { data } = await apiMain.put(`/machinery-specific-sheet/${specificTechnicalSheetId}/`, payload);
     return data;
 };
 
@@ -237,7 +237,7 @@ export const registerUsageInfo = async (formData) => {
 // traer información de uso por id de maquinaria
 export const getUsageInfo = async (machineryId) => {
     const { data } = await apiMain.get(`/machinery-usage/by-machinery/${machineryId}/`);
-    return data;
+    return data.data;
 };
 
 // actualizar información de uso por id de uso

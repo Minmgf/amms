@@ -12,7 +12,7 @@ export default function Step5Maintenance({
   machineryId,
   maintenanceTypeList = [],
   isEditMode = false,
-  currentStatusName = "",
+  currentStatusId = null,
 }) {
   const {
     register,
@@ -176,7 +176,7 @@ export default function Step5Maintenance({
   };
 
   // Solo modo edición y estado activo
-  const showEditButton = isEditMode && currentStatusName === "activa";
+  const showEditButton = isEditMode && currentStatusId !== 3;
 
   return (
     <>
