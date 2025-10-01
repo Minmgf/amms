@@ -24,7 +24,6 @@ const RequestDetailModal = ({
       setIsLoading(true);
       try {
         const response = await getMaintenanceRequestDetail(request.id);
-        console.log("Detalle mantenimiento:", response);
         setMaintenanceDetail(response.data);
 
         // Si hay un técnico asignado, obtener sus datos
