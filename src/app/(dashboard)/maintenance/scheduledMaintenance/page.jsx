@@ -12,6 +12,7 @@ import { SuccessModal, ErrorModal } from '@/app/components/shared/SuccessErrorMo
 import TableList from '@/app/components/shared/TableList';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getScheduledMaintenanceList } from '@/services/maintenanceService';
+import { getUserInfo } from '@/services/authService';
 
 const ScheduledMaintenancePage = () => {
   const { currentTheme } = useTheme();
@@ -52,25 +53,44 @@ const ScheduledMaintenancePage = () => {
       const response = await getScheduledMaintenanceList();
       
       if (response.success) {
-        // Mapear los datos del API a la estructura esperada por el componente
-        const mappedData = response.data.map((item) => ({
-          id: item.id_maintenance_scheduling,
-          machinery: {
-            name: item.machinery_name || 'N/A',
-            serial: item.machinery_serial || 'N/A',
-            image: item.machinery_image
-          },
-          maintenanceDate: item.scheduled_at ? new Date(item.scheduled_at).toISOString().split('T')[0] : null,
-          technician: item.technician_name || `Técnico #${item.assigned_technician_id}`,
-          status: item.status_name || 'Pendiente',
-          type: 'Programado', // Por defecto, se puede ajustar si viene en el API
-          details: `Mantenimiento programado para ${item.machinery_name}`,
-          // Campos adicionales del API
-          assigned_technician_id: item.assigned_technician_id,
-          status_id: item.status_id,
-          scheduled_at: item.scheduled_at
-        }));
+        // Mapear los datos del API con peticiones adicionales para obtener nombres de técnicos
+        const mappedDataPromises = response.data.map(async (item) => {
+          let technicianName = item.technician_name || `Técnico #${item.assigned_technician_id}`;
+          
+          // Si no hay technician_name y hay assigned_technician_id, hacer petición adicional
+          if (!item.technician_name && item.assigned_technician_id) {
+            try {
+              const userResponse = await getUserInfo(item.assigned_technician_id);
+              if (userResponse.success && userResponse.data && userResponse.data.length > 0) {
+                technicianName = userResponse.data[0].name;
+              }
+            } catch (userError) {
+              console.error(`Error fetching user info for technician ${item.assigned_technician_id}:`, userError);
+              // Mantener el valor por defecto si falla la petición
+            }
+          }
+
+          return {
+            id: item.id_maintenance_scheduling,
+            machinery: {
+              name: item.machinery_name || 'N/A',
+              serial: item.machinery_serial || 'N/A',
+              image: item.machinery_image
+            },
+            maintenanceDate: item.scheduled_at ? new Date(item.scheduled_at).toISOString().split('T')[0] : null,
+            technician: technicianName,
+            status: item.status_name || 'Pendiente',
+            type: 'Programado', // Por defecto, se puede ajustar si viene en el API
+            details: `Mantenimiento programado para ${item.machinery_name}`,
+            // Campos adicionales del API
+            assigned_technician_id: item.assigned_technician_id,
+            status_id: item.status_id,
+            scheduled_at: item.scheduled_at
+          };
+        });
         
+        // Esperar a que todas las peticiones se completen
+        const mappedData = await Promise.all(mappedDataPromises);
         setMaintenanceData(mappedData);
       } else {
         setError('Error al cargar los mantenimientos programados');
