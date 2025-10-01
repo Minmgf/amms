@@ -20,8 +20,15 @@ const ScheduleMaintenanceModal = ({
   technicians = [],
   maintenanceTypes = [],
 }) => {
-  const { register, handleSubmit, reset, formState, setValue, watch } =
-    useForm();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState,
+    setValue,
+    watch,
+    clearErrors,
+  } = useForm();
   const { getCurrentTheme } = useTheme();
   const theme = getCurrentTheme();
 
@@ -34,6 +41,7 @@ const ScheduleMaintenanceModal = ({
   const [scheduledMaintenances, setScheduledMaintenances] = useState([]);
   const [technicianAvailability, setTechnicianAvailability] = useState({});
   const [loadingAvailability, setLoadingAvailability] = useState(false);
+  const [suggestionInfo, setSuggestionInfo] = useState(null);
 
   // Estados para modales de feedback
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -76,68 +84,266 @@ const ScheduleMaintenanceModal = ({
     }
   }, [request, maintenanceTypes, technicians]);
 
-  // Función mejorada para generar sugerencias automáticas
-  const generateSuggestions = () => {
-    const today = new Date();
-    let suggestedDateObj = new Date(today);
+  // Agregar este useEffect después de los estados
+  useEffect(() => {
+    if (isOpen && request) {
+      loadScheduledMaintenances();
+    }
+  }, [isOpen, request]);
 
-    // Calcular días según prioridad
-    const daysAhead =
-      request?.priority === "Alta" ? 1 : request?.priority === "Media" ? 3 : 5;
+  // Agregar este useEffect para validar en tiempo real cuando cambien los campos
+  useEffect(() => {
+    const subscription = watch((value, { name }) => {
+      if (
+        name === "technician" ||
+        name === "scheduleDate" ||
+        name === "scheduleTime"
+      ) {
+        if (value.technician && value.scheduleDate && value.scheduleTime) {
+          const dateTime = `${value.scheduleDate}T${value.scheduleTime}:00`;
+          const availability = validateTechnicianAvailability(
+            value.technician,
+            dateTime
+          );
 
-    suggestedDateObj.setDate(today.getDate() + daysAhead);
-
-    // Buscar el técnico con menor carga de trabajo
-    let bestTechnician = null;
-    let minWorkload = Infinity;
-
-    technicians.forEach((tech) => {
-      const techId = parseInt(tech.value);
-      const workload = technicianAvailability[techId]?.totalScheduled || 0;
-
-      // Verificar disponibilidad en la fecha sugerida
-      const suggestedDateTime = `${
-        suggestedDateObj.toISOString().split("T")[0]
-      }T${request?.priority === "Alta" ? "08:00" : "10:00"}:00`;
-
-      const isAvailable =
-        validateTechnicianAvailability(techId, suggestedDateTime) === true;
-
-      if (isAvailable && workload < minWorkload) {
-        minWorkload = workload;
-        bestTechnician = tech.value;
+          if (availability !== true) {
+            // Mostrar advertencia en tiempo real
+            setFieldError("technician", {
+              type: "manual",
+              message: availability,
+            });
+          } else {
+            clearErrors("technician");
+          }
+        }
       }
     });
 
-    // Si no hay técnico disponible en la fecha sugerida, buscar siguiente fecha disponible
-    if (!bestTechnician && technicians.length > 0) {
-      for (let i = 1; i <= 30; i++) {
-        // Buscar en los próximos 30 días
-        const testDate = new Date(today);
-        testDate.setDate(today.getDate() + daysAhead + i);
+    return () => subscription.unsubscribe();
+  }, [watch]);
 
-        for (const tech of technicians) {
-          const techId = parseInt(tech.value);
-          const testDateTime = `${
-            testDate.toISOString().split("T")[0]
-          }T10:00:00`;
-          const isAvailable =
-            validateTechnicianAvailability(techId, testDateTime) === true;
+  // Función mejorada para generar sugerencias automáticas
+  const generateSuggestions = async () => {
+    if (
+      !request ||
+      technicians.length === 0 ||
+      scheduledMaintenances.length === 0
+    )
+      return;
 
-          if (isAvailable) {
-            suggestedDateObj = testDate;
-            bestTechnician = tech.value;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Configuración según prioridad
+    const priorityConfig = {
+      Alta: {
+        targetDaysAhead: 1, // Objetivo: programar mañana
+        maxSearchDays: 7,
+        preferredHours: ["08:00", "09:00", "10:00"],
+        bufferHours: 3, // Mayor buffer para Alta prioridad
+        maxDailyMaintenances: 2,
+      },
+      Media: {
+        targetDaysAhead: 3,
+        maxSearchDays: 14,
+        preferredHours: ["09:00", "10:00", "11:00", "14:00", "15:00"],
+        bufferHours: 2,
+        maxDailyMaintenances: 3,
+      },
+      Baja: {
+        targetDaysAhead: 7,
+        maxSearchDays: 30,
+        preferredHours: ["10:00", "11:00", "14:00", "15:00", "16:00"],
+        bufferHours: 2,
+        maxDailyMaintenances: 4,
+      },
+    };
+
+    const config = priorityConfig[request.priority] || priorityConfig["Media"];
+
+    // Calcular carga de trabajo de cada técnico
+    const technicianWorkloads = technicians
+      .map((tech) => {
+        const techId = parseInt(tech.value);
+        const scheduled = scheduledMaintenances.filter(
+          (s) =>
+            s.assigned_technician_id === techId &&
+            s.status_name === "Programado"
+        );
+
+        // Calcular carga ponderada (mantenimientos próximos pesan más)
+        const workloadScore = scheduled.reduce((score, schedule) => {
+          const scheduleDate = new Date(schedule.scheduled_at);
+          const daysUntil = Math.ceil(
+            (scheduleDate - today) / (1000 * 60 * 60 * 24)
+          );
+
+          // Peso según proximidad
+          let weight = 1;
+          if (daysUntil <= 3) weight = 4;
+          else if (daysUntil <= 7) weight = 3;
+          else if (daysUntil <= 14) weight = 2;
+
+          return score + weight;
+        }, 0);
+
+        return {
+          technician: tech,
+          techId: techId,
+          totalScheduled: scheduled.length,
+          workloadScore: workloadScore,
+          schedules: scheduled,
+        };
+      })
+      .sort((a, b) => a.workloadScore - b.workloadScore);
+
+    // Función para verificar disponibilidad de técnico
+    const isTechnicianAvailable = (techId, testDateTime, schedules) => {
+      const requestedTime = new Date(testDateTime);
+
+      for (const schedule of schedules) {
+        const scheduledTime = new Date(schedule.scheduled_at);
+        const timeDiffHours =
+          Math.abs(requestedTime - scheduledTime) / (1000 * 60 * 60);
+
+        // Verificar buffer de tiempo
+        if (timeDiffHours < config.bufferHours) {
+          return false;
+        }
+      }
+
+      // Verificar límite diario
+      const sameDayCount = schedules.filter((s) => {
+        const scheduleDate = new Date(s.scheduled_at);
+        return scheduleDate.toDateString() === requestedTime.toDateString();
+      }).length;
+
+      if (sameDayCount >= config.maxDailyMaintenances) {
+        return false;
+      }
+
+      return true;
+    };
+
+    // ESTRATEGIA: Primero buscar fecha óptima, luego técnico disponible
+    let bestCombination = null;
+    let searchDate = new Date(today);
+    searchDate.setDate(today.getDate() + config.targetDaysAhead);
+
+    // Buscar slot disponible expandiendo desde la fecha objetivo
+    for (let dayOffset = 0; dayOffset < config.maxSearchDays; dayOffset++) {
+      const testDate = new Date(searchDate);
+      testDate.setDate(searchDate.getDate() + dayOffset);
+
+      // Saltar fines de semana
+      if (testDate.getDay() === 0 || testDate.getDay() === 6) {
+        continue;
+      }
+
+      // Probar cada hora preferida
+      for (const preferredTime of config.preferredHours) {
+        const testDateTime = `${
+          testDate.toISOString().split("T")[0]
+        }T${preferredTime}:00`;
+
+        // Buscar técnico disponible (ordenados por menor carga)
+        for (const techInfo of technicianWorkloads) {
+          if (
+            isTechnicianAvailable(
+              techInfo.techId,
+              testDateTime,
+              techInfo.schedules
+            )
+          ) {
+            bestCombination = {
+              date: testDate.toISOString().split("T")[0],
+              time: preferredTime,
+              technician: techInfo.technician.value,
+              technicianName: techInfo.technician.label,
+              workload: techInfo.totalScheduled,
+              workloadScore: techInfo.workloadScore,
+              daysFromTarget: dayOffset,
+              isOptimal: dayOffset === 0, // ¿Es la fecha objetivo?
+            };
             break;
           }
         }
 
-        if (bestTechnician) break;
+        if (bestCombination) break;
+      }
+
+      if (bestCombination) break;
+    }
+
+    // Fallback: Si no hay disponibilidad, sugerir con advertencia
+    if (!bestCombination && technicianWorkloads.length > 0) {
+      const fallbackDate = new Date(today);
+      fallbackDate.setDate(today.getDate() + config.targetDaysAhead);
+
+      bestCombination = {
+        date: fallbackDate.toISOString().split("T")[0],
+        time: config.preferredHours[0],
+        technician: technicianWorkloads[0].technician.value,
+        technicianName: technicianWorkloads[0].technician.label,
+        workload: technicianWorkloads[0].totalScheduled,
+        workloadScore: technicianWorkloads[0].workloadScore,
+        warning:
+          "⚠️ No se encontró disponibilidad ideal. Verifique conflictos de agenda.",
+      };
+    }
+
+    // Establecer sugerencias
+    if (bestCombination) {
+      setSuggestedDate(bestCombination.date);
+      setSuggestedTime(bestCombination.time);
+      setSuggestedTechnician(bestCombination.technician);
+
+      setSuggestionInfo({
+        technicianName: bestCombination.technicianName,
+        workload: bestCombination.workload,
+        workloadScore: bestCombination.workloadScore,
+        daysFromTarget: bestCombination.daysFromTarget,
+        isOptimal: bestCombination.isOptimal,
+        warning: bestCombination.warning,
+      });
+    }
+  };
+  const checkTechnicianAvailability = (
+    technicianId,
+    dateTime,
+    techSchedules
+  ) => {
+    const requestedTime = new Date(dateTime);
+
+    for (const schedule of techSchedules) {
+      const scheduledTime = new Date(schedule.scheduled_at);
+
+      // Considerar un buffer de tiempo entre mantenimientos (2 horas por defecto)
+      const bufferHours = 2;
+      const timeDiff =
+        Math.abs(requestedTime - scheduledTime) / (1000 * 60 * 60);
+
+      if (timeDiff < bufferHours) {
+        return false; // Conflicto de horario
+      }
+
+      // Si es el mismo día, verificar que no exceda capacidad diaria
+      if (requestedTime.toDateString() === scheduledTime.toDateString()) {
+        const sameDaySchedules = techSchedules.filter(
+          (s) =>
+            new Date(s.scheduled_at).toDateString() ===
+            requestedTime.toDateString()
+        );
+
+        // Límite de mantenimientos por día (configurable)
+        const maxPerDay = 3;
+        if (sameDaySchedules.length >= maxPerDay) {
+          return false;
+        }
       }
     }
 
-    setSuggestedDate(suggestedDateObj.toISOString().split("T")[0]);
-    setSuggestedTime(request?.priority === "Alta" ? "08:00" : "10:00");
-    setSuggestedTechnician(bestTechnician || technicians[0]?.value);
+    return true;
   };
 
   // Función para cargar mantenimientos programados
@@ -506,41 +712,107 @@ const ScheduleMaintenanceModal = ({
                 <h3 className="text-lg font-semibold text-primary mb-4">
                   Datos de Programación
                 </h3>
-
                 {/* Sugerencias automáticas */}
                 {suggestedDate &&
                   suggestedTime &&
                   suggestedTechnician &&
                   !useSuggestions && (
-                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-sm text-blue-800 mb-2">
-                        📅 Sugerencia automática basada en disponibilidad y
-                        prioridad:
-                      </p>
-                      <p className="text-xs text-blue-700">
-                        Fecha:{" "}
-                        {new Date(suggestedDate).toLocaleDateString("es-ES")} a
-                        las {suggestedTime}
-                      </p>
-                      <p className="text-xs text-blue-700 mb-2">
-                        Técnico:{" "}
-                        {
-                          technicians.find(
-                            (t) => t.value === suggestedTechnician
-                          )?.label
-                        }
-                      </p>
-                      <button
-                        type="button"
-                        onClick={applySuggestions}
-                        disabled={isSubmitting}
-                        className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors disabled:opacity-50"
-                      >
-                        Aplicar sugerencia
-                      </button>
+                    <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg shadow-sm">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span className="text-lg">
+                              {suggestionInfo?.isOptimal ? "✨" : "🤖"}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="text-sm font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                            {suggestionInfo?.isOptimal
+                              ? "✅ Sugerencia Óptima"
+                              : "🤖 Sugerencia Inteligente"}
+                            {request.priority && (
+                              <span
+                                className={`text-xs px-2 py-0.5 rounded-full ${
+                                  request.priority === "Alta"
+                                    ? "bg-red-100 text-red-700"
+                                    : request.priority === "Media"
+                                    ? "bg-yellow-100 text-yellow-700"
+                                    : "bg-green-100 text-green-700"
+                                }`}
+                              >
+                                Prioridad {request.priority}
+                              </span>
+                            )}
+                          </h4>
+
+                          <div className="space-y-2 text-sm text-blue-800">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">📅 Fecha:</span>
+                              <span>
+                                {new Date(suggestedDate).toLocaleDateString(
+                                  "es-ES",
+                                  {
+                                    weekday: "long",
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                  }
+                                )}
+                                {suggestionInfo?.daysFromTarget > 0 && (
+                                  <span className="text-xs text-blue-600 ml-2">
+                                    (+{suggestionInfo.daysFromTarget} días del
+                                    objetivo)
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">🕐 Hora:</span>
+                              <span>{suggestedTime}</span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">👨‍🔧 Técnico:</span>
+                              <span>
+                                {suggestionInfo?.technicianName}
+                                <span className="text-xs text-blue-600 ml-2">
+                                  ({suggestionInfo?.workload} programados,
+                                  carga: {suggestionInfo?.workloadScore})
+                                </span>
+                              </span>
+                            </div>
+                          </div>
+
+                          {suggestionInfo?.warning && (
+                            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+                              {suggestionInfo.warning}
+                            </div>
+                          )}
+
+                          <div className="flex gap-2 mt-3">
+                            <button
+                              type="button"
+                              onClick={applySuggestions}
+                              disabled={isSubmitting}
+                              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                            >
+                              ✅ Aplicar Sugerencia
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setUseSuggestions(true)}
+                              disabled={isSubmitting}
+                              className="px-4 py-2 bg-white text-blue-600 text-sm font-medium rounded-lg border border-blue-300 hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              ✏️ Programar Manualmente
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
-
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Schedule date */}
                   <div>
@@ -598,19 +870,25 @@ const ScheduleMaintenanceModal = ({
                       })}
                       disabled={isSubmitting || technicians.length === 0}
                       className="parametrization-input disabled:opacity-50 disabled:cursor-not-allowed"
-                      aria-label="Technician Select"
-                      defaultValue=""
                     >
-                      <option value="">
-                        {technicians.length === 0
-                          ? "Sin técnicos disponibles"
-                          : "Seleccione un técnico"}
-                      </option>
-                      {technicians.map((tech) => (
-                        <option key={tech.value} value={tech.value}>
-                          {tech.label}
-                        </option>
-                      ))}
+                      <option value="">Seleccione un técnico</option>
+                      {technicians.map((tech) => {
+                        const techId = parseInt(tech.value);
+                        const workload = technicianAvailability[techId];
+                        const scheduleCount = workload?.totalScheduled || 0;
+
+                        // Indicador visual de carga
+                        let loadIndicator = "🟢"; // Baja carga
+                        if (scheduleCount >= 5) loadIndicator = "🟡"; // Media
+                        if (scheduleCount >= 10) loadIndicator = "🔴"; // Alta
+
+                        return (
+                          <option key={tech.value} value={tech.value}>
+                            {loadIndicator} {tech.label} ({scheduleCount}{" "}
+                            programados)
+                          </option>
+                        );
+                      })}
                     </select>
                     {technicians.length === 0 && (
                       <p className="text-xs text-yellow-600 mt-1">
@@ -624,7 +902,6 @@ const ScheduleMaintenanceModal = ({
                     )}
                   </div>
                 </div>
-
                 {/* Maintenance type */}
                 <div className="mt-4">
                   <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
@@ -662,7 +939,6 @@ const ScheduleMaintenanceModal = ({
                     </p>
                   )}
                 </div>
-
                 {/* Maintenance details */}
                 <div className="mt-4">
                   <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
