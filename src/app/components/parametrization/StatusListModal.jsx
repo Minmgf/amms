@@ -160,13 +160,15 @@ const StatusListModal = ({
                           </td>
                           */}
                           <td className="px-6 py-4 text-sm">
-                            <button
-                              onClick={() => handleEdit(item.id)}
-                              className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-md transition-colors"
-                            >
-                              <FiEdit3 className="w-3 h-3 mr-1.5" />
-                              Editar
-                            </button>
+                            <permissionGuard permission={30}>
+                              <button
+                                onClick={() => handleEdit(item.id)}
+                                className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-md transition-colors"
+                              >
+                                <FiEdit3 className="w-3 h-3 mr-1.5" />
+                                Editar
+                              </button>
+                            </permissionGuard>
                           </td>
                         </tr>
                       );

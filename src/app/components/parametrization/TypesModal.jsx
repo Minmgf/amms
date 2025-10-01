@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { FiX, FiEdit3 } from 'react-icons/fi';
 import { toggleTypeStatus } from '@/services/parametrizationService';
 import { SuccessModal, ErrorModal } from '@/app/components/shared/SuccessErrorModal';
+import PermissionGuard from '@/app/(auth)/PermissionGuard';
 
 const TypesModal = ({ 
   isOpen, 
@@ -199,13 +200,15 @@ const TypesModal = ({
                           </button>
                         </td>
                         <td className="px-6 py-4 text-sm">
-                          <button
-                            onClick={() => handleEdit(item.id)}
-                            className="invisible group-hover:visible inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-md transition-colors"
-                          >
-                            <FiEdit3 className="w-3 h-3 mr-1.5" />
-                            Editar
-                          </button>
+                          <PermissionGuard permission={36}>
+                            <button
+                              onClick={() => handleEdit(item.id)}
+                              className="invisible group-hover:visible inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-md transition-colors"
+                            >
+                              <FiEdit3 className="w-3 h-3 mr-1.5" />
+                              Editar
+                            </button>
+                          </PermissionGuard>
                         </td>
                       </tr>
                     ))
@@ -216,14 +219,16 @@ const TypesModal = ({
           </div>
 
           {/* Add Parameter Button */}
-          <div className="flex justify-center">
-            <button
-              onClick={handleAddParameter}
-              className="btn-theme btn-primary"
-            >
-              Añadir parámetro
-            </button>
-          </div>
+          <PermissionGuard permission={35}>
+            <div className="flex justify-center">
+              <button
+                onClick={handleAddParameter}
+                className="btn-theme btn-primary"
+              >
+                Añadir parámetro
+              </button>
+            </div>
+          </PermissionGuard>
         </div>
       </div>
 
