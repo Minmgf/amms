@@ -108,7 +108,8 @@ const ScheduledMaintenancePage = () => {
             // Campos adicionales del API
             assigned_technician_id: item.assigned_technician_id,
             status_id: item.status_id,
-            scheduled_at: item.scheduled_at
+            scheduled_at: item.scheduled_at,
+            request_creation_date: item.request_creation_date,
           };
         });
         
@@ -218,14 +219,16 @@ const ScheduledMaintenancePage = () => {
           <FiEdit3 className="w-3 h-3" /> Actualizar
         </button>
         
-        {/* Cancelar - siempre disponible */}
-        <button
-          onClick={() => handleCancelMaintenance(maintenance.id)}
-          className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-red-300 hover:border-red-500 hover:text-red-600 text-red-600"
-          title="Cancelar mantenimiento"
-        >
-          <FiX className="w-3 h-3" /> Cancelar
-        </button>
+        {/* Cancelar - solo para pendientes */}
+        {![14,15].includes(maintenance.status_id) && (
+          <button
+            onClick={() => handleCancelMaintenance(maintenance.id)}
+            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-red-300 hover:border-red-500 hover:text-red-600 text-red-600"
+            title="Cancelar mantenimiento"
+          >
+            <FiX className="w-3 h-3" /> Cancelar
+          </button>
+        )}
       </div>
     );
   };

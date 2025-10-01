@@ -99,6 +99,20 @@ export const createMaintenanceRequest = async (payload) => {
     return data;
 };
 
+//Obtener detalle de solicitud de mantenimiento
+export const getMaintenanceRequestDetail = async (id_request) => {
+    const { data } = await apiMain.get(`maintenance_request/${id_request}/detail/`);
+    return data;
+};
+
+//MANTENIMIENTOS PROGRAMADOS
+
+//Cancelar mantenimiento programado
+export const cancelScheduledMaintenance = async (id, payload) => {
+    const { data } = await apiMain.post(`maintenance_scheduling/${id}/cancel/`,payload);
+    return data;
+};
+
 // Obtener estados de mantenimiento programado
 export const getMaintenanceSchedulingStatuses = async () => {
     const { data } = await apiMain.get("/statues/list/5/");
