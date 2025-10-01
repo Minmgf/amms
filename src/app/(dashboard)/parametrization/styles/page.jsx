@@ -5,6 +5,8 @@ import NavigationMenu from '../../../components/parametrization/ParameterNavigat
 import ColorPickerModal from '../../../components/parametrization/ColorPickerModal';
 import NewThemeModal from '../../../components/parametrization/NewThemeModal';
 import { useTheme } from '@/contexts/ThemeContext';
+import PermissionGuard from '@/app/(auth)/PermissionGuard';
+import { usePermissions } from "@/contexts/PermissionsContext";
 
 // Enhanced Color Picker Component with Modal
 const ColorPicker = ({ color, onChange, label, onOpenColorPicker }) => (
@@ -39,7 +41,8 @@ const SelectField = ({ value, onChange, options, label }) => (
 // Main Component
 const StylesParameterizationView = () => {
   const [activeMenuItem, setActiveMenuItem] = useState('Estilos');
-  
+  const { hasPermission } = usePermissions();
+  const canViewStyles = hasPermission(75);
   // Usar el contexto de tema global
   const {
     currentTheme,
@@ -366,7 +369,7 @@ const StylesParameterizationView = () => {
                       value={currentTheme || ''}
                       onChange={(e) => handleThemeChange(e.target.value)}
                       className="input-theme"
-                      disabled={isLoading}
+                      disabled={isLoading || !canViewStyles}
                     >
                       <option value="">Seleccionar tema...</option>
                       {getThemeNames().map(themeKey => (
@@ -375,14 +378,16 @@ const StylesParameterizationView = () => {
                         </option>
                       ))}
                     </select>
-                    <button 
-                      onClick={handleOpenNewThemeModal}
-                      className="btn-theme btn-primary"
-                      title="Crear nuevo tema"
-                      disabled={isLoading}
-                    >
-                      <FiPlus className="w-4 h-4" />
-                    </button>
+                    <PermissionGuard permission={71}>
+                      <button 
+                        onClick={handleOpenNewThemeModal}
+                        className="btn-theme btn-primary"
+                        title="Crear nuevo tema"
+                        disabled={isLoading}
+                      >
+                        <FiPlus className="w-4 h-4" />
+                      </button>
+                    </PermissionGuard>
                     <button 
                       onClick={handleRefreshThemes}
                       className="btn-theme btn-secondary"
@@ -497,23 +502,25 @@ const StylesParameterizationView = () => {
               </div>
 
               {/* Save Button */}
-              <button
-                onClick={handleSaveChanges}
-                disabled={isSaving || isLoading}
-                className="btn-theme btn-primary w-full py-3 font-medium flex items-center justify-center space-x-2"
-              >
-                {isSaving ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Guardando...</span>
-                  </>
-                ) : (
-                  <>
-                    <FiSave className="w-4 h-4" />
-                    <span>Guardar en API</span>
-                  </>
-                )}
-              </button>
+              <PermissionGuard permission={73}>
+                <button
+                  onClick={handleSaveChanges}
+                  disabled={isSaving || isLoading}
+                  className="btn-theme btn-primary w-full py-3 font-medium flex items-center justify-center space-x-2"
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Guardando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FiSave className="w-4 h-4" />
+                      <span>Guardar en API</span>
+                    </>
+                  )}
+                </button>
+              </PermissionGuard>
             </div>
 
             {/* Right Panel - Preview */}

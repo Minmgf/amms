@@ -11,6 +11,7 @@ import {
   SuccessModal,
   ErrorModal,
 } from "@/app/components/shared/SuccessErrorModal";
+import PermissionGuard from "@/app/(auth)/PermissionGuard";
 
 const AddModifyUnitModal = ({
   isOpen,
@@ -382,24 +383,26 @@ const AddModifyUnitModal = ({
           )}
 
           {/* Row 3: Toggle */}
-          <div className="flex justify-center items-center space-x-4 mb-6">
-            <span className="text-sm font-medium text-gray-700">
-              Activar/Desactivar
-            </span>
-            <button
-              type="button"
-              onClick={handleToggleChange}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
-                formData.isActive ? "bg-red-500" : "bg-gray-300"
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  formData.isActive ? "translate-x-6" : "translate-x-1"
+          <PermissionGuard permission={47}>
+            <div className="flex justify-center items-center space-x-4 mb-6">
+              <span className="text-sm font-medium text-gray-700">
+                Activar/Desactivar
+              </span>
+              <button
+                type="button"
+                onClick={handleToggleChange}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
+                  formData.isActive ? "bg-red-500" : "bg-gray-300"
                 }`}
-              />
-            </button>
-          </div>
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    formData.isActive ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+          </PermissionGuard>
 
           {/* Action Button */}
           <div className="flex justify-center">
