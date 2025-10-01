@@ -39,8 +39,7 @@ import {
   ErrorModal,
 } from "@/app/components/shared/SuccessErrorModal";
 import {
-  getMaintenanceRequests, // Remover esta línea
-  getMaintenanceRequestList, // Agregar esta línea
+  getMaintenanceRequestList,
   getActiveTechnicians,
   getMaintenanceTypes,
   createMaintenanceScheduling,
@@ -187,21 +186,6 @@ const SolicitudesMantenimientoView = () => {
     loadModalData();
   }, []);
 
-  useEffect(() => {
-    // Verificar si el usuario tiene el permiso maintenance_request.reject
-    // Esto dependerá de tu sistema de permisos
-    const checkPermissions = async () => {
-      try {
-        // Ejemplo: const hasPermission = await checkUserPermission('maintenance_request.reject');
-        // setCanRejectRequests(hasPermission);
-      } catch (error) {
-        console.error("Error verificando permisos:", error);
-      }
-    };
-
-    checkPermissions();
-  }, []);
-
   // Aplicar filtros cuando cambien los datos o los filtros
   useEffect(() => {
     applyFilters();
@@ -227,16 +211,23 @@ const SolicitudesMantenimientoView = () => {
         // Mapear la respuesta al formato esperado por la tabla con peticiones adicionales para obtener nombres de solicitantes
         const mappedDataPromises = response.data.map(async (item) => {
           let requesterName = `Usuario #${item.requester_id}`;
-          
+
           // Hacer petición adicional para obtener nombre del solicitante
           if (item.requester_id) {
             try {
               const userResponse = await getUserInfo(item.requester_id);
-              if (userResponse.success && userResponse.data && userResponse.data.length > 0) {
+              if (
+                userResponse.success &&
+                userResponse.data &&
+                userResponse.data.length > 0
+              ) {
                 requesterName = userResponse.data[0].name;
               }
             } catch (userError) {
-              console.error(`Error fetching user info for requester ${item.requester_id}:`, userError);
+              console.error(
+                `Error fetching user info for requester ${item.requester_id}:`,
+                userError
+              );
               // Mantener el valor por defecto si falla la petición
             }
           }
@@ -248,24 +239,28 @@ const SolicitudesMantenimientoView = () => {
             serial_number: item.machinery_serial || "N/A",
             requester: requesterName,
             maintenance_type: item.maintenance_type_name || "N/A",
-            request_date: item.fecha_solicitud ? `${item.fecha_solicitud}T12:00:00Z` : null,
+            request_date: item.fecha_solicitud
+              ? `${item.fecha_solicitud}T12:00:00Z`
+              : null,
             priority: item.priority_name || "Media",
             status: item.status_name || "Pendiente",
             description: "", // No viene en la respuesta actual
             justification: null, // No viene en la respuesta actual
             // Campos adicionales del API
             requester_id: item.requester_id,
-            status_id: item.status_id
+            status_id: item.status_id,
           };
         });
-        
+
         // Esperar a que todas las peticiones se completen
         const formattedData = await Promise.all(mappedDataPromises);
         setMaintenanceData(formattedData);
 
         // Extraer valores únicos para los filtros
         const requesters = [
-          ...new Set(formattedData.map((item) => item.requester).filter(Boolean)),
+          ...new Set(
+            formattedData.map((item) => item.requester).filter(Boolean)
+          ),
         ];
         const types = [
           ...new Set(
@@ -273,20 +268,24 @@ const SolicitudesMantenimientoView = () => {
           ),
         ];
         const priorities = [
-          ...new Set(formattedData.map((item) => item.priority).filter(Boolean)),
+          ...new Set(
+            formattedData.map((item) => item.priority).filter(Boolean)
+          ),
         ];
 
         setAvailableRequesters(requesters);
         setAvailableMaintenanceTypes(types);
         setAvailablePriorities(priorities);
       } else {
-        setError('Error al cargar las solicitudes de mantenimiento');
+        setError("Error al cargar las solicitudes de mantenimiento");
         setMaintenanceData(sampleMaintenanceData);
       }
     } catch (err) {
       console.error("Error cargando solicitudes:", err);
-      setError('Error al conectar con el servidor. Por favor, intenta de nuevo.');
-      
+      setError(
+        "Error al conectar con el servidor. Por favor, intenta de nuevo."
+      );
+
       // Si falla, usar datos de ejemplo
       setMaintenanceData(sampleMaintenanceData);
 
@@ -692,13 +691,15 @@ const SolicitudesMantenimientoView = () => {
               )}
 
               {canReject && (
-                <button
-                  onClick={() => handleCancel(request)}
-                  className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-red-300 hover:border-red-500 hover:text-red-600 text-red-600"
-                  title="Rechazar solicitud"
-                >
-                  <FaBan className="w-3 h-3" /> Rechazar
-                </button>
+                <PermissionGuard permission={122}>
+                  <button
+                    onClick={() => handleCancel(request)}
+                    className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-red-300 hover:border-red-500 hover:text-red-600 text-red-600"
+                    title="Rechazar solicitud"
+                  >
+                    <FaBan className="w-3 h-3" /> Rechazar
+                  </button>
+                </PermissionGuard>
               )}
             </div>
           );
