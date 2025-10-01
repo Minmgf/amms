@@ -39,12 +39,14 @@ import {
   ErrorModal,
 } from "@/app/components/shared/SuccessErrorModal";
 import {
-  getMaintenanceRequests, // Agregar esta línea
+  getMaintenanceRequests, // Remover esta línea
+  getMaintenanceRequestList, // Agregar esta línea
   getActiveTechnicians,
   getMaintenanceTypes,
   createMaintenanceScheduling,
   rejectMaintenanceRequest, // Agregar si no está
 } from "@/services/maintenanceService";
+import { getUserInfo } from "@/services/authService";
 
 const SolicitudesMantenimientoView = () => {
   // Estado para el filtro global
@@ -204,46 +206,72 @@ const SolicitudesMantenimientoView = () => {
 
     try {
       // Cargar datos reales desde el backend
-      //const response = await getMaintenanceRequests();
+      const response = await getMaintenanceRequestList();
 
-      // Mapear la respuesta al formato esperado por la tabla
-      // const formattedData =
-      //   response.data?.map((item) => ({
-      //     id: item.id_maintenance_request,
-      //     machine_id: item.id_machinery,
-      //     machine_name: item.machinery_name || "N/A",
-      //     serial_number: item.machinery_serial || "N/A",
-      //     requester: item.requester_name || "N/A",
-      //     maintenance_type: item.maintenance_type_name || "N/A",
-      //     request_date: item.created_at,
-      //     priority: item.priority || "Media",
-      //     status: item.status_name || "Pendiente",
-      //     description: item.description || "",
-      //     justification: item.justification || null,
-      //   })) || [];
+      if (response.success) {
+        // Mapear la respuesta al formato esperado por la tabla con peticiones adicionales para obtener nombres de solicitantes
+        const mappedDataPromises = response.data.map(async (item) => {
+          let requesterName = `Usuario #${item.requester_id}`;
+          
+          // Hacer petición adicional para obtener nombre del solicitante
+          if (item.requester_id) {
+            try {
+              const userResponse = await getUserInfo(item.requester_id);
+              if (userResponse.success && userResponse.data && userResponse.data.length > 0) {
+                requesterName = userResponse.data[0].name;
+              }
+            } catch (userError) {
+              console.error(`Error fetching user info for requester ${item.requester_id}:`, userError);
+              // Mantener el valor por defecto si falla la petición
+            }
+          }
 
-      //setMaintenanceData(formattedData);
-      setMaintenanceData(sampleMaintenanceData);
+          return {
+            id: item.id,
+            machine_id: item.requester_id, // Usar requester_id como machine_id temporal
+            machine_name: item.machinery_name || "N/A",
+            serial_number: item.machinery_serial || "N/A",
+            requester: requesterName,
+            maintenance_type: item.maintenance_type_name || "N/A",
+            request_date: item.fecha_solicitud ? `${item.fecha_solicitud}T12:00:00Z` : null,
+            priority: item.priority_name || "Media",
+            status: item.status_name || "Pendiente",
+            description: "", // No viene en la respuesta actual
+            justification: null, // No viene en la respuesta actual
+            // Campos adicionales del API
+            requester_id: item.requester_id,
+            status_id: item.status_id
+          };
+        });
+        
+        // Esperar a que todas las peticiones se completen
+        const formattedData = await Promise.all(mappedDataPromises);
+        setMaintenanceData(formattedData);
 
-      // Extraer valores únicos para los filtros
-      // const requesters = [
-      //   ...new Set(formattedData.map((item) => item.requester).filter(Boolean)),
-      // ];
-      // const types = [
-      //   ...new Set(
-      //     formattedData.map((item) => item.maintenance_type).filter(Boolean)
-      //   ),
-      // ];
-      // const priorities = [
-      //   ...new Set(formattedData.map((item) => item.priority).filter(Boolean)),
-      // ];
+        // Extraer valores únicos para los filtros
+        const requesters = [
+          ...new Set(formattedData.map((item) => item.requester).filter(Boolean)),
+        ];
+        const types = [
+          ...new Set(
+            formattedData.map((item) => item.maintenance_type).filter(Boolean)
+          ),
+        ];
+        const priorities = [
+          ...new Set(formattedData.map((item) => item.priority).filter(Boolean)),
+        ];
 
-      // setAvailableRequesters(requesters);
-      // setAvailableMaintenanceTypes(types);
-      // setAvailablePriorities(priorities);
+        setAvailableRequesters(requesters);
+        setAvailableMaintenanceTypes(types);
+        setAvailablePriorities(priorities);
+      } else {
+        setError('Error al cargar las solicitudes de mantenimiento');
+        setMaintenanceData(sampleMaintenanceData);
+      }
     } catch (err) {
       console.error("Error cargando solicitudes:", err);
-
+      setError('Error al conectar con el servidor. Por favor, intenta de nuevo.');
+      
       // Si falla, usar datos de ejemplo
       setMaintenanceData(sampleMaintenanceData);
 

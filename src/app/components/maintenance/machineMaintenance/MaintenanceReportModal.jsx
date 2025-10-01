@@ -559,7 +559,7 @@ export default function MaintenanceReportModal({
                     {techniciansOptions
                       .filter(
                         (t) => !form.technicians.find((ft) => ft.id === t.id)
-                      
+                      )
                       .map((tech) => (
                         <option key={tech.id} value={tech.id}>
                           {tech.name}

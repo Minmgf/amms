@@ -124,3 +124,9 @@ export const createMaintenanceRequest = async (payload) => {
     const { data } = await apiMain.post("/maintenance_request/create/", payload);
     return data;
 };
+
+// Obtener estados de mantenimiento programado
+export const getMaintenanceSchedulingStatuses = async () => {
+    const { data } = await apiMain.get("/statues/list/5/");
+    return data;
+};
