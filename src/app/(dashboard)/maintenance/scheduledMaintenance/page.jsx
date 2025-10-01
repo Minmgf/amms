@@ -11,167 +11,7 @@ import CancelScheduledMaintenance from '@/app/components/scheduledMaintenance/Ca
 import { SuccessModal, ErrorModal } from '@/app/components/shared/SuccessErrorModal';
 import TableList from '@/app/components/shared/TableList';
 import { useTheme } from '@/contexts/ThemeContext';
-import { getMaintenanceList } from '@/services/maintenanceService';
-
-// Datos de prueba
-const mockMaintenanceData = [
-  {
-    id: 1,
-    machinery: {
-      name: "Trilladora",
-      serial: "CAT99D5GPWGB01279",
-      image: "/images/machinery1.jpg"
-    },
-    maintenanceDate: "2025-09-25", // Vencido
-    technician: "Cristiano Ronaldo",
-    status: "Pendiente",
-    type: "Preventivo",
-    details: "Mantenimiento preventivo rutinario de la trilladora. Incluye revisión de filtros, cambio de aceite y verificación de sistemas hidráulicos."
-  },
-  {
-    id: 2,
-    machinery: {
-      name: "Tractor para remolque",
-      serial: "CAT99D5GPWGB01280",
-      image: "/images/machinery2.jpg"
-    },
-    maintenanceDate: "2025-09-29", // Hoy
-    technician: "Juan Manuel",
-    status: "Pendiente",
-    type: "Correctivo",
-    details: "Reparación urgente del sistema de transmisión. Se detectaron ruidos anormales durante la operación."
-  },
-  {
-    id: 3,
-    machinery: {
-      name: "Tractor Agrícola",
-      serial: "CAT99D5GPWGB01281",
-      image: "/images/machinery3.jpg"
-    },
-    maintenanceDate: "2025-10-05", // Próximo (vigente)
-    technician: "Kaleth Morales",
-    status: "Pendiente",
-    type: "Preventivo",
-    details: "Revisión general programada. Verificación de todos los sistemas operativos y componentes de seguridad."
-  },
-  {
-    id: 4,
-    machinery: {
-      name: "Excavadora",
-      serial: "CAT99D5GPWGB01282",
-      image: "/images/machinery4.jpg"
-    },
-    maintenanceDate: "2025-09-28", // Ayer (realizado)
-    technician: "Ana García",
-    status: "Realizado",
-    type: "Correctivo",
-    details: "Mantenimiento completado exitosamente. Se reemplazó el sistema hidráulico y se calibraron los controles."
-  },
-  {
-    id: 5,
-    machinery: {
-      name: "Grúa Móvil",
-      serial: "CAT99D5GPWGB01283",
-      image: "/images/machinery5.jpg"
-    },
-    maintenanceDate: "2025-08-15", // Vencido
-    technician: "Pedro López",
-    status: "Cancelado",
-    type: "Preventivo",
-    details: "Mantenimiento cancelado debido a la indisponibilidad de repuestos críticos."
-  },
-  {
-    id: 6,
-    machinery: {
-      name: "Bulldozer",
-      serial: "CAT99D5GPWGB01284",
-      image: "/images/machinery6.jpg"
-    },
-    maintenanceDate: "2025-10-12", // Próximo
-    technician: "Carlos Rodríguez",
-    status: "Pendiente",
-    type: "Preventivo",
-    details: "Mantenimiento preventivo de 500 horas. Incluye cambio de filtros, aceites y revisión completa de orugas."
-  },
-  {
-    id: 7,
-    machinery: {
-      name: "Cargadora Frontal",
-      serial: "CAT99D5GPWGB01285",
-      image: "/images/machinery7.jpg"
-    },
-    maintenanceDate: "2025-10-08", // Próximo
-    technician: "María González",
-    status: "Pendiente",
-    type: "Correctivo",
-    details: "Reparación del sistema de levante. Se detectó fuga de aceite hidráulico en cilindros principales."
-  },
-  {
-    id: 8,
-    machinery: {
-      name: "Retroexcavadora",
-      serial: "CAT99D5GPWGB01286",
-      image: "/images/machinery8.jpg"
-    },
-    maintenanceDate: "2025-09-20", // Vencido
-    technician: "Luis Martínez",
-    status: "Pendiente",
-    type: "Preventivo",
-    details: "Mantenimiento preventivo trimestral. Verificación de sistemas operativos y componentes de desgaste."
-  },
-  {
-    id: 9,
-    machinery: {
-      name: "Compactadora",
-      serial: "CAT99D5GPWGB01287",
-      image: "/images/machinery9.jpg"
-    },
-    maintenanceDate: "2025-10-15", // Próximo
-    technician: "Andrea Silva",
-    status: "Pendiente",
-    type: "Preventivo",
-    details: "Mantenimiento de rodillo compactador. Revisión de sistemas vibratorios y cambio de filtros."
-  },
-  {
-    id: 10,
-    machinery: {
-      name: "Motoniveladora",
-      serial: "CAT99D5GPWGB01288",
-      image: "/images/machinery10.jpg"
-    },
-    maintenanceDate: "2025-09-27", // Realizado ayer
-    technician: "Roberto Torres",
-    status: "Realizado",
-    type: "Correctivo",
-    details: "Reparación completada del sistema de dirección. Se calibraron los sensores y se verificó el funcionamiento."
-  },
-  {
-    id: 11,
-    machinery: {
-      name: "Camión Volquete",
-      serial: "CAT99D5GPWGB01289",
-      image: "/images/machinery11.jpg"
-    },
-    maintenanceDate: "2025-09-26", // Mantenimiento para el 26
-    technician: "Juan Carlos Bodden",
-    status: "Pendiente",
-    type: "Preventivo",
-    details: "Mantenimiento preventivo programado para el 26. Revisión de frenos y sistema de volteo."
-  }
-];
-
-const mockTechnicians = [
-  "Cristiano Ronaldo",
-  "Juan Manuel", 
-  "Kaleth Morales",
-  "Ana García",
-  "Pedro López",
-  "Carlos Rodríguez",
-  "María González",
-  "Luis Martínez",
-  "Andrea Silva",
-  "Roberto Torres"
-];
+import { getScheduledMaintenanceList } from '@/services/maintenanceService';
 
 const ScheduledMaintenancePage = () => {
   const { currentTheme } = useTheme();
@@ -209,15 +49,35 @@ const ScheduledMaintenancePage = () => {
     setLoading(true);
     setError(null);
     try {
-      // Por ahora seguimos usando datos mock, en el futuro será:
-      // const data = await getMaintenanceList();
-      // setMaintenanceData(data);
+      const response = await getScheduledMaintenanceList();
       
-      // Usando datos mock por ahora
-      setMaintenanceData(mockMaintenanceData);
+      if (response.success) {
+        // Mapear los datos del API a la estructura esperada por el componente
+        const mappedData = response.data.map((item) => ({
+          id: item.id_maintenance_scheduling,
+          machinery: {
+            name: item.machinery_name || 'N/A',
+            serial: item.machinery_serial || 'N/A',
+            image: item.machinery_image
+          },
+          maintenanceDate: item.scheduled_at ? new Date(item.scheduled_at).toISOString().split('T')[0] : null,
+          technician: item.technician_name || `Técnico #${item.assigned_technician_id}`,
+          status: item.status_name || 'Pendiente',
+          type: 'Programado', // Por defecto, se puede ajustar si viene en el API
+          details: `Mantenimiento programado para ${item.machinery_name}`,
+          // Campos adicionales del API
+          assigned_technician_id: item.assigned_technician_id,
+          status_id: item.status_id,
+          scheduled_at: item.scheduled_at
+        }));
+        
+        setMaintenanceData(mappedData);
+      } else {
+        setError('Error al cargar los mantenimientos programados');
+      }
     } catch (err) {
-      setError('Error al cargar los mantenimientos programados');
-      console.error('Error:', err);
+      setError('Error al conectar con el servidor. Por favor, intenta de nuevo.');
+      console.error('Error loading scheduled maintenance:', err);
     } finally {
       setLoading(false);
     }
@@ -403,6 +263,16 @@ const ScheduledMaintenancePage = () => {
       enableSorting: false,
     },
   ], [maintenanceData]);
+
+  // Obtener técnicos únicos de los datos
+  const uniqueTechnicians = useMemo(() => {
+    const technicians = maintenanceData
+      .map(item => item.technician)
+      .filter(technician => technician && technician !== 'N/A')
+      .filter((technician, index, array) => array.indexOf(technician) === index)
+      .sort();
+    return technicians;
+  }, [maintenanceData]);
 
   // Filtrar datos
   const filteredData = useMemo(() => {
@@ -851,7 +721,7 @@ const ScheduledMaintenancePage = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">Todos los técnicos</option>
-              {mockTechnicians.map((technician) => (
+              {uniqueTechnicians.map((technician) => (
                 <option key={technician} value={technician}>
                   {technician}
                 </option>

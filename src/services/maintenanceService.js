@@ -47,3 +47,9 @@ export const getMaintenanceRequestList = async () => {
     const { data } = await apiMain.get("/maintenance_request/list/");
     return data;
 };
+
+// Lista de mantenimientos programados
+export const getScheduledMaintenanceList = async () => {
+    const { data } = await apiMain.get("/maintenance_scheduling/list/");
+    return data;
+};
