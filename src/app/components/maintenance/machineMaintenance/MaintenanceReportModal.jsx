@@ -1016,7 +1016,7 @@ export default function MaintenanceReportModal({
                         "var(--color-background)")
                     }
                   >
-                    Add
+                    Agregar
                   </button>
                 </div>
               </div>
