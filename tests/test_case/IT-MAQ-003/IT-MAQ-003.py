@@ -1,162 +1,44 @@
-"""
-IT-MAQ-003: Automatización completa del registro de ficha técnica de maquinaria
-
-Este módulo contiene todas las funciones necesarias para automatizar el registro
-de maquinaria en el sistema AMMS, incluyendo login, navegación y completado del formulario multipaso.
-
-Funciones principales disponibles para importación:
-- setup_test_environment(): Configura el entorno de prueba (login + navegación)
-- run_it_maq_003_step1(): Ejecuta solo el paso 1 del formulario
-- run_it_maq_003_step2(): Ejecuta solo el paso 2 del formulario
-- run_it_maq_003_step3(): Ejecuta solo el paso 3 del formulario
-- run_it_maq_003(): Ejecuta la prueba completa hasta paso 3
-- cleanup_test_environment(): Limpia el entorno después de la prueba
-
-Uso desde otros archivos:
-    from test_case.IT_MAQ_003.IT_MAQ_003 import setup_test_environment, run_it_maq_003_step1, run_it_maq_003_step2, run_it_maq_003_step3
-
-    driver = setup_test_environment()
-    driver = run_it_maq_003_step1(driver)
-    driver = run_it_maq_003_step2(driver)
-    driver = run_it_maq_003_step3(driver)
-    # Continuar con paso 4...
-"""
-
 import time
 import sys
 import os
 from pathlib import Path
 
-# Agregar el directorio raíz al path para importar los módulos
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from flows.auth.login.selenium_login_flow import perform_login, save_browser_logs
 from flows.navigation.machinery_navigation import navigate_to_machinery
-
-def create_test_image():
-    """
-    Crea una imagen de prueba simple para subir al formulario.
-
-    Returns:
-        str: Ruta completa del archivo de imagen creado
-    """
-    try:
-        # Intentar crear una imagen real con PIL
-        from PIL import Image, ImageDraw, ImageFont
-
-        # Crear una imagen simple de 100x100 píxeles
-        img = Image.new('RGB', (100, 100), color='lightblue')
-        draw = ImageDraw.Draw(img)
-
-        # Agregar texto a la imagen
-        try:
-            # Intentar usar una fuente del sistema
-            font = ImageFont.truetype("arial.ttf", 12)
-        except:
-            # Usar fuente por defecto si no está disponible
-            font = ImageFont.load_default()
-
-        # Agregar texto
-        text = "Test Image\nTractor"
-        draw.text((10, 30), text, fill='black', font=font)
-
-        # Guardar la imagen
-        test_dir = os.path.dirname(__file__)
-        image_path = os.path.join(test_dir, "test_tractor_image.jpg")
-        img.save(image_path)
-
-        print(f"   Imagen de prueba creada: {image_path}")
-        return image_path
-
-    except ImportError:
-        # Si PIL no está disponible, crear un archivo de texto con extensión .jpg
-        print("   PIL no disponible, creando archivo de texto como imagen de prueba...")
-        test_dir = os.path.dirname(__file__)
-        image_path = os.path.join(test_dir, "test_tractor_image.jpg")
-
-        with open(image_path, 'w') as f:
-            f.write("Test image content for tractor upload\nThis is a placeholder file for testing purposes.")
-
-        print(f"   Archivo de prueba creado: {image_path}")
-        return image_path
-
-def upload_photo(driver, modal_selector="div.modal-theme"):
-    """
-    Sube una foto al formulario de maquinaria.
-
-    Args:
-        driver: Instancia de WebDriver
-        modal_selector: Selector del modal contenedor
-    """
-    try:
-        print("   Subiendo foto del tractor...")
-
-        # Crear imagen de prueba
-        image_path = create_test_image()
-
-        # Encontrar el input file para la foto
-        photo_selector = f"{modal_selector} {formData['Foto']}"
-        photo_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, photo_selector))
-        )
-
-        # Subir el archivo
-        photo_input.send_keys(image_path)
-        print(f"   Foto subida: {os.path.basename(image_path)}")
-
-        # Esperar un momento para que se procese la subida
-        time.sleep(2)
-
-    except Exception as e:
-        print(f"   Error subiendo foto: {str(e)}")
-        raise
-
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
-
-# Importar Faker para generar datos únicos
 from faker import Faker
 
-# Inicializar Faker con semilla basada en timestamp para mayor aleatoriedad
-fake = Faker('es_CO')  # Usar locale colombiano para datos más realistas
-fake.seed_instance(int(time.time() * 1000000))  # Semilla única por microsegundo
+fake = Faker('es_CO')
+fake.seed_instance(int(time.time() * 1000000))
 
 def generate_unique_test_data():
-    """
-    Genera datos únicos de prueba usando Faker para evitar duplicados.
-
-    Returns:
-        dict: Diccionario con datos únicos generados
-    """
-    # Generar timestamp único para asegurar unicidad
     timestamp = str(int(time.time()))
-
-    # Generar datos únicos
     tractor_name = f"Tractor {fake.company()} {fake.random_int(100, 999)}"
     serial_prefix = fake.random_uppercase_letter() + fake.random_uppercase_letter()
-    serial_number = f"{serial_prefix}{fake.random_int(100, 999)}-{timestamp[-4:]}"  # Últimos 4 dígitos del timestamp
+    serial_number = f"{serial_prefix}{fake.random_int(100, 999)}-{timestamp[-4:]}"
 
     return {
         "Nombre": tractor_name,
-        "Año fabricación": str(fake.random_int(2020, 2024)),  # Años recientes
+        "Año fabricación": str(fake.random_int(2020, 2024)),
         "Número de serie": serial_number,
-        "Tipo maquinaria": "Tractor",  # Mantener fijo por simplicidad
-        "Marca": "Deutz",  # Mantener fijo por simplicidad
-        "Modelo": "Seleccione una marca primero",  # Se actualiza dinámicamente
-        "Subpartida arancelaria": "8429.11.00",  # Mantener fijo
-        "Categoría maquinaria": "Maquinaria amarilla",  # Mantener fijo
-        "País": "Colombia",  # Mantener fijo
-        "Región": "Antioquia",  # Mantener fijo
-        "Ciudad": "Medellín",  # Mantener fijo
-        "Telemetría": "Teltonika FMB140"  # Mantener fijo
+        "Tipo maquinaria": "Tractor",
+        "Marca": "Deutz",
+        "Modelo": "Seleccione una marca primero",
+        "Subpartida arancelaria": "8429.11.00",
+        "Categoría maquinaria": "Maquinaria amarilla",
+        "País": "Colombia",
+        "Región": "Antioquia",
+        "Ciudad": "Medellín",
+        "Telemetría": "Teltonika FMB140"
     }
 
-# Generar datos únicos para esta ejecución
 test_data = generate_unique_test_data()
 
-# Datos para el paso 2
 step2_test_data = {
     "Número de serie del terminal": f"TERM{fake.random_int(100000, 999999)}",
     "Número de chasis": f"CHAS{fake.random_int(100000, 999999)}",
@@ -164,68 +46,47 @@ step2_test_data = {
     "Número de motor": f"MOT{fake.random_int(100000, 999999)}"
 }
 
-# Datos para el paso 3
 step3_test_data = {
-    # Sección Motor
     "enginePower": str(fake.random_int(100, 300)),
-    "enginePowerUnit": "HP",
+    "enginePowerUnit": "k/h",
     "engineType": "diesel",
     "cylinderCapacity": str(fake.random_int(3000, 8000)),
-    "cylinderCapacityUnit": "cc",
+    "cylinderCapacityUnit": "m³",
     "cylinderNumber": str(fake.random_int(4, 8)),
     "arrangement": "L",
     "traction": "4x4",
     "fuelConsumption": str(fake.random_int(5, 15)),
-    "fuelConsumptionUnit": "L/h",
+    "fuelConsumptionUnit": "m³/s",
     "transmissionSystem": "manual",
-
-    # Sección Capacidad y Rendimiento
     "tankCapacity": str(fake.random_int(100, 500)),
-    "tankCapacityUnit": "L",
+    "tankCapacityUnit": "m³",
     "carryingCapacity": str(fake.random_int(1000, 5000)),
     "carryingCapacityUnit": "kg",
     "draftForce": str(fake.random_int(20, 100)),
     "draftForceUnit": "kN",
     "operatingWeight": str(fake.random_int(3000, 8000)),
-    "operatingWeightUnit": "kg",
+    "operatingWeightUnit": "t",
     "maxSpeed": str(fake.random_int(20, 50)),
     "maxSpeedUnit": "km/h",
     "maxOperatingAltitude": str(fake.random_int(2000, 4000)),
     "maxOperatingAltitudeUnit": "msnm",
     "performanceMin": str(fake.random_int(80, 95)),
     "performanceMax": str(fake.random_int(95, 100)),
-
-    # Sección Dimensiones y Peso
+    "performanceUnit": "Hz",
     "dimensionsUnit": "m",
-    "width": str(fake.random_int(150, 250) / 100),  # metros
-    "length": str(fake.random_int(300, 500) / 100),  # metros
-    "height": str(fake.random_int(200, 350) / 100),  # metros
+    "width": str(fake.random_int(150, 250) / 100),
+    "length": str(fake.random_int(300, 500) / 100),
+    "height": str(fake.random_int(200, 350) / 100),
     "netWeight": str(fake.random_int(2500, 7000)),
-    "netWeightUnit": "kg",
-
-    # Sección Sistemas Auxiliares e Hidráulicos
-    "airConditioning": "Aire Acondicionado",
-    "airConditioningConsumption": str(fake.random_int(1, 10)),
-    "airConditioningConsumptionUnit": "kWh",
-    "maxHydraulicPressure": str(fake.random_int(150, 300)),
-    "maxHydraulicPressureUnit": "bar",
-    "hydraulicPumpFlowRate": str(fake.random_int(50, 150)),
-    "hydraulicPumpFlowRateUnit": "L/min",
-    "hydraulicReservoirCapacity": str(fake.random_int(50, 200)),
-    "hydraulicReservoirCapacityUnit": "L"
-    # Eliminados campos que no existen: airConditioning, hydraulic fields
-
-    # Secciones 4 y 5 eliminadas - no disponibles en UI actual
+    "netWeightUnit": "t"
 }
 
-# Mostrar datos generados para esta ejecución
 print("🎲 Datos únicos generados para esta prueba:")
 print(f"   📝 Nombre: {test_data['Nombre']}")
 print(f"   📅 Año fabricación: {test_data['Año fabricación']}")
 print(f"   🔢 Número de serie: {test_data['Número de serie']}")
 print("-" * 50)
 
-# Configuración del formulario - actualizada con selectores correctos basados en atributos name
 formData = {
     "Nombre": 'input[name="name"]',
     "Año fabricación": 'select[name="manufactureYear"]',
@@ -242,7 +103,6 @@ formData = {
     "Foto": 'input[type="file"]',
 }
 
-# Selectores del paso 2 - usando XPath como especificado
 step2_selectors = {
     "Número de serie del terminal": "//input[@placeholder='Ingrese el número de serie del terminal']",
     "Número de chasis": "//input[@placeholder='Ingrese el número de chasis']",
@@ -251,85 +111,55 @@ step2_selectors = {
     "Siguiente": "//button[normalize-space()='Siguiente']"
 }
 
-# Selectores del paso 3 - organizados por secciones
 step3_selectors = {
-    # Sección Motor (primera sección, ya desplegada)
     "enginePower": "//input[@name='enginePower']",
-    "enginePowerUnit": "//select[@name='enginePowerUnit']",
+    "enginePowerUnit": "//select[@aria-label='Engine Power Unit Select']",
     "engineType": "//select[@name='engineType']",
     "cylinderCapacity": "//input[@name='cylinderCapacity']",
-    "cylinderCapacityUnit": "//select[@name='cylinderCapacityUnit']",
+    "cylinderCapacityUnit": "//select[@aria-label='Cylinder Capacity Unit Select']",
     "cylinderNumber": "//input[@placeholder='Número']",
     "arrangement": "//select[@name='arrangement']",
     "traction": "//select[@name='traction']",
     "fuelConsumption": "//input[@name='fuelConsumption']",
-    "fuelConsumptionUnit": "//select[@name='fuelConsumptionUnit']",
+    "fuelConsumptionUnit": "//select[@aria-label='Fuel Consumption Unit Select']",
     "transmissionSystem": "//select[@name='transmissionSystem']",
-
-    # Botón para abrir segunda sección
     "capacidad_rendimiento": "//span[normalize-space()='Capacidad y Rendimiento']",
-
-    # Sección Capacidad y Rendimiento
     "tankCapacity": "//input[@name='tankCapacity']",
-    "tankCapacityUnit": "//select[@name='tankCapacityUnit']",
+    "tankCapacityUnit": "//select[@aria-label='Tank Capacity Unit Select']",
     "carryingCapacity": "//input[@name='carryingCapacity']",
     "carryingCapacityUnit": "//select[@name='carryingCapacityUnit']",
     "draftForce": "//input[@name='draftForce']",
     "draftForceUnit": "//select[@name='draftForceUnit']",
     "operatingWeight": "//input[@name='operatingWeight']",
-    "operatingWeightUnit": "//select[@name='operatingWeightUnit']",
+    "operatingWeightUnit": "//select[@aria-label='Operating Weight Unit Select']",
     "maxSpeed": "//input[@name='maxSpeed']",
     "maxSpeedUnit": "//select[@name='maxSpeedUnit']",
     "maxOperatingAltitude": "//input[@name='maxOperatingAltitude']",
     "maxOperatingAltitudeUnit": "//select[@name='maxOperatingAltitudeUnit']",
     "performanceMin": "//input[@name='performanceMin']",
     "performanceMax": "//input[@name='performanceMax']",
-
-    # Botón para abrir tercera sección
+    "performanceUnit": "//select[@name='performanceUnit']",
     "dimensiones_peso": "//button[@aria-label='Collapse Dimensiones y Peso Section']",
-
-    # Sección Dimensiones y Peso
     "dimensionsUnit": "//select[@name='dimensionsUnit']",
     "width": "//input[@name='width']",
     "length": "//input[@name='length']",
     "height": "//input[@name='height']",
     "netWeight": "//input[@name='netWeight']",
-    "netWeightUnit": "//select[@name='netWeightUnit']",
-
-    # Botón siguiente para pasar al paso 4
+    "netWeightUnit": "//select[@aria-label='Net Weight Unit Select']",
     "Siguiente": "//button[normalize-space()='Siguiente']"
 }
 
 def fill_form_field(driver, field_name, selector, value, field_type="input", modal_selector="div.modal-theme"):
-    """
-    Completa un campo del formulario de manera genérica.
-
-    Args:
-        driver: Instancia de WebDriver
-        field_name: Nombre del campo para logging
-        selector: Selector CSS del campo
-        value: Valor a ingresar
-        field_type: Tipo de campo ("input", "select", "file")
-        modal_selector: Selector del modal contenedor
-    """
     try:
-        print(f"   Completando campo '{field_name}': '{value}'")
-
-        # Construir selector completo incluyendo el modal
         full_selector = f"{modal_selector} {selector}"
-        print(f"   Selector completo: {full_selector}")
-
-        # Esperar a que el campo esté disponible
         wait = WebDriverWait(driver, 10)
 
         if field_type == "select":
-            # Para selectores, usar Select de Selenium
             select_element = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, full_selector)))
             select = Select(select_element)
             select.select_by_visible_text(value)
             print(f"   Seleccionado '{value}' en {field_name}")
         else:
-            # Para inputs normales
             input_element = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, full_selector)))
             input_element.clear()
             input_element.send_keys(value)
@@ -338,243 +168,40 @@ def fill_form_field(driver, field_name, selector, value, field_type="input", mod
     except Exception as e:
         print(f"   Error completando campo '{field_name}': {str(e)}")
 
-        # Intentar sin modal_selector como fallback
-        try:
-            print(f"   Intentando sin modal_selector...")
-            if field_type == "select":
-                select_element = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, selector)))
-                select = Select(select_element)
-                select.select_by_visible_text(value)
-                print(f"   Seleccionado '{value}' en {field_name} (sin modal)")
-            else:
-                input_element = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, selector)))
-                input_element.clear()
-                input_element.send_keys(value)
-                print(f"   Ingresado '{value}' en {field_name} (sin modal)")
-        except Exception as e2:
-            print(f"   Error persistente completando campo '{field_name}': {str(e2)}")
-            raise e
-
 def fill_xpath_field(driver, field_name, xpath_selector, value, field_type="input"):
-    """
-    Completa un campo usando XPath selector.
-
-    Args:
-        driver: Instancia de WebDriver
-        field_name: Nombre del campo para logging
-        xpath_selector: Selector XPath del campo
-        value: Valor a ingresar
-        field_type: Tipo de campo ("input", "select")
-    """
     try:
-        print(f"   Completando campo '{field_name}': '{value}'")
-        print(f"   Usando selector XPath: {xpath_selector}")
-
         wait = WebDriverWait(driver, 10)
 
         if field_type == "select":
-            # Para selectores, usar Select de Selenium
             select_element = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_selector)))
             select = Select(select_element)
-
-            # Mostrar opciones disponibles para debugging
-            options = select.options
-            available_options = [opt.text for opt in options if opt.text.strip()]
-            print(f"   📋 Opciones disponibles: {available_options}")
-
-            # Intentar seleccionar por texto visible
-            try:
-                select.select_by_visible_text(value)
-                print(f"   ✅ Seleccionado '{value}' en {field_name}")
-            except:
-                # Si falla, intentar con la primera opción disponible (excepto placeholders)
-                valid_options = [opt for opt in available_options if opt not in ["", "Seleccionar...", "Seleccione...", "Seleccionar tipo", "Seleccionar disposición", "Seleccionar tracción", "Seleccionar transmisión"]]
-                if valid_options:
-                    select.select_by_visible_text(valid_options[0])
-                    print(f"   ✅ Seleccionado '{valid_options[0]}' en {field_name} (fallback)")
-                else:
-                    print(f"   ⚠️  No hay opciones válidas para {field_name}, dejando vacío")
+            select.select_by_visible_text(value)
+            print(f"   Seleccionado '{value}' en {field_name}")
         else:
-            # Para inputs normales
             input_element = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_selector)))
             input_element.clear()
             input_element.send_keys(value)
-            print(f"   ✅ Ingresado '{value}' en {field_name}")
+            print(f"   Ingresado '{value}' en {field_name}")
 
     except Exception as e:
-        print(f"   ❌ Error completando campo '{field_name}': {str(e)}")
-        # No relanzar el error para continuar con otros campos
+        print(f"   Error completando campo '{field_name}': {str(e)}")
 
 def click_xpath_element(driver, element_name, xpath_selector):
-    """
-    Hace click en un elemento usando XPath selector.
-
-    Args:
-        driver: Instancia de WebDriver
-        element_name: Nombre del elemento para logging
-        xpath_selector: Selector XPath del elemento
-    """
     try:
-        print(f"   Click en '{element_name}'")
-        print(f"   Usando selector XPath: {xpath_selector}")
-
         wait = WebDriverWait(driver, 10)
         element = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_selector)))
         element.click()
-        print(f"   ✅ Click realizado en {element_name}")
-
-        # Pequeña pausa para que se procese la acción
-        time.sleep(1)
+        print(f"   Click en {element_name}")
 
     except Exception as e:
-        print(f"   ❌ Error haciendo click en '{element_name}': {str(e)}")
-        raise
-
-def open_machinery_form(driver):
-    """
-    Abre el formulario de añadir maquinaria.
-
-    Args:
-        driver: Instancia de WebDriver ya en el módulo maquinaria
-
-    Returns:
-        WebDriver: Driver con el formulario abierto
-    """
-    try:
-        print("Buscando boton 'Agregar maquinaria'...")
-
-        # Usar el selector XPath específico proporcionado
-        button_selector = "//button[normalize-space()='Agregar maquinaria']"
-
-        wait = WebDriverWait(driver, 15)
-        print(f"   Usando selector XPath: {button_selector}")
-
-        add_button = wait.until(EC.element_to_be_clickable((By.XPATH, button_selector)))
-        print("   Boton 'Agregar maquinaria' encontrado")
-
-        add_button.click()
-        print("Click realizado en boton 'Agregar maquinaria'")
-
-        # Esperar a que aparezca el modal
-        time.sleep(2)  # Espera inicial para que se cargue el modal
-
-        # Cambiar contexto al modal
-        modal_selector = "div.modal-theme"
-        try:
-            wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, modal_selector)))
-            print("Modal detectado, cambiando contexto...")
-        except:
-            print("Modal no detectado con selector estandar, intentando alternativas...")
-            # Intentar otros selectores para el modal
-            alternative_selectors = [
-                "div[class*='modal']",
-                ".modal",
-                "[role='dialog']",
-                "div[style*='position: fixed']"
-            ]
-            modal_found = False
-            for alt_selector in alternative_selectors:
-                try:
-                    wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, alt_selector)))
-                    modal_selector = alt_selector
-                    print(f"Modal encontrado con selector alternativo: {alt_selector}")
-                    modal_found = True
-                    break
-                except:
-                    continue
-
-            if not modal_found:
-                print("No se pudo detectar el modal")
-                raise Exception("Modal de formulario no encontrado")
-
-        # Verificar que el formulario se abrió dentro del modal
-        try:
-            wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, formData["Nombre"])))
-            print("Formulario de maquinaria abierto correctamente dentro del modal")
-
-            # Mostrar información de campos disponibles
-            print("Analisis de campos en el modal:")
-
-            # Inputs
-            inputs = driver.find_elements(By.CSS_SELECTOR, f"{modal_selector} input")
-            print(f"   Inputs encontrados ({len(inputs)}):")
-            for i, input_elem in enumerate(inputs):
-                input_type = input_elem.get_attribute("type") or ""
-                placeholder = input_elem.get_attribute("placeholder") or ""
-                name = input_elem.get_attribute("name") or ""
-                aria_label = input_elem.get_attribute("aria-label") or ""
-                if name or placeholder or aria_label:
-                    print(f"      {i+1}. name='{name}' type='{input_type}' placeholder='{placeholder}' aria-label='{aria_label}'")
-
-            # Selects
-            selects = driver.find_elements(By.CSS_SELECTOR, f"{modal_selector} select")
-            print(f"   Selects encontrados ({len(selects)}):")
-            for i, select_elem in enumerate(selects):
-                name = select_elem.get_attribute("name") or ""
-                aria_label = select_elem.get_attribute("aria-label") or ""
-                disabled = select_elem.get_attribute("disabled")
-                status = "DISABLED" if disabled else "ENABLED"
-                print(f"      {i+1}. name='{name}' aria-label='{aria_label}' [{status}]")
-
-                # Mostrar opciones disponibles
-                options = select_elem.find_elements(By.TAG_NAME, "option")
-                option_texts = [opt.text for opt in options[:5]]  # Primeras 5 opciones
-                if option_texts:
-                    print(f"         Opciones: {', '.join(option_texts)}")
-
-            # Textareas (por si hay)
-            textareas = driver.find_elements(By.CSS_SELECTOR, f"{modal_selector} textarea")
-            if textareas:
-                print(f"   Textareas encontrados ({len(textareas)}):")
-                for i, ta in enumerate(textareas):
-                    name = ta.get_attribute("name") or ""
-                    placeholder = ta.get_attribute("placeholder") or ""
-                    print(f"      {i+1}. name='{name}' placeholder='{placeholder}'")
-
-        except:
-            print("Campo 'Nombre' no encontrado en el modal, mostrando elementos disponibles...")
-
-            # Mostrar inputs disponibles en el modal
-            inputs = driver.find_elements(By.CSS_SELECTOR, f"{modal_selector} input")
-            print(f"   Inputs en modal ({len(inputs)}):")
-            for i, input_elem in enumerate(inputs[:15]):
-                input_type = input_elem.get_attribute("type") or ""
-                placeholder = input_elem.get_attribute("placeholder") or ""
-                name = input_elem.get_attribute("name") or ""
-                if placeholder or name:
-                    print(f"      {i+1}. type='{input_type}' placeholder='{placeholder}' name='{name}'")
-
-            # Mostrar selects disponibles en el modal
-            selects = driver.find_elements(By.CSS_SELECTOR, f"{modal_selector} select")
-            print(f"   Selects en modal ({len(selects)}):")
-            for i, select_elem in enumerate(selects[:10]):
-                placeholder = select_elem.get_attribute("placeholder") or ""
-                name = select_elem.get_attribute("name") or ""
-                if placeholder or name:
-                    print(f"      {i+1}. placeholder='{placeholder}' name='{name}'")
-
-            print("Continuando sin verificacion de formulario abierto...")
-
-        return driver
-
-    except Exception as e:
-        raise Exception(f"Error abriendo formulario de maquinaria: {str(e)}")
+        print(f"   Error haciendo click en '{element_name}': {str(e)}")
 
 def complete_machinery_form_step1(driver):
-    """
-    Completa el paso 1 del formulario de maquinaria con los datos de prueba.
-
-    Args:
-        driver: Instancia de WebDriver con el formulario abierto
-
-    Returns:
-        WebDriver: Driver con el formulario completado
-    """
     try:
         print("Completando Paso 1 del formulario de maquinaria...")
 
-        # Completar campos obligatorios del paso 1 en orden específico
-        # Primero campos que no dependen de otros
+        time.sleep(2)
+
         fields_to_fill = [
             ("Nombre", formData["Nombre"], test_data["Nombre"], "input"),
             ("Año fabricación", formData["Año fabricación"], test_data["Año fabricación"], "select"),
@@ -588,167 +215,40 @@ def complete_machinery_form_step1(driver):
         for field_name, selector, value, field_type in fields_to_fill:
             fill_form_field(driver, field_name, selector, value, field_type, modal_selector="div.modal-theme")
 
-        # Esperar a que se habiliten los campos dependientes (Región, Ciudad, Modelo)
-        time.sleep(2)
+        time.sleep(1)
 
-        # Intentar seleccionar un modelo disponible para Deutz
         try:
-            print("   Intentando seleccionar modelo para Deutz...")
             wait = WebDriverWait(driver, 10)
             model_selector = f"div.modal-theme {formData['Modelo']}"
-
-            # Esperar a que el campo modelo se habilite después de seleccionar marca
             wait.until(lambda d: d.find_element(By.CSS_SELECTOR, model_selector).is_enabled())
-
             model_select = Select(wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, model_selector))))
-
-            # Obtener todas las opciones disponibles
             options = model_select.options
             available_models = [opt.text for opt in options if opt.text and opt.text not in ["Seleccione una marca primero", "Seleccione un modelo...", ""]]
-
             if available_models:
-                # Seleccionar el primer modelo disponible
                 model_select.select_by_visible_text(available_models[0])
                 print(f"   Modelo seleccionado: {available_models[0]}")
-                test_data["Modelo"] = available_models[0]  # Actualizar el dato de prueba
-            else:
-                print("   No hay modelos disponibles para Deutz, dejando vacio...")
-
+                test_data["Modelo"] = available_models[0]
         except Exception as e:
-            print(f"   Error seleccionando modelo: {str(e)}, continuando...")
+            print(f"   Error seleccionando modelo: {str(e)}")
 
-        # Completar País y esperar a que se habiliten Región y Ciudad
         fill_form_field(driver, "País", formData["País"], test_data["País"], "select", modal_selector="div.modal-theme")
-
-        # Esperar a que se habiliten Región y Ciudad
-        time.sleep(2)
-
-        # Completar Región y Ciudad
+        time.sleep(1)
         fill_form_field(driver, "Región", formData["Región"], test_data["Región"], "select", modal_selector="div.modal-theme")
         fill_form_field(driver, "Ciudad", formData["Ciudad"], test_data["Ciudad"], "select", modal_selector="div.modal-theme")
 
-        # Campo de Telemetría: IGNORADO según requerimiento del usuario
-        print("   Campo 'Telemetría' ignorado - no se completará")
-
-        # Subir foto del tractor
-        upload_photo(driver, modal_selector="div.modal-theme")
-
+        print("   Campo 'Telemetría' ignorado")
         print("Paso 1 completado correctamente")
         return driver
 
     except Exception as e:
         raise Exception(f"Error completando Paso 1 del formulario: {str(e)}")
 
-def submit_form_step1(driver):
-    """
-    Envía el Paso 1 del formulario y verifica el avance al Paso 2.
-
-    Args:
-        driver: Instancia de WebDriver con el formulario completado
-
-    Returns:
-        WebDriver: Driver con el formulario avanzado al paso 2
-    """
+def complete_machinery_form_step2(driver):
     try:
-        print("Enviando Paso 1 del formulario...")
+        print("Completando Paso 2 del formulario de maquinaria...")
 
-        # Buscar y hacer click en el botón "Siguiente"
-        wait = WebDriverWait(driver, 10)
-
-        # Intentar encontrar botón "Siguiente" dentro del modal
-        modal_selector = "div.modal-theme"
-
-        # Priorizar XPaths que comprueban el texto visible (normalize-space) para evitar CSS inválidos
-        xpath_candidates = [
-            "//button[normalize-space()='Siguiente']",
-            "//button[contains(normalize-space(.), 'Siguiente')]",
-            "//button[contains(text(), 'Siguiente')]",
-        ]
-
-        css_candidates = [
-            f"{modal_selector} button[type='submit']",
-            f"{modal_selector} .ant-btn-primary",
-            f"{modal_selector} button[class*='primary']",
-            f"{modal_selector} button[class*='btn-primary']",
-        ]
-
-        next_button = None
-
-        # Probar XPaths primero
-        for xpath_selector in xpath_candidates:
-            try:
-                print(f"   Probando XPath para botón siguiente: {xpath_selector}")
-                next_button = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_selector)))
-                print(f"   ✅ Botón siguiente encontrado vía XPath: {xpath_selector}")
-                break
-            except Exception:
-                continue
-
-        # Si no se encontró con XPath, intentar selectores CSS como fallback
-        if not next_button:
-            for css_selector in css_candidates:
-                try:
-                    print(f"   Probando CSS para botón siguiente: {css_selector}")
-                    next_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, css_selector)))
-                    print(f"   ✅ Botón siguiente encontrado vía CSS: {css_selector}")
-                    break
-                except Exception:
-                    continue
-
-        if not next_button:
-            raise Exception("No se pudo encontrar el botón 'Siguiente'")
-
-        next_button.click()
-        print("Click realizado en botón 'Siguiente'")
-
-        # Esperar a que se procese el envío y verificar avance
         time.sleep(2)
 
-        # Verificar indicadores de éxito/avance
-        success_indicators = [
-            "//div[contains(text(), 'Paso 2')]",  # Indicador de paso 2
-            "//div[contains(text(), 'paso 2')]",
-            "//h2[contains(text(), 'Paso 2')]",
-            "//span[contains(text(), 'Paso 2')]",
-            "//div[contains(@class, 'step-2')]",  # Clase de paso 2
-            "//div[contains(@class, 'active') and contains(text(), '2')]"  # Paso activo 2
-        ]
-
-        step2_found = False
-        for indicator in success_indicators:
-            try:
-                elements = driver.find_elements(By.XPATH, indicator)
-                if elements and any(element.is_displayed() for element in elements):
-                    step2_found = True
-                    print(f"   Detectado avance a Paso 2 con indicador: {indicator}")
-                    break
-            except:
-                continue
-
-        if step2_found:
-            print("Formulario avanzó correctamente al Paso 2")
-        else:
-            print("No se detectó avance claro a Paso 2, pero envío completado")
-
-        return driver
-
-    except Exception as e:
-        raise Exception(f"Error enviando Paso 1 del formulario: {str(e)}")
-
-def complete_machinery_form_step2(driver):
-    """
-    Completa el Paso 2 del formulario de maquinaria con los datos específicos de IT-MAQ-002.
-
-    Args:
-        driver: Instancia de WebDriver con el formulario en el paso 2
-
-    Returns:
-        WebDriver: Driver con el formulario del paso 2 completado
-    """
-    try:
-        print("Completando Paso 2 del formulario de maquinaria (IT-MAQ-002)...")
-
-        # Completar campos del paso 2 usando los selectores XPath especificados
         fields_to_fill = [
             ("Número de serie del terminal", step2_selectors["Número de serie del terminal"], step2_test_data["Número de serie del terminal"]),
             ("Número de chasis", step2_selectors["Número de chasis"], step2_test_data["Número de chasis"]),
@@ -759,19 +259,10 @@ def complete_machinery_form_step2(driver):
         wait = WebDriverWait(driver, 10)
 
         for field_name, xpath_selector, value in fields_to_fill:
-            try:
-                print(f"   Completando campo '{field_name}': '{value}'")
-                print(f"   Usando selector XPath: {xpath_selector}")
-
-                # Esperar y encontrar el campo usando XPath
-                input_element = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_selector)))
-                input_element.clear()
-                input_element.send_keys(value)
-                print(f"   ✅ Ingresado '{value}' en {field_name}")
-
-            except Exception as e:
-                print(f"   ❌ Error completando campo '{field_name}': {str(e)}")
-                # Continuar con otros campos en lugar de fallar completamente
+            input_element = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_selector)))
+            input_element.clear()
+            input_element.send_keys(value)
+            print(f"   Ingresado '{value}' en {field_name}")
 
         print("Paso 2 completado correctamente")
         return driver
@@ -779,83 +270,14 @@ def complete_machinery_form_step2(driver):
     except Exception as e:
         raise Exception(f"Error completando Paso 2 del formulario: {str(e)}")
 
-def submit_form_step2(driver):
-    """
-    Envía el Paso 2 del formulario usando el botón Siguiente especificado.
-
-    Args:
-        driver: Instancia de WebDriver con el formulario del paso 2 completado
-
-    Returns:
-        WebDriver: Driver con el formulario avanzado al paso 3
-    """
+def complete_machinery_form_step3(driver):
     try:
-        print("Enviando Paso 2 del formulario...")
+        print("Completando Paso 3 del formulario de maquinaria...")
 
-        wait = WebDriverWait(driver, 10)
-
-        # Usar el selector XPath específico para el botón Siguiente
-        next_button_selector = step2_selectors["Siguiente"]
-        print(f"   Usando selector XPath para botón siguiente: {next_button_selector}")
-
-        next_button = wait.until(EC.element_to_be_clickable((By.XPATH, next_button_selector)))
-        print("   Botón 'Siguiente' encontrado")
-
-        next_button.click()
-        print("Click realizado en botón 'Siguiente' del Paso 2")
-
-        # Esperar a que se procese el envío y verificar avance
         time.sleep(2)
 
-        # Verificar indicadores de éxito/avance al Paso 3
-        success_indicators = [
-            "//div[contains(text(), 'Paso 3')]",  # Indicador de paso 3
-            "//div[contains(text(), 'paso 3')]",
-            "//h2[contains(text(), 'Paso 3')]",
-            "//span[contains(text(), 'Paso 3')]",
-            "//div[contains(@class, 'step-3')]",  # Clase de paso 3
-            "//div[contains(@class, 'active') and contains(text(), '3')]"  # Paso activo 3
-        ]
-
-        step3_found = False
-        for indicator in success_indicators:
-            try:
-                elements = driver.find_elements(By.XPATH, indicator)
-                if elements and any(element.is_displayed() for element in elements):
-                    step3_found = True
-                    print(f"   Detectado avance a Paso 3 con indicador: {indicator}")
-                    break
-            except:
-                continue
-
-        if step3_found:
-            print("Formulario avanzó correctamente al Paso 3")
-        else:
-            print("No se detectó avance claro a Paso 3, pero envío completado")
-
-        return driver
-
-    except Exception as e:
-        raise Exception(f"Error enviando Paso 2 del formulario: {str(e)}")
-
-def complete_machinery_form_step3(driver):
-    """
-    Completa el Paso 3 del formulario de maquinaria con los datos específicos de IT-MAQ-003.
-
-    Args:
-        driver: Instancia de WebDriver con el formulario en el paso 3
-
-    Returns:
-        WebDriver: Driver con el formulario del paso 3 completado
-    """
-    try:
-        print("Completando Paso 3 del formulario de maquinaria (IT-MAQ-003)...")
-
-        # Sección 1: Motor (ya desplegada por defecto)
-        print("📋 Sección 1: Completando datos del Motor...")
         motor_fields = [
             ("Potencia del motor", step3_selectors["enginePower"], step3_test_data["enginePower"], "input"),
-            ("Unidad de potencia", step3_selectors["enginePowerUnit"], step3_test_data["enginePowerUnit"], "select"),
             ("Tipo de motor", step3_selectors["engineType"], step3_test_data["engineType"], "select"),
             ("Capacidad del cilindro", step3_selectors["cylinderCapacity"], step3_test_data["cylinderCapacity"], "input"),
             ("Unidad capacidad cilindro", step3_selectors["cylinderCapacityUnit"], step3_test_data["cylinderCapacityUnit"], "select"),
@@ -870,22 +292,49 @@ def complete_machinery_form_step3(driver):
         for field_name, xpath_selector, value, field_type in motor_fields:
             fill_xpath_field(driver, field_name, xpath_selector, value, field_type)
 
-        # Cerrar primera sección: Motor y Transmisión
-        print("📋 Cerrando Sección 1: Motor y Transmisión...")
-        try:
-            # Usar el selector del botón con aria-label que contiene "Collapse Motor y Transmisión Section"
-            motor_collapse_button = driver.find_element(By.XPATH, "//button[contains(@aria-label, 'Collapse Motor y Transmisión Section')]")
-            if motor_collapse_button.is_displayed():
-                motor_collapse_button.click()
-                print("   ✅ Sección Motor y Transmisión colapsada")
-                time.sleep(1)
-            else:
-                print("   ⚠️  Botón para colapsar sección Motor y Transmisión no visible")
-        except Exception as e:
-            print(f"   ⚠️  Error colapsando sección Motor y Transmisión: {str(e)}")
+        print("   Llenando campo 'Unidad de potencia' con verificación...")
+        engine_power_unit_selector = step3_selectors["enginePowerUnit"]
 
-        # Abrir segunda sección: Capacidad y Rendimiento
-        print("📋 Abriendo Sección 2: Capacidad y Rendimiento...")
+        try:
+            select_element = WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable((By.XPATH, engine_power_unit_selector))
+            )
+            select = Select(select_element)
+            select.select_by_value("2")
+            print("   Seleccionado 'k/h' en Unidad de potencia")
+
+            selected_option = select.first_selected_option
+            current_value = selected_option.text if selected_option else ""
+            print(f"   Verificación - Valor actual: '{current_value}'")
+
+            if current_value != "k/h":
+                time.sleep(0.5)
+                select.select_by_value("2")
+                print("   Corrección aplicada")
+
+        except Exception as e:
+            print(f"   Error llenando campo 'Unidad de potencia': {str(e)}")
+
+        print("   Verificación final del campo 'Engine Power Unit'...")
+        try:
+            time.sleep(1)
+            engine_power_unit_element = WebDriverWait(driver, 5).until(
+                EC.presence_of_element_located((By.XPATH, engine_power_unit_selector))
+            )
+            select = Select(engine_power_unit_element)
+            selected_option = select.first_selected_option
+            current_value = selected_option.text if selected_option else ""
+            print(f"   Valor final: '{current_value}'")
+
+            if current_value != "k/h":
+                select.select_by_value("2")
+                print("   Corrección final aplicada")
+            else:
+                print("   Campo verificado correctamente")
+
+        except Exception as e:
+            print(f"   Error en verificación final: {str(e)}")
+
         click_xpath_element(driver, "Capacidad y Rendimiento", step3_selectors["capacidad_rendimiento"])
 
         capacidad_fields = [
@@ -902,19 +351,15 @@ def complete_machinery_form_step3(driver):
             ("Altitud máxima operativa", step3_selectors["maxOperatingAltitude"], step3_test_data["maxOperatingAltitude"], "input"),
             ("Unidad altitud máxima", step3_selectors["maxOperatingAltitudeUnit"], step3_test_data["maxOperatingAltitudeUnit"], "select"),
             ("Rendimiento mínimo", step3_selectors["performanceMin"], step3_test_data["performanceMin"], "input"),
-            ("Rendimiento máximo", step3_selectors["performanceMax"], step3_test_data["performanceMax"], "input")
+            ("Rendimiento máximo", step3_selectors["performanceMax"], step3_test_data["performanceMax"], "input"),
+            ("Unidad rendimiento", step3_selectors["performanceUnit"], step3_test_data["performanceUnit"], "select")
         ]
 
         for field_name, xpath_selector, value, field_type in capacidad_fields:
             fill_xpath_field(driver, field_name, xpath_selector, value, field_type)
 
-        # Cerrar segunda sección
-        print("📋 Cerrando Sección 2: Capacidad y Rendimiento...")
         click_xpath_element(driver, "Capacidad y Rendimiento (cerrar)", step3_selectors["capacidad_rendimiento"])
 
-        # Abrir tercera sección: Dimensiones y Peso
-        print("📋 Abriendo Sección 3: Dimensiones y Peso...")
-        # Intentar diferentes selectores para abrir la tercera sección
         third_section_selectors = [
             "//span[normalize-space()='Dimensiones y Peso']",
             "//button[contains(@aria-label, 'Dimensiones y Peso')]",
@@ -930,9 +375,6 @@ def complete_machinery_form_step3(driver):
             except:
                 continue
 
-        if not third_section_opened:
-            print("⚠️  No se pudo abrir la tercera sección, continuando sin ella...")
-
         if third_section_opened:
             dimensiones_fields = [
                 ("Unidad de dimensiones", step3_selectors["dimensionsUnit"], step3_test_data["dimensionsUnit"], "select"),
@@ -941,181 +383,10 @@ def complete_machinery_form_step3(driver):
                 ("Alto", step3_selectors["height"], step3_test_data["height"], "input"),
                 ("Peso neto", step3_selectors["netWeight"], step3_test_data["netWeight"], "input"),
                 ("Unidad peso neto", step3_selectors["netWeightUnit"], step3_test_data["netWeightUnit"], "select")
-                # Eliminados campos que no existen en la UI: aire acondicionado y campos hidráulicos
             ]
 
             for field_name, xpath_selector, value, field_type in dimensiones_fields:
                 fill_xpath_field(driver, field_name, xpath_selector, value, field_type)
-
-            # Cerrar tercera sección
-            print("📋 Cerrando Sección 3: Dimensiones y Peso...")
-            if third_section_opened:
-                try:
-                    click_xpath_element(driver, "Dimensiones y Peso (cerrar)", step3_selectors["dimensiones_peso"])
-                except:
-                    print("⚠️  No se pudo cerrar la tercera sección, continuando...")
-        else:
-            print("⚠️  Saltando campos de la tercera sección...")
-
-        # =================================================================================
-        # SECCIÓN 4: SISTEMAS AUXILIARES E HIDRÁULICOS
-        # =================================================================================
-        print("📋 Abriendo Sección 4: Sistemas Auxiliares e Hidráulicos...")
-
-        try:
-            # Expandir la sección usando el aria-label
-            auxiliares_button = driver.find_element(By.XPATH, "//button[contains(@aria-label, 'Expand Sistemas Auxiliares e Hidráulicos Section')]")
-            if auxiliares_button.is_displayed():
-                auxiliares_button.click()
-                print("   ✅ Sección Sistemas Auxiliares e Hidráulicos expandida")
-                time.sleep(2)  # Esperar a que se cargue el contenido
-            else:
-                print("   ⚠️  Botón para expandir sección Sistemas Auxiliares e Hidráulicos no visible")
-        except Exception as e:
-            print(f"   ⚠️  Error expandiendo sección Sistemas Auxiliares e Hidráulicos: {str(e)}")
-
-        # Completar campos de Sistemas Auxiliares e Hidráulicos
-        auxiliares_fields = [
-            ("Tipo de aire acondicionado", "//select[@name='airConditioning']", step3_test_data["airConditioning"], "select"),
-            ("Consumo de aire acondicionado", "//input[@name='airConditioningConsumption']", step3_test_data["airConditioningConsumption"], "input"),
-            ("Unidad consumo aire acondicionado", "//select[@name='airConditioningConsumptionUnit']", step3_test_data["airConditioningConsumptionUnit"], "select"),
-            ("Presión hidráulica máxima", "//input[@name='maxHydraulicPressure']", step3_test_data["maxHydraulicPressure"], "input"),
-            ("Unidad presión hidráulica máxima", "//select[@name='maxHydraulicPressureUnit']", step3_test_data["maxHydraulicPressureUnit"], "select"),
-            ("Caudal de bomba hidráulica", "//input[@name='hydraulicPumpFlowRate']", step3_test_data["hydraulicPumpFlowRate"], "input"),
-            ("Unidad caudal bomba hidráulica", "//select[@name='hydraulicPumpFlowRateUnit']", step3_test_data["hydraulicPumpFlowRateUnit"], "select"),
-            ("Capacidad depósito hidráulico", "//input[@name='hydraulicReservoirCapacity']", step3_test_data["hydraulicReservoirCapacity"], "input"),
-            ("Unidad capacidad depósito hidráulico", "//select[@name='hydraulicReservoirCapacityUnit']", step3_test_data["hydraulicReservoirCapacityUnit"], "select")
-        ]
-
-        print("   Completando campos de Sistemas Auxiliares e Hidráulicos...")
-        for field_name, xpath_selector, value, field_type in auxiliares_fields:
-            fill_xpath_field(driver, field_name, xpath_selector, value, field_type)
-
-        print("📋 Cerrando Sección 4: Sistemas Auxiliares e Hidráulicos...")
-        try:
-            # Colapsar la sección usando el aria-label
-            collapse_button = driver.find_element(By.XPATH, "//button[contains(@aria-label, 'Collapse Sistemas Auxiliares e Hidráulicos Section')]")
-            if collapse_button.is_displayed():
-                collapse_button.click()
-                print("   ✅ Sección Sistemas Auxiliares e Hidráulicos colapsada")
-                time.sleep(1)
-            else:
-                print("   ⚠️  Botón para colapsar sección no visible")
-        except Exception as e:
-            print(f"   ⚠️  Error colapsando sección Sistemas Auxiliares e Hidráulicos: {str(e)}")
-
-        # =================================================================================
-        # FIN DE SECCIÓN 4: SISTEMAS AUXILIARES E HIDRÁULICOS
-        # =================================================================================
-
-        # =================================================================================
-        # SECCIÓN 5: NORMATIVIDAD Y SEGURIDAD
-        # =================================================================================
-        print("� Abriendo Sección 4: Normatividad y Seguridad...")
-
-        # La sección ya está expandida (tiene aria-label="Collapse"), pero por si acaso intentamos expandirla
-        try:
-            normatividad_button = driver.find_element(By.XPATH, "//span[normalize-space()='Normatividad y Seguridad']")
-            if normatividad_button.is_displayed():
-                # Verificar si está colapsada intentando expandirla
-                parent_button = normatividad_button.find_element(By.XPATH, "ancestor::button")
-                aria_label = parent_button.get_attribute("aria-label") or ""
-
-                if "Expand" in aria_label:
-                    print("   Expandiendo sección Normatividad y Seguridad...")
-                    parent_button.click()
-                    time.sleep(1)
-                else:
-                    print("   Sección Normatividad y Seguridad ya está expandida")
-            else:
-                print("   ⚠️  Botón de Normatividad y Seguridad no visible")
-        except Exception as e:
-            print(f"   ⚠️  Error accediendo a sección Normatividad y Seguridad: {str(e)}")
-
-        # Campos de Normatividad y Seguridad (campos reales identificados)
-        normatividad_fields = {
-            "nivel_emisiones": "//select[@name='emissionLevel']",
-            "tipo_cabina": "//select[@name='cabinType']"
-        }
-
-        print("   Completando campos de Normatividad y Seguridad...")
-        for field_name, selector in normatividad_fields.items():
-            try:
-                element = driver.find_element(By.XPATH, selector)
-                if element.is_displayed() and element.is_enabled():
-                    # Generar datos apropiados según el campo específico
-                    if field_name == "nivel_emisiones":
-                        # Para un tractor moderno, seleccionar Euro 6 o Tier 4
-                        select_element = Select(element)
-                        preferred_options = ["euro6", "tier4", "euro5", "tier3"]
-                        selected_value = None
-
-                        for option_value in preferred_options:
-                            try:
-                                select_element.select_by_value(option_value)
-                                selected_value = option_value
-                                break
-                            except:
-                                continue
-
-                        if not selected_value:
-                            # Si no hay opciones preferidas, seleccionar la primera disponible
-                            options = [opt for opt in select_element.options if opt.get_attribute("value") and opt.get_attribute("value") != ""]
-                            if options:
-                                selected_value = options[0].get_attribute("value")
-                                select_element.select_by_value(selected_value)
-
-                        value = selected_value or "No seleccionado"
-                        print(f"   ✅ Campo 'Nivel de Emisiones' seleccionado: '{value}'")
-
-                    elif field_name == "tipo_cabina":
-                        # Para un tractor, seleccionar ROPS/FOPS o Cerrada
-                        select_element = Select(element)
-                        preferred_options = ["rops-fops", "closed", "rops", "fops"]
-                        selected_value = None
-
-                        for option_value in preferred_options:
-                            try:
-                                select_element.select_by_value(option_value)
-                                selected_value = option_value
-                                break
-                            except:
-                                continue
-
-                        if not selected_value:
-                            # Si no hay opciones preferidas, seleccionar la primera disponible
-                            options = [opt for opt in select_element.options if opt.get_attribute("value") and opt.get_attribute("value") != ""]
-                            if options:
-                                selected_value = options[0].get_attribute("value")
-                                select_element.select_by_value(selected_value)
-
-                        value = selected_value or "No seleccionado"
-                        print(f"   ✅ Campo 'Tipo de Cabina' seleccionado: '{value}'")
-
-                else:
-                    print(f"   ⚠️  Campo '{field_name}' no disponible o no editable")
-            except Exception as e:
-                print(f"   ⚠️  Campo '{field_name}' no encontrado o error: {str(e)}")
-
-        print("📋 Cerrando Sección 4: Normatividad y Seguridad...")
-        try:
-            # Intentar colapsar la sección usando el botón con aria-label que contiene "Collapse"
-            collapse_button = driver.find_element(By.XPATH, "//button[contains(@aria-label, 'Collapse Normatividad y Seguridad Section')]")
-            if collapse_button.is_displayed():
-                collapse_button.click()
-                print("   ✅ Sección Normatividad y Seguridad colapsada")
-                time.sleep(1)
-            else:
-                print("   ⚠️  Botón para colapsar sección no visible")
-        except Exception as e:
-            print(f"   ⚠️  Error colapsando sección Normatividad y Seguridad: {str(e)}")
-
-        # =================================================================================
-        # FIN DE SECCIÓN 4: NORMATIVIDAD Y SEGURIDAD
-        # =================================================================================
-
-        # Sección 5 (Información Adicional) omitida - no existe en la UI actual
-        print("ℹ️  Sección 5 (Información Adicional) omitida - no disponible en la UI actual")
 
         print("Paso 3 completado correctamente")
         return driver
@@ -1123,85 +394,13 @@ def complete_machinery_form_step3(driver):
     except Exception as e:
         raise Exception(f"Error completando Paso 3 del formulario: {str(e)}")
 
-def submit_form_step3(driver):
-    """
-    Envía el Paso 3 del formulario usando el botón Siguiente especificado.
-
-    Args:
-        driver: Instancia de WebDriver con el formulario del paso 3 completado
-
-    Returns:
-        WebDriver: Driver con el formulario avanzado al paso 4
-    """
-    try:
-        print("Enviando Paso 3 del formulario...")
-
-        wait = WebDriverWait(driver, 10)
-
-        # Usar el selector XPath específico para el botón Siguiente del paso 3
-        next_button_selector = step3_selectors["Siguiente"]
-        print(f"   Usando selector XPath para botón siguiente: {next_button_selector}")
-
-        next_button = wait.until(EC.element_to_be_clickable((By.XPATH, next_button_selector)))
-        print("   Botón 'Siguiente' encontrado")
-
-        next_button.click()
-        print("Click realizado en botón 'Siguiente' del Paso 3")
-
-        # Esperar a que se procese el envío y verificar avance
-        time.sleep(2)
-
-        # Verificar indicadores de éxito/avance al Paso 4
-        success_indicators = [
-            "//div[contains(text(), 'Paso 4')]",  # Indicador de paso 4
-            "//div[contains(text(), 'paso 4')]",
-            "//h2[contains(text(), 'Paso 4')]",
-            "//span[contains(text(), 'Paso 4')]",
-            "//div[contains(@class, 'step-4')]",  # Clase de paso 4
-            "//div[contains(@class, 'active') and contains(text(), '4')]"  # Paso activo 4
-        ]
-
-        step4_found = False
-        for indicator in success_indicators:
-            try:
-                elements = driver.find_elements(By.XPATH, indicator)
-                if elements and any(element.is_displayed() for element in elements):
-                    step4_found = True
-                    print(f"   Detectado avance a Paso 4 con indicador: {indicator}")
-                    break
-            except:
-                continue
-
-        if step4_found:
-            print("Formulario avanzó correctamente al Paso 4")
-        else:
-            print("No se detectó avance claro a Paso 4, pero envío completado")
-
-        return driver
-
-    except Exception as e:
-        raise Exception(f"Error enviando Paso 3 del formulario: {str(e)}")
-
 def setup_test_environment(headless=False):
-    """
-    Configura el entorno de prueba completo: login y navegación a maquinaria.
-
-    Args:
-        headless (bool): Si ejecutar en modo headless (sin interfaz visible)
-
-    Returns:
-        WebDriver: Driver configurado y posicionado en el módulo maquinaria
-    """
     try:
         print("Configurando entorno de prueba IT-MAQ-003...")
 
-        # Login
-        print("Paso 1: Autenticando usuario...")
         driver = perform_login(headless=headless)
         print("Usuario autenticado correctamente")
 
-        # Navegación a maquinaria
-        print("Paso 2: Navegando a módulo maquinaria...")
         driver = navigate_to_machinery(driver)
         print("Navegación a maquinaria completada")
 
@@ -1213,32 +412,54 @@ def setup_test_environment(headless=False):
         raise
 
 def run_it_maq_003_step1(driver):
-    """
-    Ejecuta solo el Paso 1 del formulario IT-MAQ-003.
-
-    Args:
-        driver: WebDriver ya posicionado en el módulo maquinaria
-
-    Returns:
-        WebDriver: Driver con el formulario del paso 1 completado y listo para paso 2
-    """
     try:
         print("🚜 Ejecutando IT-MAQ-003 - Paso 1: Ficha técnica general")
 
-        # Abrir formulario
-        print("Paso 1: Abriendo formulario de añadir maquinaria...")
-        driver = open_machinery_form(driver)
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.support.ui import WebDriverWait
+        from selenium.webdriver.support import expected_conditions as EC
+
+        button_selector = "//button[normalize-space()='Agregar maquinaria']"
+        wait = WebDriverWait(driver, 15)
+        add_button = wait.until(EC.element_to_be_clickable((By.XPATH, button_selector)))
+        add_button.click()
         print("Formulario abierto")
 
-        # Completar formulario
-        print("Paso 2: Completando formulario...")
         driver = complete_machinery_form_step1(driver)
         print("Paso 1 completado")
 
-        # Enviar formulario
-        print("Paso 3: Enviando formulario...")
-        driver = submit_form_step1(driver)
-        print("Formulario enviado y avanzado a Paso 2")
+        xpath_candidates = [
+            "//button[normalize-space()='Siguiente']",
+            "//button[contains(normalize-space(.), 'Siguiente')]",
+            "//button[contains(text(), 'Siguiente')]",
+        ]
+
+        css_candidates = [
+            "div.modal-theme button[type='submit']",
+            "div.modal-theme .ant-btn-primary",
+            "div.modal-theme button[class*='primary']",
+            "div.modal-theme button[class*='btn-primary']",
+        ]
+
+        next_button = None
+        for xpath_selector in xpath_candidates:
+            try:
+                next_button = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_selector)))
+                break
+            except:
+                continue
+
+        if not next_button:
+            for css_selector in css_candidates:
+                try:
+                    next_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, css_selector)))
+                    break
+                except:
+                    continue
+
+        if next_button:
+            next_button.click()
+            print("Formulario enviado y avanzado a Paso 2")
 
         print("IT-MAQ-003 Paso 1 completado exitosamente")
         return driver
@@ -1248,26 +469,16 @@ def run_it_maq_003_step1(driver):
         raise
 
 def run_it_maq_003_step2(driver):
-    """
-    Ejecuta solo el Paso 2 del formulario IT-MAQ-003.
-
-    Args:
-        driver: WebDriver ya posicionado en el Paso 2 del formulario
-
-    Returns:
-        WebDriver: Driver con el formulario del paso 2 completado y listo para paso 3
-    """
     try:
         print("🚜 Ejecutando IT-MAQ-003 - Paso 2: Información técnica adicional")
 
-        # Completar formulario del paso 2
-        print("Paso 1: Completando formulario del Paso 2...")
         driver = complete_machinery_form_step2(driver)
         print("Paso 2 completado")
 
-        # Enviar formulario
-        print("Paso 2: Enviando formulario...")
-        driver = submit_form_step2(driver)
+        wait = WebDriverWait(driver, 10)
+        next_button_selector = step2_selectors["Siguiente"]
+        next_button = wait.until(EC.element_to_be_clickable((By.XPATH, next_button_selector)))
+        next_button.click()
         print("Formulario enviado y avanzado a Paso 3")
 
         print("IT-MAQ-003 Paso 2 completado exitosamente")
@@ -1278,26 +489,16 @@ def run_it_maq_003_step2(driver):
         raise
 
 def run_it_maq_003_step3(driver):
-    """
-    Ejecuta solo el Paso 3 del formulario IT-MAQ-003.
-
-    Args:
-        driver: WebDriver ya posicionado en el Paso 3 del formulario
-
-    Returns:
-        WebDriver: Driver con el formulario del paso 3 completado y listo para paso 4
-    """
     try:
         print("🚜 Ejecutando IT-MAQ-003 - Paso 3: Especificaciones técnicas detalladas")
 
-        # Completar formulario del paso 3
-        print("Paso 1: Completando formulario del Paso 3...")
         driver = complete_machinery_form_step3(driver)
         print("Paso 3 completado")
 
-        # Enviar formulario
-        print("Paso 2: Enviando formulario...")
-        driver = submit_form_step3(driver)
+        wait = WebDriverWait(driver, 10)
+        next_button_selector = step3_selectors["Siguiente"]
+        next_button = wait.until(EC.element_to_be_clickable((By.XPATH, next_button_selector)))
+        next_button.click()
         print("Formulario enviado y avanzado a Paso 4")
 
         print("IT-MAQ-003 Paso 3 completado exitosamente")
@@ -1307,54 +508,17 @@ def run_it_maq_003_step3(driver):
         print(f"Error en IT-MAQ-003 Paso 3: {str(e)}")
         raise
 
-def cleanup_test_environment(driver, test_name="IT-MAQ-003"):
-    """
-    Limpia el entorno de prueba cerrando el navegador y guardando logs.
-
-    Args:
-        driver: Instancia de WebDriver a cerrar
-        test_name: Nombre del test para guardar logs
-    """
-    try:
-        if driver:
-            # Capturar y guardar logs del navegador antes de cerrar
-            print(f"Guardando logs de consola del navegador para {test_name}...")
-            save_browser_logs(driver, test_name)
-
-            print("Cerrando navegador...")
-            driver.quit()
-            print("Entorno de prueba limpiado")
-    except Exception as e:
-        print(f"Error limpiando entorno: {str(e)}")
-
 def run_it_maq_003(headless=False):
-    """
-    Ejecuta la prueba IT-MAQ-003 completa (Paso 1, 2 y 3).
-
-    Args:
-        headless (bool): Si ejecutar en modo headless
-
-    Returns:
-        bool: True si la prueba pasa, False si falla
-    """
     driver = None
     try:
         print("Iniciando IT-MAQ-003: Verificar registro completo de ficha técnica")
         print("=" * 70)
 
-        # Setup
         driver = setup_test_environment(headless=headless)
-
-        # Execute paso 1
         driver = run_it_maq_003_step1(driver)
-
-        # Execute paso 2
         driver = run_it_maq_003_step2(driver)
-
-        # Execute paso 3
         driver = run_it_maq_003_step3(driver)
 
-        # Assert: Verificar resultados
         print("Assert: Verificando resultados...")
         print("Formulario enviado correctamente hasta Paso 3")
         print("Avance a Paso 4 verificado")
@@ -1367,10 +531,12 @@ def run_it_maq_003(headless=False):
         return False
 
     finally:
-        cleanup_test_environment(driver, "IT-MAQ-003")
+        if driver:
+            save_browser_logs(driver, "IT-MAQ-003")
+            driver.quit()
 
 if __name__ == "__main__":
-    success = run_it_maq_003(headless=False)  # Cambiar a True para modo headless
+    success = run_it_maq_003(headless=False)
     if success:
         print("\nIT-MAQ-003: PRUEBA EXITOSA")
         print("Resultado: Ficha técnica registrada hasta Paso 3, maquinaria lista para Paso 4")

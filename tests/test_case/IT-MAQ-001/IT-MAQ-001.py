@@ -205,6 +205,10 @@ def fill_form_field(driver, field_name, selector, value, field_type="input", mod
             # Para selectores, usar Select de Selenium
             select_element = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, full_selector)))
             select = Select(select_element)
+
+            # Esperar a que las opciones se carguen dinámicamente
+            wait.until(lambda d: len([opt for opt in select.options if opt.text.strip() and opt.text != "Seleccione un tipo..." and opt.text != "Seleccione una marca..." and opt.text != "Seleccione un modelo..." and opt.text != "Seleccione un país..." and opt.text != "Seleccione una región..." and opt.text != "Seleccione una categoría..." and opt.text != "Seleccione un dispositivo..."]) > 0)
+
             select.select_by_visible_text(value)
             print(f"   Seleccionado '{value}' en {field_name}")
         else:
