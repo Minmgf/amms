@@ -9,8 +9,6 @@ import { FiLayers } from 'react-icons/fi'
 import { IoCalendarOutline } from 'react-icons/io5'
 import MaintenanceRequestModal from "@/app/components/maintenance/MaintenanceRequestModal";
 import RequestDetailModal from "@/app/components/maintenance/RequestDetailModal";
-import { getMaintenanceRequestList } from '@/services/maintenanceService'
-import { SuccessModal, ErrorModal, ConfirmModal } from '@/app/components/shared/SuccessErrorModal'
 
 const SolicitudesMantenimientoView = () => {
   // Estado para el filtro global
@@ -42,13 +40,49 @@ const SolicitudesMantenimientoView = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [selectedRequest, setSelectedRequest] = useState(null)
 
-  // Estados para modales de éxito, error y confirmación
-  const [successModalOpen, setSuccessModalOpen] = useState(false)
-  const [errorModalOpen, setErrorModalOpen] = useState(false)
-  const [confirmModalOpen, setConfirmModalOpen] = useState(false)
-  const [modalMessage, setModalMessage] = useState('')
-  const [modalTitle, setModalTitle] = useState('')
-  const [pendingAction, setPendingAction] = useState(null)
+  // Datos de ejemplo
+  const sampleMaintenanceData = [
+    {
+      id: '2025-01',
+      machine_name: 'Tractor',
+      serial_number: 'CAT00D5GPWGB01070',
+      requester: 'Hernan Torres',
+      maintenance_type: 'Preventivo',
+      request_date: '2025-03-14T21:23:00Z',
+      priority: 'Alta',
+      status: 'Pendiente'
+    },
+    {
+      id: '2025-02',
+      machine_name: 'Cosechadora',
+      serial_number: 'ZAR00D5GPWGB01070',
+      requester: 'Jairo Rojas',
+      maintenance_type: 'Correctivo',
+      request_date: '2025-03-14T21:23:00Z',
+      priority: 'Alta',
+      status: 'Programado'
+    },
+    {
+      id: '2025-03',
+      machine_name: 'Excavadora',
+      serial_number: 'JCB00X8HMWN02150',
+      requester: 'Maria Gonzalez',
+      maintenance_type: 'Preventivo',
+      request_date: '2025-03-15T10:15:00Z',
+      priority: 'Media',
+      status: 'En Progreso'
+    },
+    {
+      id: '2025-04',
+      machine_name: 'Bulldozer',
+      serial_number: 'CAT00D8TPWGB03280',
+      requester: 'Carlos Rodriguez',
+      maintenance_type: 'Emergencia',
+      request_date: '2025-03-16T14:30:00Z',
+      priority: 'Alta',
+      status: 'Completado'
+    }
+  ]
 
   // Cargar datos al montar el componente
   useEffect(() => {
@@ -65,35 +99,38 @@ const SolicitudesMantenimientoView = () => {
     setError(null)
     
     try {
-      const response = await getMaintenanceRequestList()
+      // Simulando carga de datos
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      setMaintenanceData(sampleMaintenanceData)
       
-      if (response.success && response.data) {
-        // Mapear los datos del API a la estructura esperada por el componente
-        const mappedData = response.data.map(item => ({
-          id: item.id,
-          machine_name: item.machinery_name,
-          serial_number: item.machinery_serial,
-          requester_id: item.requester_id,
-          maintenance_type: item.maintenance_type_name,
-          request_date: item.fecha_solicitud,
-          priority: item.priority_name,
-          status: item.status_name,
-          status_id: item.status_id
-        }))
-        
-        setMaintenanceData(mappedData)
-        
-        // Extraer valores únicos para los filtros
-        const uniqueRequesters = [...new Set(mappedData.map(item => item.requester_id).filter(Boolean))]
-        const uniqueMaintenanceTypes = [...new Set(mappedData.map(item => item.maintenance_type).filter(Boolean))]
-        const uniquePriorities = [...new Set(mappedData.map(item => item.priority).filter(Boolean))]
-        
-        setAvailableRequesters(uniqueRequesters)
-        setAvailableMaintenanceTypes(uniqueMaintenanceTypes)
-        setAvailablePriorities(uniquePriorities)
-      } else {
-        setError('Error al cargar los datos del servidor')
-      }
+      // Cargar datos para los selectores de filtros
+      // En un caso real, estos datos vendrían de la API/BD
+      const requestersFromDB = [
+        'Hernan Torres',
+        'Jairo Rojas', 
+        'Maria Gonzalez',
+        'Carlos Rodriguez',
+        'Ana Martinez',
+        'Luis Fernandez'
+      ]
+      
+      const maintenanceTypesFromDB = [
+        'Preventivo',
+        'Correctivo', 
+        'Emergencia',
+        'Predictivo'
+      ]
+      
+      const prioritiesFromDB = [
+        'Alta',
+        'Media',
+        'Baja',
+        'Crítica'
+      ]
+      
+      setAvailableRequesters(requestersFromDB)
+      setAvailableMaintenanceTypes(maintenanceTypesFromDB)
+      setAvailablePriorities(prioritiesFromDB)
       
     } catch (err) {
       console.error('Error loading data:', err)
@@ -136,7 +173,7 @@ const SolicitudesMantenimientoView = () => {
     }
 
     if (requesterFilter) {
-      filtered = filtered.filter(request => request.requester_id === parseInt(requesterFilter))
+      filtered = filtered.filter(request => request.requester === requesterFilter)
     }
 
     // Filtro por rango de fechas
@@ -177,10 +214,10 @@ const SolicitudesMantenimientoView = () => {
       
       // Crear array de campos searchables
       const searchableFields = [
-        request.id?.toString(),
+        request.id,
         request.machine_name,
         request.serial_number,
-        request.requester_id?.toString(),
+        request.requester,
         request.maintenance_type,
         request.priority,
         request.status,
@@ -328,7 +365,7 @@ const SolicitudesMantenimientoView = () => {
       )
     },
     {
-      accessorKey: 'requester_id',
+      accessorKey: 'requester',
       header: () => (
         <div className="flex items-center gap-2">
           <FaUser className="w-4 h-4" />
@@ -336,14 +373,14 @@ const SolicitudesMantenimientoView = () => {
         </div>
       ),
       cell: ({ row }) => {
-        const requesterId = row.getValue('requester_id')
+        const requester = row.getValue('requester')
         return (
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
               <FaUser className="w-3 h-3 text-gray-600" />
             </div>
             <span className="text-sm parametrization-text">
-              ID: {requesterId || 'N/A'}
+              {requester || 'N/A'}
             </span>
           </div>
         )
@@ -503,27 +540,19 @@ const SolicitudesMantenimientoView = () => {
         )
       )
       
-      // Mostrar mensaje de éxito
-      setModalTitle('¡Éxito!')
-      setModalMessage('Solicitud aprobada exitosamente')
-      setSuccessModalOpen(true)
+      // Mostrar mensaje de éxito (puedes usar un toast aquí)
+      alert('Solicitud aprobada exitosamente')
     } catch (error) {
       console.error('Error al aprobar solicitud:', error)
-      setModalTitle('Error')
-      setModalMessage('Error al aprobar la solicitud')
-      setErrorModalOpen(true)
+      alert('Error al aprobar la solicitud')
     }
   }
 
   const handleCancel = async (request) => {
-    // Mostrar modal de confirmación
-    setModalTitle('Confirmar Cancelación')
-    setModalMessage('¿Estás seguro de que quieres cancelar esta solicitud?')
-    setPendingAction(() => () => confirmCancel(request))
-    setConfirmModalOpen(true)
-  }
+    if (!confirm('¿Estás seguro de que quieres cancelar esta solicitud?')) {
+      return
+    }
 
-  const confirmCancel = async (request) => {
     try {
       // Aquí irá la llamada a la API para cancelar
       console.log('Cancelando solicitud:', request.id)
@@ -538,14 +567,10 @@ const SolicitudesMantenimientoView = () => {
       )
       
       // Mostrar mensaje de éxito
-      setModalTitle('¡Éxito!')
-      setModalMessage('Solicitud cancelada exitosamente')
-      setSuccessModalOpen(true)
+      alert('Solicitud cancelada exitosamente')
     } catch (error) {
       console.error('Error al cancelar solicitud:', error)
-      setModalTitle('Error')
-      setModalMessage('Error al cancelar la solicitud')
-      setErrorModalOpen(true)
+      alert('Error al cancelar la solicitud')
     }
   }
 
@@ -712,9 +737,9 @@ const SolicitudesMantenimientoView = () => {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
                   >
                     <option value="">Todos los solicitantes</option>
-                    {availableRequesters.map((requesterId) => (
-                      <option key={requesterId} value={requesterId}>
-                        ID: {requesterId}
+                    {availableRequesters.map((requester) => (
+                      <option key={requester} value={requester}>
+                        {requester}
                       </option>
                     ))}
                   </select>
@@ -806,42 +831,6 @@ const SolicitudesMantenimientoView = () => {
           request={selectedRequest}
         />
       </Dialog.Root>
-
-      {/* Modales de Notificación */}
-      <SuccessModal
-        isOpen={successModalOpen}
-        onClose={() => setSuccessModalOpen(false)}
-        title={modalTitle}
-        message={modalMessage}
-      />
-
-      <ErrorModal
-        isOpen={errorModalOpen}
-        onClose={() => setErrorModalOpen(false)}
-        title={modalTitle}
-        message={modalMessage}
-      />
-
-      <ConfirmModal
-        isOpen={confirmModalOpen}
-        onClose={() => {
-          setConfirmModalOpen(false)
-          setPendingAction(null)
-        }}
-        onConfirm={() => {
-          if (pendingAction) {
-            pendingAction()
-          }
-          setConfirmModalOpen(false)
-          setPendingAction(null)
-        }}
-        title={modalTitle}
-        message={modalMessage}
-        confirmText="Sí, cancelar"
-        cancelText="No, mantener"
-        confirmColor="btn-error"
-        cancelColor="btn-secondary"
-      />
     </div>
   )
 }
