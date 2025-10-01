@@ -827,8 +827,7 @@ const ScheduledMaintenancePage = () => {
       <ScheduleMaintenanceModal
         isOpen={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
-        onSuccess={handleModalSuccess}
-        onError={handleModalError}
+        onSubmit={loadMaintenanceData}
       />
 
       {cancelModalOpen && (
