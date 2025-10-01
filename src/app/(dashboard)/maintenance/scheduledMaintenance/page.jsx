@@ -818,7 +818,7 @@ const ScheduledMaintenancePage = () => {
       {updateModalOpen && (
         <UpdateMaintenanceSchedule 
           onClose={() => setUpdateModalOpen(false)}
-          maintenanceData={selectedMaintenance}
+          requestData={selectedMaintenance}
           onSuccess={handleModalSuccess}
           onError={handleModalError}
         />
@@ -848,7 +848,7 @@ const ScheduledMaintenancePage = () => {
           onClose={() => setReportModalOpen(false)}
           maintenance={selectedMaintenance}
           onSave={(reportData) => {
-            console.log('Reporte guardado:', reportData);
+
             setReportModalOpen(false);
             handleModalSuccess('Reporte de mantenimiento guardado exitosamente');
           }}
