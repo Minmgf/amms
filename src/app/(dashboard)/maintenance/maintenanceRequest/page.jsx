@@ -42,7 +42,7 @@ import {
   getMaintenanceRequestList,
   getActiveTechnicians,
   getMaintenanceTypes,
-  createMaintenanceScheduling,
+  createRequestMaintenance,
   rejectMaintenanceRequest, // Agregar si no está
 } from "@/services/maintenanceService";
 import { getUserInfo } from "@/services/authService";
@@ -850,7 +850,7 @@ const SolicitudesMantenimientoView = () => {
       }
 
       // El payload ya viene formateado desde el modal
-      const response = await createMaintenanceScheduling(
+      const response = await createRequestMaintenance(
         selectedRequestForSchedule.id,
         scheduleData
       );

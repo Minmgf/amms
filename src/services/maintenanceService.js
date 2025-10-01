@@ -68,7 +68,7 @@ export const getMaintenanceRequests = async () => {
     return data;
 };
 
-export const createMaintenanceScheduling = async (requestId, payload) => {
+export const createRequestMaintenance = async (requestId, payload) => {
     const { data } = await apiMain.post(
         `/maintenance_request/${requestId}/schedule/`,
         payload
