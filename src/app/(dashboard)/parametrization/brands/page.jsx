@@ -22,6 +22,7 @@ import {
   SuccessModal,
   ErrorModal,
 } from "@/app/components/shared/SuccessErrorModal";
+import PermissionGuard from "@/app/(auth)/PermissionGuard";
 
 // Componente principal
 const ParameterizationView = () => {
@@ -434,13 +435,15 @@ const ParameterizationView = () => {
       columnHelper.accessor("id", {
         header: "Detalles",
         cell: (info) => (
-          <button
-            onClick={() => handleViewDetails(info.getValue())}
-            className="parametrization-action-button p-2 transition-colors lg:opacity-0 group-hover:opacity-100"
-            title="Ver detalles"
-          >
-            <FiEye className="w-4 h-4" />
-          </button>
+          <PermissionGuard permission={53}>
+            <button
+              onClick={() => handleViewDetails(info.getValue())}
+              className="parametrization-action-button p-2 transition-colors lg:opacity-0 group-hover:opacity-100"
+              title="Ver detalles"
+            >
+              <FiEye className="w-4 h-4" />
+            </button>
+          </PermissionGuard>
         ),
       }),
     ],
@@ -473,13 +476,15 @@ const ParameterizationView = () => {
         </div>
 
         {/* Table */}
-        <TableList
-          columns={columns}
-          data={data}
-          loading={loading}
-          globalFilter={globalFilter}
-          onGlobalFilterChange={setGlobalFilter}
-        />
+        <PermissionGuard permission={50}>
+          <TableList
+            columns={columns}
+            data={data}
+            loading={loading}
+            globalFilter={globalFilter}
+            onGlobalFilterChange={setGlobalFilter}
+          />
+        </PermissionGuard>
       </div>
 
       {/* CategoryModal - Modal de lista de brands */}

@@ -6,6 +6,7 @@ import {
   SuccessModal,
   ErrorModal,
 } from "@/app/components/shared/SuccessErrorModal";
+import PermissionGuard from "@/app/(auth)/PermissionGuard";
 
 const UnitListModal = ({
   isOpen,
@@ -207,13 +208,15 @@ const UnitListModal = ({
                           </button>
                         </td>
                         <td className="px-4 py-3 text-sm">
-                          <button
-                            onClick={() => handleEditParameter(parameter.id)}
-                            className="invisible group-hover:visible inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md transition-colors"
-                          >
-                            <FiEdit3 className="w-3 h-3 mr-1.5" />
-                            Editar
-                          </button>
+                          <PermissionGuard permission={44}>
+                            <button
+                              onClick={() => handleEditParameter(parameter.id)}
+                              className="invisible group-hover:visible inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md transition-colors"
+                            >
+                              <FiEdit3 className="w-3 h-3 mr-1.5" />
+                              Editar
+                            </button>
+                          </PermissionGuard>
                         </td>
                       </tr>
                     ))}
@@ -228,14 +231,16 @@ const UnitListModal = ({
           </div>
 
           {/* Add Parameter Button */}
-          <div className="flex justify-center">
-            <button
-              onClick={handleAddParameter}
-              className="btn-theme btn-primary relative"
-            >
-              Añadir parámetro
-            </button>
-          </div>
+          <PermissionGuard permission={43}>
+            <div className="flex justify-center">
+              <button
+                onClick={handleAddParameter}
+                className="btn-theme btn-primary relative"
+              >
+                Añadir parámetro
+              </button>
+            </div>
+          </PermissionGuard>
         </div>
       </div>
 

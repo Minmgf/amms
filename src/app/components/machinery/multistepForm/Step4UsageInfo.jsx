@@ -6,6 +6,8 @@ export default function Step4UsageInfo({
   distanceUnitsList = [],
   usageStatesList = [],
   tenureTypesList = [],
+  isEditMode = false,
+  currentStatusId = null,
 }) {
   const { register, formState: { errors }, watch } = useFormContext();
   const { getCurrentTheme } = useTheme();
@@ -149,6 +151,7 @@ export default function Step4UsageInfo({
             aria-label="Tenure Select"
             {...register("tenure")}
             className="parametrization-input"
+            disabled={watchOwnership}
           >
             <option value="">Seleccione una opción...</option>
             {tenureTypesList.map((tenure) => (
@@ -223,6 +226,29 @@ export default function Step4UsageInfo({
             </span>
           )}
         </div>
+        {/* Mostrar solo si está en modo edición y el estado es activo */}
+        {isEditMode && currentStatusId !== 3 && (
+          <>            
+            {/* Textarea de justificación */}
+            <div className="col-span-1 sm:col-span-2 lg:col-span-4">
+              <label className="block text-theme-sm text-secondary mb-1">
+                Justificación de cambio
+              </label>
+              <textarea
+                aria-label="Justification Textarea"
+                {...register("justificationUsageInfo")}
+                className="parametrization-input"
+                rows={3}
+                placeholder="Describa la justificación del cambio..."
+              />
+              {errors.justification && (
+                <span className="text-theme-xs mt-1 block" style={{ color: 'var(--color-error)' }}>
+                  {errors.justification.message}
+                </span>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

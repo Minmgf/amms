@@ -372,13 +372,15 @@ const MachineryMainView = () => {
         ),
         cell: ({ row }) => (
           <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            <button
-              aria-label="Edit Button"
-              onClick={() => handleEdit(row.original)}
-              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black"
-            >
-              <FaPen /> Editar
-            </button>
+            <PermissionGuard permission={83}> 
+              <button
+                aria-label="Edit Button"
+                onClick={() => handleEdit(row.original)}
+                className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black"
+              >
+                <FaPen /> Editar
+              </button>
+            </PermissionGuard>
             <button
               aria-label="History Button"
               onClick={() => handleHistory(row.original)}
@@ -386,13 +388,15 @@ const MachineryMainView = () => {
             >
               <FaHistory /> Historial
             </button>
-            <button
-              aria-label="View Button"
-              onClick={() => handleView(row.original)}
-              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black"
-            >
-              <FaEye /> Ver
-            </button>
+            <PermissionGuard permission={86}>
+              <button
+                aria-label="View Button"
+                onClick={() => handleView(row.original)}
+                className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black"
+              >
+                <FaEye /> Ver
+              </button>
+            </PermissionGuard>
           </div>
         ),
       },
@@ -484,34 +488,38 @@ const MachineryMainView = () => {
             Limpiar búsqueda
           </button>
         )}
-        <button
-          aria-label="Add Machinery Button"
-          onClick={handleOpenAddMachineModal}
-          className="parametrization-filter-button"
-        >
-          <FaPlus className="w-4 h-4" />
-          Agregar maquinaria
-        </button>
+        <PermissionGuard permission={84}>
+          <button
+            aria-label="Add Machinery Button"
+            onClick={handleOpenAddMachineModal}
+            className="parametrization-filter-button"
+          >
+            <FaPlus className="w-4 h-4" />
+            Agregar maquinaria
+          </button>
+        </PermissionGuard>
       </div>
 
       {/* Tabla de maquinaria */}
-      <TableList
-        columns={columns}
-        data={
-          filteredData.length > 0 ||
-          machineryTypeFilter ||
-          tenureFilter ||
-          operativeStatusFilter ||
-          acquisitionDateFilter
-            ? filteredData
-            : machineryData
-        }
-        loading={loading}
-        globalFilter={globalFilter}
-        onGlobalFilterChange={setGlobalFilter}
-        globalFilterFn={globalFilterFn}
-        pageSizeOptions={[10, 20, 30, 50]}
-      />
+      <PermissionGuard permission={82}>
+        <TableList
+          columns={columns}
+          data={
+            filteredData.length > 0 ||
+            machineryTypeFilter ||
+            tenureFilter ||
+            operativeStatusFilter ||
+            acquisitionDateFilter
+              ? filteredData
+              : machineryData
+          }
+          loading={loading}
+          globalFilter={globalFilter}
+          onGlobalFilterChange={setGlobalFilter}
+          globalFilterFn={globalFilterFn}
+          pageSizeOptions={[10, 20, 30, 50]}
+        />
+      </PermissionGuard>
 
       {/* Modal de filtros */}
       <Dialog.Root open={isFilterModalOpen} onOpenChange={setIsFilterModalOpen}>
@@ -633,8 +641,13 @@ const MachineryMainView = () => {
         </Dialog.Portal>
       </Dialog.Root>
       <MultiStepFormModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
+        isOpen={isCreateModalOpen || isEditModalOpen}
+        onClose={() => {
+          setIsCreateModalOpen(false)
+          setIsEditModalOpen(false)
+          setSelectedMachine(null)
+        }}
+        machineryToEdit={isEditModalOpen ? selectedMachine : null}
         onSuccess={handleRefresh}
       />
       <MachineryHistoryModal

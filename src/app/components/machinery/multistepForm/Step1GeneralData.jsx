@@ -13,11 +13,15 @@ export default function Step1GeneralData({
   brandsList = [],
   modelsList = [],
   telemetryDevicesList = [],
+  machineryStatuesList = [],
+  isEditMode = false,
+  currentStatusId = null,
 }) {
   const { register, formState: { errors }, setValue, watch } = useFormContext();
   const [previewImage, setPreviewImage] = useState(null);
   const [fileName, setFileName] = useState("");
   const [fileSize, setFileSize] = useState("");
+  const selectedUsageState = watch("usageState");
   const fileInputRef = useRef(null);
   const { getCurrentTheme } = useTheme();
 
@@ -415,6 +419,52 @@ export default function Step1GeneralData({
             </span>
           )}
         </div>
+        {/* Mostrar solo si está en modo edición y el estado es activo */}
+        {isEditMode && currentStatusId !== 3 && (
+          <>
+            {/* Select de estado */}
+            <div>
+              <label className="block text-theme-sm text-secondary mb-1">
+                Estado operacional
+              </label>
+              <select
+                aria-label="Machinery Status Select"
+                {...register("machineryStatues")}
+                className="parametrization-input"
+              >
+                <option value="">Seleccione un estado...</option>
+                {machineryStatuesList.map((machineryStatues) => (
+                  <option key={machineryStatues.id_statues} value={machineryStatues.id_statues}>
+                    {machineryStatues.name}
+                  </option>
+                ))}
+              </select>
+              {errors.usageState && (
+                <span className="text-theme-xs mt-1 block" style={{ color: 'var(--color-error)' }}>
+                  {errors.usageState.message}
+                </span>
+              )}
+            </div>
+            {/* Textarea de justificación */}
+            <div className="col-span-1 sm:col-span-2 lg:col-span-4">
+              <label className="block text-theme-sm text-secondary mb-1">
+                Justificación de cambio
+              </label>
+              <textarea
+                aria-label="Justification Textarea"
+                {...register("justificationGeneralData")}
+                className="parametrization-input"
+                rows={3}
+                placeholder="Describa la justificación del cambio..."
+              />
+              {errors.justification && (
+                <span className="text-theme-xs mt-1 block" style={{ color: 'var(--color-error)' }}>
+                  {errors.justification.message}
+                </span>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {/* File Upload */}
