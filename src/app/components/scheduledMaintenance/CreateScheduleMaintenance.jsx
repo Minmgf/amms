@@ -49,7 +49,7 @@ const ScheduleMaintenanceModal = ({ isOpen, onClose, onSubmit }) => {
 
     return (
         <div className="modal-overlay" id="create-schedule-maintenance-modal">
-            <div className="parametrization-modal" style={{ width: '28rem' }}>
+            <div className="parametrization-modal" style={{ width: '56rem', maxWidth: '90vw' }}>
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-lg font-semibold text-primary">Programar mantenimiento</h2>
@@ -104,11 +104,11 @@ const ScheduleMaintenanceModal = ({ isOpen, onClose, onSubmit }) => {
                         </div>
                     </div>
 
-                    {/* Segunda fila: Schedule date y Schedule hour */}
-                    <div className="grid grid-cols-2 gap-4">
+                    {/* Segunda fila: Schedule date, Schedule hour y Assigned technician */}
+                    <div className="grid grid-cols-3 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-secondary mb-2">
-                                Fecha prevista
+                                Fecha programada
                             </label>
                             <input
                                 type="text"
@@ -122,7 +122,7 @@ const ScheduleMaintenanceModal = ({ isOpen, onClose, onSubmit }) => {
 
                         <div>
                             <label className="block text-sm font-medium text-secondary mb-2">
-                                Hora prevista
+                                Hora programada
                             </label>
                             <div className="flex gap-1">
                                 <select
@@ -164,25 +164,24 @@ const ScheduleMaintenanceModal = ({ isOpen, onClose, onSubmit }) => {
                                 </select>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Assigned technician */}
-                    <div>
-                        <label className="block text-sm font-medium text-secondary mb-2">
-                            Técnico asignado
-                        </label>
-                        <select
-                            aria-label="Assigned Technician Select"
-                            className="parametrization-input"
-                            value={formData.assignedTechnician}
-                            onChange={(e) => handleInputChange('assignedTechnician', e.target.value)}
-                        >
-                            {technicians.map(technician => (
-                                <option key={technician.id} value={technician.name}>
-                                    {technician.name}
-                                </option>
-                            ))}
-                        </select>
+                        <div>
+                            <label className="block text-sm font-medium text-secondary mb-2">
+                                Técnico asignado
+                            </label>
+                            <select
+                                aria-label="Assigned Technician Select"
+                                className="parametrization-input"
+                                value={formData.assignedTechnician}
+                                onChange={(e) => handleInputChange('assignedTechnician', e.target.value)}
+                            >
+                                {technicians.map(technician => (
+                                    <option key={technician.id} value={technician.name}>
+                                        {technician.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
 
                     {/* Maintenance details */}
