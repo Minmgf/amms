@@ -9,6 +9,7 @@ import { SuccessModal, ErrorModal } from "../shared/SuccessErrorModal";
 const MaintenanceRequestModal = ({
   isOpen,
   onClose,
+  onSuccess,
   defaultValues = {},
 }) => {
   const { 
@@ -66,6 +67,9 @@ const MaintenanceRequestModal = ({
       const response = await createMaintenanceRequest(payload);
       setModalMessage(response.message || "Solicitud de mantenimiento creada con éxito.");
       setSuccessOpen(true);
+      if (onSuccess) {
+        onSuccess();
+      }
       setTimeout(() => {
         setSuccessOpen(false);
         reset();
