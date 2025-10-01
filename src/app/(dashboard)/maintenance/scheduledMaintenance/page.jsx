@@ -11,8 +11,9 @@ import CancelScheduledMaintenance from '@/app/components/scheduledMaintenance/Ca
 import { SuccessModal, ErrorModal } from '@/app/components/shared/SuccessErrorModal';
 import TableList from '@/app/components/shared/TableList';
 import { useTheme } from '@/contexts/ThemeContext';
-import { getScheduledMaintenanceList } from '@/services/maintenanceService';
+import { getScheduledMaintenanceList, getMaintenanceSchedulingStatuses } from '@/services/maintenanceService';
 import { getUserInfo } from '@/services/authService';
+import MaintenanceReportModal from '@/app/components/maintenance/machineMaintenance/MaintenanceReportModal';
 
 const ScheduledMaintenancePage = () => {
   const { currentTheme } = useTheme();
@@ -44,17 +45,35 @@ const ScheduledMaintenancePage = () => {
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
 
   // Función para cargar mantenimientos
   const loadMaintenanceData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await getScheduledMaintenanceList();
+      // Obtener mantenimientos y estados en paralelo
+      const [maintenanceResponse, statusesResponse] = await Promise.all([
+        getScheduledMaintenanceList(),
+        getMaintenanceSchedulingStatuses()
+      ]);
       
-      if (response.success) {
+      // Verificar que ambas respuestas sean exitosas y tengan datos
+      if (maintenanceResponse && statusesResponse && 
+          maintenanceResponse.success && Array.isArray(maintenanceResponse.data) &&
+          Array.isArray(statusesResponse)) {
+        
+        // Crear un mapa de estados para búsqueda rápida
+        const statusMap = statusesResponse.reduce((map, status) => {
+          map[status.id_statues] = {
+            name: status.name,
+            description: status.description
+          };
+          return map;
+        }, {});
+
         // Mapear los datos del API con peticiones adicionales para obtener nombres de técnicos
-        const mappedDataPromises = response.data.map(async (item) => {
+        const mappedDataPromises = maintenanceResponse.data.map(async (item) => {
           let technicianName = item.technician_name || `Técnico #${item.assigned_technician_id}`;
           
           // Si no hay technician_name y hay assigned_technician_id, hacer petición adicional
@@ -70,6 +89,9 @@ const ScheduledMaintenancePage = () => {
             }
           }
 
+          // Obtener el estado correcto del mapa de estados
+          const statusInfo = statusMap[item.status_id] || { name: 'Desconocido', description: '' };
+
           return {
             id: item.id_maintenance_scheduling,
             machinery: {
@@ -79,7 +101,8 @@ const ScheduledMaintenancePage = () => {
             },
             maintenanceDate: item.scheduled_at ? new Date(item.scheduled_at).toISOString().split('T')[0] : null,
             technician: technicianName,
-            status: item.status_name || 'Pendiente',
+            status: statusInfo.name,
+            statusDescription: statusInfo.description,
             type: 'Programado', // Por defecto, se puede ajustar si viene en el API
             details: `Mantenimiento programado para ${item.machinery_name}`,
             // Campos adicionales del API
@@ -94,7 +117,14 @@ const ScheduledMaintenancePage = () => {
         const mappedData = await Promise.all(mappedDataPromises);
         setMaintenanceData(mappedData);
       } else {
-        setError('Error al cargar los mantenimientos programados');
+        setError('Error al cargar los mantenimientos programados o estados');
+        console.error('Invalid response structure:', { 
+          maintenanceResponse, 
+          statusesResponse,
+          maintenanceSuccess: maintenanceResponse?.success,
+          maintenanceDataIsArray: Array.isArray(maintenanceResponse?.data),
+          statusesIsArray: Array.isArray(statusesResponse)
+        });
       }
     } catch (err) {
       setError('Error al conectar con el servidor. Por favor, intenta de nuevo.');
@@ -133,10 +163,10 @@ const ScheduledMaintenancePage = () => {
   };
 
   // Funciones de acciones
-  const handleViewDetails = (maintenanceId) => {
+  const handleViewReport = (maintenanceId) => {
     const maintenance = maintenanceData.find(m => m.id === maintenanceId);
     setSelectedMaintenance(maintenance);
-    setDetailModalOpen(true);
+    setReportModalOpen(true);
   };
 
   const handleUpdateMaintenance = (maintenanceId) => {
@@ -171,25 +201,23 @@ const ScheduledMaintenancePage = () => {
   const ActionsCell = ({ maintenance }) => {
     return (
       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-        {/* Ver detalles - siempre disponible */}
+        {/* Ver reporte - siempre disponible */}
         <button
-          onClick={() => handleViewDetails(maintenance.id)}
+          onClick={() => handleViewReport(maintenance.id)}
           className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600"
-          title="Ver detalles del mantenimiento"
+          title="Ver reporte del mantenimiento"
         >
-          <FiEye className="w-3 h-3" /> Detalles
+          <FiEye className="w-3 h-3" /> Reporte
         </button>
         
-        {/* Actualizar - solo para pendientes */}
-        {maintenance.status === 'Pendiente' && (
-          <button
-            onClick={() => handleUpdateMaintenance(maintenance.id)}
-            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 hover:border-green-500 hover:text-green-600 text-green-600"
-            title="Actualizar mantenimiento"
-          >
-            <FiEdit3 className="w-3 h-3" /> Actualizar
-          </button>
-        )}
+        {/* Actualizar - siempre disponible */}
+        <button
+          onClick={() => handleUpdateMaintenance(maintenance.id)}
+          className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 hover:border-green-500 hover:text-green-600 text-green-600"
+          title="Actualizar mantenimiento"
+        >
+          <FiEdit3 className="w-3 h-3" /> Actualizar
+        </button>
         
         {/* Cancelar - solo para pendientes */}
         {![14,15].includes(maintenance.status_id) && (
@@ -213,10 +241,22 @@ const ScheduledMaintenancePage = () => {
       accessorFn: row => row.machinery.name,
       cell: ({ row }) => (
         <div className="flex items-center">
-          <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
-            <span className="text-xs font-semibold text-gray-600">
-              {row.original.machinery.name.charAt(0)}
-            </span>
+          <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3 overflow-hidden">
+            {row.original.machinery.image ? (
+              <img 
+                src={row.original.machinery.image} 
+                alt={row.original.machinery.name}
+                className="w-full h-full object-cover rounded-lg"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+            ) : (
+              <span className="text-xs font-semibold text-gray-600">
+                {row.original.machinery.name.charAt(0)}
+              </span>
+            )}
           </div>
           <div>
             <div className="text-sm font-medium parametrization-text">
@@ -269,9 +309,10 @@ const ScheduledMaintenancePage = () => {
       accessorKey: 'status',
       cell: ({ getValue }) => (
         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-          getValue() === 'Pendiente' ? 'text-yellow-800 bg-yellow-100' :
+          getValue() === 'Programado' ? 'text-blue-800 bg-blue-100' :
           getValue() === 'Realizado' ? 'text-green-800 bg-green-100' :
-          'text-red-800 bg-red-100'
+          getValue() === 'Cancelado' ? 'text-red-800 bg-red-100' :
+          'text-gray-800 bg-gray-100'
         }`}>
           {getValue()}
         </span>
@@ -350,17 +391,17 @@ const ScheduledMaintenancePage = () => {
   // Calcular estadísticas
   const statistics = useMemo(() => {
     const total = filteredData.length;
-    const pending = filteredData.filter(m => m.status === 'Pendiente').length;
+    const programmed = filteredData.filter(m => m.status === 'Programado').length;
     const completed = filteredData.filter(m => m.status === 'Realizado').length;
     const cancelled = filteredData.filter(m => m.status === 'Cancelado').length;
     const overdue = filteredData.filter(m => 
-      m.status === 'Pendiente' && getDateStatus(m.maintenanceDate) === 'overdue'
+      m.status === 'Programado' && getDateStatus(m.maintenanceDate) === 'overdue'
     ).length;
     const today = filteredData.filter(m => 
       getDateStatus(m.maintenanceDate) === 'today'
     ).length;
     
-    return { total, pending, completed, cancelled, overdue, today };
+    return { total, programmed, completed, cancelled, overdue, today };
   }, [filteredData]);
 
   // Limpiar filtros
@@ -385,7 +426,7 @@ const ScheduledMaintenancePage = () => {
         <h1 className="text-2xl font-bold parametrization-text">
           Mantenimientos Programados
         </h1>
-        <button 
+        {/* <button 
           onClick={loadMaintenanceData}
           disabled={loading}
           className={`px-4 py-2 rounded-md text-white font-medium transition-colors ${
@@ -395,7 +436,7 @@ const ScheduledMaintenancePage = () => {
           }`}
         >
           {loading ? 'Cargando...' : 'Actualizar'}
-        </button>
+        </button> */}
       </div>
 
       {/* Error Message */}
@@ -674,16 +715,16 @@ const ScheduledMaintenancePage = () => {
                       <span className="font-medium parametrization-text">{filteredData.length}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="parametrization-text">Pendientes:</span>
-                      <span className="font-medium text-warning">
-                        {filteredData.filter(m => m.status === 'Pendiente').length}
+                      <span className="parametrization-text">Programados:</span>
+                      <span className="font-medium text-blue-600">
+                        {filteredData.filter(m => m.status === 'Programado').length}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="parametrization-text">Vencidos:</span>
                       <span className="font-medium text-error">
                         {filteredData.filter(m => 
-                          m.status === 'Pendiente' && getDateStatus(m.maintenanceDate) === 'overdue'
+                          m.status === 'Programado' && getDateStatus(m.maintenanceDate) === 'overdue'
                         ).length}
                       </span>
                     </div>
@@ -761,7 +802,7 @@ const ScheduledMaintenancePage = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">Todos los estados</option>
-              <option value="Pendiente">Pendiente</option>
+              <option value="Programado">Programado</option>
               <option value="Realizado">Realizado</option>
               <option value="Cancelado">Cancelado</option>
             </select>
@@ -789,8 +830,7 @@ const ScheduledMaintenancePage = () => {
       <ScheduleMaintenanceModal
         isOpen={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
-        onSuccess={handleModalSuccess}
-        onError={handleModalError}
+        onSubmit={loadMaintenanceData}
       />
 
       {cancelModalOpen && (
@@ -800,6 +840,20 @@ const ScheduledMaintenancePage = () => {
           maintenanceData={selectedMaintenance}
           onSuccess={handleModalSuccess}
           onError={handleModalError}
+        />
+      )}
+
+      {/* Modal de Reporte de Mantenimiento */}
+      {reportModalOpen && (
+        <MaintenanceReportModal
+          isOpen={reportModalOpen}
+          onClose={() => setReportModalOpen(false)}
+          maintenance={selectedMaintenance}
+          onSave={(reportData) => {
+            console.log('Reporte guardado:', reportData);
+            setReportModalOpen(false);
+            handleModalSuccess('Reporte de mantenimiento guardado exitosamente');
+          }}
         />
       )}
 
