@@ -51,7 +51,9 @@ export const getMaintenanceRequestList = async () => {
 // Lista de mantenimientos programados
 export const getScheduledMaintenanceList = async () => {
     const { data } = await apiMain.get("/maintenance_scheduling/list/");
-  
+    return data;
+};
+
 // Rechazar solicitud de mantenimiento
 export const rejectMaintenanceRequest = async (id, justification) => {
     const { data } = await apiMain.post(
