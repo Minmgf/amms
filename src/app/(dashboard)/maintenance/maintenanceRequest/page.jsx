@@ -185,6 +185,23 @@ const SolicitudesMantenimientoView = () => {
     loadModalData();
   }, []);
 
+  useEffect(() => {
+    // Verificar si el usuario tiene el permiso maintenance_request.reject
+    // Esto dependerá de tu sistema de permisos
+    const checkPermissions = async () => {
+      try {
+        // Ejemplo: const hasPermission = await checkUserPermission('maintenance_request.reject');
+        // setCanRejectRequests(hasPermission);
+      } catch (error) {
+        console.error("Error verificando permisos:", error);
+      }
+    };
+
+    checkPermissions();
+  }, []);
+
+  checkPermissions();
+
   // Aplicar filtros cuando cambien los datos o los filtros
   useEffect(() => {
     applyFilters();
@@ -204,55 +221,72 @@ const SolicitudesMantenimientoView = () => {
 
     try {
       // Cargar datos reales desde el backend
-      //const response = await getMaintenanceRequests();
+      const response = await getMaintenanceRequests();
 
       // Mapear la respuesta al formato esperado por la tabla
-      // const formattedData =
-      //   response.data?.map((item) => ({
-      //     id: item.id_maintenance_request,
-      //     machine_id: item.id_machinery,
-      //     machine_name: item.machinery_name || "N/A",
-      //     serial_number: item.machinery_serial || "N/A",
-      //     requester: item.requester_name || "N/A",
-      //     maintenance_type: item.maintenance_type_name || "N/A",
-      //     request_date: item.created_at,
-      //     priority: item.priority || "Media",
-      //     status: item.status_name || "Pendiente",
-      //     description: item.description || "",
-      //     justification: item.justification || null,
-      //   })) || [];
+      const formattedData =
+        response.data?.map((item) => ({
+          id: item.id_maintenance_request,
+          machine_id: item.id_machinery,
+          machine_name: item.machinery_name || "N/A",
+          serial_number: item.machinery_serial || "N/A",
+          requester: item.requester_name || "N/A",
+          maintenance_type: item.maintenance_type_name || "N/A",
+          request_date: item.created_at,
+          priority: item.priority || "Media",
+          status: item.status_name || "Pendiente",
+          description: item.description || "",
+          justification: item.justification || null,
+          // Campos adicionales para el modal de detalle
+          consecutiveNumber: item.consecutive_number,
+          problemDescription: item.description,
+          answerDate: item.responded_at
+            ? new Date(item.responded_at).toLocaleDateString("es-ES")
+            : null,
+          handledBy: item.responded_by_name || null,
+          rejectionReason: item.justification || null,
+          scheduledDate: item.scheduled_at
+            ? new Date(item.scheduled_at).toLocaleDateString("es-ES")
+            : null,
+          assignedTechnician: item.assigned_technician_name || null,
+        })) || [];
 
-      //setMaintenanceData(formattedData);
-      setMaintenanceData(sampleMaintenanceData);
+      setMaintenanceData(formattedData);
 
       // Extraer valores únicos para los filtros
-      // const requesters = [
-      //   ...new Set(formattedData.map((item) => item.requester).filter(Boolean)),
-      // ];
-      // const types = [
-      //   ...new Set(
-      //     formattedData.map((item) => item.maintenance_type).filter(Boolean)
-      //   ),
-      // ];
-      // const priorities = [
-      //   ...new Set(formattedData.map((item) => item.priority).filter(Boolean)),
-      // ];
+      const requesters = [
+        ...new Set(formattedData.map((item) => item.requester).filter(Boolean)),
+      ];
+      const types = [
+        ...new Set(
+          formattedData.map((item) => item.maintenance_type).filter(Boolean)
+        ),
+      ];
+      const priorities = [
+        ...new Set(formattedData.map((item) => item.priority).filter(Boolean)),
+      ];
 
-      // setAvailableRequesters(requesters);
-      // setAvailableMaintenanceTypes(types);
-      // setAvailablePriorities(priorities);
+      setAvailableRequesters(requesters);
+      setAvailableMaintenanceTypes(types);
+      setAvailablePriorities(priorities);
     } catch (err) {
       console.error("Error cargando solicitudes:", err);
 
-      // Si falla, usar datos de ejemplo
-      setMaintenanceData(sampleMaintenanceData);
+      // Usar datos de ejemplo solo en desarrollo
+      if (process.env.NODE_ENV === "development") {
+        setMaintenanceData(sampleMaintenanceData);
+      }
 
       setErrorModal({
         isOpen: true,
         title: "Error al cargar datos",
         message: `No se pudieron cargar las solicitudes: ${
-          err.message || "Error desconocido"
-        }. Mostrando datos de ejemplo.`,
+          err.response?.data?.message || err.message || "Error desconocido"
+        }. ${
+          process.env.NODE_ENV === "development"
+            ? "Mostrando datos de ejemplo."
+            : ""
+        }`,
       });
     } finally {
       setLoading(false);
@@ -617,8 +651,12 @@ const SolicitudesMantenimientoView = () => {
         cell: ({ row }) => {
           const request = row.original;
           const status = request.status;
+
+          // Solo "Pendiente" puede ser aprobado
           const canApprove = status === "Pendiente";
-          const canCancel = ["Pendiente", "Programado"].includes(status);
+
+          // Solo "Pendiente" puede ser rechazado según HU-SM-005
+          const canReject = status === "Pendiente";
 
           return (
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -630,36 +668,24 @@ const SolicitudesMantenimientoView = () => {
                 <FaHistory className="w-3 h-3" /> Detalles
               </button>
 
-              {/* <button
-              onClick={() => handleEdit(request)}
-              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-yellow-500 hover:text-yellow-600"
-              title="Editar solicitud"
-            >
-              <FaRegClock  className="w-3 h-3" /> 
-            </button> */}
-
-              {/* Renderizado condicional para aprobar */}
               {canApprove && (
                 <button
-                  onClick={() => handleOpenScheduleModal(request)} // Cambio aquí
+                  onClick={() => handleOpenScheduleModal(request)}
                   className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 hover:border-green-500 hover:text-green-600 text-green-600"
-                  title="Aprobar solicitud"
+                  title="Aprobar y programar solicitud"
                 >
                   <FaRegClock className="w-3 h-3" /> Agendar
                 </button>
               )}
 
-              {/* Renderizado condicional para cancelar */}
-              {canCancel && (
-                //<PermissionGuard permission="maintenance_request.reject">
-                  <button
-                    onClick={() => handleCancel(request)}
-                    className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-red-300 hover:border-red-500 hover:text-red-600 text-red-600"
-                    title="Rechazar solicitud"
-                  >
-                    <FaBan className="w-3 h-3" /> Rechazar
-                  </button>
-                //</PermissionGuard>
+              {canReject && (
+                <button
+                  onClick={() => handleCancel(request)}
+                  className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-red-300 hover:border-red-500 hover:text-red-600 text-red-600"
+                  title="Rechazar solicitud"
+                >
+                  <FaBan className="w-3 h-3" /> Rechazar
+                </button>
               )}
             </div>
           );
@@ -711,21 +737,34 @@ const SolicitudesMantenimientoView = () => {
   };
 
   const handleCancel = (request) => {
-    // Validar que el estado permita el rechazo
-    const allowedStatuses = ["Pendiente"];
-    const notAllowedStatuses = ["Rechazada", "Completado", "En Progreso"];
+    // Validaciones de estados según la historia de usuario
+    const notAllowedStatuses = [
+      "Rechazada",
+      "Completado",
+      "En Progreso",
+      "Programado",
+    ];
 
     if (notAllowedStatuses.includes(request.status)) {
       let message = "Esta solicitud no puede ser rechazada.";
 
-      if (request.status === "Rechazada") {
-        message = "Esta solicitud ya fue rechazada previamente.";
-      } else if (request.status === "Completado") {
-        message = "No se puede rechazar una solicitud completada.";
-      } else if (request.status === "En Progreso") {
-        message = "No se puede rechazar una solicitud en progreso.";
-      } else if (request.status === "Programado") {
-        message = "No se puede rechazar una solicitud que ya fue programada.";
+      switch (request.status) {
+        case "Rechazada":
+          message = "Esta solicitud ya fue rechazada previamente.";
+          break;
+        case "Completado":
+          message = "No se puede rechazar una solicitud completada.";
+          break;
+        case "En Progreso":
+          message = "No se puede rechazar una solicitud en progreso.";
+          break;
+        case "Programado":
+          message =
+            "No se puede rechazar una solicitud que ya fue programada o aceptada.";
+          break;
+        default:
+          message =
+            "Esta solicitud no puede ser rechazada en su estado actual.";
       }
 
       setErrorModal({
@@ -736,6 +775,7 @@ const SolicitudesMantenimientoView = () => {
       return;
     }
 
+    // Si pasa las validaciones, abrir el modal
     setSelectedRequestForDecline(request);
     setIsDeclineModalOpen(true);
   };
@@ -798,7 +838,8 @@ const SolicitudesMantenimientoView = () => {
     response,
   }) => {
     try {
-      // Actualizar el estado local inmediatamente para feedback rápido
+      // El modal ya llamó al servicio y obtuvo la respuesta
+      // Solo actualizamos el estado local
       setMaintenanceData((prevData) =>
         prevData.map((item) =>
           item.id === requestId
@@ -806,19 +847,27 @@ const SolicitudesMantenimientoView = () => {
                 ...item,
                 status: "Rechazada",
                 justification: justification,
+                answerDate: new Date().toLocaleDateString("es-ES"),
+                rejectionReason: justification,
               }
             : item
         )
       );
 
+      // Cerrar el modal de rechazo
+      setIsDeclineModalOpen(false);
+      setSelectedRequestForDecline(null);
+
       // Mostrar mensaje de éxito
       setSuccessModal({
         isOpen: true,
         title: "Solicitud Rechazada",
-        message: `La solicitud #${requestId} ha sido rechazada exitosamente.`,
+        message:
+          response.message ||
+          `La solicitud #${requestId} ha sido rechazada exitosamente.`,
       });
 
-      // Recargar los datos después de un breve delay para sincronizar con el servidor
+      // Recargar datos después de un breve delay para sincronizar con el servidor
       setTimeout(async () => {
         await loadInitialData();
       }, 1500);
@@ -830,13 +879,14 @@ const SolicitudesMantenimientoView = () => {
 
       setErrorModal({
         isOpen: true,
-        title: "Error al rechazar la solicitud",
-        message: `No se pudo rechazar la solicitud: ${
+        title: "Error al procesar el rechazo",
+        message: `Hubo un problema al actualizar los datos: ${
           error.message || "Error desconocido"
-        }. Por favor, intenta de nuevo.`,
+        }. Los datos se han recargado.`,
       });
     }
   };
+
   const handleOpenAddRequestModal = () => {
     setIsCreateModalOpen(true);
   };
