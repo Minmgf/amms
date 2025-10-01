@@ -37,7 +37,7 @@ const CancelScheduledMaintenance = ({
     try {
       const response = await cancelScheduledMaintenance(
         maintenanceData.id, 
-        data.justification
+        {justification: data.justification}
       );
 
       if (response.success) {
@@ -113,7 +113,7 @@ const CancelScheduledMaintenance = ({
       role="dialog"
     >
       <div
-        className="bg-background rounded-xl shadow-2xl w-full max-w-full max-h-[95vh] overflow-hidden sm:max-w-2xl"
+        className="bg-background rounded-xl shadow-2xl w-full max-w-full max-h-[95vh] overflow-y-auto sm:max-w-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
