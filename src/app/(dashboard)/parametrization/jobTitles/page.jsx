@@ -17,6 +17,7 @@ import {
   ErrorModal,
 } from "@/app/components/shared/SuccessErrorModal";
 import { InfoIcon } from "lucide-react";
+import PermissionGuard from "@/app/(auth)/PermissionGuard";
 
 // Componente principal
 const ParameterizationView = () => {
@@ -205,13 +206,15 @@ const ParameterizationView = () => {
       columnHelper.accessor("id", {
         header: "Detalles",
         cell: (info) => (
-          <button
-            onClick={() => handleViewDetails(info.getValue())}
-            className="parametrization-action-button p-2 transition-colors lg:opacity-0 group-hover:opacity-100"
-            title="View details"
-          >
-            <FiEye className="w-4 h-4" />
-          </button>
+          <PermissionGuard permission={62}>
+            <button
+              onClick={() => handleViewDetails(info.getValue())}
+              className="parametrization-action-button p-2 transition-colors lg:opacity-0 group-hover:opacity-100"
+              title="View details"
+            >
+              <FiEye className="w-4 h-4" />
+            </button>
+          </PermissionGuard>
         ),
       }),
     ],
@@ -237,14 +240,15 @@ const ParameterizationView = () => {
               setGlobalFilter={setGlobalFilter}
               placeholder="Search categories..."
             />
-
-            <button
-              onClick={handleAddDepartment}
-              className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit"
-            >
-              <FiUsers className="w-4 h-4" />
-              <span className="text-sm">Añadir parámetro</span>
-            </button>
+            <PermissionGuard permission={61}>
+              <button
+                onClick={handleAddDepartment}
+                className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit"
+              >
+                <FiUsers className="w-4 h-4" />
+                <span className="text-sm">Añadir parámetro</span>
+              </button>
+            </PermissionGuard>
           </div>
 
           {/* Navigation Menu(component) */}
@@ -256,13 +260,15 @@ const ParameterizationView = () => {
           </div>
 
           {/* Table */}
-          <TableList
-            columns={columns}
-            data={data}
-            loading={loading}
-            globalFilter={globalFilter}
-            onGlobalFilterChange={setGlobalFilter}
-          />
+          <PermissionGuard permission={63}>
+            <TableList
+              columns={columns}
+              data={data}
+              loading={loading}
+              globalFilter={globalFilter}
+              onGlobalFilterChange={setGlobalFilter}
+            />
+          </PermissionGuard>
         </div>
       </div>
 

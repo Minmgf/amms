@@ -10,7 +10,6 @@ export default function MaintenanceReportModal({
   maintenance = {},
   authToken,
 }) {
-  // Estado inicial del formulario
   const [form, setForm] = useState({
     description: "",
     investedTime: { hours: "", minutes: "" },
@@ -20,7 +19,6 @@ export default function MaintenanceReportModal({
     recommendations: "",
   });
 
-  // Estados para las opciones de los selectores
   const [techniciansOptions, setTechniciansOptions] = useState([
     { id: 1, name: "Juan Pérez" },
     { id: 2, name: "María García" },
@@ -45,14 +43,12 @@ export default function MaintenanceReportModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
-  // Estado temporal para agregar nuevo mantenimiento realizado
   const [newMaintenance, setNewMaintenance] = useState({
     maintenance: "",
     technician: "",
     cost: "",
   });
 
-  // Estado temporal para agregar nuevo repuesto
   const [newSparePart, setNewSparePart] = useState({
     name: "",
     brand: "",
@@ -60,15 +56,14 @@ export default function MaintenanceReportModal({
     unitCost: "",
   });
 
-  // Calcular el costo total de repuestos
   const sparePartsTotalCost = useMemo(() => {
     return form.spareParts.reduce((total, part) => {
-      const partTotal = parseFloat(part.quantity || 0) * parseFloat(part.unitCost || 0);
+      const partTotal =
+        parseFloat(part.quantity || 0) * parseFloat(part.unitCost || 0);
       return total + (isNaN(partTotal) ? 0 : partTotal);
     }, 0);
   }, [form.spareParts]);
 
-  // Calcular el costo total del mantenimiento
   const totalMaintenanceCost = useMemo(() => {
     const maintenancesCost = form.performedMaintenances.reduce((total, m) => {
       return total + parseFloat(m.cost || 0);
@@ -76,7 +71,6 @@ export default function MaintenanceReportModal({
     return maintenancesCost + sparePartsTotalCost;
   }, [form.performedMaintenances, sparePartsTotalCost]);
 
-  // Manejadores de cambios
   const handleDescriptionChange = (e) => {
     const value = e.target.value;
     if (value.length <= 600) {
@@ -86,8 +80,6 @@ export default function MaintenanceReportModal({
 
   const handleTimeChange = (field, value) => {
     const numValue = value.replace(/\D/g, "");
-    
-    // Validar rangos
     if (field === "hours") {
       const hours = parseInt(numValue) || 0;
       if (hours > 23) return;
@@ -95,7 +87,6 @@ export default function MaintenanceReportModal({
       const minutes = parseInt(numValue) || 0;
       if (minutes > 59) return;
     }
-    
     setForm({
       ...form,
       investedTime: { ...form.investedTime, [field]: numValue },
@@ -103,7 +94,9 @@ export default function MaintenanceReportModal({
   };
 
   const handleTechnicianSelect = (technicianId) => {
-    const technician = techniciansOptions.find((t) => t.id === parseInt(technicianId));
+    const technician = techniciansOptions.find(
+      (t) => t.id === parseInt(technicianId)
+    );
     if (technician && !form.technicians.find((t) => t.id === technician.id)) {
       setForm({ ...form, technicians: [...form.technicians, technician] });
     }
@@ -116,9 +109,12 @@ export default function MaintenanceReportModal({
     });
   };
 
-  // Agregar mantenimiento realizado
   const addPerformedMaintenance = () => {
-    if (!newMaintenance.maintenance || !newMaintenance.technician || !newMaintenance.cost) {
+    if (
+      !newMaintenance.maintenance ||
+      !newMaintenance.technician ||
+      !newMaintenance.cost
+    ) {
       setError("Completa todos los campos del mantenimiento");
       return;
     }
@@ -154,11 +150,12 @@ export default function MaintenanceReportModal({
   const removePerformedMaintenance = (id) => {
     setForm({
       ...form,
-      performedMaintenances: form.performedMaintenances.filter((m) => m.id !== id),
+      performedMaintenances: form.performedMaintenances.filter(
+        (m) => m.id !== id
+      ),
     });
   };
 
-  // Agregar repuesto
   const addSparePart = () => {
     if (
       !newSparePart.name ||
@@ -170,7 +167,9 @@ export default function MaintenanceReportModal({
       return;
     }
 
-    const brand = brandsOptions.find((b) => b.id === parseInt(newSparePart.brand));
+    const brand = brandsOptions.find(
+      (b) => b.id === parseInt(newSparePart.brand)
+    );
     if (!brand) {
       setError("Selecciona una marca válida");
       return;
@@ -200,12 +199,10 @@ export default function MaintenanceReportModal({
     });
   };
 
-  // Manejo del envío
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
 
-    // Validaciones
     if (!form.description.trim()) {
       setError("La descripción del mantenimiento es obligatoria");
       return;
@@ -250,52 +247,109 @@ export default function MaintenanceReportModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4"
       onClick={handleBackdropClick}
+      style={{ fontFamily: "var(--font-family)" }}
     >
       <div
-        className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden"
+        className="w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden rounded-lg shadow-xl"
+        style={{
+          backgroundColor: "var(--color-surface)",
+          borderRadius: "var(--border-radius-lg)",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h2 className="text-xl font-semibold text-gray-900">Reporte de mantenimiento</h2>
+        <div
+          className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4"
+          style={{
+            borderBottom: "1px solid var(--color-border)",
+          }}
+        >
+          <h2
+            className="text-lg sm:text-xl font-semibold"
+            style={{
+              color: "var(--color-text)",
+              fontSize: "var(--font-size-lg)",
+              fontWeight: "var(--font-weight-semibold)",
+            }}
+          >
+            Reporte de mantenimiento
+          </h2>
           <button
             onClick={onClose}
             aria-label="Cerrar modal"
-            className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-1 rounded-lg transition-colors"
+            style={{
+              color: "var(--color-text-secondary)",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = "var(--color-hover)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "transparent")
+            }
           >
-            <IoClose className="w-5 h-5 text-gray-500" />
+            <IoClose className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(90vh-140px)]">
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <div className="overflow-y-auto max-h-[calc(95vh-140px)] sm:max-h-[calc(90vh-140px)]">
+          <form
+            onSubmit={handleSubmit}
+            className="p-4 sm:p-6 space-y-4 sm:space-y-6"
+          >
             {/* Maintenance Information Section */}
             <div>
-              <h3 className="text-base font-semibold text-gray-900 mb-4">
-                Información del mantenimiento
+              <h3
+                className="text-sm sm:text-base font-semibold mb-3 sm:mb-4"
+                style={{
+                  color: "var(--color-text)",
+                  fontSize: "var(--font-size-base)",
+                  fontWeight: "var(--font-weight-semibold)",
+                }}
+              >
+                Informacion del mantenimiento
               </h3>
-              
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {/* Left Column - Info Fields */}
-                <div className="lg:col-span-2 space-y-4">
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                {/* Left Column - Info Fields (full width on mobile, 8 columns on desktop) */}
+                <div className="lg:col-span-8 space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Número de serie
+                      <label
+                        className="block text-sm mb-2"
+                        style={{
+                          color: "var(--color-text-secondary)",
+                          fontSize: "var(--font-size-sm)",
+                        }}
+                      >
+                        Numero de serie
                       </label>
                       <input
                         type="text"
                         value="EXC-2024-0012"
                         readOnly
                         aria-label="Número de serie de la máquina"
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
+                        className="w-full px-3 py-2 rounded-lg text-sm"
+                        style={{
+                          backgroundColor: "var(--color-background)",
+                          border: "1px solid var(--color-border)",
+                          color: "var(--color-text)",
+                          borderRadius: "var(--border-radius-md)",
+                          fontSize: "var(--font-size-sm)",
+                        }}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm text-gray-600 mb-1">
+                      <label
+                        className="block text-sm mb-2"
+                        style={{
+                          color: "var(--color-text-secondary)",
+                          fontSize: "var(--font-size-sm)",
+                        }}
+                      >
                         Nombre de la máquina
                       </label>
                       <input
@@ -303,14 +357,27 @@ export default function MaintenanceReportModal({
                         value="Excavadora Caterpillar 320D"
                         readOnly
                         aria-label="Nombre de la máquina"
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
+                        className="w-full px-3 py-2 rounded-lg text-sm"
+                        style={{
+                          backgroundColor: "var(--color-background)",
+                          border: "1px solid var(--color-border)",
+                          color: "var(--color-text)",
+                          borderRadius: "var(--border-radius-md)",
+                          fontSize: "var(--font-size-sm)",
+                        }}
                       />
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm text-gray-600 mb-1">
+                      <label
+                        className="block text-sm mb-2"
+                        style={{
+                          color: "var(--color-text-secondary)",
+                          fontSize: "var(--font-size-sm)",
+                        }}
+                      >
                         Tipo de maquinaria
                       </label>
                       <input
@@ -318,50 +385,123 @@ export default function MaintenanceReportModal({
                         value="Bulldozer"
                         readOnly
                         aria-label="Tipo de maquinaria"
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
+                        className="w-full px-3 py-2 rounded-lg text-sm"
+                        style={{
+                          backgroundColor: "var(--color-background)",
+                          border: "1px solid var(--color-border)",
+                          color: "var(--color-text)",
+                          borderRadius: "var(--border-radius-md)",
+                          fontSize: "var(--font-size-sm)",
+                        }}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm text-gray-600 mb-1">
+                      <label
+                        className="block text-sm mb-2"
+                        style={{
+                          color: "var(--color-text-secondary)",
+                          fontSize: "var(--font-size-sm)",
+                        }}
+                      >
                         Tiempo invertido
                       </label>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 sm:gap-2">
                         <input
                           type="text"
                           value={form.investedTime.hours}
-                          onChange={(e) => handleTimeChange("hours", e.target.value)}
+                          onChange={(e) =>
+                            handleTimeChange("hours", e.target.value)
+                          }
                           placeholder="hh"
                           maxLength="2"
                           aria-label="Horas invertidas"
-                          className="w-16 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-12 sm:w-16 px-2 sm:px-3 py-2 rounded-lg text-sm text-center"
+                          style={{
+                            backgroundColor: "var(--color-input-bg)",
+                            border: "1px solid var(--color-border)",
+                            color: "var(--color-text)",
+                            borderRadius: "var(--border-radius-md)",
+                            fontSize: "var(--font-size-sm)",
+                          }}
                         />
-                        <span className="text-gray-400">:</span>
+                        <span style={{ color: "var(--color-text-secondary)" }}>
+                          :
+                        </span>
                         <input
                           type="text"
                           value={form.investedTime.minutes}
-                          onChange={(e) => handleTimeChange("minutes", e.target.value)}
+                          onChange={(e) =>
+                            handleTimeChange("minutes", e.target.value)
+                          }
                           placeholder="mm"
                           maxLength="2"
                           aria-label="Minutos invertidos"
-                          className="w-16 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-12 sm:w-16 px-2 sm:px-3 py-2 rounded-lg text-sm text-center"
+                          style={{
+                            backgroundColor: "var(--color-input-bg)",
+                            border: "1px solid var(--color-border)",
+                            color: "var(--color-text)",
+                            borderRadius: "var(--border-radius-md)",
+                            fontSize: "var(--font-size-sm)",
+                          }}
                         />
-                        <FiClock className="w-4 h-4 text-gray-400" />
+                        <span style={{ color: "var(--color-text-secondary)" }}>
+                          /
+                        </span>
+                        <input
+                          type="text"
+                          value="ss"
+                          readOnly
+                          className="w-12 sm:w-16 px-2 sm:px-3 py-2 rounded-lg text-sm text-center"
+                          style={{
+                            backgroundColor: "var(--color-background)",
+                            border: "1px solid var(--color-border)",
+                            color: "var(--color-text-secondary)",
+                            borderRadius: "var(--border-radius-md)",
+                            fontSize: "var(--font-size-sm)",
+                          }}
+                        />
+                        <FiClock
+                          className="w-4 h-4 flex-shrink-0"
+                          style={{ color: "var(--color-text-secondary)" }}
+                        />
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Right Column - Machine Photo */}
-                <div className="flex justify-center lg:justify-end">
-                  <div className="w-32 h-32 bg-gray-200 rounded-lg flex items-center justify-center">
-                    <span className="text-xs text-gray-500">Foto de la máquina</span>
+                {/* Right Column - Machine Photo (full width on mobile, 4 columns on desktop) */}
+                <div className="lg:col-span-4 flex items-start justify-center lg:justify-end">
+                  <div
+                    className="w-full max-w-xs lg:max-w-none h-32 rounded-lg flex items-center justify-center"
+                    style={{
+                      backgroundColor: "var(--color-background)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: "var(--border-radius-lg)",
+                    }}
+                  >
+                    <span
+                      className="text-xs"
+                      style={{
+                        color: "var(--color-text-secondary)",
+                        fontSize: "var(--font-size-xs)",
+                      }}
+                    >
+                      Foto de la máquina aquí
+                    </span>
                   </div>
                 </div>
               </div>
 
               {/* Maintenance Description */}
               <div className="mt-4">
-                <label className="block text-sm text-gray-600 mb-1">
+                <label
+                  className="block text-sm mb-2"
+                  style={{
+                    color: "var(--color-text-secondary)",
+                    fontSize: "var(--font-size-sm)",
+                  }}
+                >
                   Descripción del mantenimiento
                 </label>
                 <textarea
@@ -370,28 +510,56 @@ export default function MaintenanceReportModal({
                   placeholder="Describe el mantenimiento realizado..."
                   rows={3}
                   aria-label="Descripción del mantenimiento"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full px-3 py-2 rounded-lg text-sm resize-none"
+                  style={{
+                    backgroundColor: "var(--color-input-bg)",
+                    border: "1px solid var(--color-border)",
+                    color: "var(--color-text)",
+                    borderRadius: "var(--border-radius-md)",
+                    fontSize: "var(--font-size-sm)",
+                  }}
                 />
-                <div className="text-xs text-gray-400 mt-1">
+                <div
+                  className="text-xs mt-1"
+                  style={{
+                    color: "var(--color-text-secondary)",
+                    fontSize: "var(--font-size-xs)",
+                  }}
+                >
                   {form.description.length}/600 caracteres
                 </div>
               </div>
 
               {/* Attending Technicians */}
               <div className="mt-4">
-                <label className="block text-sm text-gray-600 mb-2">
-                  Técnicos asistentes
+                <label
+                  className="block text-sm mb-2"
+                  style={{
+                    color: "var(--color-text-secondary)",
+                    fontSize: "var(--font-size-sm)",
+                  }}
+                >
+                  Atendido por (técnicos)
                 </label>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <select
                     onChange={(e) => handleTechnicianSelect(e.target.value)}
                     value=""
                     aria-label="Seleccionar técnico"
-                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-3 py-2 rounded-lg text-sm"
+                    style={{
+                      backgroundColor: "var(--color-input-bg)",
+                      border: "1px solid var(--color-border)",
+                      color: "var(--color-text)",
+                      borderRadius: "var(--border-radius-md)",
+                      fontSize: "var(--font-size-sm)",
+                    }}
                   >
-                    <option value="">Seleccionar un técnico</option>
+                    <option value="">Seleccionar técnico</option>
                     {techniciansOptions
-                      .filter((t) => !form.technicians.find((ft) => ft.id === t.id))
+                      .filter(
+                        (t) => !form.technicians.find((ft) => ft.id === t.id)
+                      
                       .map((tech) => (
                         <option key={tech.id} value={tech.id}>
                           {tech.name}
@@ -401,7 +569,22 @@ export default function MaintenanceReportModal({
                   <button
                     type="button"
                     aria-label="Agregar técnico seleccionado"
-                    className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 text-sm"
+                    className="w-full sm:w-auto px-4 py-2 rounded-lg text-sm transition-colors"
+                    style={{
+                      backgroundColor: "var(--color-background)",
+                      color: "var(--color-text)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: "var(--border-radius-md)",
+                      fontSize: "var(--font-size-sm)",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor =
+                        "var(--color-hover)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor =
+                        "var(--color-background)")
+                    }
                   >
                     Agregar
                   </button>
@@ -410,14 +593,27 @@ export default function MaintenanceReportModal({
                   {form.technicians.map((tech) => (
                     <div
                       key={tech.id}
-                      className="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-lg"
+                      className="flex items-center gap-2 px-3 py-1 rounded-lg"
+                      style={{
+                        backgroundColor: "var(--color-background)",
+                        border: "1px solid var(--color-border)",
+                        borderRadius: "var(--border-radius-md)",
+                      }}
                     >
-                      <span className="text-sm text-gray-700">{tech.name}</span>
+                      <span
+                        className="text-sm"
+                        style={{
+                          color: "var(--color-text)",
+                          fontSize: "var(--font-size-sm)",
+                        }}
+                      >
+                        {tech.name}
+                      </span>
                       <button
                         type="button"
                         onClick={() => removeTechnician(tech.id)}
                         aria-label={`Eliminar técnico ${tech.name}`}
-                        className="text-red-500 hover:text-red-700"
+                        style={{ color: "var(--color-error)" }}
                       >
                         <FiTrash2 className="w-3 h-3" />
                       </button>
@@ -429,51 +625,92 @@ export default function MaintenanceReportModal({
 
             {/* Performed Maintenance Section */}
             <div>
-              <h3 className="text-base font-semibold text-gray-900 mb-4">
-                Mantenimientos realizados
+              <h3
+                className="text-base font-semibold mb-4"
+                style={{
+                  color: "var(--color-text)",
+                  fontSize: "var(--font-size-base)",
+                  fontWeight: "var(--font-weight-semibold)",
+                }}
+              >
+                Mantenimiento realizado
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
-                <select
-                  value={newMaintenance.maintenance}
-                  onChange={(e) =>
-                    setNewMaintenance({ ...newMaintenance, maintenance: e.target.value })
-                  }
-                  aria-label="Seleccionar tipo de mantenimiento"
-                  className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Mantenimiento</option>
-                  {maintenanceOptions.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={newMaintenance.technician}
-                  onChange={(e) =>
-                    setNewMaintenance({ ...newMaintenance, technician: e.target.value })
-                  }
-                  aria-label="Seleccionar técnico responsable"
-                  className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={form.technicians.length === 0}
-                >
-                  <option value="">Técnico responsable</option>
-                  {form.technicians.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-                <div className="flex gap-1">
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 mb-3">
+                <div className="sm:col-span-3">
+                  <select
+                    value={newMaintenance.maintenance}
+                    onChange={(e) =>
+                      setNewMaintenance({
+                        ...newMaintenance,
+                        maintenance: e.target.value,
+                      })
+                    }
+                    aria-label="Seleccionar tipo de mantenimiento"
+                    className="w-full px-3 py-2 rounded-lg text-sm"
+                    style={{
+                      backgroundColor: "var(--color-input-bg)",
+                      border: "1px solid var(--color-border)",
+                      color: "var(--color-text)",
+                      borderRadius: "var(--border-radius-md)",
+                      fontSize: "var(--font-size-sm)",
+                    }}
+                  >
+                    <option value="">Mantenimiento</option>
+                    {maintenanceOptions.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="sm:col-span-3">
+                  <select
+                    value={newMaintenance.technician}
+                    onChange={(e) =>
+                      setNewMaintenance({
+                        ...newMaintenance,
+                        technician: e.target.value,
+                      })
+                    }
+                    aria-label="Seleccionar técnico responsable"
+                    className="w-full px-3 py-2 rounded-lg text-sm"
+                    style={{
+                      backgroundColor: "var(--color-input-bg)",
+                      border: "1px solid var(--color-border)",
+                      color: "var(--color-text)",
+                      borderRadius: "var(--border-radius-md)",
+                      fontSize: "var(--font-size-sm)",
+                    }}
+                    disabled={form.technicians.length === 0}
+                  >
+                    <option value="">Técnico responsable</option>
+                    {form.technicians.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="sm:col-span-4 flex gap-1">
                   <input
                     type="number"
                     value={newMaintenance.cost}
                     onChange={(e) =>
-                      setNewMaintenance({ ...newMaintenance, cost: e.target.value })
+                      setNewMaintenance({
+                        ...newMaintenance,
+                        cost: e.target.value,
+                      })
                     }
                     placeholder="0.00"
                     aria-label="Costo del mantenimiento"
-                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-3 py-2 rounded-lg text-sm"
+                    style={{
+                      backgroundColor: "var(--color-input-bg)",
+                      border: "1px solid var(--color-border)",
+                      color: "var(--color-text)",
+                      borderRadius: "var(--border-radius-md)",
+                      fontSize: "var(--font-size-sm)",
+                    }}
                     step="0.01"
                     min="0"
                   />
@@ -481,53 +718,137 @@ export default function MaintenanceReportModal({
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
                     aria-label="Seleccionar moneda"
-                    className="px-2 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-2 py-2 rounded-lg text-sm"
+                    style={{
+                      backgroundColor: "var(--color-input-bg)",
+                      border: "1px solid var(--color-border)",
+                      color: "var(--color-text)",
+                      borderRadius: "var(--border-radius-md)",
+                      fontSize: "var(--font-size-sm)",
+                    }}
                   >
                     <option value="USD">USD</option>
                     <option value="EUR">EUR</option>
                     <option value="COP">COP</option>
                   </select>
                 </div>
-                <button
-                  type="button"
-                  onClick={addPerformedMaintenance}
-                  aria-label="Agregar mantenimiento realizado"
-                  className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 text-sm"
-                >
-                  Agregar
-                </button>
+                <div className="sm:col-span-2">
+                  <button
+                    type="button"
+                    onClick={addPerformedMaintenance}
+                    aria-label="Agregar mantenimiento realizado"
+                    className="w-full px-4 py-2 rounded-lg text-sm transition-colors"
+                    style={{
+                      backgroundColor: "var(--color-background)",
+                      color: "var(--color-text)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: "var(--border-radius-md)",
+                      fontSize: "var(--font-size-sm)",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor =
+                        "var(--color-hover)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor =
+                        "var(--color-background)")
+                    }
+                  >
+                    Agregar
+                  </button>
+                </div>
               </div>
 
               {/* Maintenance Table */}
               {form.performedMaintenances.length > 0 && (
-                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <div
+                  className="rounded-lg overflow-x-auto"
+                  style={{
+                    border: "1px solid var(--color-border)",
+                    borderRadius: "var(--border-radius-lg)",
+                  }}
+                >
                   <table className="w-full">
-                    <thead className="bg-gray-50">
+                    <thead
+                      style={{
+                        backgroundColor: "var(--color-background)",
+                        borderBottom: "1px solid var(--color-border)",
+                      }}
+                    >
                       <tr>
-                        <th className="text-left px-4 py-2 text-sm font-medium text-gray-700">
+                        <th
+                          className="text-left px-4 py-2 text-sm font-medium"
+                          style={{
+                            color: "var(--color-text)",
+                            fontSize: "var(--font-size-sm)",
+                            fontWeight: "var(--font-weight-medium)",
+                          }}
+                        >
                           Mantenimiento
                         </th>
-                        <th className="text-left px-4 py-2 text-sm font-medium text-gray-700">
+                        <th
+                          className="text-left px-4 py-2 text-sm font-medium"
+                          style={{
+                            color: "var(--color-text)",
+                            fontSize: "var(--font-size-sm)",
+                            fontWeight: "var(--font-weight-medium)",
+                          }}
+                        >
                           Técnico
                         </th>
-                        <th className="text-left px-4 py-2 text-sm font-medium text-gray-700">
+                        <th
+                          className="text-left px-4 py-2 text-sm font-medium"
+                          style={{
+                            color: "var(--color-text)",
+                            fontSize: "var(--font-size-sm)",
+                            fontWeight: "var(--font-weight-medium)",
+                          }}
+                        >
                           Costo
                         </th>
-                        <th className="text-center px-4 py-2 text-sm font-medium text-gray-700">
+                        <th
+                          className="text-center px-4 py-2 text-sm font-medium"
+                          style={{
+                            color: "var(--color-text)",
+                            fontSize: "var(--font-size-sm)",
+                            fontWeight: "var(--font-weight-medium)",
+                          }}
+                        >
                           Acciones
                         </th>
                       </tr>
                     </thead>
                     <tbody>
                       {form.performedMaintenances.map((m) => (
-                        <tr key={m.id} className="border-t border-gray-200">
-                          <td className="px-4 py-2 text-sm text-gray-900">
+                        <tr
+                          key={m.id}
+                          style={{ borderTop: "1px solid var(--color-border)" }}
+                        >
+                          <td
+                            className="px-4 py-2 text-sm"
+                            style={{
+                              color: "var(--color-text)",
+                              fontSize: "var(--font-size-sm)",
+                            }}
+                          >
                             {m.maintenance.name}
                           </td>
-                          <td className="px-4 py-2 text-sm text-gray-900">
+                          <td
+                            className="px-4 py-2 text-sm"
+                            style={{
+                              color: "var(--color-text)",
+                              fontSize: "var(--font-size-sm)",
+                            }}
+                          >
                             {m.technician.name}
                           </td>
-                          <td className="px-4 py-2 text-sm text-gray-900">
+                          <td
+                            className="px-4 py-2 text-sm"
+                            style={{
+                              color: "var(--color-text)",
+                              fontSize: "var(--font-size-sm)",
+                            }}
+                          >
                             ${m.cost.toFixed(2)} {currency}
                           </td>
                           <td className="px-4 py-2 text-center">
@@ -535,7 +856,7 @@ export default function MaintenanceReportModal({
                               type="button"
                               onClick={() => removePerformedMaintenance(m.id)}
                               aria-label={`Eliminar mantenimiento ${m.maintenance.name}`}
-                              className="text-red-500 hover:text-red-700"
+                              style={{ color: "var(--color-error)" }}
                             >
                               <FiTrash2 className="w-4 h-4" />
                             </button>
@@ -550,56 +871,106 @@ export default function MaintenanceReportModal({
 
             {/* Spare Parts Section */}
             <div>
-              <h3 className="text-base font-semibold text-gray-900 mb-4">
+              <h3
+                className="text-base font-semibold mb-4"
+                style={{
+                  color: "var(--color-text)",
+                  fontSize: "var(--font-size-base)",
+                  fontWeight: "var(--font-weight-semibold)",
+                }}
+              >
                 Repuestos utilizados
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 mb-3">
-                <input
-                  type="text"
-                  value={newSparePart.name}
-                  onChange={(e) =>
-                    setNewSparePart({ ...newSparePart, name: e.target.value })
-                  }
-                  placeholder="Nombre del repuesto"
-                  aria-label="Nombre del repuesto"
-                  className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <select
-                  value={newSparePart.brand}
-                  onChange={(e) =>
-                    setNewSparePart({ ...newSparePart, brand: e.target.value })
-                  }
-                  aria-label="Seleccionar marca del repuesto"
-                  className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Marca</option>
-                  {brandsOptions.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="number"
-                  value={newSparePart.quantity}
-                  onChange={(e) =>
-                    setNewSparePart({ ...newSparePart, quantity: e.target.value })
-                  }
-                  placeholder="Cantidad"
-                  aria-label="Cantidad del repuesto"
-                  className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  min="1"
-                />
-                <div className="flex gap-1">
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 mb-3">
+                <div className="sm:col-span-2">
+                  <input
+                    type="text"
+                    value={newSparePart.name}
+                    onChange={(e) =>
+                      setNewSparePart({ ...newSparePart, name: e.target.value })
+                    }
+                    placeholder="Nombre del repuesto"
+                    aria-label="Nombre del repuesto"
+                    className="w-full px-3 py-2 rounded-lg text-sm"
+                    style={{
+                      backgroundColor: "var(--color-input-bg)",
+                      border: "1px solid var(--color-border)",
+                      color: "var(--color-text)",
+                      borderRadius: "var(--border-radius-md)",
+                      fontSize: "var(--font-size-sm)",
+                    }}
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <select
+                    value={newSparePart.brand}
+                    onChange={(e) =>
+                      setNewSparePart({
+                        ...newSparePart,
+                        brand: e.target.value,
+                      })
+                    }
+                    aria-label="Seleccionar marca del repuesto"
+                    className="w-full px-3 py-2 rounded-lg text-sm"
+                    style={{
+                      backgroundColor: "var(--color-input-bg)",
+                      border: "1px solid var(--color-border)",
+                      color: "var(--color-text)",
+                      borderRadius: "var(--border-radius-md)",
+                      fontSize: "var(--font-size-sm)",
+                    }}
+                  >
+                    <option value="">Marca</option>
+                    {brandsOptions.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="sm:col-span-2">
+                  <input
+                    type="number"
+                    value={newSparePart.quantity}
+                    onChange={(e) =>
+                      setNewSparePart({
+                        ...newSparePart,
+                        quantity: e.target.value,
+                      })
+                    }
+                    placeholder="Cantidad"
+                    aria-label="Cantidad del repuesto"
+                    className="w-full px-3 py-2 rounded-lg text-sm"
+                    style={{
+                      backgroundColor: "var(--color-input-bg)",
+                      border: "1px solid var(--color-border)",
+                      color: "var(--color-text)",
+                      borderRadius: "var(--border-radius-md)",
+                      fontSize: "var(--font-size-sm)",
+                    }}
+                    min="1"
+                  />
+                </div>
+                <div className="sm:col-span-4 flex gap-1">
                   <input
                     type="number"
                     value={newSparePart.unitCost}
                     onChange={(e) =>
-                      setNewSparePart({ ...newSparePart, unitCost: e.target.value })
+                      setNewSparePart({
+                        ...newSparePart,
+                        unitCost: e.target.value,
+                      })
                     }
                     placeholder="0.00"
                     aria-label="Costo unitario del repuesto"
-                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-3 py-2 rounded-lg text-sm"
+                    style={{
+                      backgroundColor: "var(--color-input-bg)",
+                      border: "1px solid var(--color-border)",
+                      color: "var(--color-text)",
+                      borderRadius: "var(--border-radius-md)",
+                      fontSize: "var(--font-size-sm)",
+                    }}
                     step="0.01"
                     min="0"
                   />
@@ -607,61 +978,175 @@ export default function MaintenanceReportModal({
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
                     aria-label="Seleccionar moneda"
-                    className="px-2 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-2 py-2 rounded-lg text-sm"
+                    style={{
+                      backgroundColor: "var(--color-input-bg)",
+                      border: "1px solid var(--color-border)",
+                      color: "var(--color-text)",
+                      borderRadius: "var(--border-radius-md)",
+                      fontSize: "var(--font-size-sm)",
+                    }}
                   >
                     <option value="USD">USD</option>
                     <option value="EUR">EUR</option>
                     <option value="COP">COP</option>
                   </select>
                 </div>
-                <button
-                  type="button"
-                  onClick={addSparePart}
-                  aria-label="Agregar repuesto"
-                  className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 text-sm"
-                >
-                  Agregar
-                </button>
+                <div className="sm:col-span-2">
+                  <button
+                    type="button"
+                    onClick={addSparePart}
+                    aria-label="Agregar repuesto"
+                    className="w-full px-4 py-2 rounded-lg text-sm transition-colors"
+                    style={{
+                      backgroundColor: "var(--color-background)",
+                      color: "var(--color-text)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: "var(--border-radius-md)",
+                      fontSize: "var(--font-size-sm)",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor =
+                        "var(--color-hover)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor =
+                        "var(--color-background)")
+                    }
+                  >
+                    Add
+                  </button>
+                </div>
               </div>
 
               {/* Spare Parts Table */}
               {form.spareParts.length > 0 && (
-                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <div
+                  className="rounded-lg overflow-x-auto"
+                  style={{
+                    border: "1px solid var(--color-border)",
+                    borderRadius: "var(--border-radius-lg)",
+                  }}
+                >
                   <table className="w-full">
-                    <thead className="bg-gray-50">
+                    <thead
+                      style={{
+                        backgroundColor: "var(--color-background)",
+                        borderBottom: "1px solid var(--color-border)",
+                      }}
+                    >
                       <tr>
-                        <th className="text-left px-4 py-2 text-sm font-medium text-gray-700">
+                        <th
+                          className="text-left px-4 py-2 text-sm font-medium"
+                          style={{
+                            color: "var(--color-text)",
+                            fontSize: "var(--font-size-sm)",
+                            fontWeight: "var(--font-weight-medium)",
+                          }}
+                        >
                           Repuesto
                         </th>
-                        <th className="text-left px-4 py-2 text-sm font-medium text-gray-700">
+                        <th
+                          className="text-left px-4 py-2 text-sm font-medium"
+                          style={{
+                            color: "var(--color-text)",
+                            fontSize: "var(--font-size-sm)",
+                            fontWeight: "var(--font-weight-medium)",
+                          }}
+                        >
                           Marca
                         </th>
-                        <th className="text-left px-4 py-2 text-sm font-medium text-gray-700">
+                        <th
+                          className="text-left px-4 py-2 text-sm font-medium"
+                          style={{
+                            color: "var(--color-text)",
+                            fontSize: "var(--font-size-sm)",
+                            fontWeight: "var(--font-weight-medium)",
+                          }}
+                        >
                           Cantidad
                         </th>
-                        <th className="text-left px-4 py-2 text-sm font-medium text-gray-700">
+                        <th
+                          className="text-left px-4 py-2 text-sm font-medium"
+                          style={{
+                            color: "var(--color-text)",
+                            fontSize: "var(--font-size-sm)",
+                            fontWeight: "var(--font-weight-medium)",
+                          }}
+                        >
                           Costo unitario
                         </th>
-                        <th className="text-left px-4 py-2 text-sm font-medium text-gray-700">
+                        <th
+                          className="text-left px-4 py-2 text-sm font-medium"
+                          style={{
+                            color: "var(--color-text)",
+                            fontSize: "var(--font-size-sm)",
+                            fontWeight: "var(--font-weight-medium)",
+                          }}
+                        >
                           Total
                         </th>
-                        <th className="text-center px-4 py-2 text-sm font-medium text-gray-700">
+                        <th
+                          className="text-center px-4 py-2 text-sm font-medium"
+                          style={{
+                            color: "var(--color-text)",
+                            fontSize: "var(--font-size-sm)",
+                            fontWeight: "var(--font-weight-medium)",
+                          }}
+                        >
                           Acciones
                         </th>
                       </tr>
                     </thead>
                     <tbody>
                       {form.spareParts.map((part) => (
-                        <tr key={part.id} className="border-t border-gray-200">
-                          <td className="px-4 py-2 text-sm text-gray-900">{part.name}</td>
-                          <td className="px-4 py-2 text-sm text-gray-900">
+                        <tr
+                          key={part.id}
+                          style={{ borderTop: "1px solid var(--color-border)" }}
+                        >
+                          <td
+                            className="px-4 py-2 text-sm"
+                            style={{
+                              color: "var(--color-text)",
+                              fontSize: "var(--font-size-sm)",
+                            }}
+                          >
+                            {part.name}
+                          </td>
+                          <td
+                            className="px-4 py-2 text-sm"
+                            style={{
+                              color: "var(--color-text)",
+                              fontSize: "var(--font-size-sm)",
+                            }}
+                          >
                             {part.brand.name}
                           </td>
-                          <td className="px-4 py-2 text-sm text-gray-900">{part.quantity}</td>
-                          <td className="px-4 py-2 text-sm text-gray-900">
+                          <td
+                            className="px-4 py-2 text-sm"
+                            style={{
+                              color: "var(--color-text)",
+                              fontSize: "var(--font-size-sm)",
+                            }}
+                          >
+                            {part.quantity}
+                          </td>
+                          <td
+                            className="px-4 py-2 text-sm"
+                            style={{
+                              color: "var(--color-text)",
+                              fontSize: "var(--font-size-sm)",
+                            }}
+                          >
                             ${part.unitCost.toFixed(2)}
                           </td>
-                          <td className="px-4 py-2 text-sm text-gray-900">
+                          <td
+                            className="px-4 py-2 text-sm"
+                            style={{
+                              color: "var(--color-text)",
+                              fontSize: "var(--font-size-sm)",
+                            }}
+                          >
                             ${(part.quantity * part.unitCost).toFixed(2)}
                           </td>
                           <td className="px-4 py-2 text-center">
@@ -669,18 +1154,38 @@ export default function MaintenanceReportModal({
                               type="button"
                               onClick={() => removeSparePart(part.id)}
                               aria-label={`Eliminar repuesto ${part.name}`}
-                              className="text-red-500 hover:text-red-700"
+                              style={{ color: "var(--color-error)" }}
                             >
                               <FiTrash2 className="w-4 h-4" />
                             </button>
                           </td>
                         </tr>
                       ))}
-                      <tr className="border-t-2 border-gray-300 bg-gray-50">
-                        <td colSpan="4" className="px-4 py-2 text-sm font-medium text-gray-700 text-right">
-                          Costo Total:
+                      <tr
+                        style={{
+                          borderTop: "2px solid var(--color-border)",
+                          backgroundColor: "var(--color-background)",
+                        }}
+                      >
+                        <td
+                          colSpan="4"
+                          className="px-4 py-2 text-sm font-medium text-right"
+                          style={{
+                            color: "var(--color-text)",
+                            fontSize: "var(--font-size-sm)",
+                            fontWeight: "var(--font-weight-medium)",
+                          }}
+                        >
+                          Costo total:
                         </td>
-                        <td className="px-4 py-2 text-sm font-bold text-gray-900">
+                        <td
+                          className="px-4 py-2 text-sm font-bold"
+                          style={{
+                            color: "var(--color-text)",
+                            fontSize: "var(--font-size-sm)",
+                            fontWeight: "var(--font-weight-bold)",
+                          }}
+                        >
                           ${sparePartsTotalCost.toFixed(2)} {currency}
                         </td>
                         <td></td>
@@ -693,33 +1198,79 @@ export default function MaintenanceReportModal({
 
             {/* Recommendations Section */}
             <div>
-              <h3 className="text-base font-semibold text-gray-900 mb-2">
+              <h3
+                className="text-base font-semibold mb-2"
+                style={{
+                  color: "var(--color-text)",
+                  fontSize: "var(--font-size-base)",
+                  fontWeight: "var(--font-weight-semibold)",
+                }}
+              >
                 Recomendaciones
               </h3>
               <textarea
                 value={form.recommendations}
-                onChange={(e) => setForm({ ...form, recommendations: e.target.value })}
-                placeholder="Ingresa recomendaciones para futuros mantenimientos..."
+                onChange={(e) =>
+                  setForm({ ...form, recommendations: e.target.value })
+                }
+                placeholder="Ingrese recomendaciones para futuros mantenimientos..."
                 rows={3}
                 aria-label="Recomendaciones para futuros mantenimientos"
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full px-3 py-2 rounded-lg text-sm resize-none"
+                style={{
+                  backgroundColor: "var(--color-input-bg)",
+                  border: "1px solid var(--color-border)",
+                  color: "var(--color-text)",
+                  borderRadius: "var(--border-radius-md)",
+                  fontSize: "var(--font-size-sm)",
+                }}
               />
             </div>
 
             {/* Error Message */}
             {error && (
-              <div className="p-3 bg-red-50 text-red-600 border border-red-200 rounded-lg text-sm">
+              <div
+                className="p-3 rounded-lg text-sm"
+                style={{
+                  backgroundColor: "rgba(220, 38, 38, 0.1)",
+                  color: "var(--color-error)",
+                  border: "1px solid var(--color-error)",
+                  borderRadius: "var(--border-radius-md)",
+                  fontSize: "var(--font-size-sm)",
+                }}
+              >
                 {error}
               </div>
             )}
 
             {/* Total Cost Section */}
-            <div className="p-4 bg-gray-50 rounded-lg">
+            <div
+              className="p-4 rounded-lg"
+              style={{
+                backgroundColor: "var(--color-background)",
+                border: "1px solid var(--color-border)",
+                borderRadius: "var(--border-radius-lg)",
+              }}
+            >
               <div className="flex justify-between items-center">
-                <span className="text-base font-medium text-gray-700">
-                  Costo Total del Mantenimiento:
+                <span
+                  className="text-base font-medium"
+                  style={{
+                    color: "var(--color-text)",
+                    fontSize: "var(--font-size-base)",
+                    fontWeight: "var(--font-weight-medium)",
+                  }}
+                >
+                  Costo total de mantenimiento:
                 </span>
-                <span className="text-2xl font-bold text-gray-900">
+                <span
+                  className="text-2xl font-bold"
+                  style={{
+                    color: "var(--color-text)",
+                    fontSize: "var(--font-size-2xl)",
+                    fontWeight: "var(--font-weight-bold)",
+                  }}
+                >
                   ${totalMaintenanceCost.toFixed(2)} {currency}
                 </span>
               </div>
@@ -728,13 +1279,36 @@ export default function MaintenanceReportModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t bg-white">
+        <div
+          className="px-6 py-4"
+          style={{
+            borderTop: "1px solid var(--color-border)",
+            backgroundColor: "var(--color-surface)",
+          }}
+        >
           <button
             type="submit"
             onClick={handleSubmit}
             disabled={submitting}
             aria-label="Guardar reporte de mantenimiento"
-            className="w-full py-3 bg-black text-white font-medium rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full py-3 font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              backgroundColor: "var(--color-text)",
+              color: "var(--color-surface)",
+              borderRadius: "var(--border-radius-md)",
+              fontSize: "var(--font-size-base)",
+              fontWeight: "var(--font-weight-medium)",
+            }}
+            onMouseEnter={(e) => {
+              if (!submitting) {
+                e.currentTarget.style.opacity = "0.9";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!submitting) {
+                e.currentTarget.style.opacity = "1";
+              }
+            }}
           >
             {submitting ? "Guardando reporte..." : "Guardar reporte"}
           </button>
