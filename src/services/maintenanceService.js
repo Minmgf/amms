@@ -81,6 +81,12 @@ export const getActiveTechnicians = async () => {
     return data;
 };
 
+// Crear programación de mantenimiento
+export const createMaintenanceScheduling = async (payload) => {
+    const { data } = await apiMain.post("/maintenance_scheduling/create/", payload);
+    return data;
+};
+
 //SERVICIOS PARA SOLICITUDES DE MANTENIMIENTO
 
 //Obtener lista de prioridades
@@ -98,5 +104,25 @@ export const getActiveMachineries = async () => {
 //Crear solicitud de mantenimiento
 export const createMaintenanceRequest = async (payload) => {
     const { data } = await apiMain.post("/maintenance_request/create/", payload);
+    return data;
+};
+
+//Obtener detalle de solicitud de mantenimiento
+export const getMaintenanceRequestDetail = async (id_request) => {
+    const { data } = await apiMain.get(`maintenance_request/${id_request}/detail/`);
+    return data;
+};
+
+//MANTENIMIENTOS PROGRAMADOS
+
+//Cancelar mantenimiento programado
+export const cancelScheduledMaintenance = async (id, payload) => {
+    const { data } = await apiMain.post(`maintenance_scheduling/${id}/cancel/`,payload);
+    return data;
+};
+
+// Obtener estados de mantenimiento programado
+export const getMaintenanceSchedulingStatuses = async () => {
+    const { data } = await apiMain.get("/statues/list/5/");
     return data;
 };
