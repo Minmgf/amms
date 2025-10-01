@@ -530,99 +530,135 @@ export default function MaintenanceReportModal({
                 </div>
               </div>
 
-              {/* Attending Technicians */}
+              {/* Attending Technicians and Currency Unit - Horizontal on Desktop */}
               <div className="mt-4">
-                <label
-                  className="block text-sm mb-2"
-                  style={{
-                    color: "var(--color-text-secondary)",
-                    fontSize: "var(--font-size-sm)",
-                  }}
-                >
-                  Atendido por (técnicos)
-                </label>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <select
-                    onChange={(e) => handleTechnicianSelect(e.target.value)}
-                    value=""
-                    aria-label="Seleccionar técnico"
-                    className="flex-1 px-3 py-2 rounded-lg text-sm"
-                    style={{
-                      backgroundColor: "var(--color-input-bg)",
-                      border: "1px solid var(--color-border)",
-                      color: "var(--color-text)",
-                      borderRadius: "var(--border-radius-md)",
-                      fontSize: "var(--font-size-sm)",
-                    }}
-                  >
-                    <option value="">Seleccionar técnico</option>
-                    {techniciansOptions
-                      .filter(
-                        (t) => !form.technicians.find((ft) => ft.id === t.id)
-                      )
-                      .map((tech) => (
-                        <option key={tech.id} value={tech.id}>
-                          {tech.name}
-                        </option>
-                      ))}
-                  </select>
-                  <button
-                    type="button"
-                    aria-label="Agregar técnico seleccionado"
-                    className="w-full sm:w-auto px-4 py-2 rounded-lg text-sm transition-colors"
-                    style={{
-                      backgroundColor: "var(--color-background)",
-                      color: "var(--color-text)",
-                      border: "1px solid var(--color-border)",
-                      borderRadius: "var(--border-radius-md)",
-                      fontSize: "var(--font-size-sm)",
-                    }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.backgroundColor =
-                        "var(--color-hover)")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.backgroundColor =
-                        "var(--color-background)")
-                    }
-                  >
-                    Agregar
-                  </button>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {form.technicians.map((tech) => (
-                    <div
-                      key={tech.id}
-                      className="flex items-center gap-2 px-3 py-1 rounded-lg"
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                  {/* Attending Technicians */}
+                  <div className="lg:col-span-9">
+                    <label
+                      className="block text-sm mb-2"
                       style={{
-                        backgroundColor: "var(--color-background)",
-                        border: "1px solid var(--color-border)",
-                        borderRadius: "var(--border-radius-md)",
+                        color: "var(--color-text-secondary)",
+                        fontSize: "var(--font-size-sm)",
                       }}
                     >
-                      <span
-                        className="text-sm"
+                      Atendido por (técnicos)
+                    </label>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <select
+                        onChange={(e) => handleTechnicianSelect(e.target.value)}
+                        value=""
+                        aria-label="Seleccionar técnico"
+                        className="flex-1 px-3 py-2 rounded-lg text-sm"
                         style={{
+                          backgroundColor: "var(--color-input-bg)",
+                          border: "1px solid var(--color-border)",
                           color: "var(--color-text)",
+                          borderRadius: "var(--border-radius-md)",
                           fontSize: "var(--font-size-sm)",
                         }}
                       >
-                        {tech.name}
-                      </span>
+                        <option value="">Seleccionar técnico</option>
+                        {techniciansOptions
+                          .filter(
+                            (t) =>
+                              !form.technicians.find((ft) => ft.id === t.id)
+                          )
+                          .map((tech) => (
+                            <option key={tech.id} value={tech.id}>
+                              {tech.name}
+                            </option>
+                          ))}
+                      </select>
                       <button
                         type="button"
-                        onClick={() => removeTechnician(tech.id)}
-                        aria-label={`Eliminar técnico ${tech.name}`}
-                        style={{ color: "var(--color-error)" }}
+                        aria-label="Agregar técnico seleccionado"
+                        className="w-full sm:w-auto px-4 py-2 rounded-lg text-sm transition-colors"
+                        style={{
+                          backgroundColor: "var(--color-background)",
+                          color: "var(--color-text)",
+                          border: "1px solid var(--color-border)",
+                          borderRadius: "var(--border-radius-md)",
+                          fontSize: "var(--font-size-sm)",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.backgroundColor =
+                            "var(--color-hover)")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.backgroundColor =
+                            "var(--color-background)")
+                        }
                       >
-                        <FiTrash2 className="w-3 h-3" />
+                        Agregar
                       </button>
                     </div>
-                  ))}
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {form.technicians.map((tech) => (
+                        <div
+                          key={tech.id}
+                          className="flex items-center gap-2 px-3 py-1 rounded-lg"
+                          style={{
+                            backgroundColor: "var(--color-background)",
+                            border: "1px solid var(--color-border)",
+                            borderRadius: "var(--border-radius-md)",
+                          }}
+                        >
+                          <span
+                            className="text-sm"
+                            style={{
+                              color: "var(--color-text)",
+                              fontSize: "var(--font-size-sm)",
+                            }}
+                          >
+                            {tech.name}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeTechnician(tech.id)}
+                            aria-label={`Eliminar técnico ${tech.name}`}
+                            style={{ color: "var(--color-error)" }}
+                          >
+                            <FiTrash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Currency Unit */}
+                  <div className="lg:col-span-3">
+                    <label
+                      className="block text-sm mb-2"
+                      style={{
+                        color: "var(--color-text-secondary)",
+                        fontSize: "var(--font-size-sm)",
+                      }}
+                    >
+                      Unidad de moneda
+                    </label>
+                    <select
+                      value={currency}
+                      onChange={(e) => setCurrency(e.target.value)}
+                      aria-label="Seleccionar moneda"
+                      className="w-full px-3 py-2 rounded-lg text-sm"
+                      style={{
+                        backgroundColor: "var(--color-input-bg)",
+                        border: "1px solid var(--color-border)",
+                        color: "var(--color-text)",
+                        borderRadius: "var(--border-radius-md)",
+                        fontSize: "var(--font-size-sm)",
+                      }}
+                    >
+                      <option value="USD">USD</option>
+                      <option value="EUR">EUR</option>
+                      <option value="COP">COP</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
-
+            
             {/* Performed Maintenance Section */}
             <div>
               <h3
@@ -691,7 +727,7 @@ export default function MaintenanceReportModal({
                     ))}
                   </select>
                 </div>
-                <div className="sm:col-span-4 flex gap-1">
+                <div className="sm:col-span-4">
                   <input
                     type="number"
                     value={newMaintenance.cost}
@@ -703,7 +739,7 @@ export default function MaintenanceReportModal({
                     }
                     placeholder="0.00"
                     aria-label="Costo del mantenimiento"
-                    className="flex-1 px-3 py-2 rounded-lg text-sm"
+                    className="w-full px-3 py-2 rounded-lg text-sm"
                     style={{
                       backgroundColor: "var(--color-input-bg)",
                       border: "1px solid var(--color-border)",
@@ -714,23 +750,6 @@ export default function MaintenanceReportModal({
                     step="0.01"
                     min="0"
                   />
-                  <select
-                    value={currency}
-                    onChange={(e) => setCurrency(e.target.value)}
-                    aria-label="Seleccionar moneda"
-                    className="px-2 py-2 rounded-lg text-sm"
-                    style={{
-                      backgroundColor: "var(--color-input-bg)",
-                      border: "1px solid var(--color-border)",
-                      color: "var(--color-text)",
-                      borderRadius: "var(--border-radius-md)",
-                      fontSize: "var(--font-size-sm)",
-                    }}
-                  >
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
-                    <option value="COP">COP</option>
-                  </select>
                 </div>
                 <div className="sm:col-span-2">
                   <button
@@ -951,7 +970,7 @@ export default function MaintenanceReportModal({
                     min="1"
                   />
                 </div>
-                <div className="sm:col-span-4 flex gap-1">
+                <div className="sm:col-span-4">
                   <input
                     type="number"
                     value={newSparePart.unitCost}
@@ -963,7 +982,7 @@ export default function MaintenanceReportModal({
                     }
                     placeholder="0.00"
                     aria-label="Costo unitario del repuesto"
-                    className="flex-1 px-3 py-2 rounded-lg text-sm"
+                    className="w-full px-3 py-2 rounded-lg text-sm"
                     style={{
                       backgroundColor: "var(--color-input-bg)",
                       border: "1px solid var(--color-border)",
@@ -974,23 +993,6 @@ export default function MaintenanceReportModal({
                     step="0.01"
                     min="0"
                   />
-                  <select
-                    value={currency}
-                    onChange={(e) => setCurrency(e.target.value)}
-                    aria-label="Seleccionar moneda"
-                    className="px-2 py-2 rounded-lg text-sm"
-                    style={{
-                      backgroundColor: "var(--color-input-bg)",
-                      border: "1px solid var(--color-border)",
-                      color: "var(--color-text)",
-                      borderRadius: "var(--border-radius-md)",
-                      fontSize: "var(--font-size-sm)",
-                    }}
-                  >
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
-                    <option value="COP">COP</option>
-                  </select>
                 </div>
                 <div className="sm:col-span-2">
                   <button
@@ -1014,7 +1016,7 @@ export default function MaintenanceReportModal({
                         "var(--color-background)")
                     }
                   >
-                    Add
+                    Agregar
                   </button>
                 </div>
               </div>
@@ -1280,38 +1282,40 @@ export default function MaintenanceReportModal({
 
         {/* Footer */}
         <div
-          className="px-6 py-4"
+          className="px-4 sm:px-6 py-4"
           style={{
             borderTop: "1px solid var(--color-border)",
             backgroundColor: "var(--color-surface)",
           }}
         >
-          <button
-            type="submit"
-            onClick={handleSubmit}
-            disabled={submitting}
-            aria-label="Guardar reporte de mantenimiento"
-            className="w-full py-3 font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{
-              backgroundColor: "var(--color-text)",
-              color: "var(--color-surface)",
-              borderRadius: "var(--border-radius-md)",
-              fontSize: "var(--font-size-base)",
-              fontWeight: "var(--font-weight-medium)",
-            }}
-            onMouseEnter={(e) => {
-              if (!submitting) {
-                e.currentTarget.style.opacity = "0.9";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!submitting) {
-                e.currentTarget.style.opacity = "1";
-              }
-            }}
-          >
-            {submitting ? "Guardando reporte..." : "Guardar reporte"}
-          </button>
+          <div className="flex justify-center">
+            <button
+              type="submit"
+              onClick={handleSubmit}
+              disabled={submitting}
+              aria-label="Guardar reporte de mantenimiento"
+              className="w-full sm:w-auto sm:min-w-[200px] lg:min-w-[180px] px-6 py-2.5 font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                backgroundColor: "var(--color-text)",
+                color: "var(--color-surface)",
+                borderRadius: "var(--border-radius-md)",
+                fontSize: "var(--font-size-sm)",
+                fontWeight: "var(--font-weight-medium)",
+              }}
+              onMouseEnter={(e) => {
+                if (!submitting) {
+                  e.currentTarget.style.opacity = "0.9";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!submitting) {
+                  e.currentTarget.style.opacity = "1";
+                }
+              }}
+            >
+              {submitting ? "Guardando reporte..." : "Guardar reporte"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

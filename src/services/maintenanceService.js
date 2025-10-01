@@ -80,6 +80,14 @@ export const getMaintenanceRequests = async () => {
     return data;
 };
 
+export const createRequestMaintenance = async (requestId, payload) => {
+    const { data } = await apiMain.post(
+        `/maintenance_request/${requestId}/schedule/`,
+        payload
+    );
+    return data;
+};
+
 // Obtener técnicos activos
 export const getActiveTechnicians = async () => {
     const { data } = await apiUsers.get("/users/technicians/active");
