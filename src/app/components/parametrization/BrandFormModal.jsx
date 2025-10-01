@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { FiX, FiEdit3 } from 'react-icons/fi';
 import { toggleStatusBrand } from '@/services/parametrizationService';
 import { SuccessModal, ErrorModal } from '../shared/SuccessErrorModal';
+import PermissionGuard from '@/app/(auth)/PermissionGuard';
 
 const BrandFormModal = ({
     isOpen,
@@ -277,87 +278,95 @@ const BrandFormModal = ({
 
                         {/* Activate/Deactivate Toggle */}
                         {mode === "edit" && (
-                            <div className="flex items-center justify-between">
-                                <label className="block text-sm font-medium text-gray-700">
-                                    Activar/Desactivar
-                                </label>
-                                <div className="relative">
-                                    <button
-                                        type="button"
-                                        onClick={handleToggleStatus}
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${formData.isActive ? 'bg-red-500' : 'bg-gray-200'
-                                            }`}
-                                    >
-                                        <span
-                                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.isActive ? 'translate-x-6' : 'translate-x-1'
+                            <PermissionGuard permission={55}>
+                                <div className="flex items-center justify-between">
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Activar/Desactivar
+                                    </label>
+                                    <div className="relative">
+                                        <button
+                                            type="button"
+                                            onClick={handleToggleStatus}
+                                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${formData.isActive ? 'bg-red-500' : 'bg-gray-200'
                                                 }`}
-                                        />
-                                    </button>
+                                        >
+                                            <span
+                                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.isActive ? 'translate-x-6' : 'translate-x-1'
+                                                    }`}
+                                            />
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
+                            </PermissionGuard>
                         )}
                     </div>
 
                     {/* Model List Section */}
-                    <div className="mb-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Lista de modelos</h3>
+                    <PermissionGuard permission={58}>
+                        <div className="mb-6">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Lista de modelos</h3>
 
-                        {/* Model Table */}
-                        <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden mb-4">
-                            {models.length > 0 ? (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full">
-                                        <thead className="bg-gray-100 border-b border-gray-200">
-                                            <tr>
-                                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
-                                                    Modelo
-                                                </th>
-                                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
-                                                    Descripción
-                                                </th>
-                                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                                                    Acciones
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
-                                            {models.map((model) => (
-                                                <tr key={model.id_model} className="hover:bg-gray-50 group">
-                                                    <td className="px-4 py-3 text-sm text-gray-900 border-r border-gray-200">
-                                                        {model.modelName}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-sm text-gray-600 border-r border-gray-200">
-                                                        {model.description}
-                                                    </td>
-                                                    <td className="px-4 py-3 text-sm">
-                                                        <button
-                                                            onClick={() => handleEditModel(model.id_model)}
-                                                            className="invisible group-hover:visible inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md transition-colors"
-                                                        >
-                                                            <FiEdit3 className="w-3 h-3 mr-1.5" />
-                                                            Editar
-                                                        </button>
-                                                    </td>
+                            {/* Model Table */}
+                            <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden mb-4">
+                                {models.length > 0 ? (
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full">
+                                            <thead className="bg-gray-100 border-b border-gray-200">
+                                                <tr>
+                                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
+                                                        Modelo
+                                                    </th>
+                                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
+                                                        Descripción
+                                                    </th>
+                                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                                                        Acciones
+                                                    </th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            ) : (
-                                <div className="p-8 text-center text-gray-500">
-                                    No se han agregado modelos aún
-                                </div>
-                            )}
-                        </div>
+                                            </thead>
+                                            <tbody className="bg-white divide-y divide-gray-200">
+                                                {models.map((model) => (
+                                                    <tr key={model.id_model} className="hover:bg-gray-50 group">
+                                                        <td className="px-4 py-3 text-sm text-gray-900 border-r border-gray-200">
+                                                            {model.modelName}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-sm text-gray-600 border-r border-gray-200">
+                                                            {model.description}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-sm">
+                                                            <PermissionGuard permission={57}>
+                                                                <button
+                                                                    onClick={() => handleEditModel(model.id_model)}
+                                                                    className="invisible group-hover:visible inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md transition-colors"
+                                                                >
+                                                                    <FiEdit3 className="w-3 h-3 mr-1.5" />
+                                                                    Editar
+                                                                </button>
+                                                            </PermissionGuard>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ) : (
+                                    <div className="p-8 text-center text-gray-500">
+                                        No se han agregado modelos aún
+                                    </div>
+                                )}
+                            </div>
 
-                        {/* Add Model Button */}
-                        <button
-                            onClick={handleAddModel}
-                            className="px-6 py-2 btn-theme btn-secondary text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
-                        >
-                            Añadir modelo
-                        </button>
-                    </div>
+                            {/* Add Model Button */}
+                            <PermissionGuard permission={56}>
+                                <button
+                                    onClick={handleAddModel}
+                                    className="px-6 py-2 btn-theme btn-secondary text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
+                                >
+                                    Añadir modelo
+                                </button>
+                            </PermissionGuard>
+                        </div>
+                    </PermissionGuard>
 
                     {/* Action Buttons */}
                     <div className="flex justify-end">

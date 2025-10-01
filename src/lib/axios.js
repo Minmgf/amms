@@ -20,6 +20,8 @@ const clearAllTokens = () => {
   localStorage.removeItem('token');
   sessionStorage.removeItem('token');
   localStorage.removeItem('userData');
+  localStorage.removeItem('authToken');
+  sessionStorage.removeItem('authToken');
 };
 
 // Instancia para el microservicio de usuarios

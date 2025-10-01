@@ -4,6 +4,7 @@ import { FiX, FiEdit3 } from 'react-icons/fi';
 import JobModal from './JobModal'; // Add this import
 import { changeDepartmentStatus, getChargesDepartments, createJob, updateJob } from '@/services/parametrizationService';
 import { SuccessModal, ErrorModal } from '@/app/components/shared/SuccessErrorModal';
+import PermissionGuard from '@/app/(auth)/PermissionGuard';
 
 const DepartmentModal = ({
   isOpen,
@@ -351,91 +352,100 @@ const DepartmentModal = ({
 
             {/* Toggle Switch - Solo visible en modo edit */}
             {!isAddMode && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Activar/Desactivar
-                </label>
-                <button
-                  onClick={() => handleToggleStatus()}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-                    ${formData.isActive ? 'bg-green-500' : 'bg-gray-200'}
-                  `}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform
-                      ${formData.isActive ? 'translate-x-6' : 'translate-x-1'}
+              <PermissionGuard permission={65}>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Activar/Desactivar
+                  </label>
+                  <button
+                    onClick={() => handleToggleStatus()}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                      ${formData.isActive ? 'bg-green-500' : 'bg-gray-200'}
                     `}
-                  />
-                </button>
-              </div>
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                        ${formData.isActive ? 'translate-x-6' : 'translate-x-1'}
+                      `}
+                    />
+                  </button>
+                </div>
+              </PermissionGuard>
             )}
 
 
 
             {/* Jobs Titles List Section */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">
-                Lista de puestos de trabajo
-              </h3>
+            <PermissionGuard permission={68}>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">
+                  Lista de puestos de trabajo
+                </h3>
 
-              <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
-                {/* Table Header */}
-                <div className="bg-gray-50 border-b border-gray-200">
-                  <div className="grid grid-cols-4 gap-4 px-4 py-3">
-                    <div className="text-sm font-medium text-gray-700">Nombre puesto</div>
-                    <div className="text-sm font-medium text-gray-700">Descripción</div>
-                    <div className="text-sm font-medium text-gray-700">Estado</div>
-                    <div className="text-sm font-medium text-gray-700">Acciones</div>
+                <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
+                  {/* Table Header */}
+                  <div className="bg-gray-50 border-b border-gray-200">
+                    <div className="grid grid-cols-4 gap-4 px-4 py-3">
+                      <div className="text-sm font-medium text-gray-700">Nombre puesto</div>
+                      <div className="text-sm font-medium text-gray-700">Descripción</div>
+                      <div className="text-sm font-medium text-gray-700">Estado</div>
+                      <div className="text-sm font-medium text-gray-700">Acciones</div>
+                    </div>
+                  </div>
+
+
+                  {/* Table Body */}
+
+                  <div className="bg-white min-h-[120px]">
+                    {hasJobTitles ? (
+                      jobTitles.map((job) => (
+                        <div key={job.id} className="grid grid-cols-4 gap-4 px-4 py-3 border-b border-gray-100 last:border-b-0">
+                          <div className="text-sm text-gray-900">{job.name}</div>
+                          <div className="text-sm text-gray-600">{job.description}</div>
+                          <div>
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${job.idStatues === 1
+                                ? 'bg-green-100 text-green-800'
+                                : job.idStatues === 2
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}>
+                              {job.status}
+                            </span>
+                          </div>
+                          <div>
+                            <PermissionGuard permission={67}>
+                              <button
+                                onClick={() => handleEditJob(job.id)}
+                                className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md transition-colors"
+                              >
+                                <FiEdit3 className="w-3 h-3 mr-1.5" />
+                                Editar
+                              </button>
+                            </PermissionGuard>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="flex items-center justify-center h-32">
+                        <p className="text-sm text-gray-500">
+                          No hay puestos registrados para este departamento
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-
-                {/* Table Body */}
-                <div className="bg-white min-h-[120px]">
-                  {hasJobTitles ? (
-                    jobTitles.map((job) => (
-                      <div key={job.id} className="grid grid-cols-4 gap-4 px-4 py-3 border-b border-gray-100 last:border-b-0">
-                        <div className="text-sm text-gray-900">{job.name}</div>
-                        <div className="text-sm text-gray-600">{job.description}</div>
-                        <div>
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${job.idStatues === 1
-                              ? 'bg-green-100 text-green-800'
-                              : job.idStatues === 2
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}>
-                            {job.status}
-                          </span>
-                        </div>
-                        <div>
-                          <button
-                            onClick={() => handleEditJob(job.id)}
-                            className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md transition-colors"
-                          >
-                            <FiEdit3 className="w-3 h-3 mr-1.5" />
-                            Editar
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="flex items-center justify-center h-32">
-                      <p className="text-sm text-gray-500">
-                        No hay puestos registrados para este departamento
-                      </p>
-                    </div>
-                  )}
-                </div>
+                {/* Add Job Button */}
+                <PermissionGuard permission={66}>
+                  <button
+                    onClick={handleAddJob}
+                    className="px-6 py-2 btn-theme btn-secondary text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
+                  >
+                    Añadir puesto
+                  </button>
+                </PermissionGuard>
               </div>
-
-              {/* Add Job Button */}
-              <button
-                onClick={handleAddJob}
-                className="px-6 py-2 btn-theme btn-secondary text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
-              >
-                Añadir puesto
-              </button>
-            </div>
+            </PermissionGuard>
           </div>
 
           {/* Footer */}

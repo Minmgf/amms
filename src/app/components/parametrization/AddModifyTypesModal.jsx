@@ -6,6 +6,7 @@ import {
   SuccessModal,
   ErrorModal,
 } from "@/app/components/shared/SuccessErrorModal";
+import PermissionGuard from "@/app/(auth)/PermissionGuard";
 
 const AddModifyTypesModal = ({
   isOpen,
@@ -258,28 +259,29 @@ const AddModifyTypesModal = ({
                   placeholder="Enter description"
                 />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Activar/Desactivar
-                </label>
-                <div className="mt-1 sm:mt-0">
-                  <button
-                    type="button"
-                    onClick={handleToggleChange}
-                    disabled={saving}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
-                      formData.isActive ? "bg-red-500" : "bg-gray-200"
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        formData.isActive ? "translate-x-6" : "translate-x-1"
+              <PermissionGuard permission={39}>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Activar/Desactivar
+                  </label>
+                  <div className="mt-1 sm:mt-0">
+                    <button
+                      type="button"
+                      onClick={handleToggleChange}
+                      disabled={saving}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                        formData.isActive ? "bg-red-500" : "bg-gray-200"
                       }`}
-                    />
-                  </button>
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          formData.isActive ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+                  </div>
                 </div>
-              </div>
+              </PermissionGuard>
             </div>
           </div>
         </div>

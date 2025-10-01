@@ -18,6 +18,18 @@ export const getActiveMachine = async () => {
     return data;
 };
 
+// Obtener tipo principal de maquinaria
+export const getMachineryType = async () => {
+    const { data } = await apiMain.get("/types/list/active/2/");
+    return data;
+};
+
+// Obtener tipo secundario de maquinaria
+export const getMachinerySecondaryType = async () => {
+    const { data } = await apiMain.get("/types/list/active/3/");
+    return data;
+};
+
 // traer marcas de maquinarias activas
 export const getMachineryBrands = async () => {
     const { data } = await apiMain.get("/brands/list/active/1/");
@@ -51,7 +63,7 @@ export const getMachineryStatus = async () => {
     return data;
 };
 
-// traer datos generales de una maquinaria por id
+// Obtener datos generales de una maquinaria por ID
 export const getGeneralData = async (machineryId) => {
     const { data } = await apiMain.get(`/machinery/${machineryId}/`);
     return data.data;
@@ -80,7 +92,7 @@ export const getSpecificTechnicalSheet = async (machineryId) => {
 
 // Actualizar ficha técnica específica
 export const updateSpecificTechnicalSheet = async (specificTechnicalSheetId, payload) => {
-    const { data } = await apiMain.put(`/specific-technical-sheets/${specificTechnicalSheetId}/`, payload);
+    const { data } = await apiMain.put(`/machinery-specific-sheet/${specificTechnicalSheetId}/`, payload);
     return data;
 };
 
@@ -237,7 +249,7 @@ export const registerUsageInfo = async (formData) => {
 // traer información de uso por id de maquinaria
 export const getUsageInfo = async (machineryId) => {
     const { data } = await apiMain.get(`/machinery-usage/by-machinery/${machineryId}/`);
-    return data;
+    return data.data;
 };
 
 // actualizar información de uso por id de uso
