@@ -257,6 +257,7 @@ const ScheduleMaintenanceModal = ({ isOpen, onClose, onSubmit }) => {
                                         render={({ field }) => (
                                             <select
                                                 {...field}
+                                                aria-label="Schedule Minute Select"
                                                 className="parametrization-input"
                                                 style={{ flex: '1' }}
                                             >
@@ -276,6 +277,7 @@ const ScheduleMaintenanceModal = ({ isOpen, onClose, onSubmit }) => {
                                         render={({ field }) => (
                                             <select
                                                 {...field}
+                                                aria-label="Schedule AMPM Select"
                                                 className="parametrization-input"
                                                 style={{ flex: '0.8' }}
                                             >
