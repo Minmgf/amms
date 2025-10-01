@@ -18,6 +18,18 @@ export const getActiveMachine = async () => {
     return data;
 };
 
+// Obtener tipo principal de maquinaria
+export const getMachineryType = async () => {
+    const { data } = await apiMain.get("/types/list/active/2/");
+    return data;
+};
+
+// Obtener tipo secundario de maquinaria
+export const getMachinerySecondaryType = async () => {
+    const { data } = await apiMain.get("/types/list/active/3/");
+    return data;
+};
+
 // traer marcas de maquinarias activas
 export const getMachineryBrands = async () => {
     const { data } = await apiMain.get("/brands/list/active/1/");
@@ -51,7 +63,7 @@ export const getMachineryStatus = async () => {
     return data;
 };
 
-// traer datos generales de una maquinaria por id
+// Obtener datos generales de una maquinaria por ID
 export const getGeneralData = async (machineryId) => {
     const { data } = await apiMain.get(`/machinery/${machineryId}/`);
     return data.data;
