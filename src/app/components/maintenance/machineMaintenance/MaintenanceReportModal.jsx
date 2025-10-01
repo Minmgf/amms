@@ -380,7 +380,7 @@ export default function MaintenanceReportModal({
                           fontSize: "var(--font-size-sm)",
                         }}
                       >
-                        Machinery type
+                        Tipo de maquinaria
                       </label>
                       <input
                         type="text"
@@ -405,7 +405,7 @@ export default function MaintenanceReportModal({
                           fontSize: "var(--font-size-sm)",
                         }}
                       >
-                        Invested time
+                        Tiempo invertido
                       </label>
                       <div className="flex items-center gap-1 sm:gap-2">
                         <input
@@ -489,7 +489,7 @@ export default function MaintenanceReportModal({
                         fontSize: "var(--font-size-xs)",
                       }}
                     >
-                      Machine photo here
+                      Foto de la máquina aquí
                     </span>
                   </div>
                 </div>
@@ -504,12 +504,12 @@ export default function MaintenanceReportModal({
                     fontSize: "var(--font-size-sm)",
                   }}
                 >
-                  Maintenance description
+                  Descripción del mantenimiento
                 </label>
                 <textarea
                   value={form.description}
                   onChange={handleDescriptionChange}
-                  placeholder="Describe the maintenance performed..."
+                  placeholder="Describe el mantenimiento realizado..."
                   rows={3}
                   aria-label="Descripción del mantenimiento"
                   className="w-full px-3 py-2 rounded-lg text-sm resize-none"
@@ -528,7 +528,7 @@ export default function MaintenanceReportModal({
                     fontSize: "var(--font-size-xs)",
                   }}
                 >
-                  {form.description.length}/600 characters
+                  {form.description.length}/600 caracteres
                 </div>
               </div>
 
@@ -541,7 +541,7 @@ export default function MaintenanceReportModal({
                     fontSize: "var(--font-size-sm)",
                   }}
                 >
-                  Attending technicians
+                  Atendido por (técnicos)
                 </label>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <select
@@ -557,7 +557,7 @@ export default function MaintenanceReportModal({
                       fontSize: "var(--font-size-sm)",
                     }}
                   >
-                    <option value="">Select a technician</option>
+                    <option value="">Seleccionar técnico</option>
                     {techniciansOptions
                       .filter(
                         (t) => !form.technicians.find((ft) => ft.id === t.id)
@@ -588,7 +588,7 @@ export default function MaintenanceReportModal({
                         "var(--color-background)")
                     }
                   >
-                    Add
+                    Agregar
                   </button>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -635,7 +635,7 @@ export default function MaintenanceReportModal({
                   fontWeight: "var(--font-weight-semibold)",
                 }}
               >
-                Performed maintenance
+                Mantenimiento realizado
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 mb-3">
                 <div className="sm:col-span-3">
@@ -657,7 +657,7 @@ export default function MaintenanceReportModal({
                       fontSize: "var(--font-size-sm)",
                     }}
                   >
-                    <option value="">Maintenance</option>
+                    <option value="">Mantenimiento</option>
                     {maintenanceOptions.map((m) => (
                       <option key={m.id} value={m.id}>
                         {m.name}
@@ -685,7 +685,7 @@ export default function MaintenanceReportModal({
                     }}
                     disabled={form.technicians.length === 0}
                   >
-                    <option value="">Responsible Technician</option>
+                    <option value="">Técnico responsable</option>
                     {form.technicians.map((t) => (
                       <option key={t.id} value={t.id}>
                         {t.name}
@@ -756,7 +756,7 @@ export default function MaintenanceReportModal({
                         "var(--color-background)")
                     }
                   >
-                    Add
+                    Agregar
                   </button>
                 </div>
               </div>
@@ -786,7 +786,7 @@ export default function MaintenanceReportModal({
                             fontWeight: "var(--font-weight-medium)",
                           }}
                         >
-                          Maintenance
+                          Mantenimiento
                         </th>
                         <th
                           className="text-left px-4 py-2 text-sm font-medium"
@@ -796,7 +796,7 @@ export default function MaintenanceReportModal({
                             fontWeight: "var(--font-weight-medium)",
                           }}
                         >
-                          Technician
+                          Técnico
                         </th>
                         <th
                           className="text-left px-4 py-2 text-sm font-medium"
@@ -806,7 +806,7 @@ export default function MaintenanceReportModal({
                             fontWeight: "var(--font-weight-medium)",
                           }}
                         >
-                          Cost
+                          Costo
                         </th>
                         <th
                           className="text-center px-4 py-2 text-sm font-medium"
@@ -816,7 +816,7 @@ export default function MaintenanceReportModal({
                             fontWeight: "var(--font-weight-medium)",
                           }}
                         >
-                          Actions
+                          Acciones
                         </th>
                       </tr>
                     </thead>
@@ -881,7 +881,7 @@ export default function MaintenanceReportModal({
                   fontWeight: "var(--font-weight-semibold)",
                 }}
               >
-                Spare parts used
+                Repuestos utilizados
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 mb-3">
                 <div className="sm:col-span-2">
@@ -891,7 +891,7 @@ export default function MaintenanceReportModal({
                     onChange={(e) =>
                       setNewSparePart({ ...newSparePart, name: e.target.value })
                     }
-                    placeholder="Name"
+                    placeholder="Nombre del repuesto"
                     aria-label="Nombre del repuesto"
                     className="w-full px-3 py-2 rounded-lg text-sm"
                     style={{
@@ -922,7 +922,7 @@ export default function MaintenanceReportModal({
                       fontSize: "var(--font-size-sm)",
                     }}
                   >
-                    <option value="">Brand</option>
+                    <option value="">Marca</option>
                     {brandsOptions.map((b) => (
                       <option key={b.id} value={b.id}>
                         {b.name}
@@ -940,7 +940,7 @@ export default function MaintenanceReportModal({
                         quantity: e.target.value,
                       })
                     }
-                    placeholder="Quantity"
+                    placeholder="Cantidad"
                     aria-label="Cantidad del repuesto"
                     className="w-full px-3 py-2 rounded-lg text-sm"
                     style={{
@@ -1046,7 +1046,7 @@ export default function MaintenanceReportModal({
                             fontWeight: "var(--font-weight-medium)",
                           }}
                         >
-                          Spare part
+                          Repuesto
                         </th>
                         <th
                           className="text-left px-4 py-2 text-sm font-medium"
@@ -1056,7 +1056,7 @@ export default function MaintenanceReportModal({
                             fontWeight: "var(--font-weight-medium)",
                           }}
                         >
-                          Brand
+                          Marca
                         </th>
                         <th
                           className="text-left px-4 py-2 text-sm font-medium"
@@ -1066,7 +1066,7 @@ export default function MaintenanceReportModal({
                             fontWeight: "var(--font-weight-medium)",
                           }}
                         >
-                          Quantity
+                          Cantidad
                         </th>
                         <th
                           className="text-left px-4 py-2 text-sm font-medium"
@@ -1076,7 +1076,7 @@ export default function MaintenanceReportModal({
                             fontWeight: "var(--font-weight-medium)",
                           }}
                         >
-                          Unit cost
+                          Costo unitario
                         </th>
                         <th
                           className="text-left px-4 py-2 text-sm font-medium"
@@ -1096,7 +1096,7 @@ export default function MaintenanceReportModal({
                             fontWeight: "var(--font-weight-medium)",
                           }}
                         >
-                          Actions
+                          Acciones
                         </th>
                       </tr>
                     </thead>
@@ -1178,7 +1178,7 @@ export default function MaintenanceReportModal({
                             fontWeight: "var(--font-weight-medium)",
                           }}
                         >
-                          Total Cost:
+                          Costo total:
                         </td>
                         <td
                           className="px-4 py-2 text-sm font-bold"
@@ -1208,14 +1208,14 @@ export default function MaintenanceReportModal({
                   fontWeight: "var(--font-weight-semibold)",
                 }}
               >
-                Recommendations
+                Recomendaciones
               </h3>
               <textarea
                 value={form.recommendations}
                 onChange={(e) =>
                   setForm({ ...form, recommendations: e.target.value })
                 }
-                placeholder="Enter recommendations for future maintenance..."
+                placeholder="Ingrese recomendaciones para futuros mantenimientos..."
                 rows={3}
                 aria-label="Recomendaciones para futuros mantenimientos"
                 className="w-full px-3 py-2 rounded-lg text-sm resize-none"
@@ -1263,7 +1263,7 @@ export default function MaintenanceReportModal({
                     fontWeight: "var(--font-weight-medium)",
                   }}
                 >
-                  Total Maintenance Cost:
+                  Costo total de mantenimiento:
                 </span>
                 <span
                   className="text-2xl font-bold"
@@ -1312,7 +1312,7 @@ export default function MaintenanceReportModal({
               }
             }}
           >
-            {submitting ? "Saving report..." : "Save report"}
+            {submitting ? "Guardando reporte..." : "Guardar reporte"}
           </button>
         </div>
       </div>
