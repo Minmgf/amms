@@ -80,7 +80,6 @@ export default function MaintenanceReportModal({
 
   const handleTimeChange = (field, value) => {
     const numValue = value.replace(/\D/g, "");
-
     if (field === "hours") {
       const hours = parseInt(numValue) || 0;
       if (hours > 23) return;
@@ -88,7 +87,6 @@ export default function MaintenanceReportModal({
       const minutes = parseInt(numValue) || 0;
       if (minutes > 59) return;
     }
-
     setForm({
       ...form,
       investedTime: { ...form.investedTime, [field]: numValue },

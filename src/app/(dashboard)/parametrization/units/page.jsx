@@ -12,6 +12,7 @@ import {
   getUnitsByCategory,
 } from "@/services/parametrizationService";
 import { useTheme } from "@/contexts/ThemeContext";
+import PermissionGuard from "@/app/(auth)/PermissionGuard";
 
 // Componente principal
 const ParameterizationView = () => {
@@ -309,13 +310,15 @@ const ParameterizationView = () => {
       columnHelper.accessor("id", {
         header: "Detalles",
         cell: (info) => (
-          <button
-            onClick={() => handleViewDetails(info.getValue())}
-            className="parametrization-action-button p-2 transition-colors lg:opacity-0 group-hover:opacity-100"
-            title="Ver detalles"
-          >
-            <FiEye className="w-4 h-4" />
-          </button>
+          <PermissionGuard permission={45}>
+            <button
+              onClick={() => handleViewDetails(info.getValue())}
+              className="parametrization-action-button p-2 transition-colors lg:opacity-0 group-hover:opacity-100"
+              title="Ver detalles"
+            >
+              <FiEye className="w-4 h-4" />
+            </button>
+          </PermissionGuard>
         ),
       }),
     ],
@@ -348,13 +351,15 @@ const ParameterizationView = () => {
         </div>
 
         {/* Table using TableList component */}
-        <TableList
-          columns={columns}
-          data={data}
-          loading={loading}
-          globalFilter={globalFilter}
-          onGlobalFilterChange={setGlobalFilter}
-        />
+        <PermissionGuard permission={42}>
+          <TableList
+            columns={columns}
+            data={data}
+            loading={loading}
+            globalFilter={globalFilter}
+            onGlobalFilterChange={setGlobalFilter}
+          />
+        </PermissionGuard>
 
         {error && (
           <div className="parametrization-error p-8 text-center">
