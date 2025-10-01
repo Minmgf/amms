@@ -1,4 +1,4 @@
-import { apiMain } from "@/lib/axios";
+import { apiMain, apiUsers } from "@/lib/axios";
 
 // Lista de mantenimientos
 export const getMaintenanceList = async () => {
@@ -69,40 +69,14 @@ export const getMaintenanceRequests = async () => {
 };
 
 export const getActiveTechnicians = async () => {
-    try {
-        // Cuando el endpoint esté en producción, cambiar a:
-        // const { data } = await apiMain.get("/users/technicians/active/");
-        
-        // Por ahora, retornar datos mock
-        return [
-            { value: "7", label: "Juan Pérez" },
-            { value: "8", label: "María García" },
-            { value: "9", label: "Carlos López" }
-        ];
-    } catch (error) {
-        console.error("Error obteniendo técnicos:", error);
-        // Retornar array vacío en caso de error
-        return [];
-    }
+    const { data } = await apiUsers.get("/users/technicians/active");
+    return data;
 };
 
 // Crear programación de mantenimiento
 export const createMaintenanceScheduling = async (payload) => {
-    try {
-        // Cuando el endpoint esté disponible, descomentar:
-        // const { data } = await apiMain.post("/maintenance_scheduling/create/", payload);
-        // return data;
-        
-        // Por ahora, simular respuesta exitosa
-        return {
-            success: true,
-            message: "Mantenimiento programado creado exitosamente",
-            data: { id_maintenance_scheduling: Math.random() }
-        };
-    } catch (error) {
-        console.error("Error creando programación:", error);
-        throw error;
-    }
+    const { data } = await apiMain.post("/maintenance_scheduling/create/", payload);
+    return data;
 };
 
 //SERVICIOS PARA SOLICITUDES DE MANTENIMIENTO
