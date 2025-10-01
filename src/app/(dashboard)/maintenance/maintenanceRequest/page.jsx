@@ -202,8 +202,6 @@ const SolicitudesMantenimientoView = () => {
     checkPermissions();
   }, []);
 
-  checkPermissions();
-
   // Aplicar filtros cuando cambien los datos o los filtros
   useEffect(() => {
     applyFilters();
