@@ -1,4 +1,5 @@
 "use client";
+import PermissionGuard from '@/app/(auth)/PermissionGuard';
 import React, { useState, useEffect } from 'react';
 import { FiX, FiEdit3 } from 'react-icons/fi';
 
@@ -120,13 +121,15 @@ const CategoryModal = ({
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm">
-                        <button
-                          onClick={() => handleEdit(item.id)}
-                          className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md transition-colors"
-                        >
-                          <FiEdit3 className="w-3 h-3 mr-1.5" />
-                          Editar
-                        </button>
+                        <PermissionGuard permission={52}>
+                          <button
+                            onClick={() => handleEdit(item.id)}
+                            className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md transition-colors"
+                          >
+                            <FiEdit3 className="w-3 h-3 mr-1.5" />
+                            Editar
+                          </button>
+                        </PermissionGuard>
                       </td>
                     </tr>
                   ))}
@@ -136,14 +139,16 @@ const CategoryModal = ({
           </div>
 
           {/* Add Brand Button */}
-          <div className="flex justify-center">
-            <button
-              onClick={handleAddBrand}
-              className="px-8 py-3 btn-theme btn-primary relative"
-            >
-              Añadir marca
-            </button>
-          </div>
+          <PermissionGuard permission={51}>
+            <div className="flex justify-center">
+              <button
+                onClick={handleAddBrand}
+                className="px-8 py-3 btn-theme btn-primary relative"
+              >
+                Añadir marca
+              </button>
+            </div>
+          </PermissionGuard>
         </div>
       </div>
     </div>
