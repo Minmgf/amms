@@ -1,49 +1,146 @@
 "use client";
-import React, { useState } from "react";
-import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
+import React, { useState, useEffect } from "react";
 
-const mockData = {
-  serialNumber: "EXC-2024-0012",
-  machineName: "Excavadora Caterpillar 320D",
-  requestDate: "14 Mar 2025, 9:23 pm",
-  maintenanceDetails: "",
-  scheduleDate: "",
-  scheduleHour: "00",
-  scheduleMinute: "00",
-  schedulePeriod: "",
-  assignedTechnician: "",
-  maintenanceType: "",
-};
+import { getActiveTechnicians, getMaintenanceTypes, updateMaintenanceScheduling, getScheduledMaintenanceDetail } from "@/services/maintenanceService";
 
-const technicians = ["Cesar Ramirez", "Luigy Rodriguez", "Luis Gómez", "Jaime Peña"];
-const maintenanceTypes = ["Preventivo", "Correctivo", "Predictivo"];
-
-const UpdateMaintenanceSchedule = ({ onClose }) => {
-  const [scheduleDate, setScheduleDate] = useState(mockData.scheduleDate);
-  const [hour, setHour] = useState(mockData.scheduleHour);
-  const [minute, setMinute] = useState(mockData.scheduleMinute);
-  const [period, setPeriod] = useState(mockData.schedulePeriod);
+const UpdateMaintenanceSchedule = ({ onClose, requestData, onSuccess, onError }) => {
+  
+  // Estados del formulario
+  const [scheduleDate, setScheduleDate] = useState(requestData?.scheduleDate || "");
+  const [hour, setHour] = useState(requestData?.scheduleHour || "01");
+  const [minute, setMinute] = useState(requestData?.scheduleMinute || "00");
+  const [period, setPeriod] = useState(requestData?.schedulePeriod || "AM");
   const [assignedTechnician, setAssignedTechnician] = useState(
-    mockData.assignedTechnician
+    requestData?.assignedTechnician || ""
   );
   const [maintenanceDetails, setMaintenanceDetails] = useState(
-    mockData.maintenanceDetails
+    requestData?.maintenanceDetails || ""
   );
   const [maintenanceType, setMaintenanceType] = useState(
-    mockData.maintenanceType
+    requestData?.maintenanceType || ""
   );
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [showError, setShowError] = useState(false);
-  const [error, setError] = useState("");
+  
+  // Estados para UI
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Estados para datos dinámicos
+  const [technicians, setTechnicians] = useState([]);
+  const [maintenanceTypes, setMaintenanceTypes] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Estados para información del mantenimiento
+  const [maintenanceInfo, setMaintenanceInfo] = useState({
+    machinery_serial: "N/A",
+    machinery_name: "N/A", 
+    scheduled_at: "N/A"
+  });
+
+  // Cargar datos al montar el componente
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+  
+
+        
+        const [techniciansList, typesList] = await Promise.all([
+          getActiveTechnicians(),
+          getMaintenanceTypes()
+        ]);
+        
+
+        
+        setTechnicians(techniciansList);
+        setMaintenanceTypes(typesList);
+        
+        // Determinar qué ID usar (puede venir con diferentes nombres)
+        const maintenanceId = requestData?.id_maintenance_scheduling || requestData?.id || requestData?.maintenance_id;
+        
+        // Obtener detalle del mantenimiento
+        if (requestData) {
+          try {
+            // Usar directamente requestData que ya contiene todos los datos
+            let specificMaintenance = requestData;
+            
+            // Solo hacer llamada API si requestData no tiene los campos esenciales
+            const hasEssentialData = requestData.machinery || 
+                                   requestData.machinery_name || 
+                                   requestData.machine_name ||
+                                   requestData.scheduled_at ||
+                                   requestData.scheduled_date;
+            
+            if (!hasEssentialData && maintenanceId) {
+              try {
+                specificMaintenance = await getScheduledMaintenanceDetail(maintenanceId);
+              } catch (detailError) {
+                specificMaintenance = requestData;
+              }
+            }
+            
+            if (specificMaintenance) {
+              setMaintenanceInfo({
+                machinery_serial: specificMaintenance.machinery?.serial ||
+                                 specificMaintenance.machinery_serial || 
+                                 specificMaintenance.serial_number ||
+                                 specificMaintenance.machine_serial ||
+                                 "N/A",
+                machinery_name: specificMaintenance.machinery_name || 
+                               specificMaintenance.machine_name ||
+                               specificMaintenance.machinery_description ||
+                               specificMaintenance.machinery?.name ||
+                               "N/A",
+                scheduled_at: specificMaintenance.scheduled_at || 
+                             specificMaintenance.scheduled_date ||
+                             specificMaintenance.programmed_date ||
+                             specificMaintenance.date ? 
+                  (() => {
+                    const date = specificMaintenance.scheduled_at || 
+                                specificMaintenance.scheduled_date || 
+                                specificMaintenance.programmed_date ||
+                                specificMaintenance.date;
+                    try {
+                      return new Date(date).toLocaleString("es-ES");
+                    } catch {
+                      return date;
+                    }
+                  })() : "N/A"
+              });
+            } else {
+              setMaintenanceInfo({
+                machinery_serial: "N/A",
+                machinery_name: "N/A", 
+                scheduled_at: "N/A"
+              });
+            }
+            
+          } catch (detailError) {
+            // En caso de error, usar requestData directamente
+            if (requestData) {
+              setMaintenanceInfo({
+                machinery_serial: requestData.machinery?.serial || requestData.machinery_serial || requestData.serial_number || "N/A",
+                machinery_name: requestData.machinery_name || requestData.machine_name || "N/A",
+                scheduled_at: requestData.scheduled_at || requestData.scheduled_date ? 
+                  new Date(requestData.scheduled_at || requestData.scheduled_date).toLocaleString("es-ES") : "N/A"
+              });
+            }
+          }
+        }
+        
+      } catch (error) {
+        // Error silencioso en la carga de datos - el modal seguirá funcionando con valores por defecto
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [requestData?.id_maintenance_scheduling, requestData?.id, requestData?.maintenance_id]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (isSubmitting) return;
     
-    setError("");
-    setShowError(false);
     setIsSubmitting(true);
     
     try {
@@ -98,15 +195,91 @@ const UpdateMaintenanceSchedule = ({ onClose }) => {
         throw new Error("Por favor ingrese una hora válida.");
       }
       
-      // Simulación de llamada API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Convertir la fecha y hora al formato ISO 8601 para scheduled_at
+      const convertTo24Hour = (hour12, minute, period) => {
+        let hour24 = parseInt(hour12);
+        if (period === 'AM' && hour24 === 12) {
+          hour24 = 0;
+        } else if (period === 'PM' && hour24 !== 12) {
+          hour24 += 12;
+        }
+        return `${hour24.toString().padStart(2, '0')}:${minute.padStart(2, '0')}`;
+      };
+
+      const time24 = convertTo24Hour(hour, minute, period);
+      const scheduledAt = `${scheduleDate}T${time24}:00Z`;
+
+      // Preparar datos para actualización según la estructura del API
+      const updateData = {
+        scheduled_at: scheduledAt,
+        details: maintenanceDetails,
+        assigned_technician: parseInt(assignedTechnician),
+        maintenance_type: parseInt(maintenanceType)
+      };
+
+      // Determinar el ID correcto (consistente con useEffect)
+      const maintenanceId = requestData?.id_maintenance_scheduling || requestData?.id || requestData?.maintenance_id;
+
+      // Llamada al endpoint de actualización de mantenimiento programado
+      await updateMaintenanceScheduling(maintenanceId, updateData);
       
-      // Simulación de guardado exitoso
-      setShowSuccess(true);
+      // Llamar al callback de éxito para refrescar la lista y mostrar alerta
+      if (onSuccess) {
+        onSuccess('Mantenimiento programado actualizado exitosamente');
+      }
+      
+      // Cerrar el modal después del éxito
+      onClose();
       
     } catch (error) {
-      setError(error.message);
-      setShowError(true);
+      let errorMessage = 'Error al actualizar el mantenimiento';
+      
+      // Manejar diferentes tipos de respuestas de error del API
+      if (error.response?.data) {
+        const apiError = error.response.data;
+        
+        // Si hay un mensaje principal
+        if (apiError.message) {
+          errorMessage = apiError.message;
+        }
+        
+        // Si hay detalles de error específicos
+        if (apiError.details) {
+          const detailsArray = Array.isArray(apiError.details) 
+            ? apiError.details 
+            : Object.values(apiError.details).flat();
+          
+          if (detailsArray.length > 0) {
+            errorMessage += `: ${detailsArray.join(', ')}`;
+          }
+        }
+        
+        // Si hay errores de campo específicos
+        if (apiError.errors) {
+          const fieldErrors = Object.entries(apiError.errors)
+            .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+            .join('; ');
+          
+          if (fieldErrors) {
+            errorMessage += `. Errores de campo: ${fieldErrors}`;
+          }
+        }
+        
+        // Mensajes específicos para casos comunes
+        if (apiError.message?.includes('cancelado')) {
+          errorMessage = 'No se puede actualizar un mantenimiento que ha sido cancelado.';
+        } else if (apiError.message?.includes('completado')) {
+          errorMessage = 'No se puede actualizar un mantenimiento que ya ha sido completado.';
+        }
+        
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      // Solo usar callback del padre para mostrar error
+      if (onError) {
+        onError(errorMessage);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -133,16 +306,16 @@ const UpdateMaintenanceSchedule = ({ onClose }) => {
             <div className="grid grid-cols-2 border-primary text-theme-sm">
               <div className="px-6 py-3">
                 <p className="text-secondary">Número de serie</p>
-                <p className="mt-1 font-theme-medium text-primary">{mockData.serialNumber}</p>
+                <p className="mt-1 font-theme-medium text-primary">{maintenanceInfo.machinery_serial}</p>
               </div>
               <div className="px-6 py-3">
                 <p className="text-secondary">Nombre de la máquina</p>
-                <p className="mt-1 font-theme-medium text-primary">{mockData.machineName}</p>
+                <p className="mt-1 font-theme-medium text-primary">{maintenanceInfo.machinery_name}</p>
               </div>
             </div>
             <div className="px-6 py-3 text-theme-sm">
-              <p className="text-secondary">Fecha de la solicitud</p>
-              <p className="mt-1 font-theme-medium text-primary">{mockData.requestDate}</p>
+              <p className="text-secondary">Fecha programada</p>
+              <p className="mt-1 font-theme-medium text-primary">{maintenanceInfo.scheduled_at}</p>
             </div>
           </div>
         </div>
@@ -253,9 +426,9 @@ const UpdateMaintenanceSchedule = ({ onClose }) => {
                     className="input-theme w-full pr-8 appearance-none"
                   >
                     <option value="">Seleccione un técnico...</option>
-                    {technicians.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
+                    {technicians.map((technician) => (
+                      <option key={technician.id_user || technician.id} value={technician.id_user || technician.id}>
+                        {technician.name || technician.first_name + ' ' + technician.last_name || technician.username}
                       </option>
                     ))}
                   </select>
@@ -312,8 +485,8 @@ const UpdateMaintenanceSchedule = ({ onClose }) => {
                 >
                   <option value="">Seleccione un tipo...</option>
                   {maintenanceTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
+                    <option key={type.id_types} value={type.id_types}>
+                      {type.name}
                     </option>
                   ))}
                 </select>
@@ -340,9 +513,9 @@ const UpdateMaintenanceSchedule = ({ onClose }) => {
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoading}
             className={`btn-theme btn-primary ${
-              isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+              isSubmitting || isLoading ? 'opacity-50 cursor-not-allowed' : ''
             }`}
             style={{
               padding: '0.75rem 3rem',
@@ -352,26 +525,11 @@ const UpdateMaintenanceSchedule = ({ onClose }) => {
             }}
             aria-label="Actualizar programación de mantenimiento"
           >
-            {isSubmitting ? 'Actualizando...' : 'Actualizar'}
+            {isLoading ? 'Cargando...' : isSubmitting ? 'Actualizando...' : 'Actualizar'}
           </button>
         </div>
 
-        <SuccessModal
-          isOpen={showSuccess}
-          title="¡Actualización exitosa!"
-          message="La programación de mantenimiento se actualizó correctamente."
-          onClose={() => {
-            setShowSuccess(false);
-            onClose();
-          }}
-        />
 
-        <ErrorModal
-          isOpen={showError}
-          title="Error de validación"
-          message={error}
-          onClose={() => setShowError(false)}
-        />
       </div>
     </div>
   );
