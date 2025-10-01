@@ -179,7 +179,7 @@ const ScheduleMaintenanceModal = ({
         >
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-primary">Schedule request</h2>
+            <h2 className="text-xl font-bold text-primary">Solicitud de programación</h2>
             <button
               aria-label="Close modal Button"
               onClick={() => {
@@ -205,7 +205,7 @@ const ScheduleMaintenanceModal = ({
             {/* Schedule Maintenance Section */}
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-primary mb-4">
-                Schedule Maintenance
+                Programar Mantenimiento
               </h3>
 
               {/* Sugerencias automáticas */}
@@ -243,7 +243,7 @@ const ScheduleMaintenanceModal = ({
                 {/* Schedule date */}
                 <div>
                   <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
-                    Schedule date*
+                    Fecha de programación*
                   </label>
                   <input
                     type="date"
@@ -265,7 +265,7 @@ const ScheduleMaintenanceModal = ({
                 {/* Schedule time */}
                 <div>
                   <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
-                    Schedule hour*
+                    Hora de programación*
                   </label>
                   <input
                     type="time"
@@ -285,7 +285,7 @@ const ScheduleMaintenanceModal = ({
                 {/* Assigned technician */}
                 <div>
                   <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
-                    Assigned technician*
+                    Asignar Técnico*
                   </label>
                   <select
                     {...register("technician", {
@@ -313,7 +313,7 @@ const ScheduleMaintenanceModal = ({
               {/* Maintenance details */}
               <div className="mt-4">
                 <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
-                  Maintenance details*
+                  Detalles de mantenimiento*
                 </label>
                 <textarea
                   {...register("maintenanceDetails", {
@@ -345,7 +345,7 @@ const ScheduleMaintenanceModal = ({
               {/* Maintenance type */}
               <div className="mt-4">
                 <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
-                  Maintenance type*
+                  Tipo de mantenimiento*
                 </label>
                 <select
                   {...register("maintenanceType", {
@@ -377,7 +377,7 @@ const ScheduleMaintenanceModal = ({
                 className="btn-primary px-8 py-3 font-semibold rounded-lg text-white bg-black hover:bg-gray-800 transition-colors"
                 aria-label="Schedule Button"
               >
-                Schedule
+                Programar
               </button>
             </div>
           </form>
