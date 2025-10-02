@@ -1235,6 +1235,7 @@ const SolicitudesMantenimientoView = () => {
         <MaintenanceRequestModal
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
+          onSuccess={handleRefresh}
         />
         <RequestDetailModal
           isOpen={isDetailsModalOpen}
