@@ -13,9 +13,7 @@ const UpdateMaintenanceSchedule = ({ onClose, requestData, onSuccess, onError })
   const [assignedTechnician, setAssignedTechnician] = useState(
     requestData?.assignedTechnician || ""
   );
-  const [maintenanceDetails, setMaintenanceDetails] = useState(
-    requestData?.maintenanceDetails || ""
-  );
+  const [maintenanceDetails, setMaintenanceDetails] = useState("");
   const [maintenanceType, setMaintenanceType] = useState(
     requestData?.maintenanceType || ""
   );
@@ -48,10 +46,13 @@ const UpdateMaintenanceSchedule = ({ onClose, requestData, onSuccess, onError })
           getMaintenanceTypes()
         ]);
         
-
-        
         setTechnicians(techniciansList);
         setMaintenanceTypes(typesList);
+        
+        // Pre-cargar tipo de mantenimiento desde requestData
+        if (requestData?.maintenance_type) {
+          setMaintenanceType(requestData.maintenance_type.toString());
+        }
         
         // Determinar qué ID usar (puede venir con diferentes nombres)
         const maintenanceId = requestData?.id_maintenance_scheduling || requestData?.id || requestData?.maintenance_id;
@@ -78,6 +79,7 @@ const UpdateMaintenanceSchedule = ({ onClose, requestData, onSuccess, onError })
             }
             
             if (specificMaintenance) {
+              // Mapear información para mostrar
               setMaintenanceInfo({
                 machinery_serial: specificMaintenance.machinery?.serial ||
                                  specificMaintenance.machinery_serial || 
@@ -99,13 +101,131 @@ const UpdateMaintenanceSchedule = ({ onClose, requestData, onSuccess, onError })
                                 specificMaintenance.programmed_date ||
                                 specificMaintenance.date;
                     try {
-                      return new Date(date).toLocaleString("es-ES");
+                      const dateObj = new Date(date);
+                      // Usar UTC para mantener consistencia con el formulario
+                      const day = dateObj.getUTCDate().toString().padStart(2, '0');
+                      const month = (dateObj.getUTCMonth() + 1).toString().padStart(2, '0');
+                      const year = dateObj.getUTCFullYear();
+                      const hours = dateObj.getUTCHours().toString().padStart(2, '0');
+                      const minutes = dateObj.getUTCMinutes().toString().padStart(2, '0');
+                      
+                      return `${day}/${month}/${year}, ${hours}:${minutes}:00`;
                     } catch {
                       return date;
                     }
                   })() : "N/A"
               });
+              
+              // Pre-llenar campos del formulario con datos existentes
+              // 1. Procesar fecha y hora desde scheduled_at
+              const scheduledAtValue = specificMaintenance.scheduled_at || 
+                                     specificMaintenance.scheduled_date ||
+                                     specificMaintenance.programmed_date;
+              
+              if (scheduledAtValue) {
+                try {
+                  const scheduledDate = new Date(scheduledAtValue);
+                  
+                  // Extraer fecha en formato YYYY-MM-DD (usar UTC)
+                  const year = scheduledDate.getUTCFullYear();
+                  const month = (scheduledDate.getUTCMonth() + 1).toString().padStart(2, '0');
+                  const day = scheduledDate.getUTCDate().toString().padStart(2, '0');
+                  const dateStr = `${year}-${month}-${day}`;
+                  setScheduleDate(dateStr);
+                  
+                  // Extraer hora y convertir a formato 12h
+                  // IMPORTANTE: Usar UTC para evitar problemas de zona horaria
+                  const hours24 = scheduledDate.getUTCHours();
+                  const minutes = scheduledDate.getUTCMinutes();
+                  
+                  let hours12;
+                  let period;
+                  
+                  if (hours24 === 0) {
+                    // 00:xx = 12:xx AM
+                    hours12 = 12;
+                    period = 'AM';
+                  } else if (hours24 < 12) {
+                    // 01:xx - 11:xx = 1:xx - 11:xx AM
+                    hours12 = hours24;
+                    period = 'AM';
+                  } else if (hours24 === 12) {
+                    // 12:xx = 12:xx PM
+                    hours12 = 12;
+                    period = 'PM';
+                  } else {
+                    // 13:xx - 23:xx = 1:xx - 11:xx PM
+                    hours12 = hours24 - 12;
+                    period = 'PM';
+                  }
+                  
+                  setHour(hours12.toString().padStart(2, '0'));
+                  setMinute(minutes.toString().padStart(2, '0'));
+                  setPeriod(period);
+                } catch (dateError) {
+                  console.warn('Error parsing scheduled_at date:', dateError);
+                }
+              }
+              
+              // 2. Técnico asignado
+              const technicianId = specificMaintenance.assigned_technician_id || 
+                                 specificMaintenance.assigned_technician ||
+                                 specificMaintenance.technician_id;
+              
+              if (technicianId) {
+                setAssignedTechnician(technicianId.toString());
+              }
+              
+              // 3. Tipo de mantenimiento
+              const maintenanceTypeId = specificMaintenance.maintenance_type || 
+                                      specificMaintenance.maintenance_type_id ||
+                                      specificMaintenance.type_id;
+              
+              if (maintenanceTypeId) {
+                setMaintenanceType(maintenanceTypeId.toString());
+              }
             } else {
+              // Si no hay datos específicos, intentar usar requestData básico para formulario
+              if (requestData) {
+                // Fecha y hora desde requestData
+                const scheduledAtValue = requestData.scheduled_at || requestData.scheduled_date || requestData.maintenanceDate;
+                if (scheduledAtValue) {
+                  try {
+                    const scheduledDate = new Date(scheduledAtValue);
+                    const dateStr = scheduledDate.toISOString().split('T')[0];
+                    setScheduleDate(dateStr);
+                    
+                    const hours24 = scheduledDate.getHours();
+                    const minutes = scheduledDate.getMinutes();
+                    
+                    let hours12 = hours24;
+                    let period = 'AM';
+                    
+                    if (hours24 === 0) {
+                      hours12 = 12;
+                      period = 'AM';
+                    } else if (hours24 === 12) {
+                      hours12 = 12;
+                      period = 'PM';
+                    } else if (hours24 > 12) {
+                      hours12 = hours24 - 12;
+                      period = 'PM';
+                    }
+                    
+                    setHour(hours12.toString().padStart(2, '0'));
+                    setMinute(minutes.toString().padStart(2, '0'));
+                    setPeriod(period);
+                  } catch (dateError) {
+                    console.warn('Error parsing basic requestData date:', dateError);
+                  }
+                }
+                
+                // Técnico desde requestData
+                if (requestData.assigned_technician_id) {
+                  setAssignedTechnician(requestData.assigned_technician_id.toString());
+                }
+              }
+              
               setMaintenanceInfo({
                 machinery_serial: "N/A",
                 machinery_name: "N/A", 
@@ -116,12 +236,57 @@ const UpdateMaintenanceSchedule = ({ onClose, requestData, onSuccess, onError })
           } catch (detailError) {
             // En caso de error, usar requestData directamente
             if (requestData) {
+              // Información para mostrar
               setMaintenanceInfo({
                 machinery_serial: requestData.machinery?.serial || requestData.machinery_serial || requestData.serial_number || "N/A",
                 machinery_name: requestData.machinery_name || requestData.machine_name || "N/A",
                 scheduled_at: requestData.scheduled_at || requestData.scheduled_date ? 
                   new Date(requestData.scheduled_at || requestData.scheduled_date).toLocaleString("es-ES") : "N/A"
               });
+              
+              // También intentar cargar datos del formulario desde requestData
+              // Fecha y hora
+              const scheduledAtValue = requestData.scheduled_at || requestData.scheduled_date;
+              if (scheduledAtValue) {
+                try {
+                  const scheduledDate = new Date(scheduledAtValue);
+                  const dateStr = scheduledDate.toISOString().split('T')[0];
+                  setScheduleDate(dateStr);
+                  
+                  const hours24 = scheduledDate.getHours();
+                  const minutes = scheduledDate.getMinutes();
+                  
+                  let hours12 = hours24;
+                  let period = 'AM';
+                  
+                  if (hours24 === 0) {
+                    hours12 = 12;
+                    period = 'AM';
+                  } else if (hours24 === 12) {
+                    hours12 = 12;
+                    period = 'PM';
+                  } else if (hours24 > 12) {
+                    hours12 = hours24 - 12;
+                    period = 'PM';
+                  }
+                  
+                  setHour(hours12.toString().padStart(2, '0'));
+                  setMinute(minutes.toString().padStart(2, '0'));
+                  setPeriod(period);
+                } catch (dateError) {
+                  console.warn('Error parsing requestData date:', dateError);
+                }
+              }
+              
+              // Técnico asignado
+              if (requestData.assigned_technician_id || requestData.assigned_technician) {
+                setAssignedTechnician((requestData.assigned_technician_id || requestData.assigned_technician).toString());
+              }
+              
+              // Tipo de mantenimiento
+              if (requestData.maintenance_type || requestData.maintenance_type_id) {
+                setMaintenanceType((requestData.maintenance_type || requestData.maintenance_type_id).toString());
+              }
             }
           }
         }
@@ -173,11 +338,6 @@ const UpdateMaintenanceSchedule = ({ onClose, requestData, onSuccess, onError })
         throw new Error("Debe seleccionar un tipo de mantenimiento.");
       }
       
-      // Validación de longitud de detalles
-      if (maintenanceDetails.length > 350) {
-        throw new Error("Los detalles no pueden superar los 350 caracteres.");
-      }
-      
       // Validación de fecha futura
       const selectedDate = new Date(scheduleDate);
       const today = new Date();
@@ -197,13 +357,28 @@ const UpdateMaintenanceSchedule = ({ onClose, requestData, onSuccess, onError })
       
       // Convertir la fecha y hora al formato ISO 8601 para scheduled_at
       const convertTo24Hour = (hour12, minute, period) => {
-        let hour24 = parseInt(hour12);
-        if (period === 'AM' && hour24 === 12) {
-          hour24 = 0;
-        } else if (period === 'PM' && hour24 !== 12) {
-          hour24 += 12;
+        // Asegurar que hour12 y minute sean strings numéricos válidos
+        const hourNum = parseInt(hour12, 10);
+        const minuteStr = String(minute).padStart(2, '0');
+        
+        let hour24;
+        
+        // Lógica de conversión de 12h a 24h
+        if (period === 'AM') {
+          if (hourNum === 12) {
+            hour24 = 0; // 12 AM = 00:00
+          } else {
+            hour24 = hourNum; // 1-11 AM se mantienen igual
+          }
+        } else if (period === 'PM') {
+          if (hourNum === 12) {
+            hour24 = 12; // 12 PM = 12:00
+          } else {
+            hour24 = hourNum + 12; // 1-11 PM = 13-23
+          }
         }
-        return `${hour24.toString().padStart(2, '0')}:${minute.padStart(2, '0')}`;
+        
+        return `${hour24.toString().padStart(2, '0')}:${minuteStr}`;
       };
 
       const time24 = convertTo24Hour(hour, minute, period);
@@ -461,13 +636,9 @@ const UpdateMaintenanceSchedule = ({ onClose, requestData, onSuccess, onError })
                   setMaintenanceDetails(e.target.value)
                 }
                 placeholder="Ingrese los detalles del mantenimiento..."
-                maxLength={350}
                 rows={4}
                 className="input-theme w-full resize-none"
               />
-              <div className="text-theme-xs text-secondary mt-1">
-                {maintenanceDetails.length}/350 caracteres
-              </div>
             </div>
 
             {/* Tipo de mantenimiento debajo */}

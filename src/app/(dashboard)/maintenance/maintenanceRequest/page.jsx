@@ -711,13 +711,15 @@ const SolicitudesMantenimientoView = () => {
 
           return (
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              <button
-                onClick={() => handleView(request)}
-                className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600"
-                title="Ver detalles"
-              >
-                <FaHistory className="w-3 h-3" /> Detalles
-              </button>
+              <PermissionGuard permission={123}>
+                <button
+                  onClick={() => handleView(request)}
+                  className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600"
+                  title="Ver detalles"
+                >
+                  <FaHistory className="w-3 h-3" /> Detalles
+                </button>
+              </PermissionGuard>
 
               {canApprove && (
                 <PermissionGuard permission={120}>
@@ -1052,34 +1054,38 @@ const SolicitudesMantenimientoView = () => {
             Limpiar búsqueda
           </button>
         )}
-        <button
-          onClick={handleOpenAddRequestModal}
-          className="parametrization-filter-button"
-        >
-          Nueva Solicitud
-        </button>
+        <PermissionGuard permission={119}>
+          <button
+            onClick={handleOpenAddRequestModal}
+            className="parametrization-filter-button"
+          >
+            Nueva Solicitud
+          </button>
+        </PermissionGuard>
       </div>
 
       {/* Tabla de solicitudes de mantenimiento */}
-      <TableList
-        columns={columns}
-        data={
-          filteredData.length > 0 ||
-          maintenanceTypeFilter ||
-          priorityFilter ||
-          statusFilter ||
-          requesterFilter ||
-          startDateFilter ||
-          endDateFilter
-            ? filteredData
-            : maintenanceData
-        }
-        loading={loading}
-        globalFilter={globalFilter}
-        onGlobalFilterChange={setGlobalFilter}
-        globalFilterFn={globalFilterFn}
-        pageSizeOptions={[10, 20, 30, 50]}
-      />
+      <PermissionGuard permission={124}>
+        <TableList
+          columns={columns}
+          data={
+            filteredData.length > 0 ||
+            maintenanceTypeFilter ||
+            priorityFilter ||
+            statusFilter ||
+            requesterFilter ||
+            startDateFilter ||
+            endDateFilter
+              ? filteredData
+              : maintenanceData
+          }
+          loading={loading}
+          globalFilter={globalFilter}
+          onGlobalFilterChange={setGlobalFilter}
+          globalFilterFn={globalFilterFn}
+          pageSizeOptions={[10, 20, 30, 50]}
+        />
+      </PermissionGuard>
 
       {/* Modal de filtros */}
       <Dialog.Root open={isFilterModalOpen} onOpenChange={setIsFilterModalOpen}>
