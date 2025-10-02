@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { FiX } from 'react-icons/fi';
 import { toggleStatusModel } from '@/services/parametrizationService';
 import { SuccessModal, ErrorModal } from '../shared/SuccessErrorModal';
+import PermissionGuard from '@/app/(auth)/PermissionGuard';
 
 const ModelFormModal = ({
   isOpen,
@@ -19,7 +20,6 @@ const ModelFormModal = ({
     description: '',
     isActive: true
   });
-
   const [errors, setErrors] = useState({});
   const [modelNameExists, setModelNameExists] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
@@ -171,7 +171,7 @@ const ModelFormModal = ({
         {/* Modal Header */}
         <div className="flex items-center justify-between p-6 pb-4">
           <h2 className="text-lg font-semibold text-gray-900">
-            {mode === 'edit' ? 'Modify model' : 'Add model'}
+            {mode === 'edit' ? 'Modificar modelo' : 'Añadir modelo'}
           </h2>
           <button
             onClick={onClose}
@@ -189,7 +189,7 @@ const ModelFormModal = ({
             {/* Brand - Left Column */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Brand
+                Marca
               </label>
               <input
                 type="text"
@@ -202,7 +202,7 @@ const ModelFormModal = ({
             {/* Model Name - Right Column */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                <span className="text-red-500">*</span> Model name
+                <span className="text-red-500">*</span> Modelo
               </label>
               <input
                 type="text"
@@ -223,7 +223,7 @@ const ModelFormModal = ({
               {modelNameExists && mode === 'add' && (
                 <p className="mt-1 text-xs text-red-600 flex items-center">
                   <span className="text-red-500 mr-1">⚠</span>
-                  This model name already exist for this brand
+                  Este modelo ya existe para esta marca
                 </p>
               )}
             </div>
@@ -233,37 +233,43 @@ const ModelFormModal = ({
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description
+                Descripción
               </label>
-              <input
-                type="text"
+              <textarea
+                cols={30}
+                rows={4}
+                maxLength={200} // Límite de 200 caracteres
                 value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                onChange={
+                  (e) => handleInputChange('description', e.target.value)
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 placeholder="Enter description"
               />
             </div>
 
             {/* Activate/Deactivate Toggle - Right Column */}
             {mode === "edit" && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Activate/Deactivate
-                </label>
-                <div className="mt-3">
-                  <button
-                    type="button"
-                    onClick={handleToggleStatus}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${formData.isActive ? 'bg-red-500' : 'bg-gray-200'
-                      }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.isActive ? 'translate-x-6' : 'translate-x-1'
+              <PermissionGuard permission={60}>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Activar/Desactivar
+                  </label>
+                  <div className="mt-3">
+                    <button
+                      type="button"
+                      onClick={handleToggleStatus}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${formData.isActive ? 'bg-red-500' : 'bg-gray-200'
                         }`}
-                    />
-                  </button>
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.isActive ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                      />
+                    </button>
+                  </div>
                 </div>
-              </div>
+              </PermissionGuard>
             )}
           </div>
 
@@ -272,9 +278,9 @@ const ModelFormModal = ({
             <button
               onClick={handleSubmit}
               disabled={!formData.modelName.trim() || (mode === 'add' && modelNameExists)}
-            className="btn-theme btn-primary not-disabled: w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-theme btn-primary not-disabled: w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {mode === 'edit' ? 'Update' : 'Save'}
+              {mode === 'edit' ? 'Actualizar' : 'Guardar'}
             </button>
           </div>
         </div>

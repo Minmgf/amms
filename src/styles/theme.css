@@ -377,7 +377,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 60;
+  z-index: 40;
 }
 
 .parametrization-modal {
@@ -407,13 +407,24 @@
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius-md);
   padding: 0.5rem 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
 }
 
 .parametrization-action-button {
-  background: var(--color-accent);
-  color: white;
   border-radius: var(--border-radius-md);
   padding: 0.25rem 0.5rem;
+}
+
+.group:is(:hover) .parametrization-action-button {
+  color: var(--color-text);
+}
+
+.group:is(:hover) .parametrization-action-button:hover {
+  background: var(--color-accent);
+  color: var(--color-text-secondary);
 }
 
 .parametrization-button {
@@ -593,10 +604,6 @@
   color: var(--color-text-secondary);
 } */
 
-.parametrization-action-button:hover {
-  background-color: var(--color-hover);
-  color: var(--color-text);
-}
 
 /* Paginación */
 .parametrization-pagination {

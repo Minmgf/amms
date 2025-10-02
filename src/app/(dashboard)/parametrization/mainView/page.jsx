@@ -1,54 +1,56 @@
 "use client";
-import React, { useState, useEffect, useMemo } from 'react';
-import { FiFilter, FiEye } from 'react-icons/fi';
+import React, { useState, useEffect, useMemo } from "react";
+import { FiFilter, FiEye } from "react-icons/fi";
+import { createColumnHelper } from "@tanstack/react-table";
+import NavigationMenu from "../../../components/parametrization/ParameterNavigation";
+import TypesModal from "../../../components/parametrization/TypesModal";
+import AddModifyTypesModal from "../../../components/parametrization/AddModifyTypesModal";
+import FilterSection from "@/app/components/parametrization/FilterSection";
+import TableList from "@/app/components/shared/TableList";
 import {
-  useReactTable,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
-  flexRender,
-  createColumnHelper,
-} from '@tanstack/react-table';
-import NavigationMenu from '../../../components/parametrization/ParameterNavigation';
-import TypesModal from '../../../components/parametrization/TypesModal';
-import AddModifyTypesModal from '../../../components/parametrization/AddModifyTypesModal';
-import FilterSection from '@/app/components/parametrization/FilterSection';
-import { SuccessModal, ErrorModal } from '../../../components/shared/SuccessErrorModal';
-import { 
+  SuccessModal,
+  ErrorModal,
+} from "../../../components/shared/SuccessErrorModal";
+import {
   getTypesCategories,
-  getTypesByCategory, 
-  createTypeItem, 
+  getTypesByCategory,
+  createTypeItem,
   updateTypeItem,
-  toggleTypeStatus
+  toggleTypeStatus,
 } from "@/services/parametrizationService";
 import { useTheme } from "@/contexts/ThemeContext";
+import PermissionGuard from "@/app/(auth)/PermissionGuard";
+
+// Función helper para determinar si está activo basado en id_statues
+const isActiveFromId = (idStatues) => {
+  return idStatues === 1;
+};
 
 // Componente principal
 const ParameterizationView = () => {
   const { currentTheme } = useTheme();
-  const [activeMenuItem, setActiveMenuItem] = useState('Types');
+  const [activeMenuItem, setActiveMenuItem] = useState("Tipos");
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState([]);
-  const [globalFilter, setGlobalFilter] = useState('');
+  const [globalFilter, setGlobalFilter] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  
+
   // Estados para Modal de detalles (lista de parámetros por categoría)
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [parametersData, setParametersData] = useState([]);
   const [loadingParameters, setLoadingParameters] = useState(false);
-  
+
   // Estados para Modal de agregar/editar parámetros
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const [formMode, setFormMode] = useState('add');
+  const [formMode, setFormMode] = useState("add");
   const [selectedParameter, setSelectedParameter] = useState(null);
 
   // Estados para los modales de success/error
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   // Función para mostrar modal de éxito
   const showSuccessModal = (message) => {
@@ -62,25 +64,37 @@ const ParameterizationView = () => {
     setIsErrorModalOpen(true);
   };
 
+  const [id, setId] = useState(null);
+  // Estado para el ID del usuario (obtenido de localStorage)
+  useEffect(() => {
+    const storedUser = localStorage.getItem("userData");
+    if (storedUser) {
+      try {
+        const parsed = JSON.parse(storedUser);
+        setId(parsed.id);
+      } catch (err) {
+        console.error("Error parsing userData", err);
+      }
+    }
+  }, []);
+
   // Función para obtener categorías de Types
   const fetchCategoriesData = async () => {
     setLoading(true);
 
     try {
       const response = await getTypesCategories();
-      
+
       // Mapear los datos del backend al formato esperado por la vista
       const mappedData = response.map((item) => ({
         id: item.id_types_categories,
         name: item.name,
         description: item.description,
-        type: 'Types'
+        type: "Types",
       }));
-      
+
       setData(mappedData);
-      
     } catch (err) {
-      console.error('❌ MainView: Error al cargar categorías:', err);
       const errorMsg = `Error loading Types categories: ${err.message}`;
       showErrorModal(errorMsg);
       setData([]);
@@ -93,21 +107,21 @@ const ParameterizationView = () => {
   const fetchParametersByCategory = async (categoryId) => {
     setLoadingParameters(true);
     try {
-      
       const response = await getTypesByCategory(categoryId);
-      
+
       // Mapear los datos al formato esperado por el modal
-      const mappedParameters = response.map(item => ({
+      // CAMBIO PRINCIPAL: Usar id_statues en lugar del texto "estado"
+      const mappedParameters = response.map((item) => ({
         id: item.id_types,
         typeName: item.name,
         name: item.name,
         description: item.description,
-        status: item.estado === 'Activo' ? 'Active' : 'Inactive',
-        isActive: item.estado === 'Activo'
+        id_statues: item.id_statues, // Mantener el ID del estado original
+        status: item.estado, // Convertir ID a texto para display
+        isActive: isActiveFromId(item.id_statues), // Determinar si está activo basado en ID
       }));
-      
+
       setParametersData(mappedParameters);
-      
     } catch (err) {
       const errorMsg = `Error loading parameters: ${err.message}`;
       showErrorModal(errorMsg);
@@ -119,10 +133,16 @@ const ParameterizationView = () => {
 
   // Función para validar nombres duplicados
   const validateDuplicateName = (name, excludeId = null) => {
+    // Validar que name no sea undefined o null
+    if (!name || typeof name !== 'string') {
+      return false;
+    }
+    
     const normalizedName = name.trim().toLowerCase();
-    return parametersData.some(param => 
-      param.typeName.toLowerCase() === normalizedName && 
-      param.id !== excludeId
+    return parametersData.some(
+      (param) =>
+        param.typeName.toLowerCase() === normalizedName &&
+        param.id !== excludeId
     );
   };
 
@@ -136,14 +156,14 @@ const ParameterizationView = () => {
   };
 
   // ==================== HANDLERS PARA MODAL DE DETALLES ====================
-  
+
   // Abrir modal de detalles (cuando se hace click en el ojo de la tabla principal)
   const handleViewDetails = async (categoryId) => {
-    const category = data.find(item => item.id === categoryId);
+    const category = data.find((item) => item.id === categoryId);
     if (category) {
       setSelectedCategory(category);
       setIsDetailsModalOpen(true);
-      
+
       // Cargar los parámetros de esta categoría
       await fetchParametersByCategory(categoryId);
     }
@@ -157,19 +177,21 @@ const ParameterizationView = () => {
   };
 
   // ==================== HANDLERS PARA MODAL DE FORMULARIO ====================
-  
+
   // Abrir modal de formulario en modo ADD
   const handleAddParameter = () => {
-    setFormMode('add');
+    setFormMode("add");
     setSelectedParameter(null);
     setIsFormModalOpen(true);
   };
 
   // Abrir modal de formulario en modo EDIT
   const handleEditParameter = (parameterId) => {
-    const parameterToEdit = parametersData.find(param => param.id === parameterId);
+    const parameterToEdit = parametersData.find(
+      (param) => param.id === parameterId
+    );
     if (parameterToEdit) {
-      setFormMode('modify');
+      setFormMode("modify");
       setSelectedParameter(parameterToEdit);
       setIsFormModalOpen(true);
     }
@@ -179,96 +201,131 @@ const ParameterizationView = () => {
   const handleCloseFormModal = () => {
     setIsFormModalOpen(false);
     setSelectedParameter(null);
-    setFormMode('add');
+    setFormMode("add");
   };
 
   // Guardar/Actualizar parámetro
   const handleSaveParameter = async (parameterData) => {
     try {
       // Validar nombres duplicados
-      if (formMode === 'add') {
+      if (formMode === "add") {
         if (validateDuplicateName(parameterData.typeName)) {
-          throw new Error(`A parameter with the name "${parameterData.typeName}" already exists in this category`);
+          throw new Error(
+            `A parameter with the name "${parameterData.typeName}" already exists in this category`
+          );
         }
       } else {
-        if (validateDuplicateName(parameterData.typeName, selectedParameter.id)) {
-          throw new Error(`A parameter with the name "${parameterData.typeName}" already exists in this category`);
+        if (
+          validateDuplicateName(parameterData.typeName, selectedParameter.id)
+        ) {
+          throw new Error(
+            `A parameter with the name "${parameterData.typeName}" already exists in this category`
+          );
         }
       }
-      
-      if (formMode === 'add') {
+
+      if (formMode === "add") {
         // Crear nuevo parámetro
         const payload = {
           name: parameterData.typeName,
           description: parameterData.description,
           types_category: selectedCategory.id,
-          responsible_user: 1 // TODO: Obtener del contexto de usuario
+          responsible_user: id,
         };
-        
-        const createdResponse = await createTypeItem(payload);   
+
+        const createdResponse = await createTypeItem(payload);
+
         // Si se crea como inactivo, hacer toggle después de crear
         if (!parameterData.isActive) {
           try {
             // Primero recargar la lista para obtener el ID del nuevo elemento
             await fetchParametersByCategory(selectedCategory.id);
-            
+
             // Encontrar el elemento recién creado (será el último con el nombre correspondiente)
-            const updatedParameters = await getTypesByCategory(selectedCategory.id);
-            const newParameter = updatedParameters.find(p => p.name === parameterData.typeName);
-            
+            const updatedParameters = await getTypesByCategory(
+              selectedCategory.id
+            );
+            const newParameter = updatedParameters.find(
+              (p) => p.name === parameterData.typeName
+            );
+
             if (newParameter) {
               const newParameterId = newParameter.id_types;
               await toggleTypeStatus(newParameterId);
             }
           } catch (toggleError) {
-            console.warn('⚠️ MainView: Error al desactivar parámetro recién creado:', toggleError);
+            // Error handling sin console.log
           }
         }
-        
+
         // Recargar la lista de parámetros después de crear
         await fetchParametersByCategory(selectedCategory.id);
-        
+
         // Mostrar mensaje de éxito
-        showSuccessModal(`Parameter "${parameterData.typeName}" has been created successfully.`);
-        
+        showSuccessModal(
+          `Parameter "${parameterData.typeName}" has been created successfully.`
+        );
       } else {
         // Actualizar parámetro existente
-        const updatePayload = {
-          name: parameterData.typeName,
-          description: parameterData.description,
-          responsible_user: 1 // TODO: Obtener del contexto de usuario
-        };
-        
-        const updatedResponse = await updateTypeItem(selectedParameter.id, updatePayload);
-        
-        // Si el estado cambió, hacer toggle
-        if (parameterData.isActive !== selectedParameter.isActive) {
-          try {
-            await toggleTypeStatus(selectedParameter.id);
-          } catch (toggleError) {
-            console.warn('⚠️ MainView: Error al cambiar estado:', toggleError);
+
+        // Si hay cambio de estado desde el toggle, solo recargar datos
+        if (parameterData.statusChanged) {
+          // Recargar la lista de parámetros después del toggle
+          await fetchParametersByCategory(selectedCategory.id);
+
+          // Mostrar mensaje de éxito si viene de la respuesta
+          if (parameterData.message) {
+            showSuccessModal(parameterData.message);
           }
+        } else {
+          // Actualización normal de datos del formulario
+          const updatePayload = {
+            name: parameterData.typeName,
+            description: parameterData.description,
+            responsible_user: id,
+          };
+
+          const updatedResponse = await updateTypeItem(
+            selectedParameter.id,
+            updatePayload
+          );
+
+          // Comparar basado en isActive en lugar del texto del estado
+          // Si el estado cambió, hacer toggle
+          if (parameterData.isActive !== selectedParameter.isActive) {
+            try {
+              await toggleTypeStatus(selectedParameter.id);
+            } catch (toggleError) {
+              // Error handling sin console.log
+            }
+          }
+
+          // Recargar la lista de parámetros después de actualizar
+          await fetchParametersByCategory(selectedCategory.id);
+
+          // Mostrar mensaje de éxito
+          showSuccessModal(
+            `Parameter "${parameterData.typeName}" has been updated successfully.`
+          );
         }
-        
-        // Recargar la lista de parámetros después de actualizar
-        await fetchParametersByCategory(selectedCategory.id);
-        
-        // Mostrar mensaje de éxito
-        showSuccessModal(`Parameter "${parameterData.typeName}" has been updated successfully.`);
       }
-      
-      // Cerrar el modal
-      handleCloseFormModal();
-      
+
+      // Cerrar el modal solo si no es un cambio de estado
+      if (!parameterData.statusChanged) {
+        handleCloseFormModal();
+      }
     } catch (err) {
-      console.error('❌ MainView: Error al guardar parámetro:', err);
-      const errorMsg = `Error ${formMode === 'add' ? 'creating' : 'updating'} parameter: ${err.message}`;
-      
+      const errorMsg = `Error ${
+        formMode === "add" ? "creating" : "updating"
+      } parameter: ${err.message}`;
+
       // Mostrar modal de error
       showErrorModal(errorMsg);
-      
-      // Re-lanzar el error para que lo maneje el modal
-      throw new Error(errorMsg);
+
+      // Re-lanzar el error para que lo maneje el modal solo si no es un cambio de estado
+      if (!parameterData.statusChanged) {
+        throw new Error(errorMsg);
+      }
     }
   };
 
@@ -278,65 +335,48 @@ const ParameterizationView = () => {
 
   const columns = useMemo(
     () => [
-      columnHelper.accessor('name', {
-        header: 'Category name',
-        cell: info => (
-          <div className="font-medium">
-            {info.getValue()}
-          </div>
+      columnHelper.accessor("name", {
+        header: "Nombre categoría",
+        cell: (info) => (
+          <div className="font-medium text-primary">{info.getValue()}</div>
         ),
       }),
-      columnHelper.accessor('description', {
-        header: 'Description',
-        cell: info => (
-          <div className="secondary">
-            {info.getValue()}
-          </div>
-        ),
+      columnHelper.accessor("description", {
+        header: "Descripción",
+        cell: (info) => <div className="text-secondary">{info.getValue()}</div>,
       }),
-      columnHelper.accessor('id', {
-        header: 'Details',
-        cell: info => (
-          <button 
-            onClick={() => handleViewDetails(info.getValue())}
-            className="parametrization-action-button p-2 transition-colors opacity-0 group-hover:opacity-100"
-            title="View details"
-          >
-            <FiEye className="w-4 h-4" />
-          </button>
+      columnHelper.accessor("id", {
+        header: "Detalles",
+        cell: (info) => (
+          <PermissionGuard permission={37}>
+            <button
+              onClick={() => handleViewDetails(info.getValue())}
+              className="parametrization-action-button p-2 transition-colors lg:opacity-0 group-hover:opacity-100"
+              title="Ver detalles"
+            >
+              <FiEye className="w-4 h-4" />
+            </button>
+          </PermissionGuard>
         ),
       }),
     ],
     [data]
   );
 
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    state: {
-      globalFilter,
-    },
-    onGlobalFilterChange: setGlobalFilter,
-    initialState: {
-      pagination: {
-        pageSize: 10,
-      },
-    },
-  });
+  // Crear array de nombres existentes para validación
+  const existingNames = parametersData.map(param => param.typeName);
 
   return (
     <div className="parametrization-page p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6 md:mb-10">
-          <h1 className="parametrization-header text-2xl md:text-3xl font-bold">Parameterization</h1>
+          <h1 className="parametrization-header text-2xl md:text-3xl font-bold">
+            Parametrización
+          </h1>
         </div>
 
-                {/* Filter Section */}
+        {/* Filter Section */}
         <FilterSection
           globalFilter={globalFilter}
           setGlobalFilter={setGlobalFilter}
@@ -352,196 +392,22 @@ const ParameterizationView = () => {
         </div>
 
         {/* Table */}
-        <div className="parametrization-table mb-6 md:mb-8">
-          {loading ? (
-            <div className="parametrization-loading p-8 text-center">
-              Loading...
-            </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="parametrization-table-header">
-                    {table.getHeaderGroups().map(headerGroup => (
-                      <tr key={headerGroup.id}>
-                        {headerGroup.headers.map(header => (
-                          <th
-                            key={header.id}
-                            className="parametrization-table-cell px-4 md:px-6 py-3 md:py-4 text-left text-sm font-semibold last:border-r-0"
-                          >
-                            {header.isPlaceholder ? null : (
-                              <div
-                                {...{
-                                  className: header.column.getCanSort()
-                                    ? 'cursor-pointer select-none flex items-center gap-2'
-                                    : '',
-                                  onClick: header.column.getToggleSortingHandler(),
-                                }}
-                              >
-                                {flexRender(
-                                  header.column.columnDef.header,
-                                  header.getContext()
-                                )}
-                                {{
-                                  asc: ' 🔼',
-                                  desc: ' 🔽',
-                                }[header.column.getIsSorted()] ?? null}
-                              </div>
-                            )}
-                          </th>
-                        ))}
-                      </tr>
-                    ))}
-                  </thead>
-                  <tbody>
-                    {table.getRowModel().rows.map(row => (
-                      <tr key={row.id} className="parametrization-table-row group">
-                        {row.getVisibleCells().map(cell => (
-                          <td
-                            key={cell.id}
-                            className="parametrization-table-cell px-4 md:px-6 py-3 md:py-4 text-sm last:border-r-0"
-                          >
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Pagination */}
-              <div className="parametrization-pagination px-4 py-6 sm:px-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 flex justify-between sm:hidden">
-                    <button
-                      onClick={() => table.previousPage()}
-                      disabled={!table.getCanPreviousPage()}
-                      className="parametrization-pagination-button relative inline-flex items-center px-4 py-2 text-sm font-medium"
-                    >
-                      ← Previous
-                    </button>
-                    <button
-                      onClick={() => table.nextPage()}
-                      disabled={!table.getCanNextPage()}
-                      className="parametrization-pagination-button ml-3 relative inline-flex items-center px-4 py-2 text-sm font-medium"
-                    >
-                      Next →
-                    </button>
-                  </div>
-                  
-                  <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-center">
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => table.previousPage()}
-                        disabled={!table.getCanPreviousPage()}
-                        className="parametrization-pagination-button inline-flex items-center px-3 py-2 text-sm font-medium transition-colors"
-                      >
-                        ← Previous
-                      </button>
-                      
-                      {(() => {
-                        const currentPage = table.getState().pagination.pageIndex + 1;
-                        const totalPages = table.getPageCount();
-                        const pages = [];
-                        
-                        if (currentPage > 3) {
-                          pages.push(
-                            <button
-                              key={1}
-                              onClick={() => table.setPageIndex(0)}
-                              className="parametrization-pagination-button inline-flex items-center justify-center w-10 h-10 text-sm font-medium transition-colors"
-                            >
-                              1
-                            </button>
-                          );
-                        }
-                        
-                        if (currentPage > 4) {
-                          pages.push(
-                            <span key="ellipsis1" className="parametrization-pagination-ellipsis inline-flex items-center justify-center w-10 h-10 text-sm">
-                              ...
-                            </span>
-                          );
-                        }
-                        
-                        for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
-                          pages.push(
-                            <button
-                              key={i}
-                              onClick={() => table.setPageIndex(i - 1)}
-                              className={`parametrization-pagination-button inline-flex items-center justify-center w-10 h-10 text-sm font-medium transition-colors ${
-                                i === currentPage ? 'active' : ''
-                              }`}
-                            >
-                              {i}
-                            </button>
-                          );
-                        }
-                        
-                        if (currentPage < totalPages - 3) {
-                          pages.push(
-                            <span key="ellipsis2" className="parametrization-pagination-ellipsis inline-flex items-center justify-center w-10 h-10 text-sm">
-                              ...
-                            </span>
-                          );
-                        }
-                        
-                        if (currentPage < totalPages - 2) {
-                          pages.push(
-                            <button
-                              key={totalPages}
-                              onClick={() => table.setPageIndex(totalPages - 1)}
-                              className="parametrization-pagination-button inline-flex items-center justify-center w-10 h-10 text-sm font-medium transition-colors"
-                            >
-                              {totalPages}
-                            </button>
-                          );
-                        }
-                        
-                        return pages;
-                      })()}
-                      
-                      <button
-                        onClick={() => table.nextPage()}
-                        disabled={!table.getCanNextPage()}
-                        className="parametrization-pagination-button inline-flex items-center px-3 py-2 text-sm font-medium transition-colors"
-                      >
-                        Next →
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="hidden sm:block">
-                    <select
-                      value={table.getState().pagination.pageSize}
-                      onChange={e => {
-                        table.setPageSize(Number(e.target.value))
-                      }}
-                      className="parametrization-pagination-select px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      {[10, 20, 30, 40, 50].map(pageSize => (
-                        <option key={pageSize} value={pageSize}>
-                          {pageSize} per page
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
+        <PermissionGuard permission={34}>
+          <TableList
+            columns={columns}
+            data={data}
+            loading={loading}
+            globalFilter={globalFilter}
+            onGlobalFilterChange={setGlobalFilter}
+          />
+        </PermissionGuard>
       </div>
-      
+
       {/* Modal de Detalles - Lista de parámetros por categoría */}
       <TypesModal
         isOpen={isDetailsModalOpen}
         onClose={handleCloseDetailsModal}
-        categoryName={selectedCategory?.name || ''}
+        categoryName={selectedCategory?.name || ""}
         data={parametersData}
         loading={loadingParameters}
         onAddItem={handleAddParameter}
@@ -554,8 +420,9 @@ const ParameterizationView = () => {
         onClose={handleCloseFormModal}
         mode={formMode}
         status={selectedParameter}
-        category={selectedCategory?.name || ''}
+        category={selectedCategory?.name || ""}
         onSave={handleSaveParameter}
+        existingNames={existingNames}
       />
 
       {/* Success Modal */}

@@ -1,4 +1,4 @@
-"use-client";
+"use client";
 import React from "react";
 import { FiX } from "react-icons/fi";
 
@@ -45,6 +45,7 @@ const RoleFormModal = ({
 
     return (
         <div
+            id="role-form-modal"
             className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
             onClick={handleBackdropClick}
         >
@@ -55,7 +56,7 @@ const RoleFormModal = ({
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200">
                     <h2 className="text-xl font-semibold text-gray-900">
-                        {mode === 'edit' ? 'Modify Role' : 'Add Role'}
+                        {mode === "edit" ? "Modificar Rol" : mode === "view" ? "Información del Rol" : "Añadir Rol"}
                     </h2>
                     <button
                         onClick={onClose}
@@ -71,16 +72,18 @@ const RoleFormModal = ({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Role Name<span className="text-red-500">*</span>
+                                Nombre del rol<span className="text-red-500">*</span>
                             </label>
                             <input
+                                aria-label="Role Name Input"
                                 type="text"
                                 value={formData.roleName}
+                                disabled={mode === "view"}
                                 onChange={(e) => handleInputChange('roleName', e.target.value)}
                                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.roleName
                                     ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
                                     : 'border-gray-300 focus:border-blue-500'
-                                    }`}
+                                    } ${mode === "view" ? "bg-gray-100 cursor-not-allowed" : ""}`}
                                 placeholder="Enter role name"
                             />
                             {errors.roleName && (
@@ -93,13 +96,15 @@ const RoleFormModal = ({
                         {/* Description */}
                         <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Description
+                                Descripción
                             </label>
                             <textarea
+                                aria-label="Description Role Textarea"
                                 type="text"
                                 value={formData.description}
+                                disabled={mode === "view"}
                                 onChange={(e) => handleInputChange('description', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${mode === "view" ? "bg-gray-100 cursor-not-allowed" : ""}`}
                                 placeholder="Enter description"
                             />
                         </div>
@@ -126,19 +131,21 @@ const RoleFormModal = ({
                     {mode !== "view" && (
                         <div className="flex justify-end mt-6 gap-4">
                             <button
+                                aria-label="Clean Button"
                                 type="button"
                                 onClick={handleClearOrCancel}
                                 className="btn-error btn-theme px-8 py-2 font-semibold rounded-lg"
                             >
-                                {mode === "add" ? "Clear" : "Cancel"}
+                                {mode === "add" ? "Limpiar" : "Cancelar"}
                             </button>
                             <button
+                                aria-label="Submit Button"
                                 onClick={handleSubmit}
                                 className="btn-primary px-8 py-2 font-semibold rounded-lg text-white"
                             >
                                 {mode === "add"
-                                    ? "Create Role"
-                                    : "Update Role"}
+                                    ? "Crear Rol"
+                                    : "Actualizar Rol"}
                             </button>
                         </div>
                     )}
