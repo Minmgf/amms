@@ -11,24 +11,24 @@ import CancelScheduledMaintenance from '@/app/components/scheduledMaintenance/Ca
 import { SuccessModal, ErrorModal } from '@/app/components/shared/SuccessErrorModal';
 import TableList from '@/app/components/shared/TableList';
 import { useTheme } from '@/contexts/ThemeContext';
-import { getScheduledMaintenanceList, getMaintenanceSchedulingStatuses } from '@/services/maintenanceService';
+import { getScheduledMaintenanceList, getMaintenanceSchedulingStatuses, getMaintenanceTypes } from '@/services/maintenanceService';
 import { getUserInfo } from '@/services/authService';
 import MaintenanceReportModal from '@/app/components/maintenance/machineMaintenance/MaintenanceReportModal';
 
 const ScheduledMaintenancePage = () => {
   const { currentTheme } = useTheme();
-  
+
   // Estados principales
   const [maintenanceData, setMaintenanceData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [selectedDateRange, setSelectedDateRange] = useState({ 
-    startDate: null, 
-    endDate: null 
+  const [selectedDateRange, setSelectedDateRange] = useState({
+    startDate: null,
+    endDate: null
   });
   const [globalFilter, setGlobalFilter] = useState('');
   const [filterModalOpen, setFilterModalOpen] = useState(false);
-  
+
   // Estados de filtros
   const [statusFilter, setStatusFilter] = useState('');
   const [technicianFilter, setTechnicianFilter] = useState('');
@@ -40,12 +40,21 @@ const ScheduledMaintenancePage = () => {
   const [modalMessage, setModalMessage] = useState('');
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedMaintenance, setSelectedMaintenance] = useState(null);
-  
+
   // Estados para los nuevos modales de acciones
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
+
+
+  // Datos precargados para filtros
+  const [availableMaintenanceTypes, setAvailableMaintenanceTypes] = useState(
+    []
+  );
+  const [availableMaintenanceStatues, setAvailableMaintenanceStatues] = useState(
+    []
+  );
 
   // Función para cargar mantenimientos
   const loadMaintenanceData = async () => {
@@ -57,12 +66,12 @@ const ScheduledMaintenancePage = () => {
         getScheduledMaintenanceList(),
         getMaintenanceSchedulingStatuses()
       ]);
-      
+
       // Verificar que ambas respuestas sean exitosas y tengan datos
-      if (maintenanceResponse && statusesResponse && 
-          maintenanceResponse.success && Array.isArray(maintenanceResponse.data) &&
-          Array.isArray(statusesResponse)) {
-        
+      if (maintenanceResponse && statusesResponse &&
+        maintenanceResponse.success && Array.isArray(maintenanceResponse.data) &&
+        Array.isArray(statusesResponse)) {
+
         // Crear un mapa de estados para búsqueda rápida
         const statusMap = statusesResponse.reduce((map, status) => {
           map[status.id_statues] = {
@@ -75,7 +84,7 @@ const ScheduledMaintenancePage = () => {
         // Mapear los datos del API con peticiones adicionales para obtener nombres de técnicos
         const mappedDataPromises = maintenanceResponse.data.map(async (item) => {
           let technicianName = item.technician_name || `Técnico #${item.assigned_technician_id}`;
-          
+
           // Si no hay technician_name y hay assigned_technician_id, hacer petición adicional
           if (!item.technician_name && item.assigned_technician_id) {
             try {
@@ -101,6 +110,8 @@ const ScheduledMaintenancePage = () => {
             },
             maintenanceDate: item.scheduled_at ? new Date(item.scheduled_at).toISOString().split('T')[0] : null,
             technician: technicianName,
+            maintenance_type: item.maintenance_type_name,
+            maintenance_type_id: item.maintenance_type, // AGREGAR ESTE CAMPO
             status: statusInfo.name,
             statusDescription: statusInfo.description,
             type: 'Programado', // Por defecto, se puede ajustar si viene en el API
@@ -112,14 +123,31 @@ const ScheduledMaintenancePage = () => {
             request_creation_date: item.request_creation_date,
           };
         });
-        
+
         // Esperar a que todas las peticiones se completen
         const mappedData = await Promise.all(mappedDataPromises);
         setMaintenanceData(mappedData);
+
+        const types = [
+          ...new Set(
+            mappedData.map((item) => item.maintenance_type).filter(Boolean)
+          )
+        ];
+
+        const statues = [
+          ...new Set(
+            mappedData.map((item) => item.status).filter(Boolean)
+          )
+        ]
+
+        setAvailableMaintenanceTypes(types);
+        setAvailableMaintenanceStatues(statues);
+
+
       } else {
         setError('Error al cargar los mantenimientos programados o estados');
-        console.error('Invalid response structure:', { 
-          maintenanceResponse, 
+        console.error('Invalid response structure:', {
+          maintenanceResponse,
           statusesResponse,
           maintenanceSuccess: maintenanceResponse?.success,
           maintenanceDataIsArray: Array.isArray(maintenanceResponse?.data),
@@ -143,10 +171,10 @@ const ScheduledMaintenancePage = () => {
   const getDateStatus = (maintenanceDate) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const maintenance = new Date(maintenanceDate);
     maintenance.setHours(0, 0, 0, 0);
-    
+
     if (maintenance < today) return 'overdue'; // Rojo
     if (maintenance.getTime() === today.getTime()) return 'today'; // Amarillo
     return 'upcoming'; // Verde
@@ -209,7 +237,7 @@ const ScheduledMaintenancePage = () => {
         >
           <FiEye className="w-3 h-3" /> Reporte
         </button>
-        
+
         {/* Actualizar - siempre disponible */}
         <button
           onClick={() => handleUpdateMaintenance(maintenance.id)}
@@ -218,9 +246,9 @@ const ScheduledMaintenancePage = () => {
         >
           <FiEdit3 className="w-3 h-3" /> Actualizar
         </button>
-        
+
         {/* Cancelar - solo para pendientes */}
-        {![14,15].includes(maintenance.status_id) && (
+        {![14, 15].includes(maintenance.status_id) && (
           <button
             onClick={() => handleCancelMaintenance(maintenance.id)}
             className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-red-300 hover:border-red-500 hover:text-red-600 text-red-600"
@@ -243,8 +271,8 @@ const ScheduledMaintenancePage = () => {
         <div className="flex items-center">
           <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3 overflow-hidden">
             {row.original.machinery.image ? (
-              <img 
-                src={row.original.machinery.image} 
+              <img
+                src={row.original.machinery.image}
                 alt={row.original.machinery.name}
                 className="w-full h-full object-cover rounded-lg"
                 onError={(e) => {
@@ -308,12 +336,11 @@ const ScheduledMaintenancePage = () => {
       header: 'Estado',
       accessorKey: 'status',
       cell: ({ getValue }) => (
-        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-          getValue() === 'Programado' ? 'text-blue-800 bg-blue-100' :
-          getValue() === 'Realizado' ? 'text-green-800 bg-green-100' :
-          getValue() === 'Cancelado' ? 'text-red-800 bg-red-100' :
-          'text-gray-800 bg-gray-100'
-        }`}>
+        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getValue() === 'Programado' ? 'text-blue-800 bg-blue-100' :
+            getValue() === 'Realizado' ? 'text-green-800 bg-green-100' :
+              getValue() === 'Cancelado' ? 'text-red-800 bg-red-100' :
+                'text-gray-800 bg-gray-100'
+          }`}>
           {getValue()}
         </span>
       ),
@@ -344,12 +371,12 @@ const ScheduledMaintenancePage = () => {
         const maintenanceDate = new Date(maintenance.maintenanceDate);
         const startDate = new Date(selectedDateRange.startDate);
         const endDate = new Date(selectedDateRange.endDate);
-        
+
         // Ajustar la fecha de inicio al comienzo del día (00:00:00)
         startDate.setHours(0, 0, 0, 0);
         // Ajustar la fecha de fin al final del día (23:59:59)
         endDate.setHours(23, 59, 59, 999);
-        
+
         if (maintenanceDate < startDate || maintenanceDate > endDate) {
           return false;
         }
@@ -358,7 +385,7 @@ const ScheduledMaintenancePage = () => {
         const maintenanceDate = new Date(maintenance.maintenanceDate);
         const startDate = new Date(selectedDateRange.startDate);
         startDate.setHours(0, 0, 0, 0);
-        
+
         if (maintenanceDate < startDate) {
           return false;
         }
@@ -367,14 +394,14 @@ const ScheduledMaintenancePage = () => {
         const maintenanceDate = new Date(maintenance.maintenanceDate);
         const endDate = new Date(selectedDateRange.endDate);
         endDate.setHours(23, 59, 59, 999);
-        
+
         if (maintenanceDate > endDate) {
           return false;
         }
       }
 
       // Filtro de búsqueda global
-      const matchesGlobal = globalFilter === '' || 
+      const matchesGlobal = globalFilter === '' ||
         maintenance.machinery.name.toLowerCase().includes(globalFilter.toLowerCase()) ||
         maintenance.machinery.serial.toLowerCase().includes(globalFilter.toLowerCase()) ||
         maintenance.id.toString().includes(globalFilter);
@@ -382,7 +409,7 @@ const ScheduledMaintenancePage = () => {
       // Filtros específicos
       const matchesStatus = statusFilter === '' || maintenance.status === statusFilter;
       const matchesTechnician = technicianFilter === '' || maintenance.technician === technicianFilter;
-      const matchesType = typeFilter === '' || maintenance.type === typeFilter;
+      const matchesType = typeFilter === '' || maintenance.maintenance_type === typeFilter;
 
       return matchesGlobal && matchesStatus && matchesTechnician && matchesType;
     });
@@ -394,13 +421,13 @@ const ScheduledMaintenancePage = () => {
     const programmed = filteredData.filter(m => m.status === 'Programado').length;
     const completed = filteredData.filter(m => m.status === 'Realizado').length;
     const cancelled = filteredData.filter(m => m.status === 'Cancelado').length;
-    const overdue = filteredData.filter(m => 
+    const overdue = filteredData.filter(m =>
       m.status === 'Programado' && getDateStatus(m.maintenanceDate) === 'overdue'
     ).length;
-    const today = filteredData.filter(m => 
+    const today = filteredData.filter(m =>
       getDateStatus(m.maintenanceDate) === 'today'
     ).length;
-    
+
     return { total, programmed, completed, cancelled, overdue, today };
   }, [filteredData]);
 
@@ -557,7 +584,7 @@ const ScheduledMaintenancePage = () => {
           <h2 className="text-lg font-semibold parametrization-text mb-4">
             Calendario de Mantenimientos
           </h2>
-          
+
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             {/* Calendario - Columna Izquierda */}
             <div className="xl:col-span-2">
@@ -568,7 +595,7 @@ const ScheduledMaintenancePage = () => {
                 disableRangeSelection={true}
               />
             </div>
-            
+
             {/* Controles y Rango de Fechas - Columna Derecha */}
             <div className="space-y-4">
               {/* Información de fecha actual */}
@@ -586,7 +613,7 @@ const ScheduledMaintenancePage = () => {
               {/* Controles de Rango de Fechas */}
               <div className="card-secondary rounded-lg p-4">
                 <h3 className="text-sm font-semibold parametrization-text mb-4">Seleccionar Rango de Fechas</h3>
-                
+
                 <div className="space-y-4">
                   {/* Fecha de inicio */}
                   <div>
@@ -647,7 +674,7 @@ const ScheduledMaintenancePage = () => {
                       7 días
                     </button>
                   </div>
-                  
+
                   <div className="flex gap-2">
                     <button
                       onClick={() => {
@@ -723,7 +750,7 @@ const ScheduledMaintenancePage = () => {
                     <div className="flex justify-between text-sm">
                       <span className="parametrization-text">Vencidos:</span>
                       <span className="font-medium text-error">
-                        {filteredData.filter(m => 
+                        {filteredData.filter(m =>
                           m.status === 'Programado' && getDateStatus(m.maintenanceDate) === 'overdue'
                         ).length}
                       </span>
@@ -767,8 +794,11 @@ const ScheduledMaintenancePage = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">Todos los tipos</option>
-              <option value="Preventivo">Preventivo</option>
-              <option value="Correctivo">Correctivo</option>
+              {availableMaintenanceTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
             </select>
           </div>
 
@@ -802,9 +832,11 @@ const ScheduledMaintenancePage = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">Todos los estados</option>
-              <option value="Programado">Programado</option>
-              <option value="Realizado">Realizado</option>
-              <option value="Cancelado">Cancelado</option>
+              {availableMaintenanceStatues.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
             </select>
           </div>
         </div>
@@ -819,7 +851,7 @@ const ScheduledMaintenancePage = () => {
 
       {/* Modales de Acciones */}
       {updateModalOpen && (
-        <UpdateMaintenanceSchedule 
+        <UpdateMaintenanceSchedule
           onClose={() => setUpdateModalOpen(false)}
           requestData={selectedMaintenance}
           onSuccess={handleModalSuccess}
@@ -834,7 +866,7 @@ const ScheduledMaintenancePage = () => {
       />
 
       {cancelModalOpen && (
-        <CancelScheduledMaintenance 
+        <CancelScheduledMaintenance
           isOpen={cancelModalOpen}
           onClose={() => setCancelModalOpen(false)}
           maintenanceData={selectedMaintenance}
@@ -864,7 +896,7 @@ const ScheduledMaintenancePage = () => {
         title="Operación Exitosa"
         message={modalMessage}
       />
-      
+
       <ErrorModal
         isOpen={errorOpen}
         onClose={() => setErrorOpen(false)}
