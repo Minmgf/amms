@@ -234,7 +234,7 @@ export default function MultiStepFormModal({
       return;
     }
 
-    if (isOpen && isEditMode && machineryToEdit && machineryList.length > 0) {
+    if (isOpen && isEditMode && machineryToEdit && brandsList.length > 0 && countriesList.length > 0) {
       // Cargar datos del Paso 1
       getGeneralData(machineryToEdit.id_machinery).then((data) => {
         const mappedData = {
@@ -251,8 +251,12 @@ export default function MultiStepFormModal({
           city: data.id_city,
           telemetry: data.id_device,
           photo: null,
-          machineryStatues: data.machinery_operational_status,
         };
+
+        if (data.id_machinery_operational_status !== 3) {
+          mappedData.machineryStatues = data.machinery_operational_status;
+        };
+
         methods.reset({
           ...defaultValues,  // ← CAMBIO: Partir de valores limpios
           ...mappedData,
@@ -409,7 +413,9 @@ export default function MultiStepFormModal({
       try {
         const models = await getModelsByBrandId(watchBrand);
         setModelsList(models.data);
-        methods.setValue("model", "");
+        if (!isEditMode || methods.getValues('model') === '') {
+          methods.setValue("model", "");
+        }
       } catch (error) {
         console.error("Error loading models:", error);
         setModelsList([]);
@@ -417,7 +423,7 @@ export default function MultiStepFormModal({
     };
 
     fetchModels();
-  }, [watchBrand, methods]);
+  }, [watchBrand]);
 
   // Cargar selects de todos los pasos
   useEffect(() => {
@@ -541,7 +547,7 @@ export default function MultiStepFormModal({
         const states = await getStates(watchCountry);
         setStatesList(states);
         setCitiesList([]);
-        if (!isEditMode) {
+        if (!isEditMode || methods.getValues('department') === '') {
           methods.setValue("department", "");
           methods.setValue("city", "");
         }
@@ -554,7 +560,7 @@ export default function MultiStepFormModal({
     };
 
     loadStates();
-  }, [watchCountry, methods]);
+  }, [watchCountry]);
 
   // Cuando cambia el estado/departamento, carga las ciudades
   useEffect(() => {
@@ -568,7 +574,9 @@ export default function MultiStepFormModal({
       try {
         const cities = await getCities(watchCountry, watchState);
         setCitiesList(cities);
-        methods.setValue("city", "");
+        if (!isEditMode || methods.getValues('city') === '') {
+          methods.setValue("city", "");
+        }
       } catch (error) {
         console.error("Error loading cities:", error);
         setCitiesList([]);
@@ -578,7 +586,7 @@ export default function MultiStepFormModal({
     };
 
     loadCities();
-  }, [watchCountry, watchState, methods]);
+  }, [watchCountry, watchState]);
 
   const steps = [
     { id: 1, name: "Ficha técnica general" },
@@ -901,9 +909,14 @@ export default function MultiStepFormModal({
         country: "id_country",
         department: "id_department",
         city: "id_city",
-        telemetry: "id_device",
-        machineryStatues: "machinery_operational_status",
+        telemetry: "id_device"
       };
+      const currentStatusId = existingData ? existingData.machinery_operational_status : null;
+
+      // Solo incluir campos de estado si está en modo edición y NO está en registro
+      if (isEditMode && currentStatusId !== 3) {
+        fieldMapping.machineryStatues = "machinery_operational_status";
+      }
 
       // Verificar si hay cambios (incluyendo foto)
       const hasChanges =
@@ -940,7 +953,7 @@ export default function MultiStepFormModal({
         formData.append("image", data.photo);
       }
 
-      if (data.machineryStatues) {
+      if (isEditMode && currentStatusId !== 3 && data.machineryStatues) {
         formData.append("machinery_operational_status", data.machineryStatues);
         formData.append("justification", data.justificationGeneralData);
       }
