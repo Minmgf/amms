@@ -152,6 +152,7 @@ const addInterceptors = (instance) => {
   );
 };
 
-// Aplicar interceptores a ambas instancias
+// Aplicar interceptores a todas las instancias
 addInterceptors(apiUsers);
 addInterceptors(apiMain);
+addInterceptors(apiAudit);

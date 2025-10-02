@@ -25,7 +25,7 @@ const TableList = ({
     return (
         <div className="parametrization-table mb-6 md:mb-8">
             {loading ? (
-                <div className="parametrization-loading p-8 text-center">Loading...</div>
+                <div className="parametrization-loading p-8 text-center">Cargando...</div>
             ) : (
                 <div className="overflow-x-auto">
                     <table className="w-full">
