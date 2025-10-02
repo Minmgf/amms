@@ -371,12 +371,12 @@ const MachineryMainView = () => {
           </div>
         ),
         cell: ({ row }) => (
-          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <div className="flex items-center gap-2 opacity-30 md:opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <PermissionGuard permission={83}> 
               <button
                 aria-label="Edit Button"
                 onClick={() => handleEdit(row.original)}
-                className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black"
+                className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black cursor-pointer"
               >
                 <FaPen /> Editar
               </button>
@@ -392,7 +392,7 @@ const MachineryMainView = () => {
               <button
                 aria-label="View Button"
                 onClick={() => handleView(row.original)}
-                className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black"
+                className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-black cursor-pointer"
               >
                 <FaEye /> Ver
               </button>
