@@ -434,7 +434,7 @@ export default function Step1GeneralData({
               >
                 <option value="">Seleccione un estado...</option>
                 {machineryStatuesList.map((machineryStatues) => (
-                  <option key={machineryStatues.id_statues} value={machineryStatues.id_statues}>
+                  <option key={machineryStatues.id_statues} value={machineryStatues.id_statues} disabled={machineryStatues.id_statues === 3}>
                     {machineryStatues.name}
                   </option>
                 ))}
