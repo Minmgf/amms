@@ -111,6 +111,12 @@ const ScheduledMaintenancePage = () => {
             status_id: item.status_id,
             scheduled_at: item.scheduled_at,
             request_creation_date: item.request_creation_date,
+            // CONSERVAR TODOS LOS DATOS ORIGINALES
+            ...item, // Esto conserva todos los campos originales del API
+            // Sobrescribir solo los campos que queremos formatear especialmente
+            id_maintenance_scheduling: item.id_maintenance_scheduling,
+            machinery_name: item.machinery_name,
+            machinery_serial: item.machinery_serial,
           };
         });
         
