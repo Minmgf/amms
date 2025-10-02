@@ -307,7 +307,7 @@ const ScheduleMaintenanceModal = ({ isOpen, onClose, onSubmit }) => {
                                             <option value="">Seleccionar técnico</option>
                                             {technicians.map(technician => (
                                                 <option key={technician.id} value={technician.id}>
-                                                    {technician.name}
+                                                    {technician.name} {technician.second_last_name}
                                                 </option>
                                             ))}
                                         </select>
