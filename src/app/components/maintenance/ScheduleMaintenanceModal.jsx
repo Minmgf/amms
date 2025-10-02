@@ -28,7 +28,6 @@ const ScheduleMaintenanceModal = ({
     formState,
     setValue,
     watch,
-    clearErrors,
   } = useForm();
   const { getCurrentTheme } = useTheme();
   const theme = getCurrentTheme();
@@ -42,7 +41,6 @@ const ScheduleMaintenanceModal = ({
   const [technicianAvailability, setTechnicianAvailability] = useState({});
   const [useSuggestions, setUseSuggestions] = useState(false);
   const [loadingAvailability, setLoadingAvailability] = useState(false);
-  const [suggestionInfo, setSuggestionInfo] = useState(null);
 
   // Información de la solicitud (solo lectura)
   const requestInfo = request
@@ -62,10 +60,10 @@ const ScheduleMaintenanceModal = ({
 
   // Cargar mantenimientos programados cuando se abre el modal
   useEffect(() => {
-    if (isOpen && request) {
+    if (isOpen) {
       loadScheduledMaintenances();
     }
-  }, [isOpen, request]);
+  }, [isOpen]);
 
   // Función para cargar mantenimientos programados
   const loadScheduledMaintenances = async () => {
@@ -73,7 +71,6 @@ const ScheduleMaintenanceModal = ({
     try {
       const response = await getScheduledMaintenanceList();
       if (response.success) {
-        // Filtrar solo los que están en estado "Programado" (id 13)
         const activeSchedules = response.data.filter(
           (item) => item.status_id === 13 && item.scheduled_at
         );
@@ -98,7 +95,6 @@ const ScheduleMaintenanceModal = ({
         (s) => s.assigned_technician_id === techId
       );
 
-      // Calcular carga de trabajo ponderada
       const today = new Date();
       const workloadScore = techSchedules.reduce((score, schedule) => {
         const scheduleDate = new Date(schedule.scheduled_at);
@@ -160,7 +156,6 @@ const ScheduleMaintenanceModal = ({
     const selectedDate = new Date(dateValue + "T00:00:00");
     const today = new Date();
 
-    // Si es hoy, verificar que la hora no sea pasada
     if (
       selectedDate.getFullYear() === today.getFullYear() &&
       selectedDate.getMonth() === today.getMonth() &&
@@ -184,15 +179,12 @@ const ScheduleMaintenanceModal = ({
     const techId = parseInt(technicianId);
     const selectedDateTime = new Date(dateTime);
 
-    // Obtener mantenimientos del técnico
     const techSchedules = scheduledMaintenances.filter(
       (s) => s.assigned_technician_id === techId && s.status_id === 13
     );
 
     for (const schedule of techSchedules) {
       const scheduleDate = new Date(schedule.scheduled_at);
-
-      // Buffer de 2 horas
       const bufferMs = 2 * 60 * 60 * 1000;
       const timeDiff = Math.abs(selectedDateTime - scheduleDate);
 
@@ -214,18 +206,15 @@ const ScheduleMaintenanceModal = ({
     setErrorMessage("");
 
     try {
-      // Construir fecha/hora completa
       const scheduledDateTime = new Date(
         `${data.scheduleDate}T${data.scheduleTime}:00`
       );
       const now = new Date();
 
-      // Validar que no sea pasada
       if (scheduledDateTime <= now) {
         throw new Error("La fecha y hora programada debe ser futura");
       }
 
-      // Validar disponibilidad del técnico
       const availabilityCheck = validateTechnicianAvailability(
         data.technician,
         `${data.scheduleDate}T${data.scheduleTime}:00`
@@ -235,7 +224,6 @@ const ScheduleMaintenanceModal = ({
         throw new Error(availabilityCheck);
       }
 
-      // Construir payload para el API
       const payload = {
         scheduled_at: `${data.scheduleDate}T${data.scheduleTime}:00Z`,
         assigned_technician: parseInt(data.technician),
@@ -243,10 +231,8 @@ const ScheduleMaintenanceModal = ({
         maintenance_type: parseInt(data.maintenanceType),
       };
 
-      // Enviar al backend
       await onSubmit(payload);
 
-      // Éxito
       setShowSuccessModal(true);
       setTimeout(() => {
         reset();
@@ -255,7 +241,6 @@ const ScheduleMaintenanceModal = ({
         setUseSuggestions(false);
       }, 2000);
     } catch (error) {
-      // Manejar errores
       let errorMsg = "Error al programar el mantenimiento";
 
       if (error.response?.status === 422) {
@@ -278,50 +263,20 @@ const ScheduleMaintenanceModal = ({
     }
   };
 
-  // Obtener color según prioridad
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case "Alta":
-        return "text-red-600 bg-red-50 border-red-200";
-      case "Media":
-        return "text-yellow-600 bg-yellow-50 border-yellow-200";
-      case "Baja":
-        return "text-green-600 bg-green-50 border-green-200";
-      default:
-        return "text-gray-600 bg-gray-50 border-gray-200";
-    }
-  };
-
-  // Obtener icono según prioridad
-  const getPriorityIcon = (priority) => {
-    switch (priority) {
-      case "Alta":
-        return "🔴";
-      case "Media":
-        return "🟡";
-      case "Baja":
-        return "🟢";
-      default:
-        return "⚪";
-    }
-  };
-
   // Cerrar modal
   const handleClose = () => {
     if (!isSubmitting) {
       reset();
       setUseSuggestions(false);
       setErrorMessage("");
-      setSuggestionInfo(null);
       onClose();
     }
   };
 
-  // Obtener fecha mínima (mañana)
+  // Obtener fecha mínima (hoy)
   const getMinDate = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split("T")[0];
+    const today = new Date();
+    return today.toISOString().split("T")[0];
   };
 
   if (!isOpen) return null;
@@ -365,13 +320,18 @@ const ScheduleMaintenanceModal = ({
 
               {/* Sugerencias Automáticas */}
               <SmartSuggestionCard
-                request={request}
+                request={request || { priority: "Media" }}
                 technicians={technicians}
                 scheduledMaintenances={scheduledMaintenances}
                 technicianAvailability={technicianAvailability}
                 onApply={applySuggestions}
                 onDismiss={() => setUseSuggestions(true)}
                 isApplied={useSuggestions}
+                customLabels={{
+                  title: request ? "Sugerencia Inteligente" : "Sugerencia Inteligente de Programación",
+                  applyButton: "Aplicar Sugerencia",
+                  dismissButton: "Programar Manualmente",
+                }}
               />
 
               {/* Campos del formulario */}
