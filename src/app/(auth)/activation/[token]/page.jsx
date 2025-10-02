@@ -1,16 +1,19 @@
 "use client";
-import Link from "next/link";
 import React, { useRef, useEffect, useState } from "react";
 import Logo from "../../../components/auth/Logo";
 import { useParams } from "next/navigation";
 import { activateAccount } from "@/services/authService";
 import { AiOutlineCloseCircle } from "react-icons/ai";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+
 
 const page = () => {
   const { token } = useParams();
   const [status, setStatus] = useState("loading"); // loading, success, error
   const [message, setMessage] = useState("");
   const hasCalled = useRef(false);
+  const router = useRouter();
 
   useEffect(() => {
     if (!token || hasCalled.current) return;
@@ -62,7 +65,7 @@ const page = () => {
             )}
 
             <h1 className="text-center font-bold text-xl text-white tracking-wide mb-4 mt-6">
-              {status === "success" ? "Email Confirmed!" : status === "error" ? "Error" : "Activating..."}
+              {status === "success" ? "Correo electrónico confirmado!" : status === "error" ? "Error" : "Activando..."}
             </h1>
 
             <div className="text-center px-7 flex flex-col gap-5 text-white">
@@ -73,17 +76,21 @@ const page = () => {
             {status === "success" && (
               <Link
                 href="/login"
+                aria-label="Next"
                 className="w-3/4 text-center text-white py-2 mt-6 rounded-lg bg-red-600 text-lg font-semibold shadow hover:bg-red-500 active:bg-red-700 transition-colors"
               >
-                Next
+                Siguiente
               </Link>
             )}
-            <div className="flex justify-center text-white text-md mt-7 mt-2 gap-2">
+            <div className="flex justify-center text-white text-md mt-7 gap-2">
               <a href="" className="hover:underline">
-                Already have an account
+                Ya tiene una cuenta activa?
               </a>
-              <Link href="/login" className="hover:underline font-bold">
-                Log in here
+              <Link
+                href="/login"
+                aria-label="Login"
+                className="hover:underline font-bold">
+                Inicie sesión aquí
               </Link>
             </div>
           </div>

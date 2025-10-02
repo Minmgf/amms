@@ -1,0 +1,396 @@
+import { apiMain } from "@/lib/axios";
+
+// =============================================================================
+// FORMULARIO MODAL MULTIPASOS
+// =============================================================================
+
+// ===== PASO 1 =====
+
+// traer maquinarias activas
+export const getActiveMachinery = async () => {
+    const { data } = await apiMain.get("/types/list/active/2/");
+    return data;
+};
+
+// traer maquinas activas
+export const getActiveMachine = async () => {
+    const { data } = await apiMain.get("/types/list/active/3/");
+    return data;
+};
+
+// Obtener tipo principal de maquinaria
+export const getMachineryType = async () => {
+    const { data } = await apiMain.get("/types/list/active/2/");
+    return data;
+};
+
+// Obtener tipo secundario de maquinaria
+export const getMachinerySecondaryType = async () => {
+    const { data } = await apiMain.get("/types/list/active/3/");
+    return data;
+};
+
+// traer marcas de maquinarias activas
+export const getMachineryBrands = async () => {
+    const { data } = await apiMain.get("/brands/list/active/1/");
+    return data;
+};
+
+// traer modelos de marcas de maquinarias activas
+export const getModelsByBrandId = async (brandId) => {
+    const { data } = await apiMain.get(`/models/list/active/${brandId}/`);
+    return data;
+};
+
+// traer dispositivos de telemetria activos
+export const getTelemetryDevices = async () => {
+    const { data } = await apiMain.get(`/telemetry-devices/active/`);
+    return data;
+};
+
+
+// iniciar formulario y registrar datos generales
+export const registerGeneralData = async (formData) => {
+    const { data } = await apiMain.post("/machinery/create-general-sheet/", formData,
+        {headers: {"Content-Type": "multipart/form-data"}}
+    );
+    return data;
+};
+
+// traer estado de una maquinaria
+export const getMachineryStatus = async () => {
+    const { data } = await apiMain.get("/statues/list/2/");
+    return data;
+};
+
+// Obtener datos generales de una maquinaria por ID
+export const getGeneralData = async (machineryId) => {
+    const { data } = await apiMain.get(`/machinery/${machineryId}/`);
+    return data.data;
+};
+
+// actualizar datos generales de una maquinaria por id
+export const updateGeneralData = async (machineryId, formData) => {
+    const { data } = await apiMain.put(`/machinery/${machineryId}/update/`, formData,
+        {headers: {"Content-Type": "multipart/form-data"}}
+    );
+    return data;
+};
+
+// ===== PASO 3 - FICHA TÉCNICA ESPECÍFICA =====
+
+// Crear ficha técnica específica
+export const createSpecificTechnicalSheet = async (payload) => {
+    const { data } = await apiMain.post("/machinery-specific-sheet/", payload);
+    return data;
+};
+
+export const getSpecificTechnicalSheet = async (machineryId) => {
+    const { data } = await apiMain.get(`/machinery-specific-sheet/machinery/${machineryId}/`);
+    return data.data;
+};
+
+// Actualizar ficha técnica específica
+export const updateSpecificTechnicalSheet = async (specificTechnicalSheetId, payload) => {
+    const { data } = await apiMain.put(`/machinery-specific-sheet/${specificTechnicalSheetId}/`, payload);
+    return data;
+};
+
+// ENDPOINTS PARA UNIDADES (Units)
+
+// Unidades de Potencia
+export const getPowerUnits = async () => {
+    const { data } = await apiMain.get("/units/active/1/");
+    return data;
+};
+
+// Unidades de Capacidad/Volumen
+export const getVolumeUnits = async () => {
+    const { data } = await apiMain.get("/units/active/2/");
+    return data;
+};
+
+// Unidades de Caudal/Consumo
+export const getFlowConsumptionUnits = async () => {
+    const { data } = await apiMain.get("/units/active/3/");
+    return data;
+};
+
+// Unidades de Peso/Carga
+export const getWeightUnits = async () => {
+    const { data } = await apiMain.get("/units/active/4/");
+    return data;
+};
+
+// Unidades de Velocidad
+export const getSpeedUnits = async () => {
+    const { data } = await apiMain.get("/units/active/5/");
+    return data;
+};
+
+// Unidades de Fuerza
+export const getForceUnits = async () => {
+    const { data } = await apiMain.get("/units/active/6/");
+    return data;
+};
+
+// Unidades de Altitud/Dimensión
+export const getDimensionUnits = async () => {
+    const { data } = await apiMain.get("/units/active/7/");
+    return data;
+};
+
+// Unidades de Rendimiento (Frecuencia/Velocidad angular)
+export const getPerformanceUnits = async () => {
+    const { data } = await apiMain.get("/units/active/8/");
+    return data;
+};
+
+// Unidades de Presión
+export const getPressureUnits = async () => {
+    const { data } = await apiMain.get("/units/active/9/");
+    return data;
+};
+
+// ENDPOINTS PARA TIPOS (Types)
+
+// Tipos de Motores
+export const getEngineTypes = async () => {
+    const { data } = await apiMain.get("/types/list/active/4/");
+    return data;
+};
+
+// Tipos de Disposición de Cilindros
+export const getCylinderArrangementTypes = async () => {
+    const { data } = await apiMain.get("/types/list/active/5/");
+    return data;
+};
+
+// Tipos de Tracción
+export const getTractionTypes = async () => {
+    const { data } = await apiMain.get("/types/list/active/6/");
+    return data;
+};
+
+// Tipos de Sistemas de Transmisión
+export const getTransmissionSystemTypes = async () => {
+    const { data } = await apiMain.get("/types/list/active/7/");
+    return data;
+};
+
+// Tipos de Sistemas de Aire Acondicionado
+export const getAirConditioningSystemTypes = async () => {
+    const { data } = await apiMain.get("/types/list/active/8/");
+    return data;
+};
+
+// Tipos de Niveles de Emisión
+export const getEmissionLevelTypes = async () => {
+    const { data } = await apiMain.get("/types/list/active/9/");
+    return data;
+};
+
+// Tipos de Cabinas
+export const getCabinTypes = async () => {
+    const { data } = await apiMain.get("/types/list/active/10/");
+    return data;
+};
+// ===== PASO 2 =====
+export const registerInfoTracker = async (formData) => {
+    const { data } = await apiMain.post("/machinery-tracker/create/", formData,
+        {headers: {"Content-Type": "multipart/form-data"}}
+    );
+    return data;
+};
+
+// ===== STEP 2 - TRACKER DATA EDIT FUNCTIONS =====
+// traer información del tracker por ID de maquinaria
+export const getTrackerInfo = async (machineryId) => {
+    const { data } = await apiMain.get(`/machinery-tracker/by-machinery/${machineryId}/`);
+    return data;
+};
+
+// actualizar información del tracker
+export const updateInfoTracker = async (trackerId, formData) => {
+    const { data } = await apiMain.put(`/machinery-tracker/${trackerId}/update/`, formData, 
+        {headers: {"Content-Type": "multipart/form-data"}}
+    );
+    return data;
+};
+
+// ===== PASO 4 =====
+
+// traer estados de uso
+export const getUseStates = async () => {
+    const { data } = await apiMain.get("/statues/list/3/");
+    return Array.isArray(data) ? data : [];
+};
+
+// traer unidades de distancia
+export const getDistanceUnits = async () => {
+    const { data } = await apiMain.get("/units/active/7/");
+    return data;
+};
+
+// traer tipos de tenencia
+export const getTenureTypes = async () => {
+    const { data } = await apiMain.get("/types/list/active/11/");
+    return data;
+};
+
+// registrar información de uso
+export const registerUsageInfo = async (formData) => {
+    const { data } = await apiMain.post("/machinery-usage/create/", formData,
+        {headers: {"Content-Type": "multipart/form-data"}}
+    );
+    return data;
+};
+
+// traer información de uso por id de maquinaria
+export const getUsageInfo = async (machineryId) => {
+    const { data } = await apiMain.get(`/machinery-usage/by-machinery/${machineryId}/`);
+    return data.data;
+};
+
+// actualizar información de uso por id de uso
+export const updateUsageInfo = async (usageId, formData) => {
+    const { data } = await apiMain.put(`/machinery-usage/${usageId}/update/`, formData,
+        {headers: {"Content-Type": "multipart/form-data"}}
+    );
+    return data;
+}
+
+// ===== PASO 5 =====
+
+//traer listado de tipos de mantenimiento activos
+export const getMaintenanceTypes = async () => {
+    const { data } = await apiMain.get(`/maintenance/active/`);
+    return data;
+};
+
+//registrar mantenimiento periodico de una maquinaria
+export const registerPeriodicMaintenance = async (payload) => {
+    const { data } = await apiMain.post("/periodic-maintenance/", payload);
+    return data;
+};
+//actualizar mantenimiento periodico de una maquinaria
+export const updatePeriodicMaintenance = async (id_periodic_maintenance, payload) => {
+    const { data } = await apiMain.put(`/periodic-maintenance/${id_periodic_maintenance}/`, payload);
+    return data;
+};
+
+//traer listado de mantenimientos periodicos de maquinaria por id
+export const getPeriodicMaintenancesById = async (id_machinery) => {
+    const { data } = await apiMain.get(`/periodic-maintenance/`,
+        { params: { machinery: id_machinery } }
+    );
+    return data;
+};
+
+// eliminar mantenimiento periódico de maquinaria por id
+export const deletePeriodicMaintenance = async (id_periodic_maintenance) => {
+    const { data } = await apiMain.delete(`/periodic-maintenance/${id_periodic_maintenance}/`);
+    return data;
+};
+
+// ===== PASO 6 =====
+
+// crear documento de maquinaria
+export const createMachineryDoc = async (formData) => {
+    const { data } = await apiMain.post("/machinery-documentation/", formData, 
+        {headers: {"Content-Type": "multipart/form-data"}}
+    );
+    return data;
+};
+
+// descargar documento de maquinaria
+export const downloadMachineryDoc = async (documentId) => {
+    try {
+        // Intentar primero como JSON (información del archivo)
+        const response = await apiMain.get(`/machinery-documentation/${documentId}/download/`);
+        
+        // Si la respuesta es JSON, devolver la data
+        if (response.headers['content-type']?.includes('application/json')) {
+            return response.data;
+        }
+        
+        // Si es un archivo binario, devolver la respuesta completa
+        return response;
+    } catch (error) {
+        // Si falla como JSON, intentar como archivo binario
+        try {
+            const response = await apiMain.get(`/machinery-documentation/${documentId}/download/`, {
+                responseType: 'blob'
+            });
+            return response.data; // Devolver el blob
+        } catch (blobError) {
+            throw error; // Lanzar el error original
+        }
+    }
+};
+
+// eliminar documento de maquinaria
+export const deleteMachineryDoc = async (documentId) => {
+    const { data } = await apiMain.delete(`/machinery-documentation/${documentId}/`);
+    return data;
+};
+
+// listar documentos de maquinaria
+export const getMachineryDocs = async (machineryId) => {
+    const { data } = await apiMain.get(`/machinery-documentation/list/${machineryId}/`);
+    return data;
+};
+
+// ===== CONFIRMAR REGISTRO DE MAQUINARIA =====
+export const confirmMachineryRegistration = async (machineryId) => {
+    const { data } = await apiMain.post(`/machinery/${machineryId}/confirm-registration/`);
+    return data;
+};
+
+/**
+ * Obtiene la lista completa de maquinaria
+ * @returns {Promise} - Promesa con la respuesta de la API
+ */
+export const getMachineryList = async () => {
+    try {
+        // console.log('Base URL configurada:', process.env.NEXT_PUBLIC_BASE_URL_MAIN);
+        // console.log('URL completa sería:', `${process.env.NEXT_PUBLIC_BASE_URL_MAIN}/machinery/list/`);
+        
+        const response = await apiMain.get('/machinery/list/');
+        
+        console.log('Respuesta completa de la API:', response);
+        console.log('Status de la respuesta:', response.status);
+        console.log('Data de la respuesta:', response.data);
+        
+        return {
+            success: true,
+            data: response.data,
+            message: 'Maquinaria obtenida exitosamente'
+        };
+    } catch (error) {
+        console.error('Error completo:', error);
+        console.error('Error response:', error.response);
+        console.error('Error response data:', error.response?.data);
+        console.error('Error response status:', error.response?.status);
+        
+        return {
+            success: false,
+            data: null,
+            message: error.response?.data?.message || error.message || 'Error al obtener la lista de maquinaria',
+            error: error.response?.data || error.message
+        };
+    }
+};
+
+// obtener foto de maquinaria
+export const getMachineryPhoto = async (machineryId) => {
+    const { data } = await apiMain.get(`/machinery/${machineryId}/photo/`);
+    // Supón que el endpoint devuelve { url: "https://..." }
+    return data?.url || null;
+};
+
+// traer mantenimientos periodicos de una maquinaria por id
+export const getPeriodicMaintenance = async (machineryId) => {
+  const { data } = await apiMain.get(`/machinery/periodic-maintenance/?machinery=${machineryId}`);
+  return data;
+};

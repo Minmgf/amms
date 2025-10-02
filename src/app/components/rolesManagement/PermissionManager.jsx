@@ -1,4 +1,5 @@
 import React from "react";
+import { usePermissions } from "@/contexts/PermissionsContext";
 
 const PermissionManager  = ({
     permissions,
@@ -30,6 +31,8 @@ const PermissionManager  = ({
         name: permission.name,
         description: permission.description,
     });
+    const { hasPermission } = usePermissions();
+    const canEditPermissions = hasPermission(19);
 
     const handleCheckboxChange = (id) => {
         setFormData(prev => {
@@ -90,9 +93,10 @@ const PermissionManager  = ({
             {/* Categories Select */}
             <div className="flex flex-col">
                 <label className="font-semibold text-sm text-secondary">
-                    Permissions categories
+                    Categorías de permisos
                 </label>
                 <select
+                    aria-label="Permissions Categories Select"
                     className="input-theme mt-2 w-64"
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
@@ -104,7 +108,7 @@ const PermissionManager  = ({
                     ))}
                 </select>
                 <p className="text-xs text-neutral-500 mt-2">
-                    Select a category above to configure its specific permissions
+                    Seleccione una categoría arriba para configurar sus permisos específicos.
                 </p>
             </div>
             {/* Permission Section */}
@@ -113,13 +117,14 @@ const PermissionManager  = ({
                 <div className="flex flex-col gap-4">
                     <div className="table-theme overflow-hidden">
                         <div className="grid grid-cols-[1fr_auto] items-center px-4 py-2 font-semibold bg-hover text-secondary border-b">
-                            <span>Permission Name</span>
+                            <span>Nombre permiso</span>
                             <div className="flex items-center gap-2">
-                                <span>Select All</span>
+                                <span>Seleccionar todo</span>
                                 <input
+                                    aria-label="Select All Checkbox"
                                     type="checkbox"
                                     className="h-4 w-4"
-                                    disabled={mode === "view"}
+                                    disabled={mode === "view" || !canEditPermissions}
                                     checked={
                                         filteredPermissions.length > 0 &&
                                         filteredPermissions.every(perm =>
@@ -138,9 +143,10 @@ const PermissionManager  = ({
                             >
                                 <span className="text-primary">{perm.description}</span>
                                 <input
+                                    aria-label="Permission Checkbox"
                                     type="checkbox"
                                     className="h-4 w-4"
-                                    disabled={mode === "view"}
+                                    disabled={mode === "view" || !canEditPermissions}
                                     checked={isPermissionSelected(formData.permissions, perm.id)}
                                     onChange={() => handleCheckboxChange(perm.id)}
                                 />
@@ -151,10 +157,10 @@ const PermissionManager  = ({
                     {/* Footer info */}
                     <div className="flex items-center gap-2 text-sm text-secondary">
                         <span className="h-2 w-2 rounded-full bg-accent inline-block"></span>
-                        Currently configuring:
+                        Configuración actual:
                         <span className="font-medium text-accent">{selectedCategory}</span>
                         <span className="ml-2">
-                            Active permissions:{" "}
+                            Permisos activos:{" "}
                             <b>{countSelectedInCategory(selectedCategory)}</b> of{" "}
                             <b>{filteredPermissions.length}</b>
                         </span>
@@ -164,11 +170,13 @@ const PermissionManager  = ({
                     {mode !== "view" && (
                         <div className="flex gap-3">
                             <button
+                                aria-label="Reset Button"
                                 type="button"
+                                disabled = {!canEditPermissions}
                                 onClick={resetPermissions}
                                 className="btn-theme btn-secondary px-6 py-2 rounded-lg"
                             >
-                                Reset All
+                                Restablecer todo
                             </button>
                         </div>
                     )}
@@ -182,7 +190,7 @@ const PermissionManager  = ({
                                 <span className="text-primary">{cat}</span>
                                 <span className="text-xs text-secondary">
                                     {countSelectedInCategory(cat)}/
-                                    {permissions.filter((p) => p.category === cat).length} active
+                                    {permissions.filter((p) => p.category === cat).length} activo
                                 </span>
                             </div>
                         </div>

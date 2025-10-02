@@ -14,7 +14,7 @@ const FilterSection = ({ globalFilter, setGlobalFilter, placeholder = "Search...
                     className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit"
                 >
                     <FiFilter className="filter-icon w-4 h-4" />
-                    <span className="text-sm">Filter by</span>
+                    <span className="text-sm">Filtrar por</span>
                 </button>
 
                 {/* Input de búsqueda (expandible) */}

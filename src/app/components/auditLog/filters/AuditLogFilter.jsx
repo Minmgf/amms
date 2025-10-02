@@ -1,14 +1,33 @@
 "use client";
+import { useState } from "react";
 import { FiX } from "react-icons/fi";
-import { useTheme } from '@/contexts/ThemeContext';
+import { useTheme } from "@/contexts/ThemeContext";
 
-export default function AuditLogFilter({ isOpen, onClose }) {
+export default function AuditLogFilter({ isOpen, onClose, onApply, onClean }) {
   const { currentTheme } = useTheme();
+
+  // Estado local de filtros
+  const [date, setDate] = useState("");
+  const [actionType, setActionType] = useState("");
+  const [user, setUser] = useState("");
+
   if (!isOpen) return null; // si no está abierto, no se renderiza
+
+  const handleApply = () => {
+    onApply({ date, actionType, user }); // pasa filtros al padre
+    onClose();
+  };
+
+  const handleClean = () => {
+    setDate("");
+    setActionType("");
+    setUser("");
+    onClean?.(); // notifica al padre
+  };
 
   return (
     <div className="modal-overlay">
-      <div className="parametrization-modal">
+      <div className="parametrization-modal relative">
         {/* Botón cerrar (X) */}
         <button
           onClick={onClose}
@@ -23,28 +42,43 @@ export default function AuditLogFilter({ isOpen, onClose }) {
         <div className="space-y-4">
           <div className="flex gap-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-secondary mb-1">Date</label>
+              <label className="block text-sm font-medium text-secondary mb-1">
+                Date
+              </label>
               <input
                 type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
                 className="parametrization-input"
               />
             </div>
 
             <div className="flex-1">
-              <label className="block text-sm font-medium text-secondary mb-1">Action type</label>
-              <select className="parametrization-input">
+              <label className="block text-sm font-medium text-secondary mb-1">
+                Action type
+              </label>
+              <select
+                value={actionType}
+                onChange={(e) => setActionType(e.target.value)}
+                className="parametrization-input"
+              >
                 <option value="">Select</option>
-                <option value="create">Create</option>
-                <option value="update">Update</option>
-                <option value="delete">Delete</option>
+                <option value="ACCESS">Access</option>
+                <option value="CREATE">Create</option>
+                <option value="UPDATE">Update</option>
+                <option value="DELETE">Delete</option>
               </select>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-secondary mb-1">User</label>
+            <label className="block text-sm font-medium text-secondary mb-1">
+              User
+            </label>
             <input
               type="text"
+              value={user}
+              onChange={(e) => setUser(e.target.value)}
               placeholder="Enter user"
               className="parametrization-input"
             />
@@ -53,15 +87,14 @@ export default function AuditLogFilter({ isOpen, onClose }) {
 
         {/* Botones */}
         <div className="flex gap-4 mt-6">
-          <button className="parametrization-button parametrization-button-danger flex-1">
-            Clean
+          <button aria-label="Clean Button" onClick={handleClean} className="btn-theme btn-secondary w-1/2 relative">
+            Limpiar
           </button>
-          <button className="parametrization-action-button flex-1">
-            Apply
+          <button aria-label="Apply Button" onClick={handleApply} className="btn-theme btn-primary w-1/2 relative">
+            Aplicar
           </button>
         </div>
       </div>
     </div>
-
   );
 }

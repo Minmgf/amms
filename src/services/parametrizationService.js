@@ -114,31 +114,6 @@ export const getActiveTypesByCategory = async (idTypesCategories) => {
     return data;
 };
 
-/**
- * Verificar conexión con el servicio
- * Útil para debugging y health checks
- */
-export const checkServiceHealth = async () => {
-    try {
-        console.log('🔄 servicioCompleto: Verificando estado del servicio...');
-        // Intentamos obtener las categorías como health check
-        const response = await getTypesCategories();
-        console.log('✅ servicioCompleto: Servicio funcionando correctamente');
-        return {
-            status: 'healthy',
-            message: 'Servicio funcionando correctamente',
-            data: response
-        };
-    } catch (error) {
-        console.error('❌ servicioCompleto: Servicio no disponible:', error);
-        return {
-            status: 'unhealthy',
-            message: error.message,
-            error: error
-        };
-    }
-};
-
 // Activar/desactivar tipo - VISTA: Switch en modal de detalles de tipo
 export const toggleTypeStatus = async (idType) => {
     const { data } = await apiMain.patch(`types/${idType}/toggle-status/`);

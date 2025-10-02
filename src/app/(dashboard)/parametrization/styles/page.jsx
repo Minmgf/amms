@@ -5,6 +5,8 @@ import NavigationMenu from '../../../components/parametrization/ParameterNavigat
 import ColorPickerModal from '../../../components/parametrization/ColorPickerModal';
 import NewThemeModal from '../../../components/parametrization/NewThemeModal';
 import { useTheme } from '@/contexts/ThemeContext';
+import PermissionGuard from '@/app/(auth)/PermissionGuard';
+import { usePermissions } from "@/contexts/PermissionsContext";
 
 // Enhanced Color Picker Component with Modal
 const ColorPicker = ({ color, onChange, label, onOpenColorPicker }) => (
@@ -38,8 +40,9 @@ const SelectField = ({ value, onChange, options, label }) => (
 
 // Main Component
 const StylesParameterizationView = () => {
-  const [activeMenuItem, setActiveMenuItem] = useState('Styles');
-  
+  const [activeMenuItem, setActiveMenuItem] = useState('Estilos');
+  const { hasPermission } = usePermissions();
+  const canViewStyles = hasPermission(75);
   // Usar el contexto de tema global
   const {
     currentTheme,
@@ -77,8 +80,9 @@ const StylesParameterizationView = () => {
         paragraphTextColor: theme.colors.textSecondary,
         backgroundColor: theme.colors.background,
         surfaceColor: theme.colors.surface,
-        primaryButton: theme.colors.accent,
+        primaryButton: theme.colors.primary,
         secondaryButton: theme.colors.secondary,
+        accentColor: theme.colors.accent,
         borderColor: theme.colors.border,
         hoverColor: theme.colors.hover,
         errorColor: theme.colors.error,
@@ -90,6 +94,7 @@ const StylesParameterizationView = () => {
       });
     }
   }, [currentTheme, getCurrentTheme]);
+
 
   const handleMenuItemChange = (item) => {
     setActiveMenuItem(item);
@@ -119,8 +124,9 @@ const StylesParameterizationView = () => {
           textSecondary: tempStyleParams.paragraphTextColor,
           background: tempStyleParams.backgroundColor,
           surface: tempStyleParams.surfaceColor,
-          accent: tempStyleParams.primaryButton,
+          primary: tempStyleParams.primaryButton,
           secondary: tempStyleParams.secondaryButton,
+          accent: tempStyleParams.accentColor,
           border: tempStyleParams.borderColor,
           hover: tempStyleParams.hoverColor,
           error: tempStyleParams.errorColor,
@@ -137,6 +143,7 @@ const StylesParameterizationView = () => {
           }
         }
       };
+
       
       // Si es un tema de la API (empieza con 'api_'), actualizarlo
       if (currentTheme && currentTheme.startsWith('api_')) {
@@ -323,7 +330,7 @@ const StylesParameterizationView = () => {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6 md:mb-10">
-            <h1 className="text-2xl md:text-3xl font-bold text-primary">Parameterization</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-primary">Parametrización</h1>
             <div className="text-sm bg-surface p-2 rounded-theme-md border border-primary">
               <span className="text-secondary">Tema actual: </span>
               <span className="font-semibold text-accent">{getAllThemes()[currentTheme]?.name || 'Cargando...'}</span>
@@ -362,7 +369,7 @@ const StylesParameterizationView = () => {
                       value={currentTheme || ''}
                       onChange={(e) => handleThemeChange(e.target.value)}
                       className="input-theme"
-                      disabled={isLoading}
+                      disabled={isLoading || !canViewStyles}
                     >
                       <option value="">Seleccionar tema...</option>
                       {getThemeNames().map(themeKey => (
@@ -371,14 +378,16 @@ const StylesParameterizationView = () => {
                         </option>
                       ))}
                     </select>
-                    <button 
-                      onClick={handleOpenNewThemeModal}
-                      className="btn-theme btn-primary"
-                      title="Crear nuevo tema"
-                      disabled={isLoading}
-                    >
-                      <FiPlus className="w-4 h-4" />
-                    </button>
+                    <PermissionGuard permission={71}>
+                      <button 
+                        onClick={handleOpenNewThemeModal}
+                        className="btn-theme btn-primary"
+                        title="Crear nuevo tema"
+                        disabled={isLoading}
+                      >
+                        <FiPlus className="w-4 h-4" />
+                      </button>
+                    </PermissionGuard>
                     <button 
                       onClick={handleRefreshThemes}
                       className="btn-theme btn-secondary"
@@ -441,6 +450,12 @@ const StylesParameterizationView = () => {
                     onOpenColorPicker={handleOpenColorPicker}
                   />
                   <ColorPicker
+                    label="Color de Acento"
+                    color={tempStyleParams.accentColor}
+                    onChange={(color) => handleStyleChange('accentColor', color)}
+                    onOpenColorPicker={handleOpenColorPicker}
+                  />
+                  <ColorPicker
                     label="Color de Bordes"
                     color={tempStyleParams.borderColor}
                     onChange={(color) => handleStyleChange('borderColor', color)}
@@ -487,23 +502,25 @@ const StylesParameterizationView = () => {
               </div>
 
               {/* Save Button */}
-              <button
-                onClick={handleSaveChanges}
-                disabled={isSaving || isLoading}
-                className="btn-theme btn-primary w-full py-3 font-medium flex items-center justify-center space-x-2"
-              >
-                {isSaving ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Guardando...</span>
-                  </>
-                ) : (
-                  <>
-                    <FiSave className="w-4 h-4" />
-                    <span>Guardar en API</span>
-                  </>
-                )}
-              </button>
+              <PermissionGuard permission={73}>
+                <button
+                  onClick={handleSaveChanges}
+                  disabled={isSaving || isLoading}
+                  className="btn-theme btn-primary w-full py-3 font-medium flex items-center justify-center space-x-2"
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Guardando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FiSave className="w-4 h-4" />
+                      <span>Guardar en API</span>
+                    </>
+                  )}
+                </button>
+              </PermissionGuard>
             </div>
 
             {/* Right Panel - Preview */}
