@@ -142,7 +142,7 @@ PASSED - Tiempo: 24.35 segundos
 Aprobado
 
 # Fecha Ejecución
-2025-10-01 18:00:00
+2025-10-01 06:00 pm
 
 # Ejecutado por
 Alejandro S

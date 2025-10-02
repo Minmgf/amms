@@ -126,4 +126,4 @@ Aprobado
 2025-10-01 17:45:00
 
 # Ejecutado por
-GitHub Copilot - Sistema de Pruebas Automatizadas
+Alejandro S.
