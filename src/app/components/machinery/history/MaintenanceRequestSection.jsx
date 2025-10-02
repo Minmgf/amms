@@ -1,25 +1,7 @@
 import React, { useMemo, useState } from 'react'
-import { FiSearch } from 'react-icons/fi'
 import { CiFilter } from 'react-icons/ci'
 import TableList from '@/app/components/shared/TableList'
 import MaintenanceFiltersModal from '@/app/components/machinery/history/MaintenanceFiltersModal'
-
-const fallbackRequests = [
-  {
-    id: 1,
-    requestDate: '2025-03-14T21:23:00Z',
-    maintenanceType: 'Correctivo',
-    priority: 'Baja',
-    status: 'En progreso'
-  },
-  {
-    id: 2,
-    requestDate: '2025-03-14T21:23:00Z',
-    maintenanceType: 'Preventivo',
-    priority: 'Alta',
-    status: 'Pendiente'
-  }
-]
 
 const DEFAULT_FILTERS = {
   startDate: '',
@@ -68,41 +50,39 @@ const StatusBadge = ({ status }) => {
   )
 }
 
-const MaintenanceRequestSection = ({ requests }) => {
+const MaintenanceRequestSection = ({ requests, loading = false }) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false)
 
-  const requestData = Array.isArray(requests) && requests.length > 0 ? requests : fallbackRequests
+  const requestData = Array.isArray(requests) ? requests : []
 
   const filteredRequestData = useMemo(() => {
     return requestData.filter((record) => {
       if (!record) return false
 
-      const recordDate = record.requestDate ? new Date(record.requestDate) : null
-      const startDate = filters.startDate ? new Date(filters.startDate) : null
-      const endDate = filters.endDate ? new Date(filters.endDate) : null
-
-      if (startDate) {
-        const startOfDay = new Date(startDate)
-        startOfDay.setHours(0, 0, 0, 0)
-        if (!recordDate || recordDate < startOfDay) {
+      // Filtro por fecha
+      if (filters.startDate || filters.endDate) {
+        if (!record.requestDate) return false
+        
+        // Extraer solo la fecha (YYYY-MM-DD) del timestamp para comparación
+        const recordDateStr = record.requestDate.split('T')[0]
+        
+        if (filters.startDate && recordDateStr < filters.startDate) {
+          return false
+        }
+        
+        if (filters.endDate && recordDateStr > filters.endDate) {
           return false
         }
       }
 
-      if (endDate) {
-        const endOfDay = new Date(endDate)
-        endOfDay.setHours(23, 59, 59, 999)
-        if (!recordDate || recordDate > endOfDay) {
-          return false
-        }
-      }
-
+      // Filtro por tipo de mantenimiento
       if (filters.maintenanceType && record.maintenanceType !== filters.maintenanceType) {
         return false
       }
 
+      // Filtro por estado
       if (filters.status && record.status !== filters.status) {
         return false
       }
@@ -164,8 +144,20 @@ const MaintenanceRequestSection = ({ requests }) => {
     setFilters(DEFAULT_FILTERS)
   }
 
-  const maintenanceTypes = ['Preventivo', 'Correctivo']
-  const statuses = ['Pendiente', 'En progreso', 'Completado']
+  // Extraer valores únicos de los datos actuales para los filtros
+  const maintenanceTypes = useMemo(() => {
+    const types = requestData
+      .map(request => request.maintenanceType)
+      .filter(Boolean)
+    return [...new Set(types)].sort()
+  }, [requestData])
+
+  const statuses = useMemo(() => {
+    const statusList = requestData
+      .map(request => request.status)
+      .filter(Boolean)
+    return [...new Set(statusList)].sort()
+  }, [requestData])
 
   return (
     <div className="space-y-6">
@@ -191,16 +183,22 @@ const MaintenanceRequestSection = ({ requests }) => {
         </button>
       </div>
 
-      <div className=" rounded-xl p-0">
-        <TableList
-          columns={columns}
-          data={filteredRequestData}
-          loading={false}
-          globalFilter={searchQuery}
-          onGlobalFilterChange={setSearchQuery}
-          globalFilterFn={globalFilterFn}
-          pageSizeOptions={[5, 10, 20]}
-        />
+      <div className="rounded-xl p-0">
+        {!loading && requestData.length === 0 ? (
+          <div className="flex items-center justify-center py-12 text-secondary text-sm">
+            No hay solicitudes de mantenimiento registradas para esta maquinaria.
+          </div>
+        ) : (
+          <TableList
+            columns={columns}
+            data={filteredRequestData}
+            loading={loading}
+            globalFilter={searchQuery}
+            onGlobalFilterChange={setSearchQuery}
+            globalFilterFn={globalFilterFn}
+            pageSizeOptions={[5, 10, 20]}
+          />
+        )}
       </div>
 
       <MaintenanceFiltersModal

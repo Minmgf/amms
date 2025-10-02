@@ -6,7 +6,7 @@ const defaultFilters = {
   startDate: '',
   endDate: '',
   maintenanceType: '',
-  assignedTechnician: '',
+  assignedTo: '',
   status: ''
 }
 
@@ -85,7 +85,7 @@ const MaintenanceScheduledFiltersModal = ({
           </div>
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-primary">Técnico Asignado</label>
-            <select name="assignedTechnician" value={filters.assignedTechnician} onChange={handleInputChange} className="w-full rounded-lg border border-gray-200 py-2.5 px-3 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" aria-label="Seleccionar técnico asignado">
+            <select name="assignedTo" value={filters.assignedTo} onChange={handleInputChange} className="w-full rounded-lg border border-gray-200 py-2.5 px-3 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20" aria-label="Seleccionar técnico asignado">
               <option value="">Todos</option>
               {technicians.map((tech) => (<option key={tech} value={tech}>{tech}</option>))}
             </select>

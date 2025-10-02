@@ -410,7 +410,6 @@ const ScheduleMaintenanceModal = ({ isOpen, onClose, onSubmit }) => {
                     </p>
                   )}
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-primary mb-2">
                     Hora programada*

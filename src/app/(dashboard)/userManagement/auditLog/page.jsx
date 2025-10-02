@@ -5,7 +5,6 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { createColumnHelper } from "@tanstack/react-table";
 import { FiSearch, FiFilter } from "react-icons/fi";
 import { getAudit } from "@/services/auditService";
-import { getUserInfo } from "@/services/authService";
 import { getPermissions } from "@/services/roleService";
 import AuditLogFilter from "@/app/components/auditLog/filters/AuditLogFilter";
 
@@ -14,78 +13,73 @@ const page = () => {
     const [globalFilter, setGlobalFilter] = useState("");
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [userCache, setUserCache] = useState({}); // Cache de usuarios
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [filters, setFilters] = useState({});
 
     const handleApplyFilters = (newFilters) => {
         setFilters(newFilters);
-        // aquí decides: si llamas al backend con query params o filtras data en frontend
     };
 
     const handleCleanFilters = () => {
         setFilters({});
-        // recargar todo o quitar filtros
     };
 
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                // Traer auditorías
                 const audits = await getAudit();
-                // Traer todos los permisos
                 const perms = await getPermissions();
-                // Enriquecer datos
-                const enriched = await Promise.all(
-                    audits.map(async (item) => {
-                        // usuario: usar actor_id o sino object_id
-                        const userId = item.actor_id ?? item.object_id;
-                        const dateObj = new Date(item.ts);
-                        const rawDate = dateObj.toISOString().split("T")[0]; // YYYY-MM-DD
-                        let userName = "Desconocido";
+                
+                const enriched = audits.map((item) => {
+                    const dateObj = new Date(item.ts);
+                    const rawDate = dateObj.toISOString().split("T")[0]; // YYYY-MM-DD
+                    
+                    // Obtener el nombre del usuario desde actor_name
+                    const userName = item.actor_name || "Desconocido";
+                    
+                    // Buscar el permiso por id
+                    const permDesc =
+                        perms.find((p) => p.id === item.permission_id)?.description ||
+                        (item.permission_id ? `ID: ${item.permission_id}` : "N/A");
+                    
+                    // Formatear el diff según la operación
+                    let diffText = "";
+                    const diff = item.diff || {};
+                    
+                    if (item.operation === "CREATE" && diff.created) {
+                        const fields = Object.entries(diff.created)
+                            .filter(([key]) => key !== "id_machinery" && key !== "id_tracker_sheet")
+                            .map(([key, value]) => `${key}: ${value ?? "null"}`)
+                            .join(", ");
+                        diffText = `Creado: ${fields}`;
+                    } else if (item.operation === "UPDATE" && diff.changed) {
+                        const changes = Object.entries(diff.changed)
+                            .map(([field, change]) => 
+                                `${field}: ${change.from ?? "null"} → ${change.to ?? "null"}`
+                            )
+                            .join(", ");
+                        diffText = `Modificado: ${changes}`;
+                    } else if (item.operation === "DELETE" && diff.removed) {
+                        const fields = Object.entries(diff.removed)
+                            .map(([key, value]) => `${key}: ${value ?? "null"}`)
+                            .join(", ");
+                        diffText = `Eliminado: ${fields}`;
+                    }
 
-                        if (userId) {
-                            // si ya lo tenemos en cache, usarlo
-                            if (userCache[userId]) {
-                                userName = userCache[userId];
-                            } else {
-                                try {
-                                    const userResp = await getUserInfo(userId);
-                                    // tu endpoint devuelve data: [ { ... } ]
-                                    const user = userResp?.data?.[0];
-                                    if (user) {
-                                        userName = user.name;
-                                        setUserCache((prev) => ({ ...prev, [userId]: userName }));
-                                    }
-                                } catch {
-                                    userName = `ID: ${userId}`;
-                                }
-                            }
-                        }
-
-                        // permiso: buscar por id
-                        const permDesc =
-                            perms.find((p) => p.id === item.permission_id)?.description ||
-                            (item.permission_id ? `ID: ${item.permission_id}` : "N/A");
-
-                        return {
-                            ts: formatDate(item.ts),
-                            rawDate,
-                            actor: userName,
-                            actorRole: item.actor_role ?? "N/A",
-                            feature: item.feature,
-                            operation: item.operation,
-                            permission: permDesc,
-                            change: Object.entries(item.diff?.changed || {})
-                                .map(
-                                    ([field, { from, to }]) =>
-                                        `${field}: ${from ?? "null"} → ${to ?? "null"}`
-                                )
-                                .join(", "),
-                        };
-                    })
-                );
+                    return {
+                        ts: formatDate(item.ts),
+                        rawDate,
+                        actor: userName,
+                        actorRole: item.actor_role ?? "N/A",
+                        module: item.module ?? "N/A",
+                        submodule: item.submodule ?? "N/A",
+                        permission: permDesc,
+                        operation: item.operation,
+                        diff: diffText || "Sin cambios",
+                        diffRaw: diff, // Guardamos el diff original para usarlo en la columna
+                    };
+                });
 
                 setData(enriched);
             } catch (error) {
@@ -125,8 +119,12 @@ const page = () => {
                 header: "Rol",
                 cell: (info) => <div className="text-secondary">{info.getValue()}</div>,
             }),
-            columnHelper.accessor("feature", {
-                header: "Funcionalidad",
+            columnHelper.accessor("module", {
+                header: "Módulo",
+                cell: (info) => <div className="text-secondary">{info.getValue()}</div>,
+            }),
+            columnHelper.accessor("submodule", {
+                header: "Submódulo",
                 cell: (info) => <div className="text-secondary">{info.getValue()}</div>,
             }),
             columnHelper.accessor("permission", {
@@ -135,11 +133,62 @@ const page = () => {
             }),
             columnHelper.accessor("operation", {
                 header: "Operación",
-                cell: (info) => <div className="text-secondary">{info.getValue()}</div>,
+                cell: (info) => {
+                    const operation = info.getValue();
+                    const colors = {
+                        CREATE: "text-green-600",
+                        UPDATE: "text-blue-600",
+                        DELETE: "text-red-600",
+                    };
+                    return (
+                        <div className={`font-semibold ${colors[operation] || "text-secondary"}`}>
+                            {operation}
+                        </div>
+                    );
+                },
             }),
-            columnHelper.accessor("change", {
+            columnHelper.accessor("diff", {
                 header: "Cambios",
-                cell: (info) => <div className="text-secondary">{info.getValue()}</div>,
+                cell: (info) => {
+                    const value = info.getValue();
+                    const row = info.row.original;
+                    
+                    if (!value || value === "Sin cambios") {
+                        return <div className="text-secondary text-sm">Sin cambios</div>;
+                    }
+                    
+                    const diff = row.operation === "CREATE" 
+                        ? Object.entries(info.row.original.diffRaw?.created || {})
+                        : row.operation === "UPDATE"
+                        ? Object.entries(info.row.original.diffRaw?.changed || {})
+                        : Object.entries(info.row.original.diffRaw?.removed || {});
+                    
+                    if (diff.length === 0) {
+                        return <div className="text-secondary text-sm">Sin cambios</div>;
+                    }
+                    
+                    return (
+                        <div className="space-y-1">
+                            {diff.map(([key, val], idx) => {
+                                if (key === "id_machinery" || key === "id_tracker_sheet") return null;
+                                
+                                return (
+                                    <div key={idx} className="flex items-start gap-2">
+                                        <span className="text-primary text-sm">
+                                            {key}: 
+                                        </span>
+                                        <span className="text-secondary text-sm">
+                                            {row.operation === "UPDATE" 
+                                                ? `${val.from ?? "null"} → ${val.to ?? "null"}`
+                                                : `${val ?? "null"}`
+                                            }
+                                        </span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    );
+                },
             }),
         ],
         []
@@ -149,11 +198,12 @@ const page = () => {
         return data.filter((item) => {
             const matchesGlobal =
                 item.actor?.toLowerCase().includes(globalFilter.toLowerCase()) ||
-                item.feature?.toLowerCase().includes(globalFilter.toLowerCase()) ||
+                item.module?.toLowerCase().includes(globalFilter.toLowerCase()) ||
+                item.submodule?.toLowerCase().includes(globalFilter.toLowerCase()) ||
                 item.operation?.toLowerCase().includes(globalFilter.toLowerCase());
 
             const matchesDate = filters.date
-                ? item.rawDate === filters.date // ✅ comparar con rawDate
+                ? item.rawDate === filters.date
                 : true;
 
             const matchesAction =
@@ -185,7 +235,7 @@ const page = () => {
                                 <FiSearch className="text-secondary w-4 h-4 mr-2" />
                                 <input
                                     type="text"
-                                    placeholder="Buscar por usuario, funcionalidad u operación"
+                                    placeholder="Buscar por usuario, módulo u operación"
                                     value={globalFilter}
                                     onChange={(e) => setGlobalFilter(e.target.value)}
                                     className="flex-1 outline-none"
