@@ -45,17 +45,17 @@ const ScheduleMaintenanceModal = ({
   // Información de la solicitud (solo lectura)
   const requestInfo = request
     ? {
-        consecutiveNumber: request.id || "N/A",
-        requestDate: request.request_date
-          ? new Date(request.request_date).toLocaleString("es-ES")
-          : "N/A",
-        requester: request.requester || "N/A",
-        serialNumber: request.serial_number || "N/A",
-        machineName: request.machine_name || "N/A",
-        status: request.status || "N/A",
-        maintenanceType: request.maintenance_type || "N/A",
-        priority: request.priority || "N/A",
-      }
+      consecutiveNumber: request.id || "N/A",
+      requestDate: request.request_date
+        ? new Date(request.request_date).toLocaleString("es-ES")
+        : "N/A",
+      requester: request.requester || "N/A",
+      serialNumber: request.serial_number || "N/A",
+      machineName: request.machine_name || "N/A",
+      status: request.status || "N/A",
+      maintenanceType: request.maintenance_type || "N/A",
+      priority: request.priority || "N/A",
+    }
     : null;
 
   // Cargar mantenimientos programados cuando se abre el modal
@@ -206,9 +206,15 @@ const ScheduleMaintenanceModal = ({
     setErrorMessage("");
 
     try {
-      const scheduledDateTime = new Date(
-        `${data.scheduleDate}T${data.scheduleTime}:00`
-      );
+      // Crear fecha/hora en formato local
+      const year = data.scheduleDate.split('-')[0];
+      const month = data.scheduleDate.split('-')[1];
+      const day = data.scheduleDate.split('-')[2];
+      const hours = data.scheduleTime.split(':')[0];
+      const minutes = data.scheduleTime.split(':')[1];
+
+      // Crear fecha con componentes específicos para evitar problemas de timezone
+      const scheduledDateTime = new Date(year, month - 1, day, hours, minutes, 0);
       const now = new Date();
 
       if (scheduledDateTime <= now) {
@@ -217,20 +223,31 @@ const ScheduleMaintenanceModal = ({
 
       const availabilityCheck = validateTechnicianAvailability(
         data.technician,
-        `${data.scheduleDate}T${data.scheduleTime}:00`
+        scheduledDateTime.toISOString()
       );
 
       if (availabilityCheck !== true) {
         throw new Error(availabilityCheck);
       }
 
+      // Convertir a UTC para el envío
+      const utcDate = new Date(Date.UTC(
+        scheduledDateTime.getFullYear(),
+        scheduledDateTime.getMonth(),
+        scheduledDateTime.getDate(),
+        scheduledDateTime.getHours(),
+        scheduledDateTime.getMinutes(),
+        0
+      ));
+
       const payload = {
-        scheduled_at: `${data.scheduleDate}T${data.scheduleTime}:00Z`,
+        scheduled_at: utcDate.toISOString(),
         assigned_technician: parseInt(data.technician),
         details: data.maintenanceDetails.trim(),
         maintenance_type: parseInt(data.maintenanceType),
       };
 
+      console.log("Enviando payload:", payload); // Para debug
       await onSubmit(payload);
 
       setShowSuccessModal(true);
@@ -241,14 +258,21 @@ const ScheduleMaintenanceModal = ({
         setUseSuggestions(false);
       }, 2000);
     } catch (error) {
+      console.error("Error completo:", error); // Para debug
       let errorMsg = "Error al programar el mantenimiento";
 
-      if (error.response?.status === 422) {
+      // Verificar si el error viene del backend
+      if (error.response?.data?.details && typeof error.response.data.details === 'string') {
+        // Error del servidor (como el error de 'scheduling')
+        errorMsg = "Error en el servidor: " + error.response.data.details;
+      } else if (error.response?.status === 422) {
         const details = error.response.data?.details;
         if (details?.assigned_technician) {
           errorMsg = "El técnico no está disponible en esa fecha y hora";
         } else if (details?.scheduled_at) {
           errorMsg = details.scheduled_at[0];
+        } else if (details?.id_maintenance_request) {
+          errorMsg = details.id_maintenance_request[0];
         } else if (error.response.data?.message) {
           errorMsg = error.response.data.message;
         }
