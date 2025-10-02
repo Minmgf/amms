@@ -51,14 +51,12 @@ export default function MachineryDetailsModal({
 
     // Tipo principal
     getMachineryType().then((data) => {
-      console.log("machinery_type (GET /types/list/active/2/):", data);
       const found = data?.find((t) => t.id === selectedMachine.machinery_type);
       setTypeName(found?.name || "");
     });
 
     // Tipo secundario
     getMachinerySecondaryType().then((data) => {
-      console.log("machinery_secondary_type (GET /types/list/active/3/):", data);
       const found = data?.find(
         (t) => t.id === selectedMachine.machinery_secondary_type
       );
@@ -75,7 +73,6 @@ export default function MachineryDetailsModal({
     // Modelo
     if (selectedMachine.id_model && selectedMachine.brand) {
       getModelsByBrandId(selectedMachine.brand).then((data) => {
-        console.log(`models (GET /models/list/active/${selectedMachine.brand}/):`, data);
         const found = data?.find((m) => m.id === selectedMachine.id_model);
         setModelName(found?.name || "");
       });
@@ -83,7 +80,6 @@ export default function MachineryDetailsModal({
 
     // Estado operacional
     getMachineryStatus().then((data) => {
-      console.log("machinery_operational_status (GET /statues/list/2/):", data);
       const found = data?.find(
         (s) => s.id === selectedMachine.machinery_operational_status
       );
@@ -98,15 +94,6 @@ export default function MachineryDetailsModal({
         setCityName(found?.name || "");
       });
     }
-  }, [selectedMachine]);
-
-  useEffect(() => {
-    if (!selectedMachine?.id_machinery) return;
-
-    getGeneralData(selectedMachine.id_machinery).then((response) => {
-      console.log("Ficha general recibida desde la API:", response);
-      // ...tu lógica para setear estados...
-    });
   }, [selectedMachine]);
 
   useEffect(() => {
@@ -147,8 +134,6 @@ export default function MachineryDetailsModal({
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) onClose?.();
   };
-
-  
 
   return (
     <div
@@ -270,7 +255,7 @@ export default function MachineryDetailsModal({
                 </div>
               </div>
 
-              {/* NUEVO: Tracker Data Sheet y Usage Information */}
+              {/* Tracker Data Sheet y Usage Information */}
               <div className="grid md:grid-cols-2 gap-6 mt-8">
                 <div className="border rounded-xl p-4 border-primary">
                   <h4 className="font-semibold mb-3 text-primary">Datos del Rastreador</h4>
@@ -290,7 +275,7 @@ export default function MachineryDetailsModal({
                     />
                     <Row
                       label="Estado de uso"
-                      value={usageInfo?.usage_condition || "—"} // Si necesitas el nombre, consulta el catálogo
+                      value={usageInfo?.usage_condition || "—"}
                     />
                     <Row
                       label="Horas usadas"
@@ -393,7 +378,7 @@ export default function MachineryDetailsModal({
                 </div>
               </div>
 
-              {/* NUEVO: Cabina, Emisiones y Aire Acondicionado */}
+              {/Cabina, Emisiones y Aire Acondicionado */}
               <div className="border rounded-xl p-4 border-primary mb-6">
                 <h3 className="font-semibold text-lg mb-3 text-primary">Cabina, Emisiones y Aire Acondicionado</h3>
                 <div className="flex flex-col gap-3">
@@ -412,7 +397,7 @@ export default function MachineryDetailsModal({
                 </div>
               </div>
 
-              {/* NUEVO: Otros */}
+              {/* Otros */}
               <div className="border rounded-xl p-4 border-primary mb-6">
                 <h3 className="font-semibold text-lg mb-3 text-primary">Otros</h3>
                 <div className="flex flex-col gap-3">
@@ -466,7 +451,7 @@ export default function MachineryDetailsModal({
                   )}
                 </ul>
               </div>
-              {/* Mantenimiento Periódico (sin cambios) */}
+              {/* Mantenimiento Periódico */}
               <div className="border rounded-xl p-4 border-primary">
                 <h3 className="text-secondary font-semibold text-lg mb-3">
                   Mantenimiento Periódico
@@ -755,7 +740,6 @@ export default function MachineryDetailsModal({
   );
 }
 
-// Ejemplo para el componente Row:
 function Row({ label, value, unit }) {
   return (
     <div className="flex justify-between">
