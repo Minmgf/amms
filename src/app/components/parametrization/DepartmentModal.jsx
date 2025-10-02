@@ -4,6 +4,7 @@ import { FiX, FiEdit3 } from 'react-icons/fi';
 import JobModal from './JobModal'; // Add this import
 import { changeDepartmentStatus, getChargesDepartments, createJob, updateJob } from '@/services/parametrizationService';
 import { SuccessModal, ErrorModal } from '@/app/components/shared/SuccessErrorModal';
+import PermissionGuard from '@/app/(auth)/PermissionGuard';
 
 const DepartmentModal = ({
   isOpen,
@@ -58,7 +59,7 @@ const DepartmentModal = ({
         department: departmentData.department || departmentData.name || '',
         categoryName: departmentData.department || departmentData.name || '',
         description: departmentData.description || '',
-        isActive: departmentData.status === 'Activo',
+        isActive: departmentData.idStatues === 1,
         jobTitles: departmentData.jobTitles || []
       });
 
@@ -129,14 +130,16 @@ const DepartmentModal = ({
           id: job.id_employee_charge,
           name: job.name,
           description: job.description,
-          status: job.estado === 'Activo' ? 'Active' : 'Inactive'
+          idStatues: job.id_statues,
+          status: job.estado
         })));
       } else if (response.data) {
         setJobTitles(response.data.map(job => ({
           id: job.id_job || job.id,
           name: job.name,
           description: job.description,
-          status: job.status === 'Activo' ? 'Active' : 'Inactive'
+          idStatues: job.id_statues,
+          status: job.estado
         })));
       } else {
         setJobTitles([]);
@@ -148,6 +151,7 @@ const DepartmentModal = ({
   };
 
 
+
   const validateForm = () => {
     const newErrors = {};
 
@@ -157,7 +161,7 @@ const DepartmentModal = ({
     } else if (mode === 'add') {
       // Validación de unicidad para modo add
       const isDuplicate = existingDepartments.some(dept =>
-        dept.department.toLowerCase().trim() === formData.categoryName.toLowerCase().trim()
+        dept.department && dept.department.toLowerCase().trim() === formData.categoryName.toLowerCase().trim()
       );
       if (isDuplicate) {
         newErrors.categoryName = 'This department name already exist';
@@ -165,6 +169,7 @@ const DepartmentModal = ({
     } else if (mode === 'edit') {
       // Validación de unicidad para modo edit (excluir el departamento actual)
       const isDuplicate = existingDepartments.some(dept =>
+        dept.department && 
         dept.department.toLowerCase().trim() === formData.categoryName.toLowerCase().trim() &&
         dept.id !== departmentData.id
       );
@@ -217,7 +222,7 @@ const DepartmentModal = ({
           id: jobTitles.length > 0 ? Math.max(...jobTitles.map(j => j.id)) + 1 : 1,
           name: jobData.jobTitle,
           description: jobData.description,
-          status: jobData.isActive ? 'Active' : 'Inactive'
+          status: jobData.isActive ? 'Activo' : 'Inactivo'
         };
         setJobTitles(prev => [...prev, newJob]);
       } else {
@@ -250,7 +255,7 @@ const DepartmentModal = ({
               ...job,
               name: jobData.jobTitle,
               description: jobData.description,
-              status: jobData.isActive ? 'Active' : 'Inactive'
+              status: jobData.isActive ? 'Activo' : 'Inactivo'
             }
             : job
         ));
@@ -290,7 +295,7 @@ const DepartmentModal = ({
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-900">
-              {isAddMode ? 'Add department' : 'Modify Department'}
+              {isAddMode ? 'Añadir departamento' : 'Modificar departamento'}
             </h2>
             <button
               onClick={onClose}
@@ -307,7 +312,7 @@ const DepartmentModal = ({
               <div>
                 <label className={`block text-sm font-medium mb-2 ${errors.categoryName ? 'text-red-500' : 'text-gray-700'
                   }`}>
-                  Department name
+                  Nombre departamento
                 </label>
                 <input
                   type="text"
@@ -331,102 +336,116 @@ const DepartmentModal = ({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
+                  Descripción
                 </label>
                 <textarea
+                  cols={30}
+                  rows={4}
+                  maxLength={200} // Límite de 200 caracteres
                   value={formData.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
-                  placeholder=""
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  placeholder="Enter description"
                 />
               </div>
             </div>
 
             {/* Toggle Switch - Solo visible en modo edit */}
             {!isAddMode && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Activate/Deactivate
-                </label>
-                <button
-                  onClick={() => handleToggleStatus()}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-                    ${formData.isActive ? 'bg-green-500' : 'bg-gray-200'}
-                  `}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform
-                      ${formData.isActive ? 'translate-x-6' : 'translate-x-1'}
+              <PermissionGuard permission={65}>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Activar/Desactivar
+                  </label>
+                  <button
+                    onClick={() => handleToggleStatus()}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                      ${formData.isActive ? 'bg-green-500' : 'bg-gray-200'}
                     `}
-                  />
-                </button>
-              </div>
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                        ${formData.isActive ? 'translate-x-6' : 'translate-x-1'}
+                      `}
+                    />
+                  </button>
+                </div>
+              </PermissionGuard>
             )}
 
 
 
             {/* Jobs Titles List Section */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">
-                Jobs Titles List
-              </h3>
+            <PermissionGuard permission={68}>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">
+                  Lista de puestos de trabajo
+                </h3>
 
-              <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
-                {/* Table Header */}
-                <div className="bg-gray-50 border-b border-gray-200">
-                  <div className="grid grid-cols-4 gap-4 px-4 py-3">
-                    <div className="text-sm font-medium text-gray-700">Job name</div>
-                    <div className="text-sm font-medium text-gray-700">Description</div>
-                    <div className="text-sm font-medium text-gray-700">Status</div>
-                    <div className="text-sm font-medium text-gray-700">Actions</div>
+                <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
+                  {/* Table Header */}
+                  <div className="bg-gray-50 border-b border-gray-200">
+                    <div className="grid grid-cols-4 gap-4 px-4 py-3">
+                      <div className="text-sm font-medium text-gray-700">Nombre puesto</div>
+                      <div className="text-sm font-medium text-gray-700">Descripción</div>
+                      <div className="text-sm font-medium text-gray-700">Estado</div>
+                      <div className="text-sm font-medium text-gray-700">Acciones</div>
+                    </div>
+                  </div>
+
+
+                  {/* Table Body */}
+
+                  <div className="bg-white min-h-[120px]">
+                    {hasJobTitles ? (
+                      jobTitles.map((job) => (
+                        <div key={job.id} className="grid grid-cols-4 gap-4 px-4 py-3 border-b border-gray-100 last:border-b-0">
+                          <div className="text-sm text-gray-900">{job.name}</div>
+                          <div className="text-sm text-gray-600">{job.description}</div>
+                          <div>
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${job.idStatues === 1
+                                ? 'bg-green-100 text-green-800'
+                                : job.idStatues === 2
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}>
+                              {job.status}
+                            </span>
+                          </div>
+                          <div>
+                            <PermissionGuard permission={67}>
+                              <button
+                                onClick={() => handleEditJob(job.id)}
+                                className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md transition-colors"
+                              >
+                                <FiEdit3 className="w-3 h-3 mr-1.5" />
+                                Editar
+                              </button>
+                            </PermissionGuard>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="flex items-center justify-center h-32">
+                        <p className="text-sm text-gray-500">
+                          No hay puestos registrados para este departamento
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Table Body */}
-                <div className="bg-white min-h-[120px]">
-                  {hasJobTitles ? (
-                    jobTitles.map((job) => (
-                      <div key={job.id} className="grid grid-cols-4 gap-4 px-4 py-3 border-b border-gray-100 last:border-b-0">
-                        <div className="text-sm text-gray-900">{job.name}</div>
-                        <div className="text-sm text-gray-600">{job.description}</div>
-                        <div>
-                          <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${job.status === 'Active'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-pink-100 text-pink-800'
-                            }`}>
-                            {job.status}
-                          </span>
-                        </div>
-                        <div>
-                          <button
-                            onClick={() => handleEditJob(job.id)}
-                            className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md transition-colors"
-                          >
-                            <FiEdit3 className="w-3 h-3 mr-1.5" />
-                            Edit
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="flex items-center justify-center h-32">
-                      <p className="text-sm text-gray-500">
-                        There are no positions registered for this department.
-                      </p>
-                    </div>
-                  )}
-                </div>
+                {/* Add Job Button */}
+                <PermissionGuard permission={66}>
+                  <button
+                    onClick={handleAddJob}
+                    className="px-6 py-2 btn-theme btn-secondary text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
+                  >
+                    Añadir puesto
+                  </button>
+                </PermissionGuard>
               </div>
-
-              {/* Add Job Button */}
-              <button
-                onClick={handleAddJob}
-                className="px-6 py-2 btn-theme btn-secondary text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
-              >
-                Add Job
-              </button>
-            </div>
+            </PermissionGuard>
           </div>
 
           {/* Footer */}
@@ -435,7 +454,7 @@ const DepartmentModal = ({
               onClick={handleSave}
               className="px-8 py-3 btn-theme btn-primary text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              Save
+              Guardar
             </button>
           </div>
         </div>

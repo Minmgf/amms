@@ -69,7 +69,7 @@ const StatusListModal = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
           <h2 className="text-xl font-semibold text-gray-900">
-            <span className="text-gray-500">Category: </span>
+            <span className="text-gray-500">Categoría: </span>
             <span className="text-gray-900">{categoryName}</span>
           </h2>
           <button
@@ -89,16 +89,16 @@ const StatusListModal = ({
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
-                      Type name
+                      Estado
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
-                      Description
+                      Descripción
                     </th>
                     {/* <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
                       Status
                     </th> */}
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                      Actions
+                      Acciones
                     </th>
                   </tr>
                 </thead>
@@ -107,13 +107,13 @@ const StatusListModal = ({
                   {loading ? (
                     <tr>
                       <td colSpan="4" className="px-6 py-8 text-center text-gray-500">
-                        Loading...
+                        Cargando...
                       </td>
                     </tr>
                   ) : modalData.length === 0 ? (
                     <tr>
                       <td colSpan="4" className="px-6 py-8 text-center text-gray-500">
-                        No data available
+                        Datos no disponibles
                       </td>
                     </tr>
                   ) : (
@@ -160,13 +160,15 @@ const StatusListModal = ({
                           </td>
                           */}
                           <td className="px-6 py-4 text-sm">
-                            <button
-                              onClick={() => handleEdit(item.id)}
-                              className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-md transition-colors"
-                            >
-                              <FiEdit3 className="w-3 h-3 mr-1.5" />
-                              Edit
-                            </button>
+                            <permissionGuard permission={30}>
+                              <button
+                                onClick={() => handleEdit(item.id)}
+                                className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-md transition-colors"
+                              >
+                                <FiEdit3 className="w-3 h-3 mr-1.5" />
+                                Editar
+                              </button>
+                            </permissionGuard>
                           </td>
                         </tr>
                       );
@@ -177,15 +179,16 @@ const StatusListModal = ({
             </div>
           </div>
 
-          {/* Add Parameter */}
+          {/* No se puede ñadarnuevo estado 
           <div className="flex justify-center">
             <button
               onClick={onAddParameter}
               className="btn-theme btn-primary relative"
             >
-              Add Parameter
+              Añadir parámetro
             </button>
           </div>
+          */}
         </div>
       </div>
     </div>

@@ -42,7 +42,8 @@ const SuccessModal = ({ isOpen, onClose, title = "Success", message = "Lorem ips
   };
 
   return (
-    <div 
+    <div
+      id="success-modal" 
       className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4"
       onClick={handleOverlayClick}
       data-modal="success"
@@ -76,6 +77,7 @@ const SuccessModal = ({ isOpen, onClose, title = "Success", message = "Lorem ips
           
           {/* Botón */}
           <button
+            aria-label="Continue Button"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -99,7 +101,7 @@ const SuccessModal = ({ isOpen, onClose, title = "Success", message = "Lorem ips
               cursor: 'pointer'
             }}
           >
-            Continue
+            Continuar
           </button>
         </div>
       </div>
@@ -108,7 +110,13 @@ const SuccessModal = ({ isOpen, onClose, title = "Success", message = "Lorem ips
 };
 
 // Modal de Error
-const ErrorModal = ({ isOpen, onClose, title = "Error", message = "Lorem ipsum dolor sit amet, consectetur adipiscing elit." }) => {
+const ErrorModal = ({
+  isOpen,
+  onClose,
+  title = "Error",
+  message = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+  buttonText = "Intentar de nuevo", // <-- default
+}) => {
   
   useEffect(() => {
     if (isOpen) {
@@ -148,7 +156,8 @@ const ErrorModal = ({ isOpen, onClose, title = "Error", message = "Lorem ipsum d
   };
 
   return (
-    <div 
+    <div
+      id="error-modal" 
       className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4"
       onClick={handleOverlayClick}
       data-modal="error"
@@ -182,10 +191,10 @@ const ErrorModal = ({ isOpen, onClose, title = "Error", message = "Lorem ipsum d
           
           {/* Botón */}
           <button
+            aria-label="Try Again Button"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              console.log('Error button clicked'); // Debug
               onClose();
             }}
             onMouseDown={(e) => {
@@ -205,7 +214,7 @@ const ErrorModal = ({ isOpen, onClose, title = "Error", message = "Lorem ipsum d
               cursor: 'pointer'
             }}
           >
-            Try again
+            {buttonText}
           </button>
         </div>
       </div>
@@ -217,10 +226,10 @@ const ConfirmModal = ({
   isOpen,
   onClose,
   onConfirm,
-  title = "Confirm Action",
-  message = "Are you sure you want to continue?",
-  confirmText = "Confirm",
-  cancelText = "Cancel",
+  title = "Confirmar Acción",
+  message = "Esta seguro que quiere continuar?",
+  confirmText = "Confirmar",
+  cancelText = "Cancelar",
   confirmColor = "btn-error",
   cancelColor = "btn-secondary",
 }) => {
@@ -240,7 +249,8 @@ const ConfirmModal = ({
   };
 
   return (
-    <div 
+    <div
+      id="confirm-modal" 
       className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4"
       onClick={handleOverlayClick}
       style={{ zIndex: 9999 }}
@@ -280,6 +290,7 @@ const ConfirmModal = ({
           </p>
           <div className="flex gap-3">
             <button
+              aria-label="Cancel Button"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -302,6 +313,7 @@ const ConfirmModal = ({
               {cancelText}
             </button>
             <button
+              aria-label="Confirm Button"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();

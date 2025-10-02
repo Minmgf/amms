@@ -93,7 +93,7 @@ const ChangePasswordModal = ({ isOpen, onClose, onSubmit }) => {
              style={{ zIndex: 70 }}>
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">Change Password</h2>
+            <h2 className="text-lg font-medium text-gray-900">Cambiar Contraseña</h2>
             <button
               onClick={handleCancel}
               className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -106,18 +106,20 @@ const ChangePasswordModal = ({ isOpen, onClose, onSubmit }) => {
             {/* Current Password */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Current Password
+                Contraseña actual
               </label>
               <div className="relative">
                 <input
+                  aria-label="Actual Password Input"
                   type={showPasswords.current ? "text" : "password"}
                   {...register("old_password", {
-                    required: "Current password is required",
+                    required: "La contraseña actual es requerida",
                   })}
                   placeholder="Enter your current password"
                   className="w-full pr-12 pl-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-700 placeholder-gray-200"
                 />
                 <button
+                  aria-label="Show Actual Password Button"
                   type="button"
                   onClick={() => togglePasswordVisibility("current")}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
@@ -140,27 +142,29 @@ const ChangePasswordModal = ({ isOpen, onClose, onSubmit }) => {
             {/* New Password */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                New Password
+                Nueva contraseña
               </label>
               <div className="relative">
                 <input
+                  aria-label="New Password Input"
                   type={showPasswords.new ? "text" : "password"}
                   {...register("new_password", {
-                    required: "New password is required",
+                    required: "La nueva contraseña es requerida",
                     validate: {
                       length: (value) =>
-                        value.length >= 12 || "At least 12 characters required",
+                        value.length >= 12 || "Al menos 12 caracteres son requeridos",
                       uppercase: (value) =>
                         /[A-Z]/.test(value) ||
-                        "At least one uppercase letter required",
+                        "Al menos una letra maúscula es requerida",
                       number: (value) =>
-                        /\d/.test(value) || "At least one number required",
+                        /\d/.test(value) || "Al menos un número es requerido",
                     },
                   })}
-                  placeholder="Enter your new password"
+                  placeholder="Ingrese su nueva contraseña"
                   className="w-full pr-12 pl-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-700 placeholder-gray-200"
                 />
                 <button
+                  aria-label="Show New Password Button"
                   type="button"
                   onClick={() => togglePasswordVisibility("new")}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
@@ -174,7 +178,7 @@ const ChangePasswordModal = ({ isOpen, onClose, onSubmit }) => {
               </div>
               <div className="mt-3">
                 <p className="text-xs font-medium text-gray-600 mb-2">
-                  Password Requirements
+                  Requisitos para la contraseña
                 </p>
                 <div className="space-y-1">
                   <div className="flex items-center text-xs">
@@ -191,7 +195,7 @@ const ChangePasswordModal = ({ isOpen, onClose, onSubmit }) => {
                           : "text-red-600"
                       }
                     >
-                      At least 12 characters
+                      Al menos 12 caracteres.
                     </span>
                     {passwordRequirements.length && (
                       <AiOutlineCheck className="w-3 h-3 text-green-600 ml-1" />
@@ -211,7 +215,7 @@ const ChangePasswordModal = ({ isOpen, onClose, onSubmit }) => {
                           : "text-red-600"
                       }
                     >
-                      At least one uppercase letter
+                      Al menos una letra mayúscula.
                     </span>
                     {passwordRequirements.uppercase && (
                       <AiOutlineCheck className="w-3 h-3 text-green-600 ml-1" />
@@ -231,7 +235,7 @@ const ChangePasswordModal = ({ isOpen, onClose, onSubmit }) => {
                           : "text-red-600"
                       }
                     >
-                      At least one number
+                      Al menos un número.
                     </span>
                     {passwordRequirements.number && (
                       <AiOutlineCheck className="w-3 h-3 text-green-600 ml-1" />
@@ -244,20 +248,22 @@ const ChangePasswordModal = ({ isOpen, onClose, onSubmit }) => {
             {/* Confirm New Password */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Confirm New Password
+                Confirmar nueva contraseña
               </label>
               <div className="relative">
                 <input
+                  aria-label="Confirm New Password Input"
                   type={showPasswords.confirm ? "text" : "password"}
                   {...register("confirm_password", {
-                    required: "Please confirm your new password",
+                    required: "Por favor confirma la nueva contraseña",
                     validate: (value) =>
-                      value === new_password || "Passwords do not match",
+                      value === new_password || "Las contraseñas no coinciden",
                   })}
-                  placeholder="Confirm your new password"
+                  placeholder="Confirma tu nueva contraseña"
                   className="w-full pr-12 pl-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-700 placeholder-gray-200"
                 />
                 <button
+                  aria-label="Show Confirm New Password Button"
                   type="button"
                   onClick={() => togglePasswordVisibility("confirm")}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
@@ -280,16 +286,18 @@ const ChangePasswordModal = ({ isOpen, onClose, onSubmit }) => {
             {/* Buttons */}
             <div className="flex gap-2 pt-2">
               <button
+                aria-label="Cancel Button"
                 onClick={handleCancel}
                 className="flex-1 px-4 py-2.5 bg-red-600 text-white font-medium rounded-md hover:bg-red-700 transition-colors text-sm"
               >
-                Cancel
+                Cancelar
               </button>
               <button
+                aria-label="Change Password Button"
                 onClick={handleSubmit(onSubmitForm)}
                 className="flex-1 px-4 py-2.5 bg-gray-600 text-white font-medium rounded-md hover:bg-gray-700 transition-colors text-sm"
               >
-                Change Password
+                Cambiar contraseña
               </button>
             </div>
           </div>
@@ -298,13 +306,13 @@ const ChangePasswordModal = ({ isOpen, onClose, onSubmit }) => {
       <SuccessModal
         isOpen={successOpen}
         onClose={() => setSuccessOpen(false)}
-        title="Successfully Completed"
+        title="Completado con éxito"
         message={modalMessage}
       />
       <ErrorModal
         isOpen={errorOpen}
         onClose={() => setErrorOpen(false)}
-        title="Error Submitting data"
+        title="Error al enviar los datos"
         message={modalMessage}
       />
     </>

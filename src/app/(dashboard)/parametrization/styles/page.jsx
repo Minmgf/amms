@@ -1,10 +1,12 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { FiEdit3, FiBell, FiPlus, FiX } from 'react-icons/fi';
+import { FiEdit3, FiBell, FiPlus, FiX, FiRefreshCw, FiSave } from 'react-icons/fi';
 import NavigationMenu from '../../../components/parametrization/ParameterNavigation';
 import ColorPickerModal from '../../../components/parametrization/ColorPickerModal';
 import NewThemeModal from '../../../components/parametrization/NewThemeModal';
 import { useTheme } from '@/contexts/ThemeContext';
+import PermissionGuard from '@/app/(auth)/PermissionGuard';
+import { usePermissions } from "@/contexts/PermissionsContext";
 
 // Enhanced Color Picker Component with Modal
 const ColorPicker = ({ color, onChange, label, onOpenColorPicker }) => (
@@ -38,8 +40,9 @@ const SelectField = ({ value, onChange, options, label }) => (
 
 // Main Component
 const StylesParameterizationView = () => {
-  const [activeMenuItem, setActiveMenuItem] = useState('Styles');
-  
+  const [activeMenuItem, setActiveMenuItem] = useState('Estilos');
+  const { hasPermission } = usePermissions();
+  const canViewStyles = hasPermission(75);
   // Usar el contexto de tema global
   const {
     currentTheme,
@@ -49,12 +52,15 @@ const StylesParameterizationView = () => {
     changeTheme,
     createCustomTheme,
     updateTheme,
-    deleteCustomTheme
+    reloadThemes,
+    isLoading,
+    error
   } = useTheme();
   
   // Estados locales para la edición
-  const [editingTheme, setEditingTheme] = useState(null);
   const [tempStyleParams, setTempStyleParams] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
   
   // Modal states
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
@@ -73,15 +79,22 @@ const StylesParameterizationView = () => {
         textColor: theme.colors.text,
         paragraphTextColor: theme.colors.textSecondary,
         backgroundColor: theme.colors.background,
-        surfaceColor: theme.colors.surface, // ← Agregar color de superficie
-        primaryButton: theme.colors.accent,
+        surfaceColor: theme.colors.surface,
+        primaryButton: theme.colors.primary,
         secondaryButton: theme.colors.secondary,
+        accentColor: theme.colors.accent,
+        borderColor: theme.colors.border,
+        hoverColor: theme.colors.hover,
+        errorColor: theme.colors.error,
+        successColor: theme.colors.success,
+        warningColor: theme.colors.warning,
         titlesTextSize: theme.typography.fontSize.xl,
         paragraphTextSize: theme.typography.fontSize.base,
         fontType: theme.typography.fontFamily
       });
     }
   }, [currentTheme, getCurrentTheme]);
+
 
   const handleMenuItemChange = (item) => {
     setActiveMenuItem(item);
@@ -94,55 +107,94 @@ const StylesParameterizationView = () => {
     }));
   };
 
-  const handleSaveChanges = () => {
-    console.log('🎨 Guardando cambios del tema:', currentTheme, tempStyleParams);
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
+    setSaveMessage('');
     
-    // Convertir parámetros temporales al formato del tema
-    const themeData = {
-      colors: {
-        ...getCurrentTheme().colors,
-        text: tempStyleParams.textColor,
-        textSecondary: tempStyleParams.paragraphTextColor,
-        background: tempStyleParams.backgroundColor,
-        surface: tempStyleParams.surfaceColor, // ← Incluir color de superficie
-        accent: tempStyleParams.primaryButton,
-        secondary: tempStyleParams.secondaryButton,
-      },
-      typography: {
-        ...getCurrentTheme().typography,
-        fontFamily: tempStyleParams.fontType,
-        fontSize: {
-          ...getCurrentTheme().typography.fontSize,
-          xl: tempStyleParams.titlesTextSize,
-          base: tempStyleParams.paragraphTextSize,
+    try {
+      console.log('💾 Guardando cambios del tema:', currentTheme, tempStyleParams);
+      
+      // Convertir parámetros temporales al formato del tema
+      const themeData = {
+        name: getAllThemes()[currentTheme]?.name || 'Tema Actualizado',
+        description: getAllThemes()[currentTheme]?.description || 'Tema personalizado actualizado',
+        colors: {
+          ...getCurrentTheme().colors,
+          text: tempStyleParams.textColor,
+          textSecondary: tempStyleParams.paragraphTextColor,
+          background: tempStyleParams.backgroundColor,
+          surface: tempStyleParams.surfaceColor,
+          primary: tempStyleParams.primaryButton,
+          secondary: tempStyleParams.secondaryButton,
+          accent: tempStyleParams.accentColor,
+          border: tempStyleParams.borderColor,
+          hover: tempStyleParams.hoverColor,
+          error: tempStyleParams.errorColor,
+          success: tempStyleParams.successColor,
+          warning: tempStyleParams.warningColor,
+        },
+        typography: {
+          ...getCurrentTheme().typography,
+          fontFamily: tempStyleParams.fontType,
+          fontSize: {
+            ...getCurrentTheme().typography.fontSize,
+            xl: tempStyleParams.titlesTextSize,
+            base: tempStyleParams.paragraphTextSize,
+          }
         }
+      };
+
+      
+      // Si es un tema de la API (empieza con 'api_'), actualizarlo
+      if (currentTheme && currentTheme.startsWith('api_')) {
+        await updateTheme(currentTheme, themeData, 1); // responsibleUser = 1
+        setSaveMessage('✅ Tema actualizado exitosamente en el servidor');
+      } else {
+        // Crear un nuevo tema en la API
+        await createCustomTheme(themeData, 1);
+        setSaveMessage('✅ Nuevo tema creado y guardado en el servidor');
       }
-    };
-    
-    // Si es un tema personalizado, actualizarlo. Si no, crear uno nuevo
-    const allThemes = getAllThemes();
-    const isCustomTheme = !['claro', 'personalizado'].includes(currentTheme);
-    
-    if (isCustomTheme) {
-      updateTheme(currentTheme, themeData);
-      alert('¡Tema actualizado exitosamente! Los cambios se han aplicado globalmente.');
-    } else {
-      // Crear un nuevo tema personalizado basado en el actual
-      const newThemeName = `${allThemes[currentTheme].name}_personalizado_${Date.now()}`;
-      const newThemeKey = newThemeName.toLowerCase().replace(/\s+/g, '_');
       
-      createCustomTheme(newThemeKey, {
-        name: newThemeName,
-        ...themeData
-      });
+      // Limpiar el mensaje después de 3 segundos
+      setTimeout(() => {
+        setSaveMessage('');
+      }, 3000);
       
-      alert(`¡Nuevo tema "${newThemeName}" creado y aplicado! Los cambios se reflejan en toda la aplicación.`);
+    } catch (error) {
+      console.error('❌ Error guardando tema:', error);
+      setSaveMessage('❌ Error guardando el tema en el servidor');
+      
+      // Limpiar mensaje de error después de 5 segundos
+      setTimeout(() => {
+        setSaveMessage('');
+      }, 5000);
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleThemeChange = (themeName) => {
+  const handleThemeChange = async (themeName) => {
     console.log('🔄 Cambiando tema global a:', themeName);
     changeTheme(themeName);
+  };
+
+  const handleRefreshThemes = async () => {
+    try {
+      console.log('🔄 Recargando temas desde la API...');
+      await reloadThemes();
+      setSaveMessage('✅ Temas recargados desde el servidor');
+      
+      setTimeout(() => {
+        setSaveMessage('');
+      }, 3000);
+    } catch (error) {
+      console.error('❌ Error recargando temas:', error);
+      setSaveMessage('❌ Error recargando temas desde el servidor');
+      
+      setTimeout(() => {
+        setSaveMessage('');
+      }, 5000);
+    }
   };
 
   // Color picker modal handlers
@@ -172,93 +224,105 @@ const StylesParameterizationView = () => {
     setIsNewThemeModalOpen(false);
   };
 
-  const handleSaveNewTheme = (newTheme) => {
-    console.log('🎨 Creando nuevo tema global:', newTheme);
-    
-    const themeKey = newTheme.name.toLowerCase().replace(/\s+/g, '_');
-    
-    // Convertir datos del modal al formato del sistema de temas
-    const themeData = {
-      colors: {
-        primary: newTheme.primaryColor || '#000000',
-        secondary: newTheme.secondaryColor || '#1f2937',
-        accent: newTheme.accentColor || '#3b82f6',
-        background: newTheme.backgroundColor || '#111827',
-        surface: newTheme.surfaceColor || '#1f2937',
-        text: newTheme.textColor || '#ffffff',
-        textSecondary: newTheme.textSecondaryColor || '#d1d5db',
-        border: newTheme.borderColor || '#374151',
-        hover: newTheme.hoverColor || '#374151',
-        error: '#ef4444',
-        success: '#10b981',
-        warning: '#f59e0b',
-      },
-      typography: {
-        fontFamily: newTheme.fontFamily || 'Inter, system-ui, sans-serif',
-        fontSize: {
-          xs: '0.75rem',
-          sm: '0.875rem',
-          base: newTheme.baseFontSize || '1rem',
-          lg: '1.125rem',
-          xl: newTheme.titleFontSize || '1.25rem',
-          '2xl': '1.5rem',
-          '3xl': '1.875rem',
+  const handleSaveNewTheme = async (newTheme) => {
+    try {
+      console.log('🎨 Creando nuevo tema en API:', newTheme);
+      
+      const themeData = {
+        name: newTheme.name,
+        description: newTheme.description || `Tema personalizado: ${newTheme.name}`,
+        colors: {
+          primary: newTheme.primaryColor || '#000000',
+          secondary: newTheme.secondaryColor || '#1f2937',
+          accent: newTheme.accentColor || '#3b82f6',
+          background: newTheme.backgroundColor || '#ffffff',
+          surface: newTheme.surfaceColor || '#f8fafc',
+          text: newTheme.textColor || '#1e293b',
+          textSecondary: newTheme.textSecondaryColor || '#64748b',
+          border: newTheme.borderColor || '#e2e8f0',
+          hover: newTheme.hoverColor || '#f1f5f9',
+          error: '#dc2626',
+          success: '#059669',
+          warning: '#d97706',
         },
-        fontWeight: {
-          normal: '400',
-          medium: '500',
-          semibold: '600',
-          bold: '700',
+        typography: {
+          fontFamily: newTheme.fontFamily || 'Inter, system-ui, sans-serif',
+          fontSize: {
+            xs: '0.75rem',
+            sm: '0.875rem',
+            base: newTheme.baseFontSize || '1rem',
+            lg: '1.125rem',
+            xl: newTheme.titleFontSize || '1.25rem',
+            '2xl': '1.5rem',
+            '3xl': '1.875rem',
+          },
+          fontWeight: {
+            normal: '400',
+            medium: '500',
+            semibold: '600',
+            bold: '700',
+          }
         }
-      },
-      spacing: {
-        xs: '0.25rem',
-        sm: '0.5rem',
-        md: '1rem',
-        lg: '1.5rem',
-        xl: '2rem',
-        '2xl': '3rem',
-      },
-      borderRadius: {
-        sm: '0.25rem',
-        md: '0.5rem',
-        lg: '0.75rem',
-        xl: '1rem',
-      }
-    };
-    
-    createCustomTheme(themeKey, {
-      name: newTheme.name,
-      ...themeData
-    });
-    
-    alert(`¡Tema "${newTheme.name}" creado y aplicado globalmente!`);
-  };
-
-  // Delete theme handler
-  const handleDeleteTheme = () => {
-    const themeNames = getThemeNames();
-    
-    if (themeNames.length <= 1) {
-      alert('No se puede eliminar el último tema');
-      return;
-    }
-    
-    // No permitir eliminar temas predefinidos
-    if (['claro', 'personalizado'].includes(currentTheme)) {
-      alert('No se pueden eliminar los temas predefinidos');
-      return;
-    }
-    
-    const confirmed = window.confirm(`¿Estás seguro de que quieres eliminar el tema "${getAllThemes()[currentTheme].name}"?`);
-    if (confirmed) {
-      deleteCustomTheme(currentTheme);
-      alert(`Tema eliminado exitosamente!`);
+      };
+      
+      await createCustomTheme(themeData, 1); // responsibleUser = 1
+      setSaveMessage(`✅ Tema "${newTheme.name}" creado exitosamente`);
+      
+      setTimeout(() => {
+        setSaveMessage('');
+      }, 3000);
+      
+    } catch (error) {
+      console.error('❌ Error creando tema:', error);
+      setSaveMessage('❌ Error creando el tema en el servidor');
+      
+      setTimeout(() => {
+        setSaveMessage('');
+      }, 5000);
     }
   };
 
-  const fontSizeOptions = ['10px', '12px', '14px', '16px', '18px', '20px'];
-  const fontTypeOptions = ['Inter, system-ui, sans-serif', 'Times New Roman', 'Arial', 'Helvetica', 'Georgia', 'Verdana', 'Poppins'];
+  const fontSizeOptions = ['0.75rem', '0.875rem', '1rem', '1.125rem', '1.25rem', '1.5rem'];
+  const fontTypeOptions = [
+    'Inter, system-ui, sans-serif', 
+    'Poppins, system-ui, sans-serif',
+    'Roboto, system-ui, sans-serif',
+    'Arial, sans-serif', 
+    'Helvetica, sans-serif', 
+    'Georgia, serif', 
+    'Times New Roman, serif',
+    'Verdana, sans-serif'
+  ];
+
+  // Mostrar loading si está cargando
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-lg mb-2">🎨 Cargando sistema de temas...</div>
+          <div className="text-sm text-gray-600">Conectando con el servidor</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Mostrar error si hay error
+  if (error) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-lg mb-2 text-red-600">❌ Error cargando temas</div>
+          <div className="text-sm text-gray-600 mb-4">{error}</div>
+          <button 
+            onClick={handleRefreshThemes}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            🔄 Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -266,10 +330,10 @@ const StylesParameterizationView = () => {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-6 md:mb-10">
-            <h1 className="text-2xl md:text-3xl font-bold text-primary">Parameterization</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-primary">Parametrización</h1>
             <div className="text-sm bg-surface p-2 rounded-theme-md border border-primary">
               <span className="text-secondary">Tema actual: </span>
-              <span className="font-semibold text-accent">{getAllThemes()[currentTheme]?.name}</span>
+              <span className="font-semibold text-accent">{getAllThemes()[currentTheme]?.name || 'Cargando...'}</span>
             </div>
           </div>
 
@@ -281,6 +345,17 @@ const StylesParameterizationView = () => {
             />
           </div>
 
+          {/* Save Message */}
+          {saveMessage && (
+            <div className={`mb-4 p-3 rounded-lg text-sm ${
+              saveMessage.includes('❌') 
+                ? 'bg-red-100 text-red-700 border border-red-200' 
+                : 'bg-green-100 text-green-700 border border-green-200'
+            }`}>
+              {saveMessage}
+            </div>
+          )}
+
           {/* Main Content */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Left Panel - Controls */}
@@ -288,38 +363,43 @@ const StylesParameterizationView = () => {
               {/* Theme Selection */}
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-sm font-medium text-primary">Tema Global</span>
+                  <span className="text-sm font-medium text-primary">Tema Global (API)</span>
                   <div className="flex items-center space-x-2">
                     <select
-                      value={currentTheme}
+                      value={currentTheme || ''}
                       onChange={(e) => handleThemeChange(e.target.value)}
                       className="input-theme"
+                      disabled={isLoading || !canViewStyles}
                     >
+                      <option value="">Seleccionar tema...</option>
                       {getThemeNames().map(themeKey => (
                         <option key={themeKey} value={themeKey}>
-                          {getAllThemes()[themeKey].name}
+                          {getAllThemes()[themeKey]?.name || themeKey}
                         </option>
                       ))}
                     </select>
+                    <PermissionGuard permission={71}>
+                      <button 
+                        onClick={handleOpenNewThemeModal}
+                        className="btn-theme btn-primary"
+                        title="Crear nuevo tema"
+                        disabled={isLoading}
+                      >
+                        <FiPlus className="w-4 h-4" />
+                      </button>
+                    </PermissionGuard>
                     <button 
-                      onClick={handleOpenNewThemeModal}
-                      className="btn-theme btn-primary"
-                      title="Crear nuevo tema"
-                    >
-                      <FiPlus className="w-4 h-4" />
-                    </button>
-                    <button 
-                      onClick={handleDeleteTheme}
+                      onClick={handleRefreshThemes}
                       className="btn-theme btn-secondary"
-                      title="Eliminar tema actual"
-                      disabled={['claro', 'personalizado'].includes(currentTheme)}
+                      title="Recargar temas desde el servidor"
+                      disabled={isLoading}
                     >
-                      <FiX className="w-4 h-4" />
+                      <FiRefreshCw className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
                 <div className="text-xs text-secondary bg-surface p-2 rounded-theme-sm border border-primary">
-                  💡 Los cambios se aplicarán a toda la aplicación globalmente
+                  💡 Conectado con la API - Los cambios se sincronizan automáticamente
                 </div>
               </div>
 
@@ -327,7 +407,7 @@ const StylesParameterizationView = () => {
               <div className="mb-8">
                 <div className="border-b border-primary pb-2 mb-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-primary">Parámetro</span>
+                    <span className="text-sm font-semibold text-primary">Colores</span>
                     <span className="text-sm font-semibold text-primary">Valor</span>
                   </div>
                 </div>
@@ -352,7 +432,7 @@ const StylesParameterizationView = () => {
                     onOpenColorPicker={handleOpenColorPicker}
                   />
                   <ColorPicker
-                    label="Color de Superficie (Cards)"
+                    label="Color de Superficie"
                     color={tempStyleParams.surfaceColor}
                     onChange={(color) => handleStyleChange('surfaceColor', color)}
                     onOpenColorPicker={handleOpenColorPicker}
@@ -367,6 +447,24 @@ const StylesParameterizationView = () => {
                     label="Botón Secundario"
                     color={tempStyleParams.secondaryButton}
                     onChange={(color) => handleStyleChange('secondaryButton', color)}
+                    onOpenColorPicker={handleOpenColorPicker}
+                  />
+                  <ColorPicker
+                    label="Color de Acento"
+                    color={tempStyleParams.accentColor}
+                    onChange={(color) => handleStyleChange('accentColor', color)}
+                    onOpenColorPicker={handleOpenColorPicker}
+                  />
+                  <ColorPicker
+                    label="Color de Bordes"
+                    color={tempStyleParams.borderColor}
+                    onChange={(color) => handleStyleChange('borderColor', color)}
+                    onOpenColorPicker={handleOpenColorPicker}
+                  />
+                  <ColorPicker
+                    label="Color de Hover"
+                    color={tempStyleParams.hoverColor}
+                    onChange={(color) => handleStyleChange('hoverColor', color)}
                     onOpenColorPicker={handleOpenColorPicker}
                   />
                 </div>
@@ -404,12 +502,25 @@ const StylesParameterizationView = () => {
               </div>
 
               {/* Save Button */}
-              <button
-                onClick={handleSaveChanges}
-                className="btn-theme btn-primary w-full py-3 font-medium"
-              >
-                💾 Aplicar Cambios Globalmente
-              </button>
+              <PermissionGuard permission={73}>
+                <button
+                  onClick={handleSaveChanges}
+                  disabled={isSaving || isLoading}
+                  className="btn-theme btn-primary w-full py-3 font-medium flex items-center justify-center space-x-2"
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Guardando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FiSave className="w-4 h-4" />
+                      <span>Guardar en API</span>
+                    </>
+                  )}
+                </button>
+              </PermissionGuard>
             </div>
 
             {/* Right Panel - Preview */}
@@ -434,7 +545,7 @@ const StylesParameterizationView = () => {
                             fontFamily: tempStyleParams.fontType
                           }}
                         >
-                          Dashboard Global
+                          Dashboard API
                         </h1>
                         <div className="flex space-x-1">
                           <div className="w-2 h-2 bg-red-500 rounded-full"></div>
@@ -446,21 +557,21 @@ const StylesParameterizationView = () => {
                       {/* Sidebar */}
                       <div className="flex">
                         <div className="w-16 space-y-1">
-                          <div className="w-full h-1 bg-gray-600 rounded"></div>
-                          <div className="w-3/4 h-1 bg-gray-600 rounded"></div>
-                          <div className="w-full h-1 bg-gray-600 rounded"></div>
-                          <div className="w-2/3 h-1 bg-gray-600 rounded"></div>
+                          <div className="w-full h-1 rounded" style={{ backgroundColor: tempStyleParams.borderColor }}></div>
+                          <div className="w-3/4 h-1 rounded" style={{ backgroundColor: tempStyleParams.borderColor }}></div>
+                          <div className="w-full h-1 rounded" style={{ backgroundColor: tempStyleParams.borderColor }}></div>
+                          <div className="w-2/3 h-1 rounded" style={{ backgroundColor: tempStyleParams.borderColor }}></div>
                         </div>
                         
                         {/* Main Content */}
                         <div className="flex-1 ml-3">
                           {/* Chart Area */}
-                          <div className="h-16 bg-gray-800 rounded mb-2 relative overflow-hidden">
-                            <div className="absolute bottom-0 left-2 w-1 bg-blue-400 h-8"></div>
-                            <div className="absolute bottom-0 left-4 w-1 bg-blue-400 h-12"></div>
-                            <div className="absolute bottom-0 left-6 w-1 bg-blue-400 h-6"></div>
-                            <div className="absolute bottom-0 left-8 w-1 bg-blue-400 h-10"></div>
-                            <div className="absolute bottom-0 left-10 w-1 bg-blue-400 h-14"></div>
+                          <div className="h-16 rounded mb-2 relative overflow-hidden" style={{ backgroundColor: tempStyleParams.surfaceColor }}>
+                            <div className="absolute bottom-0 left-2 w-1 h-8" style={{ backgroundColor: tempStyleParams.primaryButton }}></div>
+                            <div className="absolute bottom-0 left-4 w-1 h-12" style={{ backgroundColor: tempStyleParams.primaryButton }}></div>
+                            <div className="absolute bottom-0 left-6 w-1 h-6" style={{ backgroundColor: tempStyleParams.primaryButton }}></div>
+                            <div className="absolute bottom-0 left-8 w-1 h-10" style={{ backgroundColor: tempStyleParams.primaryButton }}></div>
+                            <div className="absolute bottom-0 left-10 w-1 h-14" style={{ backgroundColor: tempStyleParams.primaryButton }}></div>
                           </div>
                           
                           {/* Stats Cards */}
@@ -477,7 +588,7 @@ const StylesParameterizationView = () => {
                                   fontFamily: tempStyleParams.fontType
                                 }}
                               >
-                                Card Surface
+                                API Card
                               </div>
                             </div>
                             <div 
@@ -492,7 +603,7 @@ const StylesParameterizationView = () => {
                                   fontFamily: tempStyleParams.fontType
                                 }}
                               >
-                                Tema Global
+                                Live Preview
                               </div>
                             </div>
                           </div>
@@ -525,7 +636,7 @@ const StylesParameterizationView = () => {
                 {/* Info Text */}
                 <div className="mt-4 text-center">
                   <p className="text-xs text-secondary">
-                    🌍 Preview: Los cambios se aplicarán globalmente
+                    🌐 Preview en tiempo real - Conectado con API
                   </p>
                 </div>
               </div>
@@ -539,7 +650,8 @@ const StylesParameterizationView = () => {
         isOpen={isColorPickerOpen}
         onClose={handleCloseColorPicker}
         onColorSelect={handleColorSelect}
-        title={currentColorPicker.label || "Colors"}
+        currentColor={currentColorPicker.color}
+        label={currentColorPicker.label}
       />
 
       {/* New Theme Modal */}

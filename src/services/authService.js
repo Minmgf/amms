@@ -1,37 +1,30 @@
-import Cookies from "js-cookie";
 import { apiUsers } from "@/lib/axios";
-
-// Helper para obtener el token desde localStorage o sessionStorage
-const getAuthToken = () => {
-    let token = localStorage.getItem("token");
-    if (!token) {
-        token = sessionStorage.getItem("token");
-    }
-    return token;
-};
+import { setToken, getToken, removeToken } from '@/utils/tokenManager';
 
 export const login = async (payload, rememberMe = false) => {
     const { data } = await apiUsers.post("/auth/login/", payload);
+    setToken(data.access_token, rememberMe);
 
-    // Guardar siempre en cookie (ejemplo: expira en 1 hora)
-    Cookies.set("token", data.access_token, { expires: 1 / 24 });
-
-    if (rememberMe) {
-        localStorage.setItem("token", data.access_token);
-    } else {
-        sessionStorage.setItem("token", data.access_token);
-    }
-
-    console.log("Token desde helper:", getAuthToken());
-    console.log("Token desde cookie:", Cookies.get("token"));
     return data;
 };
 
 export const logout = async () => {
-    const { data } = await apiUsers.post("/auth/logout");
-    Cookies.remove("token");
-    localStorage.removeItem("token");
-    sessionStorage.removeItem("token"); // También limpiar sessionStorage
+    try {
+        const { data } = await apiUsers.post("/auth/logout");
+        return data;
+    } catch (error) {
+        // Si falla el logout en el servidor, continuamos con la limpieza local
+        console.error("Error en logout del servidor:", error);
+    } finally {
+        // Siempre limpiar los tokens locales
+        removeToken();
+        localStorage.removeItem("userData");
+    }
+};
+
+// Nueva función para reenviar correo de activación
+export const resendActivationEmail = async (email) => {
+    const { data } = await apiUsers.post("/auth/resend-activation", { email });
     return data;
 };
 
@@ -45,6 +38,7 @@ export const getGenders = async () => {
     return data;
 };
 
+// Esta función NO requiere autenticación
 export const validateDocument = async (payload) => {
     const { data } = await apiUsers.post("/users/pre-register/validate", payload);
     return data;
@@ -60,6 +54,7 @@ export const activateAccount = async (token) => {
     return data;
 };
 
+// Esta función NO requiere autenticación - solo necesita el token de validación
 export const completePreregister = async (payload) => {
     const { data } = await apiUsers.post("/users/pre-register/complete", payload);
     return data;
@@ -133,7 +128,7 @@ const validateToken = async () => {
 export const createUser = async (userData) => {
     try {
         // Verificar token antes de hacer la petición
-        const token = getAuthToken();
+        const token = getToken();
         if (!token) {
             throw new Error("No hay token disponible");
         }
@@ -176,7 +171,7 @@ export const createUser = async (userData) => {
 export const editUser = async (userId, userData) => {
     try {
         // Verificar token antes de hacer la petición
-        const token = getAuthToken();
+        const token = getToken();
         if (!token) {
             throw new Error("No hay token disponible");
         }
@@ -215,7 +210,7 @@ export const editUser = async (userId, userData) => {
 export const changeUserStatus = async (userId, newStatus) => {
     try {
         // Verificar token antes de hacer la petición
-        const token = getAuthToken();
+        const token = getToken();
         if (!token) {
             throw new Error("No hay token disponible");
         }

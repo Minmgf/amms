@@ -6,6 +6,7 @@ const TableList = ({
     loading,
     globalFilter,
     onGlobalFilterChange,
+    globalFilterFn,
     pageSizeOptions = [10, 20, 30, 40, 50],
 }) => {
     const table = useReactTable({
@@ -17,13 +18,14 @@ const TableList = ({
         getFilteredRowModel: getFilteredRowModel(),
         state: { globalFilter },
         onGlobalFilterChange,
+        globalFilterFn: globalFilterFn,
         initialState: { pagination: { pageSize: pageSizeOptions[0] } },
     });
 
     return (
         <div className="parametrization-table mb-6 md:mb-8">
             {loading ? (
-                <div className="parametrization-loading p-8 text-center">Loading...</div>
+                <div className="parametrization-loading p-8 text-center">Cargando...</div>
             ) : (
                 <div className="overflow-x-auto">
                     <table className="w-full">

@@ -29,7 +29,22 @@ const ChangePhotoModal = ({ isOpen, onClose, onSave }) => {
   const handleDrop = (event) => {
     event.preventDefault();
     const file = event.dataTransfer.files[0];
-    if (file && file.type.startsWith("image/")) {
+    
+    if (file) {
+      // Validar formato de imagen (JPG, PNG)
+      if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
+        setModalMessage("Only JPG and PNG formats are allowed");
+        setErrorOpen(true);
+        return;
+      }
+      
+      // Validar tamaño de archivo (5MB = 5 * 1024 * 1024 bytes)
+      if (file.size > 5 * 1024 * 1024) {
+        setModalMessage("The image size must be less than 5MB");
+        setErrorOpen(true);
+        return;
+      }
+      
       setValue("photo", file, { shouldValidate: true });
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
@@ -97,15 +112,16 @@ const ChangePhotoModal = ({ isOpen, onClose, onSave }) => {
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4">
+      <div id="change-photo-modal" className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4">
         <div className="bg-white rounded-2xl shadow-xl w-full max-w-md"
              style={{ zIndex: 70 }}>
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-100">
             <h2 className="text-xl font-semibold text-gray-900">
-              Change profile photo
+              Cambiar foto de perfil
             </h2>
             <button
+              aria-label="Close Button"
               onClick={handleClose}
               className="text-gray-400 hover:text-gray-600 transition-colors"
             >
@@ -129,10 +145,10 @@ const ChangePhotoModal = ({ isOpen, onClose, onSave }) => {
                   )}
                 </div>
                 <div>
-                  <h3 className="font-medium text-gray-900 mb-1">Preview</h3>
+                  <h3 className="font-medium text-gray-900 mb-1">Vista previa</h3>
                   <p className="text-sm text-gray-500 leading-relaxed">
-                    This will be your new profile picture. Make sure it looks
-                    good before saving.
+                    Esta será tu nueva foto de perfil. Asegúrate de que se vea
+                    bien antes de guardarla.
                   </p>
                 </div>
               </div>
@@ -150,13 +166,14 @@ const ChangePhotoModal = ({ isOpen, onClose, onSave }) => {
                   </div>
                   <div>
                     <p className="text-lg font-medium text-red-600 mb-1">
-                      Drag your photo here
+                      Arrastra tu foto aquí
                     </p>
                     <p className="text-sm text-gray-500">
-                      or click to select a file
+                      o haga clic para seleccionar un archivo
                     </p>
                   </div>
                   <button
+                    aria-label="Choose File Button"
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -164,18 +181,19 @@ const ChangePhotoModal = ({ isOpen, onClose, onSave }) => {
                     }}
                     className="bg-red-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-red-700 transition-colors text-sm"
                   >
-                    Choose file
+                    Seleccionar archivo
                   </button>
                 </div>
               </div>
 
               {/* File Info */}
               <p className="text-xs text-gray-500 text-center">
-                Allowed formats: JPG, PNG (max. 5MB)
+                Formatos permitidos: JPG, PNG (max. 5MB)
               </p>
 
               {/* Hidden File Input */}
               <input
+                aria-label="Hidden File Input"
                 type="file"
                 accept="image/jpeg,image/png"
                 {...register("photo", {
@@ -183,6 +201,24 @@ const ChangePhotoModal = ({ isOpen, onClose, onSave }) => {
                   onChange: (e) => {
                     const file = e.target.files?.[0];
                     if (file) {
+                      // Validar formato de imagen (JPG, PNG)
+                      if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
+                        setModalMessage("Only JPG and PNG formats are allowed");
+                        setErrorOpen(true);
+                        // Limpiar el input
+                        e.target.value = "";
+                        return;
+                      }
+                      
+                      // Validar tamaño de archivo (5MB = 5 * 1024 * 1024 bytes)
+                      if (file.size > 5 * 1024 * 1024) {
+                        setModalMessage("The image size must be less than 5MB");
+                        setErrorOpen(true);
+                        // Limpiar el input
+                        e.target.value = "";
+                        return;
+                      }
+                      
                       setValue("photo", file, { shouldValidate: true });
                       setPreviewUrl(URL.createObjectURL(file));
                     }
@@ -197,18 +233,20 @@ const ChangePhotoModal = ({ isOpen, onClose, onSave }) => {
               {/* Buttons */}
               <div className="flex gap-3 pt-2">
                 <button
+                  aria-label="Cancel Button"
                   type="button"
                   onClick={handleClose}
                   className="flex-1 px-4 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
                 >
-                  Cancel
+                  Cancelar
                 </button>
                 <button
+                  aria-label="Save Button"
                   type="submit"
                   disabled={!selectedFile || isSubmitting}
                   className="flex-1 px-4 py-3 bg-gray-600 text-white font-medium rounded-lg hover:bg-gray-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
-                  {isSubmitting ? "Saving..." : "Save"}
+                  {isSubmitting ? "Guardando..." : "Guardar"}
                 </button>
               </div>
             </div>

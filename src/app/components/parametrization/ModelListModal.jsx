@@ -1,4 +1,5 @@
 "use client";
+import PermissionGuard from '@/app/(auth)/PermissionGuard';
 import React, { useState, useEffect } from 'react';
 import { FiX, FiEdit3 } from 'react-icons/fi';
 
@@ -64,7 +65,7 @@ const CategoryModal = ({
         {/* Modal Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">
-            <span className="text-gray-500">Category:</span>
+            <span className="text-gray-500">Categoría: </span>
             <span className="text-gray-900">{categoryName}</span>
           </h2>
           <button
@@ -85,16 +86,16 @@ const CategoryModal = ({
                 <thead className="bg-gray-100 border-b border-gray-200">
                   <tr>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
-                      Brand name
+                      Marca
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
-                      Description
+                      Descripción
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
-                      Status
+                      Estado
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                      Actions
+                      Acciones
                     </th>
                   </tr>
                 </thead>
@@ -109,22 +110,26 @@ const CategoryModal = ({
                       </td>
                       <td className="px-6 py-4 text-sm border-r border-gray-200">
                         <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${item.status === 'Active'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-pink-100 text-pink-800'
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${item.idStatues === 1
+                              ? 'bg-green-100 text-green-800'
+                              : item.idStatues  === 2
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-gray-100 text-gray-800'
                             }`}
                         >
                           {item.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm">
-                        <button
-                          onClick={() => handleEdit(item.id)}
-                          className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md transition-colors"
-                        >
-                          <FiEdit3 className="w-3 h-3 mr-1.5" />
-                          Edit
-                        </button>
+                        <PermissionGuard permission={52}>
+                          <button
+                            onClick={() => handleEdit(item.id)}
+                            className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md transition-colors"
+                          >
+                            <FiEdit3 className="w-3 h-3 mr-1.5" />
+                            Editar
+                          </button>
+                        </PermissionGuard>
                       </td>
                     </tr>
                   ))}
@@ -134,14 +139,16 @@ const CategoryModal = ({
           </div>
 
           {/* Add Brand Button */}
-          <div className="flex justify-center">
-            <button
-              onClick={handleAddBrand}
-              className="px-8 py-3 btn-theme btn-primary relative"
-            >
-              Add Brand
-            </button>
-          </div>
+          <PermissionGuard permission={51}>
+            <div className="flex justify-center">
+              <button
+                onClick={handleAddBrand}
+                className="px-8 py-3 btn-theme btn-primary relative"
+              >
+                Añadir marca
+              </button>
+            </div>
+          </PermissionGuard>
         </div>
       </div>
     </div>

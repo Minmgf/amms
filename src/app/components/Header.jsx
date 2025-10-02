@@ -7,6 +7,7 @@ import { markAllNotAsRead, markOneNotAsRead } from "@/services/notificationServi
 import { SuccessModal, ErrorModal } from "./shared/SuccessErrorModal";
 import { useTheme } from "@/contexts/ThemeContext";
 import useNotifications from "@/hooks/useNotifications";
+import PermissionGuard from "../(auth)/PermissionGuard";
 
 export default function Header() {
   const [userId, setUserId] = useState("");
@@ -115,8 +116,8 @@ export default function Header() {
       const response = await markAllNotAsRead();
       if (response.success) {
         reload();
-        setModalMessage(response.message);
-        setSuccessOpen(true);
+        //setModalMessage(response.message);
+        //setSuccessOpen(true);
       }
     } catch (error) {
       setModalMessage(error.response?.data?.detail || "Error marking all as read");
@@ -138,8 +139,8 @@ export default function Header() {
       const response = await markOneNotAsRead(payload);
       if (response.success) {
         reload();
-        setModalMessage(response.message);
-        setSuccessOpen(true);
+        //setModalMessage(response.message);
+        //setSuccessOpen(true);
       }
     } catch (error) {
       setModalMessage(error.response?.data?.detail || "Error marking notification as read");
@@ -208,22 +209,24 @@ export default function Header() {
           </div>
 
           {/* Notificaciones */}
-          <button
-            type="button"
-            onClick={() => setShowNotis((s) => !s)}
-            className="relative inline-flex items-center justify-center rounded-theme-md p-2 hover:bg-hover text-primary cursor-pointer transition-colors"
-            aria-haspopup="dialog"
-            aria-expanded={showNotis}
-            aria-controls="notifications-panel"
-            aria-label="Open notifications"
-          >
-            <FiBell className="text-xl" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-error text-white text-[10px] leading-4 text-center">
-                {unreadCount}
-              </span>
-            )}
-          </button>
+          <PermissionGuard permission={12}>
+            <button
+              type="button"
+              onClick={() => setShowNotis((s) => !s)}
+              className="relative inline-flex items-center justify-center rounded-theme-md p-2 hover:bg-hover text-primary cursor-pointer transition-colors"
+              aria-haspopup="dialog"
+              aria-expanded={showNotis}
+              aria-controls="notifications-panel"
+              aria-label="Open notifications"
+            >
+              <FiBell className="text-xl" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-error text-white text-[10px] leading-4 text-center">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+          </PermissionGuard>
 
           {/* Panel Notificaciones */}
           {showNotis && (
@@ -240,19 +243,25 @@ export default function Header() {
               >
                 <div className="flex items-center justify-between px-4 py-3 border-b border-primary bg-background">
                   <div className="flex items-center gap-2">
-                    <h2 className="font-semibold text-primary">Notifications</h2>
+                    <h2 className="font-semibold text-primary">Notificaciones</h2>
                     <span className="text-sm text-secondary">
-                      {unreadCount} {unreadCount === 1 ? "unread" : "unread"}
+                      {unreadCount} {unreadCount === 1 ? "sin leer" : "sin leer"}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <button
-                      onClick={markAllAsRead}
-                      disabled={loading}
-                      className="text-sm text-accent cursor-pointer hover:underline"
-                    >
-                      Mark all as read
-                    </button>
+                    {unreadCount > 0 ? (
+                      <button
+                        onClick={markAllAsRead}
+                        disabled={loading}
+                        className="text-sm text-accent cursor-pointer hover:underline"
+                      >
+                        Leer todo
+                      </button>
+                    ) : (
+                      <span className="text-sm text-secondary">
+                        Notificaciones leídas
+                      </span>
+                    )}
                     <button
                       onClick={() => setShowNotis(false)}
                       className="rounded-theme-md cursor-pointer hover:bg-hover p-1 transition-colors"
@@ -297,7 +306,7 @@ export default function Header() {
                                 onClick={() => markOneAsRead(n.id)}
                                 className="text-xs text-accent cursor-pointer hover:underline"
                               >
-                                Mark as read
+                                Marcar Como leído
                               </button>
                             ) : (
                               <span className="text-xs text-secondary">Read</span>
@@ -313,28 +322,30 @@ export default function Header() {
           )}
 
           {/* Usuario */}
-          <Link
-            href="/userProfile"
-            className="flex items-center gap-2 bg-surface hover:bg-hover px-3 py-1 rounded-theme-full cursor-pointer transition-colors"
-          >
-            {profilePhoto ? (
-              <img
-                src={profilePhoto}
-                alt="Profile"
-                className="w-8 h-8 rounded-full object-cover border-2 border-accent"
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-white">
-                <FiUser size={20} />
-              </div>
-            )}
-            <span className="text-sm text-primary">
-              Bienvenido!
-              <br />
-              {username}
-            </span>
-            <FiUser className="text-secondary" />
-          </Link>
+          <PermissionGuard permission={5}>
+            <Link
+              href="/userProfile"
+              className="flex items-center gap-2 bg-surface hover:bg-hover px-3 py-1 rounded-theme-full cursor-pointer transition-colors"
+            >
+              {profilePhoto ? (
+                <img
+                  src={profilePhoto}
+                  alt="Profile"
+                  className="w-8 h-8 rounded-full object-cover border-2 border-accent"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-white">
+                  <FiUser size={20} />
+                </div>
+              )}
+              <span className="text-sm text-primary">
+                Bienvenido!
+                <br />
+                {username}
+              </span>
+              <FiUser className="text-secondary" />
+            </Link>
+          </PermissionGuard>
         </div>
       </header>
       <SuccessModal
