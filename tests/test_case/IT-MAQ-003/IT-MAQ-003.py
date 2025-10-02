@@ -83,7 +83,7 @@ step3_test_data = {
     "carryingCapacity": str(fake.random_int(1000, 5000)),
     "carryingCapacityUnit": "t",
     "draftForce": str(fake.random_int(20, 100)),
-    "draftForceUnit": "kN",
+    "draftForceUnit": "m³/s",
     "operatingWeight": str(fake.random_int(3000, 8000)),
     "operatingWeightUnit": "t",
     "maxSpeed": str(fake.random_int(20, 50)),
@@ -97,46 +97,122 @@ step3_test_data = {
     "width": str(fake.random_int(150, 250) / 100),
     "length": str(fake.random_int(300, 500) / 100),
     "height": str(fake.random_int(200, 350) / 100),
+    # Net weight (peso neto) - se agregó para evitar KeyError al completar dimensiones y peso
+    "netWeight": str(fake.random_int(500, 3000)),
+    "netWeightUnit": "t",
     "airConditioning": "Sistema de expansión directa (DX)",
     "airConditioningConsumption": str(fake.random_int(1, 10)),
     "airConditioningConsumptionUnit": "m³/s",
     "maxHydraulicPressure": str(fake.random_int(10000, 50000)),
     "maxHydraulicPressureUnit": "Pa",
+    "hydraulicPumpFlowRate": str(fake.random_int(50, 150)),
     "hydraulicPumpFlowRateUnit": "m³/s",
     "hydraulicReservoirCapacity": str(fake.random_int(50, 200)),
     "hydraulicReservoirCapacityUnit": "m³"
 }
+# Enforce limits/constraints requested by the user. Convert and clamp numeric values so
+# the form filling never tries to enter out-of-range values.
+
+def _clamp_int_field(key, max_value):
+    """Clamp integer-like string fields in step3_test_data to a maximum."""
+    if key not in step3_test_data:
+        return
+    try:
+        val = int(float(step3_test_data.get(key, 0)))
+    except Exception:
+        return
+    if val > max_value:
+        step3_test_data[key] = str(max_value)
+    else:
+        step3_test_data[key] = str(val)
+
+def _clamp_float_field(key, max_value, decimals=2):
+    """Clamp float-like string fields in step3_test_data to a maximum and keep formatting."""
+    if key not in step3_test_data:
+        return
+    try:
+        val = float(step3_test_data.get(key, 0))
+    except Exception:
+        return
+    if val > max_value:
+        val = float(max_value)
+    # Round and preserve as string
+    step3_test_data[key] = str(round(val, decimals))
+
+# Apply the requested maximum constraints
+_clamp_int_field("enginePower", 10000)
+_clamp_int_field("cylinderCapacity", 50000)
+_clamp_int_field("cylinderNumber", 32)
+_clamp_int_field("fuelConsumption", 1000)
+_clamp_int_field("tankCapacity", 10000)
+_clamp_int_field("carryingCapacity", 1000000)
+_clamp_int_field("draftForce", 1000000)
+_clamp_int_field("operatingWeight", 1000000)
+_clamp_int_field("maxSpeed", 500)
+_clamp_int_field("maxOperatingAltitude", 10000)
+
+# RPM / rendimiento min/max: both capped at 10000 and ensure min <= max
+_clamp_int_field("performanceMin", 10000)
+_clamp_int_field("performanceMax", 10000)
+try:
+    pmin = int(step3_test_data.get("performanceMin", 0))
+    pmax = int(step3_test_data.get("performanceMax", 0))
+    if pmin > pmax:
+        # Make min not greater than max by setting min to max
+        step3_test_data["performanceMin"] = str(pmax)
+except Exception:
+    pass
+
+# Dimension limits
+_clamp_float_field("width", 100, 2)
+_clamp_float_field("length", 100, 2)
+_clamp_float_field("height", 50, 2)
+_clamp_int_field("netWeight", 1000000)
+
+# Sistemas auxiliares e hidráulicos
+_clamp_int_field("airConditioningConsumption", 1000)
+_clamp_int_field("maxHydraulicPressure", 10000)
+# If a hydraulic pump flow numeric field exists, clamp it too (key may not be present)
+_clamp_int_field("hydraulicPumpFlowRate", 10000)
+_clamp_int_field("hydraulicReservoirCapacity", 10000)
+
 print("[DICE] Datos únicos generados para IT-MAQ-003 - Paso 3:")
 print(f"   [ENGINE] Potencia del motor: {step3_test_data['enginePower']} {step3_test_data['enginePowerUnit']}")
 print(f"   [GAS-PUMP] Consumo de combustible: {step3_test_data['fuelConsumption']} {step3_test_data['fuelConsumptionUnit']}")
 print(f"   [WEIGHT] Peso operativo: {step3_test_data['operatingWeight']} {step3_test_data['operatingWeightUnit']}")
 print("-" * 50)
 
+# Defaults for Normatividad y Seguridad (ensure keys exist)
+step3_test_data.setdefault("emissionLevelValue", "32")  # value for Euro I in DOM
+step3_test_data.setdefault("emissionLevel", "Euro I")
+step3_test_data.setdefault("cabinTypeValue", "33")  # value for Cabina Abierta in DOM
+step3_test_data.setdefault("cabinType", "Cabina Abierta")
+
 # Selectores del paso 3 - específicos de IT-MAQ-003 usando XPath como especificado
 step3_selectors = {
     "enginePower": "//input[@name='enginePower']",
-    "enginePowerUnit": "//select[@aria-label='Engine Power Unit Select']",
+    "enginePowerUnit": "//select[@name='enginePowerUnit']",
     "engineType": "//select[@name='engineType']",
     "cylinderCapacity": "//input[@name='cylinderCapacity']",
-    "cylinderCapacityUnit": "//select[@aria-label='Cylinder Capacity Unit Select']",
-    "cylinderNumber": "//input[@placeholder='Número']",
+    "cylinderCapacityUnit": "//select[@name='cylinderCapacityUnit']",
+    "cylinderNumber": "//input[@name='cylindersNumber']",
     "arrangement": "//select[@name='arrangement']",
     "traction": "//select[@name='traction']",
     "fuelConsumption": "//input[@name='fuelConsumption']",
-    "fuelConsumptionUnit": "//select[@aria-label='Fuel Consumption Unit Select']",
+    "fuelConsumptionUnit": "//select[@name='fuelConsumptionUnit']",
     "transmissionSystem": "//select[@name='transmissionSystem']",
-    "motor_transmision": "//button[@aria-label='Expand Motor y Transmisión Section']",
-    "motor_transmission_close_button": "//button[@aria-label='Collapse Motor y Transmisión Section']",
-    "capacidad_rendimiento": "//button[@aria-label='Expand Capacidad y Rendimiento Section']",
-    "capacidad_rendimiento_close_button": "//button[@aria-label='Collapse Capacidad y Rendimiento Section']",
+    "motor_transmision": "//button[contains(@aria-label, 'Motor y Transmisión Section')]",
+    "motor_transmission_close_button": "//button[contains(@aria-label, 'Motor y Transmisión Section')]",
+    "capacidad_rendimiento": "//button[contains(@aria-label, 'Capacidad y Rendimiento Section')]",
+    "capacidad_rendimiento_close_button": "//button[contains(@aria-label, 'Capacidad y Rendimiento Section')]",
     "tankCapacity": "//input[@name='tankCapacity']",
-    "tankCapacityUnit": "//select[@aria-label='Tank Capacity Unit Select']",
+    "tankCapacityUnit": "//select[@name='tankCapacityUnit']",
     "carryingCapacity": "//input[@name='carryingCapacity']",
     "carryingCapacityUnit": "//select[@name='carryingCapacityUnit']",
     "draftForce": "//input[@name='draftForce']",
     "draftForceUnit": "//select[@name='draftForceUnit']",
     "operatingWeight": "//input[@name='operatingWeight']",
-    "operatingWeightUnit": "//select[@aria-label='Operating Weight Unit Select']",
+    "operatingWeightUnit": "//select[@name='operatingWeightUnit']",
     "maxSpeed": "//input[@name='maxSpeed']",
     "maxSpeedUnit": "//select[@name='maxSpeedUnit']",
     "maxOperatingAltitude": "//input[@name='maxOperatingAltitude']",
@@ -144,23 +220,28 @@ step3_selectors = {
     "performanceMin": "//input[@name='performanceMin']",
     "performanceMax": "//input[@name='performanceMax']",
     "performanceUnit": "//select[@name='performanceUnit']",
-    "dimensiones_peso": "//button[@aria-label='Collapse Dimensiones y Peso Section']",
+    "dimensiones_peso": "//button[contains(@aria-label, 'Dimensiones y Peso Section')]",
     "dimensionsUnit": "//select[@name='dimensionsUnit']",
-    "width": "//input[@aria-label='Width Input']",
-    "length": "//input[@aria-label='Length Input']",
-    "height": "//input[@aria-label='Height Input']",
+    "width": "//input[@name='width']",
+    "length": "//input[@name='length']",
+    "height": "//input[@name='height']",
     "netWeight": "//input[@name='netWeight']",
-    "netWeightUnit": "//select[@aria-label='Net Weight Unit Select']",
-    "airConditioning": "//select[@aria-label='Air Conditioning Select']",
-    "airConditioningConsumption": "//input[@aria-label='Air Conditioning Consumption Input']",
-    "airConditioningConsumptionUnit": "//select[@aria-label='Air Conditioning Consumption Unit Select']",
-    "maxHydraulicPressure": "//input[@aria-label='Max Hydraulic Pressure Input']",
-    "maxHydraulicPressureUnit": "//select[@aria-label='Max Hydraulic Pressure Unit Select']",
-    "hydraulicPumpFlowRateUnit": "//select[@aria-label='Hydraulic Pump Flow Rate Unit Select']",
-    "hydraulicReservoirCapacity": "//input[@aria-label='Hydraulic Reservoir Capacity Input']",
-    "hydraulicReservoirCapacityUnit": "//select[@aria-label='Hydraulic Reservoir Capacity Unit Select']",
-    "sistemas_hidraulicos": "//button[@aria-label='Expand Sistemas Auxiliares e Hidráulicos Section']",
-    "sistemas_hidraulicos_close_button": "//button[@aria-label='Collapse Sistemas Auxiliares e Hidráulicos Section']",
+    "netWeightUnit": "//select[@name='netWeightUnit']",
+    "airConditioning": "//select[@name='airConditioning']",
+    "airConditioningConsumption": "//input[@name='airConditioningConsumption']",
+    "airConditioningConsumptionUnit": "//select[@name='airConditioningConsumptionUnit']",
+    "maxHydraulicPressure": "//input[@name='maxHydraulicPressure']",
+    "maxHydraulicPressureUnit": "//select[@name='maxHydraulicPressureUnit']",
+    "hydraulicPumpFlowRate": "//input[@name='hydraulicPumpFlowRate']",
+    "hydraulicPumpFlowRateUnit": "//select[@name='hydraulicPumpFlowRateUnit']",
+    "hydraulicReservoirCapacity": "//input[@name='hydraulicReservoirCapacity']",
+    "hydraulicReservoirCapacityUnit": "//select[@name='hydraulicReservoirCapacityUnit']",
+    "sistemas_hidraulicos": "//button[contains(@aria-label, 'Sistemas Auxiliares e Hidráulicos Section')]",
+    "sistemas_hidraulicos_close_button": "//button[contains(@aria-label, 'Sistemas Auxiliares e Hidráulicos Section')]",
+    "normatividad_seguridad": "//button[contains(@aria-label, 'Normatividad y Seguridad Section')]",
+    "normatividad_seguridad_close_button": "//button[contains(@aria-label, 'Normatividad y Seguridad Section')]",
+    "emissionLevel": "//select[@name='emissionLevel']",
+    "cabinType": "//select[@name='cabinType']",
     "Siguiente": "//button[normalize-space()='Siguiente']"
 }
 
@@ -180,7 +261,7 @@ def fill_xpath_field(driver, field_name, xpath_selector, value, field_type="inpu
         wait = WebDriverWait(driver, 10)
 
         if field_type == "select":
-            select_element = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_selector)))
+            select_element = wait.until(EC.visibility_of_element_located((By.XPATH, xpath_selector)))
             select = Select(select_element)
             if use_value:
                 select.select_by_value(value)
@@ -188,7 +269,7 @@ def fill_xpath_field(driver, field_name, xpath_selector, value, field_type="inpu
                 select.select_by_visible_text(value)
             print(f"   Seleccionado '{value}' en {field_name}")
         else:
-            input_element = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_selector)))
+            input_element = wait.until(EC.visibility_of_element_located((By.XPATH, xpath_selector)))
             input_element.clear()
             input_element.send_keys(value)
             print(f"   Ingresado '{value}' en {field_name}")
@@ -229,155 +310,132 @@ def complete_machinery_form_step3(driver):
 
         time.sleep(4)
 
+        # Sección de motor y transmisión (ya abierta al inicio)
         # Campos del motor
         motor_fields = [
             ("Potencia del motor", step3_selectors["enginePower"], step3_test_data["enginePower"], "input", False),
-            ("Tipo de motor", step3_selectors["engineType"], "27", "select", True),
+            ("Unidad potencia motor", step3_selectors["enginePowerUnit"], step3_test_data.get("enginePowerUnit", "k/h"), "select", False),
+            ("Tipo de motor", step3_selectors["engineType"], step3_test_data["engineType"], "select", False),
             ("Capacidad del cilindro", step3_selectors["cylinderCapacity"], step3_test_data["cylinderCapacity"], "input", False),
-            ("Unidad capacidad cilindro", step3_selectors["cylinderCapacityUnit"], "12", "select", True),
+            ("Unidad capacidad cilindro", step3_selectors["cylinderCapacityUnit"], step3_test_data["cylinderCapacityUnit"], "select", False),
             ("Número de cilindros", step3_selectors["cylinderNumber"], step3_test_data["cylinderNumber"], "input", False),
-            ("Disposición", step3_selectors["arrangement"], "28", "select", True),
-            ("Tracción", step3_selectors["traction"], "29", "select", True),
+            ("Disposición", step3_selectors["arrangement"], step3_test_data["arrangement"], "select", False),
+            ("Tracción", step3_selectors["traction"], step3_test_data["traction"], "select", False),
             ("Consumo de combustible", step3_selectors["fuelConsumption"], step3_test_data["fuelConsumption"], "input", False),
-            ("Unidad consumo combustible", step3_selectors["fuelConsumptionUnit"], "13", "select", True),
-            ("Sistema de transmisión", step3_selectors["transmissionSystem"], "30", "select", True)
+            ("Unidad consumo combustible", step3_selectors["fuelConsumptionUnit"], step3_test_data["fuelConsumptionUnit"], "select", False),
+            ("Sistema de transmisión", step3_selectors["transmissionSystem"], step3_test_data["transmissionSystem"], "select", False)
         ]
 
         for field_name, xpath_selector, value, field_type, use_value in motor_fields:
             fill_xpath_field(driver, field_name, xpath_selector, value, field_type, use_value)
 
+        # Pausa breve para inspección visual después de Motor y Transmisión
+        time.sleep(3)
+
         # Cerrar sección de motor y transmisión
         click_xpath_element(driver, "Motor y Transmisión (cerrar)", step3_selectors["motor_transmission_close_button"])
 
-        # Verificación especial para la unidad de potencia
-        print("   Llenando campo 'Unidad de potencia' con verificación...")
-        engine_power_unit_selector = step3_selectors["enginePowerUnit"]
-
-        try:
-            select_element = WebDriverWait(driver, 5).until(
-                EC.element_to_be_clickable((By.XPATH, engine_power_unit_selector))
-            )
-            select = Select(select_element)
-            select.select_by_value("2")
-            print("   Seleccionado 'k/h' en Unidad de potencia")
-
-            selected_option = select.first_selected_option
-            current_value = selected_option.text if selected_option else ""
-            print(f"   Verificación - Valor actual: '{current_value}'")
-
-            if current_value != "k/h":
-                time.sleep(0.5)
-                select.select_by_value("2")
-                print("   Corrección aplicada")
-
-        except Exception as e:
-            print(f"   Error llenando campo 'Unidad de potencia': {str(e)}")
-
-        print("   Verificación final del campo 'Engine Power Unit'...")
-        try:
-            time.sleep(1)
-            engine_power_unit_element = WebDriverWait(driver, 5).until(
-                EC.presence_of_element_located((By.XPATH, engine_power_unit_selector))
-            )
-            select = Select(engine_power_unit_element)
-            selected_option = select.first_selected_option
-            current_value = selected_option.text if selected_option else ""
-            print(f"   Valor final: '{current_value}'")
-
-            if current_value != "k/h":
-                select.select_by_value("2")
-                print("   Corrección final aplicada")
-            else:
-                print("   Campo verificado correctamente")
-
-        except Exception as e:
-            print(f"   Error en verificación final: {str(e)}")
-
         # Abrir sección de capacidad y rendimiento
         click_xpath_element(driver, "Capacidad y Rendimiento", step3_selectors["capacidad_rendimiento"])
-        time.sleep(2)  # Delay de 2 segundos después de desplegar
+        time.sleep(3)  # Delay de 3 segundos después de desplegar
+
+        # (Removed HTML snapshot - not needed)
 
         # Campos de capacidad y rendimiento
         capacidad_fields = [
             ("Capacidad del tanque", step3_selectors["tankCapacity"], step3_test_data["tankCapacity"], "input", False),
-            ("Unidad capacidad tanque", step3_selectors["tankCapacityUnit"], "12", "select", True),
+            ("Unidad capacidad tanque", step3_selectors["tankCapacityUnit"], step3_test_data["tankCapacityUnit"], "select", False),
             ("Capacidad de carga", step3_selectors["carryingCapacity"], step3_test_data["carryingCapacity"], "input", False),
-            ("Unidad capacidad carga", step3_selectors["carryingCapacityUnit"], "14", "select", True),
+            ("Unidad capacidad carga", step3_selectors["carryingCapacityUnit"], step3_test_data["carryingCapacityUnit"], "select", False),
             ("Fuerza de tiro", step3_selectors["draftForce"], step3_test_data["draftForce"], "input", False),
-            ("Unidad fuerza tiro", step3_selectors["draftForceUnit"], step3_test_data["draftForceUnit"], "select", False),
+            ("Unidad fuerza tiro", step3_selectors["draftForceUnit"], "15", "select", True),
             ("Peso operativo", step3_selectors["operatingWeight"], step3_test_data["operatingWeight"], "input", False),
-            ("Unidad peso operativo", step3_selectors["operatingWeightUnit"], "14", "select", True),
+            ("Unidad peso operativo", step3_selectors["operatingWeightUnit"], step3_test_data["operatingWeightUnit"], "select", False),
             ("Velocidad máxima", step3_selectors["maxSpeed"], step3_test_data["maxSpeed"], "input", False),
-            ("Unidad velocidad máxima", step3_selectors["maxSpeedUnit"], "11", "select", True),
+            ("Unidad velocidad máxima", step3_selectors["maxSpeedUnit"], step3_test_data["maxSpeedUnit"], "select", False),
             ("Altitud máxima operativa", step3_selectors["maxOperatingAltitude"], step3_test_data["maxOperatingAltitude"], "input", False),
-            ("Unidad altitud máxima", step3_selectors["maxOperatingAltitudeUnit"], "9", "select", True),
+            ("Unidad altitud máxima", step3_selectors["maxOperatingAltitudeUnit"], step3_test_data["maxOperatingAltitudeUnit"], "select", False),
             ("Rendimiento mínimo", step3_selectors["performanceMin"], step3_test_data["performanceMin"], "input", False),
             ("Rendimiento máximo", step3_selectors["performanceMax"], step3_test_data["performanceMax"], "input", False),
-            ("Unidad rendimiento", step3_selectors["performanceUnit"], "16", "select", True)
+            ("Unidad rendimiento", step3_selectors["performanceUnit"], step3_test_data["performanceUnit"], "select", False)
         ]
 
         for field_name, xpath_selector, value, field_type, use_value in capacidad_fields:
             fill_xpath_field(driver, field_name, xpath_selector, value, field_type, use_value)
 
+        # Pausa breve para inspección visual después de llenar Capacidad y Rendimiento
+        time.sleep(3)
+
         # Cerrar sección de capacidad y rendimiento
         click_xpath_element(driver, "Capacidad y Rendimiento (cerrar)", step3_selectors["capacidad_rendimiento_close_button"])
 
         # Abrir sección de dimensiones y peso
-        third_section_selectors = [
-            "//button[@aria-label='Expand Dimensiones y Peso Section']",
-            "//span[normalize-space()='Dimensiones y Peso']",
-            "//button[contains(@aria-label, 'Dimensiones y Peso')]",
-            "//div[contains(text(), 'Dimensiones y Peso')]"
-        ]
+        click_xpath_element(driver, "Dimensiones y Peso", step3_selectors["dimensiones_peso"])
+        time.sleep(3)  # Delay de 3 segundos después de desplegar
 
-        third_section_opened = False
-        for selector in third_section_selectors:
-            try:
-                click_xpath_element(driver, f"Dimensiones y Peso ({selector})", selector)
-                third_section_opened = True
-                break
-            except:
-                continue
+        # Campos de dimensiones y peso
+        dimensiones_fields = [
+            ("Unidad de dimensiones", step3_selectors["dimensionsUnit"], step3_test_data["dimensionsUnit"], "select", False),
+            ("Ancho", step3_selectors["width"], step3_test_data["width"], "input", False),
+            ("Largo", step3_selectors["length"], step3_test_data["length"], "input", False),
+            ("Alto", step3_selectors["height"], step3_test_data["height"], "input", False),
+            ("Peso neto", step3_selectors["netWeight"], step3_test_data["netWeight"], "input", False),
+            ("Unidad peso neto", step3_selectors["netWeightUnit"], step3_test_data["netWeightUnit"], "select", False)
+        ] 
 
-        if third_section_opened:
-            time.sleep(2)  # Delay de 2 segundos después de desplegar
-            # Campos de dimensiones y peso
-            dimensiones_fields = [
-                ("Unidad de dimensiones", step3_selectors["dimensionsUnit"], "9", "select", True),
-                ("Ancho", step3_selectors["width"], step3_test_data["width"], "input", False),
-                ("Largo", step3_selectors["length"], step3_test_data["length"], "input", False),
-                ("Alto", step3_selectors["height"], step3_test_data["height"], "input", False),
-                ("Peso neto", step3_selectors["netWeight"], step3_test_data["netWeight"], "input", False),
-                ("Unidad peso neto", step3_selectors["netWeightUnit"], "14", "select", True)
-            ] 
+        for field_name, xpath_selector, value, field_type, use_value in dimensiones_fields:
+            fill_xpath_field(driver, field_name, xpath_selector, value, field_type, use_value)
 
-            for field_name, xpath_selector, value, field_type, use_value in dimensiones_fields:
-                fill_xpath_field(driver, field_name, xpath_selector, value, field_type, use_value)
+        # Pausa breve para inspección visual después de Dimensiones y Peso
+        time.sleep(3)
 
-            # Cerrar sección de dimensiones y peso
-            click_xpath_element(driver, "Dimensiones y Peso (cerrar)", "//button[@aria-label='Collapse Dimensiones y Peso Section']")
+        # Cerrar sección de dimensiones y peso
+        click_xpath_element(driver, "Dimensiones y Peso (cerrar)", step3_selectors["dimensiones_peso"])
 
         # Abrir sección de sistemas auxiliares e hidráulicos
         click_xpath_element(driver, "Sistemas Auxiliares e Hidráulicos", step3_selectors["sistemas_hidraulicos"])
-        time.sleep(2)  # Delay de 2 segundos después de desplegar
+        time.sleep(3)  # Delay de 3 segundos después de desplegar
 
         # Campos adicionales del sistema (cuarta sección)
         sistema_fields = [
-            ("Aire acondicionado", step3_selectors["airConditioning"], "31", "select", True),
+            ("Aire acondicionado", step3_selectors["airConditioning"], step3_test_data["airConditioning"], "select", False),
             ("Consumo aire acondicionado", step3_selectors["airConditioningConsumption"], step3_test_data["airConditioningConsumption"], "input", False),
-            ("Unidad consumo aire acondicionado", step3_selectors["airConditioningConsumptionUnit"], "13", "select", True),
+            ("Unidad consumo aire acondicionado", step3_selectors["airConditioningConsumptionUnit"], step3_test_data["airConditioningConsumptionUnit"], "select", False),
             ("Presión hidráulica máxima", step3_selectors["maxHydraulicPressure"], step3_test_data["maxHydraulicPressure"], "input", False),
-            ("Unidad presión hidráulica máxima", step3_selectors["maxHydraulicPressureUnit"], "17", "select", True),
-            ("Unidad caudal bomba hidráulica", step3_selectors["hydraulicPumpFlowRateUnit"], "13", "select", True),
+            ("Unidad presión hidráulica máxima", step3_selectors["maxHydraulicPressureUnit"], step3_test_data["maxHydraulicPressureUnit"], "select", False),
+            ("Caudal bomba hidráulica", step3_selectors["hydraulicPumpFlowRate"], step3_test_data["hydraulicPumpFlowRate"], "input", False),
+            ("Unidad caudal bomba hidráulica", step3_selectors["hydraulicPumpFlowRateUnit"], step3_test_data["hydraulicPumpFlowRateUnit"], "select", False),
             ("Capacidad depósito hidráulico", step3_selectors["hydraulicReservoirCapacity"], step3_test_data["hydraulicReservoirCapacity"], "input", False),
-            ("Unidad capacidad depósito hidráulico", step3_selectors["hydraulicReservoirCapacityUnit"], "12", "select", True)
+            ("Unidad capacidad depósito hidráulico", step3_selectors["hydraulicReservoirCapacityUnit"], step3_test_data["hydraulicReservoirCapacityUnit"], "select", False)
         ]
 
         for field_name, xpath_selector, value, field_type, use_value in sistema_fields:
             fill_xpath_field(driver, field_name, xpath_selector, value, field_type, use_value)
 
+        # Pausa breve para inspección visual después de Sistemas Auxiliares e Hidráulicos
+        time.sleep(3)
+
         # Cerrar sección de sistemas auxiliares e hidráulicos
         click_xpath_element(driver, "Sistemas Auxiliares e Hidráulicos (cerrar)", step3_selectors["sistemas_hidraulicos_close_button"])
+        
+        # Abrir sección de Normatividad y Seguridad
+        click_xpath_element(driver, "Normatividad y Seguridad", step3_selectors["normatividad_seguridad"])
+        time.sleep(1)
+
+        # Campos de Normatividad y Seguridad
+        normatividad_fields = [
+            ("Nivel de Emisiones", step3_selectors["emissionLevel"], step3_test_data["emissionLevelValue"], "select", True),
+            ("Tipo de Cabina", step3_selectors["cabinType"], step3_test_data["cabinTypeValue"], "select", True)
+        ]
+
+        for field_name, xpath_selector, value, field_type, use_value in normatividad_fields:
+            fill_xpath_field(driver, field_name, xpath_selector, value, field_type, use_value)
+
+        # Pausa breve para inspección visual después de Normatividad y Seguridad
+        time.sleep(3)
+
+        # Cerrar Normatividad y Seguridad
+        click_xpath_element(driver, "Normatividad y Seguridad (cerrar)", step3_selectors["normatividad_seguridad_close_button"])
         return driver
 
     except Exception as e:
@@ -407,8 +465,7 @@ def submit_form_step3(driver):
 
         next_button.click()
         print("Click realizado en botón 'Siguiente' del Paso 3")
-
-        # Esperar a que se procese el envío y verificar avance
+        # Esperar a que se procese el envío
         time.sleep(2)
 
         # Verificar indicadores de éxito/avance al Paso 4

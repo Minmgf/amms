@@ -542,7 +542,7 @@ def submit_form_step1(driver):
 step2_test_data = {
     "Número de serie del terminal": "TERM123456789",
     "Número de chasis": "CHASIS987654321",
-    "Número de serie del dispositivo GPS": "GPS456789123",
+    "Número de serie del dispositivo GPS": f"GPS{fake.random_int(100000, 999999)}",
     "Número de motor": "ENG789123456"
 }
 

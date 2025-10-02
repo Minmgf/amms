@@ -5,22 +5,45 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
+# Import shared flows
 from flows.auth.login.selenium_login_flow import perform_login, save_browser_logs
 from flows.navigation.machinery_navigation import navigate_to_machinery
 
 import importlib.util
 
-spec = importlib.util.spec_from_file_location("IT_MAQ_003", str(Path(__file__).parent.parent / "IT-MAQ-003" / "IT-MAQ-003.py"))
-it_maq_003 = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(it_maq_003)
+# Import IT-MAQ-001 module and expose common functions
+it_maq_001_path = Path(__file__).parent.parent / "IT-MAQ-001" / "IT-MAQ-001.py"
+spec001 = importlib.util.spec_from_file_location("IT_MAQ_001", it_maq_001_path)
+it_maq_001 = importlib.util.module_from_spec(spec001)
+spec001.loader.exec_module(it_maq_001)
 
-setup_test_environment = it_maq_003.setup_test_environment
-run_it_maq_003_step1 = it_maq_003.run_it_maq_003_step1
-run_it_maq_003_step2 = it_maq_003.run_it_maq_003_step2
-run_it_maq_003_step3 = it_maq_003.run_it_maq_003_step3
-test_data = it_maq_003.test_data
-step2_test_data = it_maq_003.step2_test_data
-step3_test_data = it_maq_003.step3_test_data
+setup_test_environment = it_maq_001.setup_test_environment
+open_machinery_form = it_maq_001.open_machinery_form
+complete_machinery_form_step1 = it_maq_001.complete_machinery_form_step1
+submit_form_step1 = it_maq_001.submit_form_step1
+cleanup_test_environment = it_maq_001.cleanup_test_environment
+
+# Import IT-MAQ-002 module and expose its step2 (it relies on IT-MAQ-001 functions)
+it_maq_002_path = Path(__file__).parent.parent / "IT-MAQ-002" / "IT-MAQ-002.py"
+spec002 = importlib.util.spec_from_file_location("IT_MAQ_002", it_maq_002_path)
+it_maq_002 = importlib.util.module_from_spec(spec002)
+spec002.loader.exec_module(it_maq_002)
+
+run_it_maq_002_step1 = getattr(it_maq_002, 'run_it_maq_002_step1', None)
+run_it_maq_002_step2 = getattr(it_maq_002, 'run_it_maq_002_step2', None)
+
+# Import IT-MAQ-003 module and expose its step functions and test data
+it_maq_003_path = Path(__file__).parent.parent / "IT-MAQ-003" / "IT-MAQ-003.py"
+spec003 = importlib.util.spec_from_file_location("IT_MAQ_003", it_maq_003_path)
+it_maq_003 = importlib.util.module_from_spec(spec003)
+spec003.loader.exec_module(it_maq_003)
+
+run_it_maq_003_step1 = getattr(it_maq_003, 'run_it_maq_003_step1', None)
+run_it_maq_003_step2 = getattr(it_maq_003, 'run_it_maq_003_step2', None)
+run_it_maq_003_step3 = getattr(it_maq_003, 'run_it_maq_003_step3', None)
+test_data = getattr(it_maq_003, 'test_data', None)
+step2_test_data = getattr(it_maq_003, 'step2_test_data', None)
+step3_test_data = getattr(it_maq_003, 'step3_test_data', None)
 
 def cleanup_test_environment(driver, test_name="IT-MAQ-004"):
     try:
@@ -44,13 +67,13 @@ fake = Faker('es_CO')
 fake.seed_instance(int(time.time() * 1000000))
 
 step4_test_data = {
-    "Fecha de adquisición": fake.date_between(start_date='-2y', end_date='today').strftime('%Y-%m-%d'),
+    "Fecha de adquisición": fake.date_between(start_date='-2y', end_date='today').strftime('%d/%m/%Y'),
     "Estado de uso": "Nuevo",
     "Horas usadas": str(fake.random_int(0, 1000)),
     "Kilometraje": str(fake.random_int(0, 50000)),
     "Unidad de kilometraje": "Metros (m)",
     "Tenencia": "Alquilada",
-    "Fecha fin de contrato": fake.date_between(start_date='today', end_date='+2y').strftime('%Y-%m-%d')
+    "Fecha fin de contrato": fake.date_between(start_date='today', end_date='+2y').strftime('%d/%m/%Y')
 }
 
 step4_selectors = {
@@ -138,7 +161,7 @@ def submit_form_step4(driver):
         next_button.click()
         print("Click realizado en botón 'Siguiente' del Paso 4")
 
-        time.sleep(2)
+    # Pausa de verificación removida (no más sleep largo)
 
         success_indicators = [
             "//div[contains(text(), 'Paso 5')]",
