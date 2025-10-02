@@ -3,23 +3,6 @@ import { CiFilter } from 'react-icons/ci'
 import TableList from '@/app/components/shared/TableList'
 import MaintenanceScheduledFiltersModal from '@/app/components/machinery/history/MaintenanceScheduledFiltersModal'
 
-const fallbackScheduled = [
-  {
-    id: 1,
-    scheduledDate: '2025-03-14T21:23:00Z',
-    maintenanceType: 'Correctivo',
-    assignedTo: 'Cristiano Ronaldo',
-    status: 'En progreso'
-  },
-  {
-    id: 2,
-    scheduledDate: '2025-03-14T21:23:00Z',
-    maintenanceType: 'Preventivo',
-    assignedTo: 'Ousmane Dembélé',
-    status: 'Pendiente'
-  }
-]
-
 const DEFAULT_FILTERS = {
   startDate: '',
   endDate: '',
@@ -56,31 +39,29 @@ const StatusBadge = ({ status }) => {
   )
 }
 
-const MaintenanceScheduledSection = ({ scheduledMaint }) => {
+const MaintenanceScheduledSection = ({ scheduledMaint, loading = false }) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false)
 
-  const scheduledData = Array.isArray(scheduledMaint) && scheduledMaint.length > 0 ? scheduledMaint : fallbackScheduled
+  const scheduledData = Array.isArray(scheduledMaint) ? scheduledMaint : []
 
   const filteredScheduledData = useMemo(() => {
     return scheduledData.filter((record) => {
       if (!record) return false
 
-      const recordDate = record.scheduledDate ? new Date(record.scheduledDate) : null
-      const startDate = filters.startDate ? new Date(filters.startDate) : null
-      const endDate = filters.endDate ? new Date(filters.endDate) : null
-
-      if (startDate) {
-        const startOfDay = new Date(startDate)
-        startOfDay.setHours(0, 0, 0, 0)
-        if (!recordDate || recordDate < startOfDay) return false
-      }
-
-      if (endDate) {
-        const endOfDay = new Date(endDate)
-        endOfDay.setHours(23, 59, 59, 999)
-        if (!recordDate || recordDate > endOfDay) return false
+      if (filters.startDate || filters.endDate) {
+        if (!record.scheduledDate) return false
+        
+        const recordDateStr = record.scheduledDate.split('T')[0].split(' ')[0]
+        
+        if (filters.startDate && recordDateStr < filters.startDate) {
+          return false
+        }
+        
+        if (filters.endDate && recordDateStr > filters.endDate) {
+          return false
+        }
       }
 
       if (filters.maintenanceType && record.maintenanceType !== filters.maintenanceType) return false
@@ -144,9 +125,26 @@ const MaintenanceScheduledSection = ({ scheduledMaint }) => {
     setFilters(DEFAULT_FILTERS)
   }
 
-  const maintenanceTypes = ['Preventivo', 'Correctivo']
-  const technicians = ['Cristiano Ronaldo', 'Ousmane Dembélé', 'Juan Andres Pete']
-  const statuses = ['Pendiente', 'En progreso', 'Completado']
+  const maintenanceTypes = useMemo(() => {
+    const types = scheduledData
+      .map(record => record.maintenanceType)
+      .filter(Boolean)
+    return [...new Set(types)].sort()
+  }, [scheduledData])
+
+  const technicians = useMemo(() => {
+    const techs = scheduledData
+      .map(record => record.assignedTo)
+      .filter(Boolean)
+    return [...new Set(techs)].sort()
+  }, [scheduledData])
+
+  const statuses = useMemo(() => {
+    const statusList = scheduledData
+      .map(record => record.status)
+      .filter(Boolean)
+    return [...new Set(statusList)].sort()
+  }, [scheduledData])
 
   return (
     <div className="space-y-6">
@@ -172,16 +170,22 @@ const MaintenanceScheduledSection = ({ scheduledMaint }) => {
         </button>
       </div>
 
-      <div className=" rounded-xl p-0">
-        <TableList
-          columns={columns}
-          data={filteredScheduledData}
-          loading={false}
-          globalFilter={searchQuery}
-          onGlobalFilterChange={setSearchQuery}
-          globalFilterFn={globalFilterFn}
-          pageSizeOptions={[5, 10, 20]}
-        />
+      <div className="rounded-xl p-0">
+        {!loading && scheduledData.length === 0 ? (
+          <div className="flex items-center justify-center py-12 text-secondary text-sm">
+            No hay mantenimientos programados registrados para esta maquinaria.
+          </div>
+        ) : (
+          <TableList
+            columns={columns}
+            data={filteredScheduledData}
+            loading={loading}
+            globalFilter={searchQuery}
+            onGlobalFilterChange={setSearchQuery}
+            globalFilterFn={globalFilterFn}
+            pageSizeOptions={[5, 10, 20]}
+          />
+        )}
       </div>
 
       <MaintenanceScheduledFiltersModal

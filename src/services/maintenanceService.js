@@ -139,3 +139,9 @@ export const getMaintenanceSchedulingStatuses = async () => {
     const { data } = await apiMain.get("/statues/list/5/");
     return data;
 };
+
+// Obtener estados de solicitudes de mantenimiento
+export const getMaintenanceRequestStatuses = async () => {
+    const { data } = await apiMain.get("/statues/list/4/");
+    return data;
+};
