@@ -39,6 +39,8 @@ export default function MachineryDetailsModal({
   const [statusName, setStatusName] = useState("");
   const [photoUrl, setPhotoUrl] = useState(null);
   const [cityName, setCityName] = useState("");
+  const [manufactureYear, setManufactureYear] = useState("");
+  const [tariffSubheading, setTariffSubheading] = useState("");
   const [usageInfo, setUsageInfo] = useState(null);
   const [trackerInfo, setTrackerInfo] = useState(null);
   const [specificSheet, setSpecificSheet] = useState(null);
@@ -64,21 +66,6 @@ export default function MachineryDetailsModal({
       setSecondaryTypeName(found?.name || "");
     });
 
-    // Marca
-    getMachineryBrands().then((res) => {
-      const arr = Array.isArray(res?.data) ? res.data : [];
-      const found = arr.find((b) => b.id === selectedMachine.brand);
-      setBrandName(found?.name || "");
-    });
-
-    // Modelo
-    if (selectedMachine.id_model && selectedMachine.brand) {
-      getModelsByBrandId(selectedMachine.brand).then((data) => {
-        const found = data?.find((m) => m.id === selectedMachine.id_model);
-        setModelName(found?.name || "");
-      });
-    }
-
     // Estado operacional
     getMachineryStatus().then((data) => {
       const found = data?.find(
@@ -87,12 +74,14 @@ export default function MachineryDetailsModal({
       setStatusName(found?.name || "");
     });
 
-    // Ciudad (nuevo)
+    // City(country), Manufacture Year, Tariff Subheading, Brand, Model
     if (selectedMachine?.id_machinery) {
       getGeneralData(selectedMachine.id_machinery).then((res) => {
-        const arr = Array.isArray(res?.data) ? res.data : [];
-        const found = arr.find((c) => c.id === selectedMachine.id_city);
-        setCityName(found?.name || "");
+        setCityName(res.id_country || "");
+        setManufactureYear(res.manufacturing_year || "");
+        setTariffSubheading(res.tariff_subheading || "");
+        setBrandName(res.brand_name || "");
+        setModelName(res.model_name || "");
       });
     }
   }, [selectedMachine]);
@@ -243,14 +232,14 @@ export default function MachineryDetailsModal({
                     <Row label="Modelo" value={modelName} />
                     <Row
                       label="Año fabricación"
-                      value={selectedMachine?.manufacturing_year}
+                      value={manufactureYear}
                     />
                     <Row label="Tipo" value={typeName} />
                     <Row label="Tipo secundario" value={secondaryTypeName} />
                     <Row label="Origen" value={cityName} />
                     <Row
                       label="Subpartida arancelaria"
-                      value={selectedMachine?.tariff_subheading ?? "—"}
+                      value={tariffSubheading}
                     />
                     <Row label="Estado operacional" value={statusName} />
                   </div>
@@ -528,15 +517,12 @@ export default function MachineryDetailsModal({
                 ["Nombre", selectedMachine?.machinery_name || "—"],
                 ["Marca", brandName || "—"],
                 ["Modelo", modelName || "—"],
-                ["Año fabricación", selectedMachine?.manufacturing_year || "—"],
+                ["Año fabricación", manufactureYear || "—"],
                 ["Tipo", typeName || "—"],
                 ["Tipo secundario", secondaryTypeName || "—"],
                 ["Número de serie", selectedMachine?.serial_number || "—"],
-                ["Ciudad origen", selectedMachine?.id_city || "—"],
-                [
-                  "Subpartida arancelaria",
-                  selectedMachine?.tariff_subheading ?? "—",
-                ],
+                ["Ciudad origen", cityName || "—"],
+                ["Subpartida arancelaria", tariffSubheading ?? "—"],
                 ["Estado operacional", statusName || "—"],
               ].map(([label, value], idx) => (
                 <div
