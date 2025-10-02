@@ -14,6 +14,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { getScheduledMaintenanceList, getMaintenanceSchedulingStatuses } from '@/services/maintenanceService';
 import { getUserInfo } from '@/services/authService';
 import MaintenanceReportModal from '@/app/components/maintenance/machineMaintenance/MaintenanceReportModal';
+import PermissionGuard from '@/app/(auth)/PermissionGuard';
 
 const ScheduledMaintenancePage = () => {
   const { currentTheme } = useTheme();
@@ -202,32 +203,38 @@ const ScheduledMaintenancePage = () => {
     return (
       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
         {/* Ver reporte - siempre disponible */}
-        <button
-          onClick={() => handleViewReport(maintenance.id)}
-          className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600"
-          title="Ver reporte del mantenimiento"
-        >
-          <FiEye className="w-3 h-3" /> Reporte
-        </button>
+        <PermissionGuard permission={127}>
+          <button
+            onClick={() => handleViewReport(maintenance.id)}
+            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600"
+            title="Ver reporte del mantenimiento"
+          >
+            <FiEye className="w-3 h-3" /> Reporte
+          </button>
+        </PermissionGuard>
         
         {/* Actualizar - siempre disponible */}
-        <button
-          onClick={() => handleUpdateMaintenance(maintenance.id)}
-          className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 hover:border-green-500 hover:text-green-600 text-green-600"
-          title="Actualizar mantenimiento"
-        >
-          <FiEdit3 className="w-3 h-3" /> Actualizar
-        </button>
+        <PermissionGuard permission={126}>
+          <button
+            onClick={() => handleUpdateMaintenance(maintenance.id)}
+            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 hover:border-green-500 hover:text-green-600 text-green-600"
+            title="Actualizar mantenimiento"
+          >
+            <FiEdit3 className="w-3 h-3" /> Actualizar
+          </button>
+        </PermissionGuard>
         
         {/* Cancelar - solo para pendientes */}
         {![14,15].includes(maintenance.status_id) && (
-          <button
-            onClick={() => handleCancelMaintenance(maintenance.id)}
-            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-red-300 hover:border-red-500 hover:text-red-600 text-red-600"
-            title="Cancelar mantenimiento"
-          >
-            <FiX className="w-3 h-3" /> Cancelar
-          </button>
+          <PermissionGuard permission={121}>
+            <button
+              onClick={() => handleCancelMaintenance(maintenance.id)}
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-red-300 hover:border-red-500 hover:text-red-600 text-red-600"
+              title="Cancelar mantenimiento"
+            >
+              <FiX className="w-3 h-3" /> Cancelar
+            </button>
+          </PermissionGuard>
         )}
       </div>
     );
@@ -512,13 +519,15 @@ const ScheduledMaintenancePage = () => {
             />
 
             {/* Acciones rápidas */}
-            <button
-              onClick={handleCreateMaintenance}
-              className="w-full parametrization-filter-button flex items-center justify-center space-x-2 px-4 py-2 transition-colors"
-            >
-              <FaPlus className="w-4 h-4" />
-              <span className="text-sm">Nuevo Mantenimiento</span>
-            </button>
+            <PermissionGuard permission={117}>
+              <button
+                onClick={handleCreateMaintenance}
+                className="w-full parametrization-filter-button flex items-center justify-center space-x-2 px-4 py-2 transition-colors"
+              >
+                <FaPlus className="w-4 h-4" />
+                <span className="text-sm">Nuevo Mantenimiento</span>
+              </button>
+            </PermissionGuard>
 
             <button
               onClick={() => setFilterModalOpen(true)}
@@ -738,15 +747,17 @@ const ScheduledMaintenancePage = () => {
       </div>
 
       {/* Lista de mantenimientos */}
-      <div className="card-theme rounded-lg shadow">
-        <TableList
-          columns={columns}
-          data={filteredData}
-          loading={loading}
-          globalFilter={globalFilter}
-          onGlobalFilterChange={setGlobalFilter}
-        />
-      </div>
+      <PermissionGuard permission={125}>
+        <div className="card-theme rounded-lg shadow">
+          <TableList
+            columns={columns}
+            data={filteredData}
+            loading={loading}
+            globalFilter={globalFilter}
+            onGlobalFilterChange={setGlobalFilter}
+          />
+        </div>
+      </PermissionGuard>
 
       {/* Modal de Filtros */}
       <FilterModal
