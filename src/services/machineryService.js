@@ -388,3 +388,9 @@ export const getMachineryPhoto = async (machineryId) => {
     // Supón que el endpoint devuelve { url: "https://..." }
     return data?.url || null;
 };
+
+// traer mantenimientos periodicos de una maquinaria por id
+export const getPeriodicMaintenance = async (machineryId) => {
+  const { data } = await apiMain.get(`/machinery/periodic-maintenance/?machinery=${machineryId}`);
+  return data;
+};
