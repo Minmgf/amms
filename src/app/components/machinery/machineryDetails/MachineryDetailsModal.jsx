@@ -10,14 +10,13 @@ import {
   getMachineryBrands,
   getModelsByBrandId,
   getMachineryStatus,
-  getMachineryUsage,
-  getMachineryTracker,
   getUsageInfo,
   getTrackerInfo,
   getSpecificTechnicalSheet,
   getMachineryDocs,
   getPeriodicMaintenance,
 } from "@/services/machineryService";
+import { getMachineryTracker } from "@/services/machineryService"; // Added import for getMachineryTracker
 
 export default function MachineryDetailsModal({
   isOpen,
@@ -43,6 +42,8 @@ export default function MachineryDetailsModal({
   const [usageInfo, setUsageInfo] = useState(null);
   const [trackerInfo, setTrackerInfo] = useState(null);
   const [specificSheet, setSpecificSheet] = useState(null);
+  const [specificSheetLoading, setSpecificSheetLoading] = useState(false); // Added loading state
+  const [specificSheetError, setSpecificSheetError] = useState(null); // Error state
   const [docs, setDocs] = useState([]);
   const [periodicMaintenances, setPeriodicMaintenances] = useState([]);
 
@@ -110,9 +111,28 @@ export default function MachineryDetailsModal({
 
   useEffect(() => {
     if (!selectedMachine?.id_machinery) return;
-    getSpecificTechnicalSheet(selectedMachine.id_machinery).then((data) => {
-      setSpecificSheet(data || null);
-    });
+    let cancelled = false;
+    setSpecificSheetLoading(true);
+    (async () => {
+      setSpecificSheetError(null);
+      try {
+        const data = await getSpecificTechnicalSheet(selectedMachine.id_machinery);
+        if (!cancelled) setSpecificSheet(data || null);
+        
+      } catch (err) {
+        // 404 means no specific sheet; other errors log and continue
+        if (err?.response?.status === 404) {
+          if (!cancelled) setSpecificSheet(null);
+        } else {
+          console.error("Error fetching specific technical sheet", err);
+          if (!cancelled) setSpecificSheetError('Error al cargar la ficha técnica específica');
+        }
+      } finally {
+        if (!cancelled) setSpecificSheetLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+    
   }, [selectedMachine]);
 
   useEffect(() => {
@@ -124,9 +144,11 @@ export default function MachineryDetailsModal({
 
   useEffect(() => {
     if (!selectedMachine?.id_machinery) return;
-    getPeriodicMaintenance(selectedMachine.id_machinery).then((res) => {
-      setPeriodicMaintenances(Array.isArray(res) ? res : []);
-    });
+    getPeriodicMaintenance(selectedMachine.id_machinery)
+      .then((res) => {
+        setPeriodicMaintenances(Array.isArray(res) ? res : []);
+      })
+      .catch(() => setPeriodicMaintenances([]));
   }, [selectedMachine]);
 
   if (!isOpen) return null;
@@ -228,7 +250,7 @@ export default function MachineryDetailsModal({
                     <Row label="Origen" value={cityName} />
                     <Row
                       label="Subpartida arancelaria"
-                      value={selectedMachine?.tariff_subheading}
+                      value={selectedMachine?.tariff_subheading ?? "—"}
                     />
                     <Row label="Estado operacional" value={statusName} />
                   </div>
@@ -296,7 +318,7 @@ export default function MachineryDetailsModal({
           )}
 
           {/* === Especificaciones Técnicas (DESKTOP) === */}
-          {activeTab === "tech" && (
+          {activeTab === "tech" && specificSheet && (
             <div className="grid md:grid-cols-2 gap-6">
               {/* Capacidad y Rendimiento */}
               <div className="border rounded-xl p-4 border-primary mb-6">
@@ -378,7 +400,7 @@ export default function MachineryDetailsModal({
                 </div>
               </div>
 
-              {/Cabina, Emisiones y Aire Acondicionado */}
+              {/* Cabina, Emisiones y Aire Acondicionado */}
               <div className="border rounded-xl p-4 border-primary mb-6">
                 <h3 className="font-semibold text-lg mb-3 text-primary">Cabina, Emisiones y Aire Acondicionado</h3>
                 <div className="flex flex-col gap-3">
@@ -410,6 +432,15 @@ export default function MachineryDetailsModal({
 
               {/* ...más tarjetas técnicas aquí... */}
             </div>
+          )}
+          {activeTab === "tech" && specificSheetLoading && (
+            <div className="text-center text-secondary py-8">Cargando especificaciones técnicas...</div>
+          )}
+          {activeTab === "tech" && !specificSheetLoading && specificSheetError && (
+            <div className="text-center text-red-600 py-8">{specificSheetError}</div>
+          )}
+          {activeTab === "tech" && !specificSheetLoading && !specificSheetError && !specificSheet && (
+            <div className="text-center text-secondary py-8">No existe ficha técnica específica registrada.</div>
           )}
 
           {/* === Documentos y Mantenimiento (DESKTOP) === */}
@@ -461,20 +492,9 @@ export default function MachineryDetailsModal({
                     <li className="text-sm text-gray-400">No hay mantenimientos registrados</li>
                   ) : (
                     periodicMaintenances.map((item) => (
-                      <li
-                        key={item.id_periodic_maintenance_scheduling}
-                        className="flex items-center justify-between p-2.5 rounded-lg border border-primary hover:bg-gray-50"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
-                            <FaTools className="w-4 h-4 text-gray-600" />
-                          </div>
-                          <span className="text-sm text-secondary">{item.maintenance_name}</span>
-                        </div>
-                        <span className="text-xs text-gray-500">
-                          {item.usage_hours ? `${item.usage_hours} hrs` : item.distance_km ? `${item.distance_km} km` : "—"}
-                        </span>
-                      </li>
+                      <div key={item.id_periodic_maintenance_scheduling}>
+                        {item.maintenance_name}
+                      </div>
                     ))
                   )}
                 </ul>
@@ -515,7 +535,7 @@ export default function MachineryDetailsModal({
                 ["Ciudad origen", selectedMachine?.id_city || "—"],
                 [
                   "Subpartida arancelaria",
-                  selectedMachine?.tariff_subheading || "—",
+                  selectedMachine?.tariff_subheading ?? "—",
                 ],
                 ["Estado operacional", statusName || "—"],
               ].map(([label, value], idx) => (
