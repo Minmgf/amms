@@ -12,7 +12,7 @@ export const getAudit = async () => {
  * Obtiene el historial de cambios de una maquinaria específica
  * @param {number|string} machineryId - ID de la maquinaria
  * @param {object} filters - Filtros opcionales (operation: CREATE/UPDATE/DELETE)
- * @returns {Promise} - Promesa con los eventos de auditoría
+ * @returns {Promise} - Promesa con los eventos de auditoría filtrados
  */
 export const getMachineryHistory = async (machineryId, filters = {}) => {
     const params = {
@@ -22,13 +22,23 @@ export const getMachineryHistory = async (machineryId, filters = {}) => {
     };
     
     const { data } = await apiAudit.get("/audit-events", { params });
-    return data;
+    
+    // Filtrar en frontend (el backend aún no implementa el filtro)
+    if (!machineryId) return data;
+    
+    return data.filter(event => {
+        const eventMachineryId = event.diff?.created?.id_machinery || 
+                                 event.diff?.changed?.id_machinery || 
+                                 event.diff?.removed?.id_machinery ||
+                                 event.meta?.id_machinery;
+        return eventMachineryId == machineryId;
+    });
 };
 
 /**
  * Obtiene el historial de solicitudes de mantenimiento de una maquinaria
  * @param {number|string} machineryId - ID de la maquinaria
- * @returns {Promise} - Promesa con los eventos de auditoría de solicitudes de mantenimiento
+ * @returns {Promise} - Promesa con los eventos de auditoría de solicitudes filtrados
  */
 export const getMaintenanceRequestHistory = async (machineryId) => {
     const params = {
@@ -37,13 +47,17 @@ export const getMaintenanceRequestHistory = async (machineryId) => {
     };
     
     const { data } = await apiAudit.get("/audit-events", { params });
-    return data;
+    
+    // Filtrar en frontend (el backend aún no implementa el filtro)
+    if (!machineryId) return data;
+    
+    return data.filter(event => event.diff?.created?.id_machinery == machineryId);
 };
 
 /**
  * Obtiene el historial de mantenimientos programados de una maquinaria
  * @param {number|string} machineryId - ID de la maquinaria
- * @returns {Promise} - Promesa con los eventos de auditoría de mantenimientos programados
+ * @returns {Promise} - Promesa con los eventos de auditoría de mantenimientos filtrados
  */
 export const getMaintenanceScheduledHistory = async (machineryId) => {
     const params = {
@@ -52,5 +66,9 @@ export const getMaintenanceScheduledHistory = async (machineryId) => {
     };
     
     const { data } = await apiAudit.get("/audit-events", { params });
-    return data;
+    
+    // Filtrar en frontend (el backend aún no implementa el filtro)
+    if (!machineryId) return data;
+    
+    return data.filter(event => event.diff?.created?.id_machinery == machineryId);
 };
