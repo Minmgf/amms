@@ -426,13 +426,20 @@ const ScheduleMaintenanceModal = ({
                         const availability = technicianAvailability[techId];
                         const count = availability?.totalScheduled || 0;
 
-                        let indicator = "🟢";
-                        if (count >= 5) indicator = "🟡";
-                        if (count >= 10) indicator = "🔴";
+                        let statusText = "●";
+                        let statusColor = "green";
+                        if (count >= 5) {
+                          statusText = "●";
+                          statusColor = "yellow";
+                        }
+                        if (count >= 10) {
+                          statusText = "●";
+                          statusColor = "red";
+                        }
 
                         return (
                           <option key={tech.value} value={tech.value}>
-                            {indicator} {tech.label} ({count} programados)
+                            {statusText} {tech.label} ({count} programados)
                           </option>
                         );
                       })}
