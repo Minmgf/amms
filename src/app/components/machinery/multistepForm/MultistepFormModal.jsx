@@ -107,6 +107,7 @@ export default function MultiStepFormModal({
   const [machineryStatuesList, setMachineryStatuesList] = useState([]);
   const [idUsageSheet, setIdUsageSheet] = useState(null); // Para almacenar el ID de la hoja de uso
   const [idTrackerSheet, setIdTrackerSheet] = useState(null); // Para almacenar el ID del tracker
+  const [operationalStatus, setOperationalStatus] = useState(null); // Estado operativo actual de la maquinaria
   // Hook del tema
   const { getCurrentTheme } = useTheme();
   const defaultValues = {
@@ -253,7 +254,7 @@ export default function MultiStepFormModal({
           photo: null,
         };
 
-        if (data.id_machinery_operational_status !== 3) {
+        if (data.machinery_operational_status !== 3) {
           mappedData.machineryStatues = data.machinery_operational_status;
         };
 
@@ -262,6 +263,7 @@ export default function MultiStepFormModal({
           ...mappedData,
         });
         setMachineryId(machineryToEdit.id_machinery);
+        setOperationalStatus(machineryToEdit.id_machinery_operational_status);
       });
 
       // Cargar datos del Paso 2 - Tracker
@@ -1895,7 +1897,7 @@ export default function MultiStepFormModal({
 
               {/* Botón Siguiente / Guardar */}
               {isLastStep ? (
-                !isEditMode && (
+                (!isEditMode || operationalStatus === 3) ? (
                   <button
                     type="submit"
                     aria-label="Save Button"
@@ -1904,7 +1906,7 @@ export default function MultiStepFormModal({
                   >
                     {isSubmittingStep ? "Guardando..." : "Guardar"}
                   </button>
-                )                
+                ) : null               
               ) : (
                 <button
                   type="button"

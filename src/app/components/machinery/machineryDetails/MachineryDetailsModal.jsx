@@ -10,7 +10,13 @@ import {
   getMachineryBrands,
   getModelsByBrandId,
   getMachineryStatus,
+  getUsageInfo,
+  getTrackerInfo,
+  getSpecificTechnicalSheet,
+  getMachineryDocs,
+  getPeriodicMaintenance,
 } from "@/services/machineryService";
+import { getMachineryTracker } from "@/services/machineryService"; // Added import for getMachineryTracker
 
 export default function MachineryDetailsModal({
   isOpen,
@@ -33,6 +39,15 @@ export default function MachineryDetailsModal({
   const [statusName, setStatusName] = useState("");
   const [photoUrl, setPhotoUrl] = useState(null);
   const [cityName, setCityName] = useState("");
+  const [manufactureYear, setManufactureYear] = useState("");
+  const [tariffSubheading, setTariffSubheading] = useState("");
+  const [usageInfo, setUsageInfo] = useState(null);
+  const [trackerInfo, setTrackerInfo] = useState(null);
+  const [specificSheet, setSpecificSheet] = useState(null);
+  const [specificSheetLoading, setSpecificSheetLoading] = useState(false); // Added loading state
+  const [specificSheetError, setSpecificSheetError] = useState(null); // Error state
+  const [docs, setDocs] = useState([]);
+  const [periodicMaintenances, setPeriodicMaintenances] = useState([]);
 
   useEffect(() => {
     if (!selectedMachine) return;
@@ -51,20 +66,6 @@ export default function MachineryDetailsModal({
       setSecondaryTypeName(found?.name || "");
     });
 
-    // Marca
-    getMachineryBrands().then((data) => {
-      const found = data?.find((b) => b.id === selectedMachine.brand);
-      setBrandName(found?.name || "");
-    });
-
-    // Modelo
-    if (selectedMachine.id_model && selectedMachine.brand) {
-      getModelsByBrandId(selectedMachine.brand).then((data) => {
-        const found = data?.find((m) => m.id === selectedMachine.id_model);
-        setModelName(found?.name || "");
-      });
-    }
-
     // Estado operacional
     getMachineryStatus().then((data) => {
       const found = data?.find(
@@ -73,11 +74,70 @@ export default function MachineryDetailsModal({
       setStatusName(found?.name || "");
     });
 
-    // Ciudad (nuevo)
-    getGeneralData().then((data) => {
-      const found = data?.find((c) => c.id === selectedMachine.id_city);
-      setCityName(found?.name || "");
+    // City(country), Manufacture Year, Tariff Subheading, Brand, Model
+    if (selectedMachine?.id_machinery) {
+      getGeneralData(selectedMachine.id_machinery).then((res) => {
+        setCityName(res.id_country || "");
+        setManufactureYear(res.manufacturing_year || "");
+        setTariffSubheading(res.tariff_subheading || "");
+        setBrandName(res.brand_name || "");
+        setModelName(res.model_name || "");
+      });
+    }
+  }, [selectedMachine]);
+
+  useEffect(() => {
+    if (!selectedMachine?.id_machinery) return;
+
+    getUsageInfo(selectedMachine.id_machinery).then((res) => {
+      setUsageInfo(res || null);
     });
+
+    getTrackerInfo(selectedMachine.id_machinery).then((res) => {
+      setTrackerInfo(res || null);
+    });
+  }, [selectedMachine]);
+
+  useEffect(() => {
+    if (!selectedMachine?.id_machinery) return;
+    let cancelled = false;
+    setSpecificSheetLoading(true);
+    (async () => {
+      setSpecificSheetError(null);
+      try {
+        const data = await getSpecificTechnicalSheet(selectedMachine.id_machinery);
+        if (!cancelled) setSpecificSheet(data || null);
+        
+      } catch (err) {
+        // 404 means no specific sheet; other errors log and continue
+        if (err?.response?.status === 404) {
+          if (!cancelled) setSpecificSheet(null);
+        } else {
+          console.error("Error fetching specific technical sheet", err);
+          if (!cancelled) setSpecificSheetError('Error al cargar la ficha técnica específica');
+        }
+      } finally {
+        if (!cancelled) setSpecificSheetLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+    
+  }, [selectedMachine]);
+
+  useEffect(() => {
+    if (!selectedMachine?.id_machinery) return;
+    getMachineryDocs(selectedMachine.id_machinery).then((res) => {
+      setDocs(Array.isArray(res?.data) ? res.data : []);
+    });
+  }, [selectedMachine]);
+
+  useEffect(() => {
+    if (!selectedMachine?.id_machinery) return;
+    getPeriodicMaintenance(selectedMachine.id_machinery)
+      .then((res) => {
+        setPeriodicMaintenances(Array.isArray(res) ? res : []);
+      })
+      .catch(() => setPeriodicMaintenances([]));
   }, [selectedMachine]);
 
   if (!isOpen) return null;
@@ -95,7 +155,7 @@ export default function MachineryDetailsModal({
       <div className="modal-theme rounded-xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900 text-primary">
+          <h2 className="text-xl font-bold text-primary">
             Detalle de Maquinaria
           </h2>
           <button
@@ -142,21 +202,21 @@ export default function MachineryDetailsModal({
           {activeTab === "general" && (
             <>
               <div className="grid md:grid-cols-2 gap-6">
-                <div className="bg-[#737373] h-full rounded-md flex items-center justify-center">
+                <div className="h-fit rounded-md flex items-center justify-center overflow-hidden bg-gray-200">
                   {selectedMachine?.image_path ? (
                     <img
                       src={selectedMachine.image_path}
                       alt="Machinery photo"
-                      className="object-contain max-h-80 w-full rounded-md"
+                      className="object-contain w-full h-full"
                       aria-label="Machinery photo"
                     />
                   ) : (
-                    <span className="text-white">Photo here</span>
+                    <span className="text-secondary min-h-[150px] flex items-center">Ingresa una imagen</span>
                   )}
                 </div>
 
                 <div className="border rounded-xl p-4 border-secondary">
-                  <h3 className="font-semibold text-lg mb-3">
+                  <h3 className="font-semibold text-lg mb-3 text-primary">
                     Datos Generales
                   </h3>
                   <div className="flex flex-col gap-3">
@@ -172,14 +232,14 @@ export default function MachineryDetailsModal({
                     <Row label="Modelo" value={modelName} />
                     <Row
                       label="Año fabricación"
-                      value={selectedMachine?.manufacturing_year}
+                      value={manufactureYear}
                     />
                     <Row label="Tipo" value={typeName} />
                     <Row label="Tipo secundario" value={secondaryTypeName} />
                     <Row label="Origen" value={cityName} />
                     <Row
                       label="Subpartida arancelaria"
-                      value={selectedMachine?.tariff_subheading}
+                      value={tariffSubheading}
                     />
                     <Row label="Estado operacional" value={statusName} />
                   </div>
@@ -206,53 +266,39 @@ export default function MachineryDetailsModal({
                 </div>
               </div>
 
-              {/* NUEVO: Tracker Data Sheet y Usage Information */}
+              {/* Tracker Data Sheet y Usage Information */}
               <div className="grid md:grid-cols-2 gap-6 mt-8">
                 <div className="border rounded-xl p-4 border-primary">
-                  <h4 className="font-semibold mb-3">Tracker Data Sheet</h4>
+                  <h4 className="font-semibold mb-3 text-primary">Datos del Rastreador</h4>
                   <div className="flex flex-col gap-3">
-                    <Row
-                      label="Serial Number"
-                      value={selectedMachine?.tracker_serial_number || "—"}
-                    />
-                    <Row
-                      label="GPS Serial Number"
-                      value={selectedMachine?.gps_serial_number || "—"}
-                    />
-                    <Row
-                      label="Chassis Number"
-                      value={selectedMachine?.chassis_number || "—"}
-                    />
-                    <Row
-                      label="Engine Number"
-                      value={selectedMachine?.engine_number || "—"}
-                    />
+                    <Row label="Número de serie terminal" value={trackerInfo?.terminal_serial_number || "—"} />
+                    <Row label="Número de serie GPS" value={trackerInfo?.gps_serial_number || "—"} />
+                    <Row label="Número de chasis" value={trackerInfo?.chassis_number || "—"} />
+                    <Row label="Número de motor" value={trackerInfo?.engine_number || "—"} />
                   </div>
                 </div>
                 <div className="border rounded-xl p-4 border-primary">
-                  <h4 className="font-semibold mb-3">Usage Information</h4>
+                  <h4 className="font-semibold mb-3 text-primary">Información de Uso</h4>
                   <div className="flex flex-col gap-3">
                     <Row
-                      label="Acquisition Date"
-                      value={
-                        formatDate?.(selectedMachine?.acquisition_date) || "—"
-                      }
+                      label="Fecha de adquisición"
+                      value={formatDate?.(usageInfo?.acquisition_date) || "—"}
                     />
                     <Row
-                      label="Usage Status"
-                      value={selectedMachine?.usage_status || "—"}
+                      label="Estado de uso"
+                      value={usageInfo?.usage_condition || "—"}
                     />
                     <Row
-                      label="Used Hours"
-                      value={selectedMachine?.used_hours || "—"}
+                      label="Horas usadas"
+                      value={usageInfo?.usage_hours ? `${usageInfo.usage_hours} hrs` : "—"}
                     />
                     <Row
-                      label="Mileage"
-                      value={selectedMachine?.mileage || "—"}
+                      label="Kilometraje"
+                      value={usageInfo?.distance_value ? `${usageInfo.distance_value} km` : "—"}
                     />
                     <Row
-                      label="Tenure"
-                      value={selectedMachine?.tenure || "—"}
+                      label="Tenencia"
+                      value={usageInfo?.tenancy_type || (usageInfo?.is_own ? "Propia" : "—")}
                     />
                   </div>
                 </div>
@@ -261,64 +307,185 @@ export default function MachineryDetailsModal({
           )}
 
           {/* === Especificaciones Técnicas (DESKTOP) === */}
-          {activeTab === "tech" && (
+          {activeTab === "tech" && specificSheet && (
             <div className="grid md:grid-cols-2 gap-6">
               {/* Capacidad y Rendimiento */}
-              <div className="border rounded-xl p-4 border-primary">
-                <h3 className="font-semibold text-lg mb-3">
+              <div className="border rounded-xl p-4 border-primary mb-6">
+                <h3 className="font-semibold text-lg mb-3 text-primary">
                   Capacidad y Rendimiento
                 </h3>
                 <div className="flex flex-col gap-3">
-                  <Row label="Capacidad del tanque" value={selectedMachine?.tank_capacity || "—"} />
-                  <Row label="Capacidad de carga" value={selectedMachine?.load_capacity || "—"} />
-                  <Row label="Peso operativo" value={selectedMachine?.operating_weight || "—"} />
-                  <Row label="Velocidad máxima" value={selectedMachine?.max_speed || "—"} />
-                  <Row label="Fuerza de tiro" value={selectedMachine?.drawbar_pull || "—"} />
-                  <Row label="Altura máxima de operación" value={selectedMachine?.max_operating_height || "—"} />
-                  <Row label="Rendimiento mínimo" value={selectedMachine?.min_performance || "—"} />
-                  <Row label="Rendimiento máximo" value={selectedMachine?.max_performance || "—"} />
+                  <Row label="Capacidad del tanque" value={
+                    specificSheet?.fuel_capacity ?? "—"
+                  } unit={specificSheet?.fuel_capacity_unit_name} />
+                  <Row label="Capacidad de carga" value={
+                    specificSheet?.carrying_capacity ?? "—"
+                  } unit={specificSheet?.carrying_capacity_unit_name} />
+                  <Row label="Peso operativo" value={
+                    specificSheet?.operating_weight ?? "—"
+                  } unit={specificSheet?.operating_weight_unit_name} />
+                  <Row label="Velocidad máxima" value={
+                    specificSheet?.max_speed ?? "—"
+                  } unit={specificSheet?.max_speed_unit_name} />
+                  <Row label="Fuerza de tiro" value={
+                    specificSheet?.draft_force ?? "—"
+                  } unit={specificSheet?.draft_force_unit_name} />
+                  <Row label="Altura máxima de operación" value={
+                    specificSheet?.maximum_altitude ?? "—"
+                  } unit={specificSheet?.maximum_altitude_unit_name} />
+                  <Row label="Rendimiento mínimo" value={
+                    specificSheet?.minimum_performance ?? "—"
+                  } unit={specificSheet?.performance_unit_name} />
+                  <Row label="Rendimiento máximo" value={
+                    specificSheet?.maximum_performance ?? "—"
+                  } unit={specificSheet?.performance_unit_name} />
                 </div>
               </div>
+
+              {/* Motor y Transmisión */}
+              <div className="border rounded-xl p-4 border-primary mb-6">
+                <h3 className="font-semibold text-lg mb-3 text-primary">Motor y Transmisión</h3>
+                <div className="flex flex-col gap-3">
+                  <Row label="Potencia" value={
+                    specificSheet?.power ?? "—"
+                  } unit={specificSheet?.power_unit_name} />
+                  <Row label="Tipo de motor" value={
+                    specificSheet?.engine_type_name ?? specificSheet?.engine_type ?? "—"
+                  } />
+                  <Row label="Cilindrada" value={
+                    specificSheet?.cylinder_capacity ?? "—"
+                  } unit={specificSheet?.cylinder_capacity_unit_name} />
+                  <Row label="Tipo de arreglo de cilindros" value={
+                    specificSheet?.cylinder_arrangement_type_name ?? specificSheet?.cylinder_arrangement_type ?? "—"
+                  } />
+                  <Row label="Cantidad de cilindros" value={
+                    specificSheet?.cylinder_count ?? "—"
+                  } />
+                  <Row label="Tipo de tracción" value={
+                    specificSheet?.traction_type_name ?? specificSheet?.traction_type ?? "—"
+                  } />
+                  <Row label="Consumo de combustible" value={
+                    specificSheet?.fuel_consumption ?? "—"
+                  } unit={specificSheet?.fuel_consumption_unit_name} />
+                  <Row label="Tipo de sistema de transmisión" value={
+                    specificSheet?.transmission_system_type_name ?? specificSheet?.transmission_system_type ?? "—"
+                  } />
+                </div>
+              </div>
+
+              {/* Sistema Hidráulico y Otros */}
+              <div className="border rounded-xl p-4 border-primary mb-6">
+                <h3 className="font-semibold text-lg mb-3 text-primary">Sistema Hidráulico y Otros</h3>
+                <div className="flex flex-col gap-3">
+                  <Row label="Presión máxima de trabajo" value={
+                    specificSheet?.maximum_working_pressure ?? "—"
+                  } unit={specificSheet?.maximum_working_pressure_unit_name} />
+                  <Row label="Caudal de bomba" value={
+                    specificSheet?.pump_flow ?? "—"
+                  } unit={specificSheet?.pump_flow_unit_name} />
+                  <Row label="Capacidad del tanque hidráulico" value={
+                    specificSheet?.hydraulic_tank_capacity ?? "—"
+                  } unit={specificSheet?.hydraulic_tank_capacity_unit_name} />
+                </div>
+              </div>
+
+              {/* Cabina, Emisiones y Aire Acondicionado */}
+              <div className="border rounded-xl p-4 border-primary mb-6">
+                <h3 className="font-semibold text-lg mb-3 text-primary">Cabina, Emisiones y Aire Acondicionado</h3>
+                <div className="flex flex-col gap-3">
+                  <Row label="Tipo de cabina" value={
+                    specificSheet?.cabin_type_name ?? specificSheet?.cabin_type ?? "—"
+                  } />
+                  <Row label="Nivel de emisión" value={
+                    specificSheet?.emission_level_type_name ?? specificSheet?.emission_level_type ?? "—"
+                  } />
+                  <Row label="Tipo de aire acondicionado" value={
+                    specificSheet?.air_conditioning_system_type_name ?? specificSheet?.air_conditioning_system_type ?? "—"
+                  } />
+                  <Row label="Consumo aire acondicionado" value={
+                    specificSheet?.air_conditioning_system_consumption ?? "—"
+                  } unit={specificSheet?.air_conditioning_system_consumption_unit_name} />
+                </div>
+              </div>
+
+              {/* Otros */}
+              <div className="border rounded-xl p-4 border-primary mb-6">
+                <h3 className="font-semibold text-lg mb-3 text-primary">Otros</h3>
+                <div className="flex flex-col gap-3">
+                  <Row label="Ancho" value={specificSheet?.width ?? "—"} unit={specificSheet?.dimension_unit_name} />
+                  <Row label="Largo" value={specificSheet?.length ?? "—"} unit={specificSheet?.dimension_unit_name} />
+                  <Row label="Altura" value={specificSheet?.height ?? "—"} unit={specificSheet?.dimension_unit_name} />
+                  <Row label="Peso neto" value={specificSheet?.net_weight ?? "—"} unit={specificSheet?.net_weight_unit_name} />
+                </div>
+              </div>
+
               {/* ...más tarjetas técnicas aquí... */}
             </div>
+          )}
+          {activeTab === "tech" && specificSheetLoading && (
+            <div className="text-center text-secondary py-8">Cargando especificaciones técnicas...</div>
+          )}
+          {activeTab === "tech" && !specificSheetLoading && specificSheetError && (
+            <div className="text-center text-red-600 py-8">{specificSheetError}</div>
+          )}
+          {activeTab === "tech" && !specificSheetLoading && !specificSheetError && !specificSheet && (
+            <div className="text-center text-secondary py-8">No existe ficha técnica específica registrada.</div>
           )}
 
           {/* === Documentos y Mantenimiento (DESKTOP) === */}
           {activeTab === "docs" && (
             <div className="grid md:grid-cols-2 gap-6">
+              {/* Documentación dinámica */}
               <div className="border rounded-xl p-4 border-primary">
                 <h3 className="text-secondary font-semibold text-lg mb-3">
                   Documentación
                 </h3>
                 <ul className="flex flex-col gap-3">
-                  <DocItem label="Manual de Operador" />
-                  <DocItem label="Certificado de Importación" />
+                  {docs.length === 0 ? (
+                    <li className="text-sm text-gray-400">No hay documentos registrados</li>
+                  ) : (
+                    docs.map((doc) => (
+                      <li
+                        key={doc.id_machinery_documentation}
+                        className="flex items-center justify-between p-2.5 rounded-lg border border-primary hover:bg-gray-50"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
+                            <FiFileText className="w-4 h-4 text-gray-600" />
+                          </div>
+                          <span className="text-sm text-secondary">{doc.document}</span>
+                          <span className="text-xs text-secondary ml-2">{doc.file_type}</span>
+                        </div>
+                        <a
+                          href={doc.path}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 rounded-md hover:bg-gray-100"
+                          title="Ver"
+                          aria-label={`Ver documento ${doc.document}`}
+                        >
+                          <FiDownload className="w-5 h-5 text-gray-600" />
+                        </a>
+                      </li>
+                    ))
+                  )}
                 </ul>
               </div>
+              {/* Mantenimiento Periódico */}
               <div className="border rounded-xl p-4 border-primary">
-                <h3 className="text-secondaryfont-semibold text-lg mb-3">
+                <h3 className="text-secondary font-semibold text-lg mb-3">
                   Mantenimiento Periódico
                 </h3>
                 <ul className="flex flex-col gap-3">
-                  {[
-                    ["Cambio de aceite", "250 hrs"],
-                    ["Filtro hidráulico", "1000 hrs"],
-                    ["Inspección general", "500 hrs"],
-                    ["Reparación de motor", "2000 hrs"],
-                  ].map(([label, hours]) => (
-                    <li
-                      key={label}
-                      className="flex items-center justify-between p-2.5 rounded-lg border border-primary hover:bg-gray-50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
-                          <FaTools className="w-4 h-4 text-gray-600" />
-                        </div>
-                        <span className="text-sm text-[#525252]">{label}</span>
+                  {periodicMaintenances.length === 0 ? (
+                    <li className="text-sm text-gray-400">No hay mantenimientos registrados</li>
+                  ) : (
+                    periodicMaintenances.map((item) => (
+                      <div key={item.id_periodic_maintenance_scheduling}>
+                        {item.maintenance_name}
                       </div>
-                      <span className="text-xs text-gray-500">{hours}</span>
-                    </li>
-                  ))}
+                    ))
+                  )}
                 </ul>
               </div>
             </div>
@@ -333,11 +500,11 @@ export default function MachineryDetailsModal({
               <img
                 src={selectedMachine.image_path}
                 alt="Machinery photo"
-                className="object-contain max-h-60 w-full rounded-md"
+                className="object-contain max-h-60 w-full"
                 aria-label="Machinery photo"
               />
             ) : (
-              <span className="text-secondary">Photo here</span>
+              <span className="text-secondary text-white min-h-[150px] flex items-center">Ingresa una imagen</span>
             )}
           </div>
           <div className="px-4 pt-4 bg-surface">
@@ -350,15 +517,12 @@ export default function MachineryDetailsModal({
                 ["Nombre", selectedMachine?.machinery_name || "—"],
                 ["Marca", brandName || "—"],
                 ["Modelo", modelName || "—"],
-                ["Año fabricación", selectedMachine?.manufacturing_year || "—"],
+                ["Año fabricación", manufactureYear || "—"],
                 ["Tipo", typeName || "—"],
                 ["Tipo secundario", secondaryTypeName || "—"],
                 ["Número de serie", selectedMachine?.serial_number || "—"],
-                ["Ciudad origen", selectedMachine?.id_city || "—"],
-                [
-                  "Subpartida arancelaria",
-                  selectedMachine?.tariff_subheading || "—",
-                ],
+                ["Ciudad origen", cityName || "—"],
+                ["Subpartida arancelaria", tariffSubheading ?? "—"],
                 ["Estado operacional", statusName || "—"],
               ].map(([label, value], idx) => (
                 <div
@@ -408,24 +572,12 @@ export default function MachineryDetailsModal({
             </button>
             {accTrackerOpen && (
               <div className="bg-surface">
-                {[
-                  ["Terminal Serial Number", "TRK-2024-987654"],
-                  ["GPS Device Serial Number", "GPS-AXT-56789"],
-                  ["Chasis", "1HGBH41JXMN019186"],
-                  ["Motor", "D13-7654321"],
-                ].map(([label, value], idx) => (
-                  <div
-                    key={label}
-                    className={`flex items-center justify-between px-4 py-3 ${
-                      idx !== 0 ? "border-t" : ""
-                    } border-primary`}
-                  >
-                    <span className="text-sm text-gray-900 font-[500]">
-                      {label}
-                    </span>
-                    <span className="text-sm text-gray-600">{value}</span>
-                  </div>
-                ))}
+                <div className="px-4 py-3 border-t border-primary">
+                  <Row label="Número de serie terminal" value={trackerInfo?.terminal_serial_number || "—"} />
+                  <Row label="Número de serie GPS" value={trackerInfo?.gps_serial_number || "—"} />
+                  <Row label="Número de chasis" value={trackerInfo?.chassis_number || "—"} />
+                  <Row label="Número de motor" value={trackerInfo?.engine_number || "—"} />
+                </div>
               </div>
             )}
           </div>
@@ -445,29 +597,28 @@ export default function MachineryDetailsModal({
             </button>
             {accUsageOpen && (
               <div className="bg-surface">
-                {[
-                  [
-                    "Fecha adquisición",
-                    formatDate?.(selectedMachine?.acquisition_date) || "—",
-                  ],
-                  ["Estado de uso", selectedMachine?.status || "—"],
-                  ["Horas usadas", "—"],
-                  ["Kilometraje", "—"],
-                  ["Tenencia", selectedMachine?.tenure || "—"],
-                  ["Fin de contrato", "N/A"],
-                ].map(([label, value], idx) => (
-                  <div
-                    key={label}
-                    className={`flex items-center justify-between px-4 py-3 ${
-                      idx !== 0 ? "border-t" : ""
-                    } border-primary`}
-                  >
-                    <span className="text-sm text-primary font-[500]">
-                      {label}
-                    </span>
-                    <span className="text-sm text-secondary">{value}</span>
-                  </div>
-                ))}
+                <div className="px-4 py-3 border-t border-primary">
+                  <Row
+                    label="Fecha de adquisición"
+                    value={formatDate?.(usageInfo?.acquisition_date) || "—"}
+                  />
+                  <Row
+                    label="Estado de uso"
+                    value={usageInfo?.usage_condition || "—"}
+                  />
+                  <Row
+                    label="Horas usadas"
+                    value={usageInfo?.usage_hours ? `${usageInfo.usage_hours} hrs` : "—"}
+                  />
+                  <Row
+                    label="Kilometraje"
+                    value={usageInfo?.distance_value ? `${usageInfo.distance_value} km` : "—"}
+                  />
+                  <Row
+                    label="Tenencia"
+                    value={usageInfo?.tenancy_type || (usageInfo?.is_own ? "Propia" : "—")}
+                  />
+                </div>
               </div>
             )}
           </div>
@@ -489,23 +640,48 @@ export default function MachineryDetailsModal({
             </button>
             {accSpecificOpen && (
               <div className="bg-surface">
-                {[
-                  ["Potencia Motor", "158 HP"],
-                  ["Presión Hidráulica", "350 bar"],
-                  ["Caudal de Bomba", "265 L/min"],
-                ].map(([label, value], idx) => (
-                  <div
-                    key={label}
-                    className={`flex items-center justify-between px-4 py-3 ${
-                      idx !== 0 ? "border-t" : ""
-                    } border-primary`}
-                  >
-                    <span className="text-sm text-primary font-[500]">
-                      {label}
-                    </span>
-                    <span className="text-sm text-secondary">{value}</span>
-                  </div>
-                ))}
+                <div className="px-4 py-3 border-t border-primary">
+                  <span className="block font-bold mb-2 text-primary">Capacidad y Rendimiento</span>
+                  <Row label="Capacidad del tanque" value={specificSheet?.fuel_capacity ?? "—"} unit={specificSheet?.fuel_capacity_unit_name} />
+                  <Row label="Capacidad de carga" value={specificSheet?.carrying_capacity ?? "—"} unit={specificSheet?.carrying_capacity_unit_name} />
+                  <Row label="Peso operativo" value={specificSheet?.operating_weight ?? "—"} unit={specificSheet?.operating_weight_unit_name} />
+                  <Row label="Velocidad máxima" value={specificSheet?.max_speed ?? "—"} unit={specificSheet?.max_speed_unit_name} />
+                  <Row label="Fuerza de tiro" value={specificSheet?.draft_force ?? "—"} unit={specificSheet?.draft_force_unit_name} />
+                  <Row label="Altura máxima de operación" value={specificSheet?.maximum_altitude ?? "—"} unit={specificSheet?.maximum_altitude_unit_name} />
+                  <Row label="Rendimiento mínimo" value={specificSheet?.minimum_performance ?? "—"} unit={specificSheet?.performance_unit_name} />
+                  <Row label="Rendimiento máximo" value={specificSheet?.maximum_performance ?? "—"} unit={specificSheet?.performance_unit_name} />
+                </div>
+                <div className="px-4 py-3 border-t border-primary">
+                  <span className="block font-bold mb-2 text-primary">Motor y Transmisión</span>
+                  <Row label="Potencia" value={specificSheet?.power ?? "—"} unit={specificSheet?.power_unit_name} />
+                  <Row label="Tipo de motor" value={specificSheet?.engine_type_name ?? specificSheet?.engine_type ?? "—"} />
+                  <Row label="Cilindrada" value={specificSheet?.cylinder_capacity ?? "—"} unit={specificSheet?.cylinder_capacity_unit_name} />
+                  <Row label="Tipo de arreglo de cilindros" value={specificSheet?.cylinder_arrangement_type_name ?? specificSheet?.cylinder_arrangement_type ?? "—"} />
+                  <Row label="Cantidad de cilindros" value={specificSheet?.cylinder_count ?? "—"} />
+                  <Row label="Tipo de tracción" value={specificSheet?.traction_type_name ?? specificSheet?.traction_type ?? "—"} />
+                  <Row label="Consumo de combustible" value={specificSheet?.fuel_consumption ?? "—"} unit={specificSheet?.fuel_consumption_unit_name} />
+                  <Row label="Tipo de sistema de transmisión" value={specificSheet?.transmission_system_type_name ?? specificSheet?.transmission_system_type ?? "—"} />
+                </div>
+                <div className="px-4 py-3 border-t border-primary">
+                  <span className="block font-bold mb-3 text-primary">Sistema Hidráulico y Otros</span>
+                  <Row label="Presión máxima de trabajo" value={specificSheet?.maximum_working_pressure ?? "—"} unit={specificSheet?.maximum_working_pressure_unit_name} />
+                  <Row label="Caudal de bomba" value={specificSheet?.pump_flow ?? "—"} unit={specificSheet?.pump_flow_unit_name} />
+                  <Row label="Capacidad del tanque hidráulico" value={specificSheet?.hydraulic_tank_capacity ?? "—"} unit={specificSheet?.hydraulic_tank_capacity_unit_name} />
+                </div>
+                <div className="px-4 py-3 border-t border-primary">
+                  <span className="block font-bold mb-3 text-primary">Cabina, Emisiones y Aire Acondicionado</span>
+                  <Row label="Tipo de cabina" value={specificSheet?.cabin_type_name ?? specificSheet?.cabin_type ?? "—"} />
+                  <Row label="Nivel de emisión" value={specificSheet?.emission_level_type_name ?? specificSheet?.emission_level_type ?? "—"} />
+                  <Row label="Tipo de aire acondicionado" value={specificSheet?.air_conditioning_system_type_name ?? specificSheet?.air_conditioning_system_type ?? "—"} />
+                  <Row label="Consumo aire acondicionado" value={specificSheet?.air_conditioning_system_consumption ?? "—"} unit={specificSheet?.air_conditioning_system_consumption_unit_name} />
+                </div>
+                <div className="px-4 py-3 border-t border-primary">
+                  <span className="block font-bold mb-3 text-primary">Otros</span>
+                  <Row label="Ancho" value={specificSheet?.width ?? "—"} unit={specificSheet?.dimension_unit_name} />
+                  <Row label="Largo" value={specificSheet?.length ?? "—"} unit={specificSheet?.dimension_unit_name} />
+                  <Row label="Altura" value={specificSheet?.height ?? "—"} unit={specificSheet?.dimension_unit_name} />
+                  <Row label="Peso neto" value={specificSheet?.net_weight ?? "—"} unit={specificSheet?.net_weight_unit_name} />
+                </div>
               </div>
             )}
           </div>
@@ -513,12 +689,29 @@ export default function MachineryDetailsModal({
           {/* Documentation */}
           <div className="mt-2 overflow-hidden bg-surface">
             <div className="px-4 py-5 font-bold text-lg">Documentación</div>
-            <div className="flex items-center justify-between px-4 py-3 border-t border-primary">
-              <span className="text-sm text-secondary">Manual de operación</span>
-              <button className="px-3 py-1.5 rounded-md button- text-sm">
-                Ver
-              </button>
-            </div>
+            {docs.length === 0 ? (
+              <div className="px-4 py-3 text-sm text-gray-400">
+                No hay documentos registrados
+              </div>
+            ) : (
+              docs.map((doc) => (
+                <div
+                  key={doc.id_machinery_documentation}
+                  className="flex items-center justify-between px-4 py-3 border-t border-primary"
+                >
+                  <span className="text-sm text-secondary">{doc.document}</span>
+                  <a
+                    href={doc.path}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 rounded-md hover:bg-gray-100"
+                    aria-label={`Ver documento ${doc.document}`}
+                  >
+                    Ver
+                  </a>
+                </div>
+              ))
+            )}
           </div>
 
           {/* Periodic maintenance (lista tipo chips) */}
@@ -527,26 +720,21 @@ export default function MachineryDetailsModal({
               Mantenimiento periódico
             </div>
             <div className="space-y-2">
-              {[
-                ["Chequeo nivel aceite", "50 horas"],
-                ["Cambio aceite y filtro transmisión", "500 horas"],
-                ["Limpieza radiador", "2000 horas"],
-              ].map(([task, hours]) => (
-                <div
-                  key={task}
-                  className="flex items-center justify-between bg-gray-100 rounded-full px-3 py-2"
-                >
-                  <span className="text-sm text-gray-700 truncate">{task}</span>
-                  <div className="flex items-center gap-2">
+              {periodicMaintenances.length === 0 ? (
+                <div className="text-sm text-gray-400">No hay mantenimientos registrados</div>
+              ) : (
+                periodicMaintenances.map((item) => (
+                  <div
+                    key={item.id_periodic_maintenance_scheduling}
+                    className="flex items-center justify-between bg-gray-100 rounded-full px-3 py-2"
+                  >
+                    <span className="text-sm text-gray-700 truncate">{item.maintenance_name}</span>
                     <span className="w-full block text-xs bg-white rounded-full px-2 py-0.5 text-gray-600 border">
-                      {hours}
+                      {item.usage_hours ? `${item.usage_hours} hrs` : item.distance_km ? `${item.distance_km} km` : "—"}
                     </span>
-                    <button className="text-xs px-2 py-0.5 rounded-full bg-rose-200 text-rose-800">
-                      Eliminar
-                    </button>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
             <button className="mt-3 w-full rounded-md bg-gray-400/80 text-white py-2">
               Enviar
@@ -558,30 +746,39 @@ export default function MachineryDetailsModal({
   );
 }
 
-function Row({ label, value }) {
+function Row({ label, value, unit }) {
   return (
-    <div className="flex justify-between text-primary">
-      {label}: <span className="font-[400] text-secondary">{value ?? "—"}</span>
+    <div className="flex justify-between">
+      <span className="text-primary">{label}:</span>
+      <span className="font-[400] text-secondary">
+        {value ?? "—"}{unit ? ` ${unit}` : ""}
+      </span>
     </div>
   );
 }
 
-function DocItem({ label }) {
+function DocItem({ label, url, fileType }) {
   return (
     <li className="flex items-center justify-between p-2.5 rounded-lg border border-primary hover:bg-gray-50">
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
-          <FiFileText className="w-4 h-4 text-gray-600" />
+          <FiFileText className="w-4 h-4 text-secondary" />
         </div>
-        <span className="text-sm text-[#525252]">{label}</span>
+        <span className="text-sm text-secondary">{label}</span>
+        <span className="text-xs text-secondary ml-2">{fileType}</span>
       </div>
-      <button
-        className="p-2 rounded-md hover:bg-gray-100"
-        title="Download"
-        aria-label="Download document"
-      >
-        <FiDownload className="w-5 h-5 text-gray-600" />
-      </button>
+      {url && (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="p-2 rounded-md hover:bg-gray-100"
+          title="Download"
+          aria-label="Download document"
+        >
+          <FiDownload className="w-5 h-5 text-secondary" />
+        </a>
+      )}
     </li>
   );
 }

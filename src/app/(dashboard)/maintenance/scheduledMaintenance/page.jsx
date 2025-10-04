@@ -579,7 +579,7 @@ const ScheduledMaintenancePage = () => {
       </div>
 
       {/* Sección del Calendario - Layout según mockup */}
-      <div className="card-theme rounded-lg shadow mb-6 max-w-6xl mx-auto">
+      <div className="card-theme rounded-lg shadow mb-6 max-w-3xl mx-auto">
         <div className="p-4">
           <h2 className="text-lg font-semibold parametrization-text mb-4">
             Calendario de Mantenimientos
@@ -599,7 +599,7 @@ const ScheduledMaintenancePage = () => {
             {/* Controles y Rango de Fechas - Columna Derecha */}
             <div className="space-y-4">
               {/* Información de fecha actual */}
-              <div className="card-secondary bg-accent rounded-lg p-4">
+              {/* <div className="card-secondary bg-accent rounded-lg p-4">
                 <h3 className="text-sm font-semibold text-white mb-2">Hoy</h3>
                 <p className="text-lg font-bold text-white">
                   {new Date().toLocaleDateString('es-ES', {
@@ -608,7 +608,7 @@ const ScheduledMaintenancePage = () => {
                     month: 'long'
                   })}
                 </p>
-              </div>
+              </div> */}
 
               {/* Controles de Rango de Fechas */}
               <div className="card-secondary rounded-lg p-4">
