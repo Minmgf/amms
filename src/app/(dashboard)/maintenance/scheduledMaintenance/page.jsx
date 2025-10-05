@@ -13,7 +13,7 @@ import TableList from '@/app/components/shared/TableList';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getScheduledMaintenanceList, getMaintenanceSchedulingStatuses, getMaintenanceTypes } from '@/services/maintenanceService';
 import { getUserInfo } from '@/services/authService';
-import MaintenanceReportModal from '@/app/components/maintenance/machineMaintenance/MaintenanceReportModal';
+import MaintenanceReportModal from '@/app/components/scheduledMaintenance/MaintenanceReportModal';
 import PermissionGuard from '@/app/(auth)/PermissionGuard';
 
 const ScheduledMaintenancePage = () => {
