@@ -145,3 +145,28 @@ export const getMaintenanceRequestStatuses = async () => {
     const { data } = await apiMain.get("/statues/list/4/");
     return data;
 };
+
+// SERVICIOS PARA REPORTE DE MANTENIMIENTO (HU-PM-005)
+
+// Crear reporte de mantenimiento
+export const createMaintenanceReport = async (id_maintenance_scheduling, payload) => {
+    const { data } = await apiMain.post(
+        `/maintenance_reports/${id_maintenance_scheduling}/create-report/`,
+        payload
+    );
+    return data;
+};
+
+// Obtener unidades de moneda activas
+export const getActiveCurrencyUnits = async () => {
+    const response = await apiMain.get("/units/active/10/");
+    // Retornar solo el array de datos
+    return response.data.data || response.data;
+};
+
+// Obtener marcas de repuestos activas
+export const getActiveSparePartsBrands = async () => {
+    const response = await apiMain.get("/brands/list/active/2/");
+    // Retornar solo el array de datos
+    return response.data.data || response.data;
+};

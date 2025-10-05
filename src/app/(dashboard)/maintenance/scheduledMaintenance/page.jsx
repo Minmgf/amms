@@ -886,10 +886,10 @@ const ScheduledMaintenancePage = () => {
           isOpen={reportModalOpen}
           onClose={() => setReportModalOpen(false)}
           maintenance={selectedMaintenance}
-          onSave={(reportData) => {
-
+          onSave={async (reportData) => {
             setReportModalOpen(false);
             handleModalSuccess('Reporte de mantenimiento guardado exitosamente');
+            await loadMaintenanceData(); // Recargar datos después de guardar
           }}
         />
       )}
