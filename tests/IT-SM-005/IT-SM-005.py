@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 IT-SM-005: Rechazar Solicitud de Mantenimiento
 Historia de Usuario: Como jefe de maquinaria, quiero rechazar solicitudes de mantenimiento 

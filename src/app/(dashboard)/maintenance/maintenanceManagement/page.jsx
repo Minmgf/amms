@@ -27,6 +27,7 @@ import {
   ConfirmModal,
 } from "@/app/components/shared/SuccessErrorModal";
 import FilterModal from "@/app/components/shared/FilterModal";
+import PermissionGuard from "@/app/(auth)/PermissionGuard";
 
 const GestorMantenimientos = () => {
   // Estado para el filtro global
@@ -295,33 +296,39 @@ const GestorMantenimientos = () => {
 
           return (
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              <button
-                onClick={() => handleEdit(maintenance)}
-                className="inline-flex items-center px-3 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-gray-500 hover:text-gray-600 cursor-pointer"
-                title="Editar mantenimiento"
-              >
-                <FaPen className="w-3 h-3" />
-                Editar
-              </button>
-              {isActive && (
+              <PermissionGuard permission={108}>
                 <button
-                  onClick={() => handleDelete(maintenance)}
-                  className="inline-flex items-center px-3 py-1.5 gap-2 border text-xs font-medium rounded border-red-300 bg-red-50 text-red-600 hover:border-red-500 hover:bg-red-100 cursor-pointer"
-                  title="Eliminar mantenimiento"
+                  onClick={() => handleEdit(maintenance)}
+                  className="inline-flex items-center px-3 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-gray-500 hover:text-gray-600 cursor-pointer"
+                  title="Editar mantenimiento"
                 >
-                  <FaTrash className="w-3 h-3" />
-                  Eliminar
+                  <FaPen className="w-3 h-3" />
+                  Editar
                 </button>
+              </PermissionGuard>
+              {isActive && (
+                <PermissionGuard permission={110}>
+                  <button
+                    onClick={() => handleDelete(maintenance)}
+                    className="inline-flex items-center px-3 py-1.5 gap-2 border text-xs font-medium rounded border-red-300 bg-red-50 text-red-600 hover:border-red-500 hover:bg-red-100 cursor-pointer"
+                    title="Eliminar mantenimiento"
+                  >
+                    <FaTrash className="w-3 h-3" />
+                    Eliminar
+                  </button>
+                </PermissionGuard>
               )}
               {isInactive && (
-                <button
-                  onClick={() => handleEnable(maintenance)}
-                  className="inline-flex items-center px-3 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 bg-green-50 text-green-600 hover:border-green-500 hover:bg-green-100"
-                  title="Habilitar mantenimiento"
-                >
-                  <FaCheck className="w-3 h-3" />
-                  Habilitar
-                </button>
+                <PermissionGuard permission={109}>
+                  <button
+                    onClick={() => handleEnable(maintenance)}
+                    className="inline-flex items-center px-3 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 bg-green-50 text-green-600 hover:border-green-500 hover:bg-green-100"
+                    title="Habilitar mantenimiento"
+                  >
+                    <FaCheck className="w-3 h-3" />
+                    Habilitar
+                  </button>
+                </PermissionGuard>
               )}
             </div>
           );
@@ -480,14 +487,15 @@ const GestorMantenimientos = () => {
           ></button>
         )}
 
-
-        <button
-          onClick={handleOpenAddMaintenanceModal}
-          className="parametrization-filter-button flex justify-center items-center gap-2 cursor-pointer parametrization-text"
-        >
-          <FaTools className="w-4 h-4" />
-          <span className="parametrization-text">Agregar Mantenimiento</span>
-        </button>
+        <PermissionGuard permission={107}>
+          <button
+            onClick={handleOpenAddMaintenanceModal}
+            className="parametrization-filter-button flex justify-center items-center gap-2 cursor-pointer parametrization-text"
+          >
+            <FaTools className="w-4 h-4" />
+            <span className="parametrization-text">Agregar Mantenimiento</span>
+          </button>
+        </PermissionGuard>
       </div>
 
       {/* Tabla de mantenimientos */}

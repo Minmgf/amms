@@ -1,28 +1,7 @@
-import React, { useMemo, useState, useEffect } from 'react'
-import { FiSearch } from 'react-icons/fi'
+import React, { useMemo, useState } from 'react'
 import { CiFilter } from 'react-icons/ci'
 import TableList from '@/app/components/shared/TableList'
 import HistoryFiltersModal from '@/app/components/machinery/history/HistoryFiltersModal'
-import { getUsersList } from '@/services/authService'
-
-const fallbackHistory = [
-  {
-    id: 1,
-    modificationDate: '2025-03-14T21:23:00Z',
-    modifiedBy: 'Cristiano Ronaldo',
-    sectionModified: 'General',
-    performedAction: 'Creación',
-    justification: ''
-  },
-  {
-    id: 2,
-    modificationDate: '2025-03-14T21:23:00Z',
-    modifiedBy: 'Juan Andres Pete',
-    sectionModified: 'Ficha de Datos Específica',
-    performedAction: 'Actualización',
-    justification: 'Se cambió el dispositivo de telemetría'
-  }
-]
 
 const DEFAULT_FILTERS = {
   startDate: '',
@@ -46,82 +25,42 @@ const formatDateTime = (value) => {
   return `${formattedDate}, ${formattedTime}`
 }
 
-const UpdateHistorySection = ({ history }) => {
+const UpdateHistorySection = ({ history, loading = false }) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false)
-  const [usersLoading, setUsersLoading] = useState(false)
-  const [usersError, setUsersError] = useState(null)
-  const [availableUsers, setAvailableUsers] = useState([])
 
-  const historyData = Array.isArray(history) && history.length > 0 ? history : fallbackHistory
+  const historyData = Array.isArray(history) ? history : []
 
-  useEffect(() => {
-    const loadUsers = async () => {
-      setUsersLoading(true)
-      setUsersError(null)
-      try {
-        const response = await getUsersList()
-        if (response?.success && Array.isArray(response.data)) {
-          const mappedUsers = response.data
-            .map((user) => {
-              const fullName = `${user.name || ''} ${user.first_last_name || ''} ${user.second_last_name || ''}`
-                .replace(/\s+/g, ' ')
-                .trim()
-              return fullName || user.email || null
-            })
-            .filter(Boolean)
-
-          setAvailableUsers([...new Set(mappedUsers)])
-        } else if (Array.isArray(response)) {
-          const mappedUsers = response
-            .map((user) => {
-              const fullName = `${user.name || ''} ${user.first_last_name || ''} ${user.second_last_name || ''}`
-                .replace(/\s+/g, ' ')
-                .trim()
-              return fullName || user.email || null
-            })
-            .filter(Boolean)
-
-          setAvailableUsers([...new Set(mappedUsers)])
-        } else {
-          setUsersError('No se pudo obtener la lista de usuarios')
-        }
-      } catch (error) {
-        console.error('Error al cargar usuarios:', error)
-        setUsersError('Error al cargar usuarios')
-      } finally {
-        setUsersLoading(false)
-      }
-    }
-
-    loadUsers()
-  }, [])
+  // Extraer usuarios únicos que han modificado esta maquinaria
+  const availableUsers = useMemo(() => {
+    const users = historyData
+      .map(record => record.modifiedBy)
+      .filter(Boolean)
+    return [...new Set(users)].sort()
+  }, [historyData])
 
   const filteredHistoryData = useMemo(() => {
     return historyData.filter((record) => {
       if (!record) return false
 
-      const recordDate = record.modificationDate ? new Date(record.modificationDate) : null
-      const startDate = filters.startDate ? new Date(filters.startDate) : null
-      const endDate = filters.endDate ? new Date(filters.endDate) : null
-
-      if (startDate) {
-        const startOfDay = new Date(startDate)
-        startOfDay.setHours(0, 0, 0, 0)
-        if (!recordDate || recordDate < startOfDay) {
+      // Filtro por fecha
+      if (filters.startDate || filters.endDate) {
+        if (!record.modificationDate) return false
+        
+        // Extraer solo la fecha (YYYY-MM-DD) del timestamp para comparación
+        const recordDateStr = record.modificationDate.split('T')[0]
+        
+        if (filters.startDate && recordDateStr < filters.startDate) {
+          return false
+        }
+        
+        if (filters.endDate && recordDateStr > filters.endDate) {
           return false
         }
       }
 
-      if (endDate) {
-        const endOfDay = new Date(endDate)
-        endOfDay.setHours(23, 59, 59, 999)
-        if (!recordDate || recordDate > endOfDay) {
-          return false
-        }
-      }
-
+      // Filtro por usuario
       if (filters.user && record.modifiedBy !== filters.user) {
         return false
       }
@@ -219,16 +158,22 @@ const UpdateHistorySection = ({ history }) => {
         </button>
       </div>
 
-      <div className=" rounded-xl p-0">
-        <TableList
-          columns={columns}
-          data={filteredHistoryData}
-          loading={false}
-          globalFilter={searchQuery}
-          onGlobalFilterChange={setSearchQuery}
-          globalFilterFn={globalFilterFn}
-          pageSizeOptions={[5, 10, 20]}
-        />
+      <div className="rounded-xl p-0">
+        {!loading && historyData.length === 0 ? (
+          <div className="flex items-center justify-center py-12 text-secondary text-sm">
+            No hay historial de cambios disponible para esta maquinaria.
+          </div>
+        ) : (
+          <TableList
+            columns={columns}
+            data={filteredHistoryData}
+            loading={loading}
+            globalFilter={searchQuery}
+            onGlobalFilterChange={setSearchQuery}
+            globalFilterFn={globalFilterFn}
+            pageSizeOptions={[5, 10, 20]}
+          />
+        )}
       </div>
 
       <HistoryFiltersModal
@@ -238,8 +183,8 @@ const UpdateHistorySection = ({ history }) => {
         onClear={handleClearFilters}
         initialFilters={filters}
         users={availableUsers}
-        loading={usersLoading}
-        error={usersError}
+        loading={false}
+        error={null}
       />
     </div>
   )

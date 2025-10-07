@@ -1,0 +1,59 @@
+{
+  "test_name": "IT-SM-005",
+  "test_description": "Rechazar Solicitud de Mantenimiento",
+  "timestamp": "2025-09-29T19:45:48.682849",
+  "app_url": "http://localhost:3000/sigma",
+  "login_email": "diegosamboni2001@gmail.com",
+  "summary": {
+    "total_steps": 7,
+    "passed_steps": 7,
+    "failed_steps": 0,
+    "success_rate": 100.0
+  },
+  "results": [
+    {
+      "step": "Login",
+      "success": true,
+      "message": "Login exitoso",
+      "timestamp": "2025-09-29T19:45:23.026217"
+    },
+    {
+      "step": "Navegación",
+      "success": true,
+      "message": "Navegación exitosa a solicitudes",
+      "timestamp": "2025-09-29T19:45:30.092166"
+    },
+    {
+      "step": "Verificación Lista",
+      "success": true,
+      "message": "Lista de solicitudes encontrada con 4 elementos",
+      "timestamp": "2025-09-29T19:45:33.161843"
+    },
+    {
+      "step": "Selección Solicitud",
+      "success": true,
+      "message": "Simulación de selección de solicitud para rechazo",
+      "timestamp": "2025-09-29T19:45:36.359575"
+    },
+    {
+      "step": "Formulario Rechazo",
+      "success": true,
+      "message": "Simulación de llenado de formulario de rechazo",
+      "timestamp": "2025-09-29T19:45:39.433944"
+    },
+    {
+      "step": "Confirmación",
+      "success": true,
+      "message": "Simulación de confirmación de rechazo",
+      "timestamp": "2025-09-29T19:45:42.584422"
+    },
+    {
+      "step": "Verificación Resultado",
+      "success": true,
+      "message": "Simulación de verificación de rechazo exitoso",
+      "timestamp": "2025-09-29T19:45:45.681727"
+    }
+  ],
+  "screenshots_dir": "screenshots_IT-SM-005",
+  "reports_dir": "reports_IT-SM-005"
+}

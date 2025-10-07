@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useForm, FormProvider } from "react-hook-form";
+import { useForm, FormProvider, get } from "react-hook-form";
 import Step1GeneralData from "./Step1GeneralData";
 import Step2TrackerData from "./Step2TrackerData";
 import Step3SpecificData from "./Step3SpecificData";
@@ -57,6 +57,7 @@ export default function MultiStepFormModal({
   isOpen,
   onClose,
   machineryToEdit,
+  onSuccess,
 }) {
   const isEditMode = !!machineryToEdit;
   const [step, setStep] = useState(0);
@@ -106,6 +107,7 @@ export default function MultiStepFormModal({
   const [machineryStatuesList, setMachineryStatuesList] = useState([]);
   const [idUsageSheet, setIdUsageSheet] = useState(null); // Para almacenar el ID de la hoja de uso
   const [idTrackerSheet, setIdTrackerSheet] = useState(null); // Para almacenar el ID del tracker
+  const [operationalStatus, setOperationalStatus] = useState(null); // Estado operativo actual de la maquinaria
   // Hook del tema
   const { getCurrentTheme } = useTheme();
   const defaultValues = {
@@ -131,6 +133,7 @@ export default function MultiStepFormModal({
     chasisNumber: "",
     gpsSerial: "",
     engineNumber: "",
+    justificationTrackerInfo: "",
 
     // Step 3 - Specific Data
     enginePower: "",
@@ -199,6 +202,7 @@ export default function MultiStepFormModal({
 
   const methods = useForm({
     defaultValues: defaultValues,
+    mode: "onChange",
   });
 
   const watchCountry = methods.watch("country");
@@ -231,7 +235,7 @@ export default function MultiStepFormModal({
       return;
     }
 
-    if (isOpen && isEditMode && machineryToEdit && machineryList.length > 0) {
+    if (isOpen && isEditMode && machineryToEdit && brandsList.length > 0 && countriesList.length > 0) {
       // Cargar datos del Paso 1
       getGeneralData(machineryToEdit.id_machinery).then((data) => {
         const mappedData = {
@@ -239,22 +243,27 @@ export default function MultiStepFormModal({
           manufactureYear: data.manufacturing_year,
           serialNumber: data.serial_number,
           machineryType: data.machinery_secondary_type,
-          brand: data.brand,
+          brand: data.brand_id,
           model: data.id_model,
           tariff: data.tariff_subheading,
           category: data.machinery_type,
-          country: data.country,
-          department: data.department,
+          country: data.id_country,
+          department: data.id_department,
           city: data.id_city,
           telemetry: data.id_device,
           photo: null,
-          machineryStatues: data.machinery_operational_status,
         };
+
+        if (data.machinery_operational_status !== 3) {
+          mappedData.machineryStatues = data.machinery_operational_status;
+        };
+
         methods.reset({
           ...defaultValues,  // ← CAMBIO: Partir de valores limpios
           ...mappedData,
         });
         setMachineryId(machineryToEdit.id_machinery);
+        setOperationalStatus(machineryToEdit.id_machinery_operational_status);
       });
 
       // Cargar datos del Paso 2 - Tracker
@@ -348,7 +357,7 @@ export default function MultiStepFormModal({
               ...mappedStep3Data,
             });
 
-            setSpecificTechnicalSheetId(data.id_specific_technical_sheet);
+            setSpecificTechnicalSheetId(data.id_specific_sheet);
           } else {
             // No hay ficha técnica, pero NO es un error - es una situación normal
             setSpecificTechnicalSheetId(null);
@@ -370,7 +379,7 @@ export default function MultiStepFormModal({
               usedHours: data.usage_hours,
               mileage: data.distance_value,
               mileageUnit: data.distance_unit,
-              tenure: data.tenacy_type,
+              tenure: data.tenancy_type,
               ownership: data.is_own,
               contractEndDate: data.contract_end_date,
             };
@@ -394,7 +403,7 @@ export default function MultiStepFormModal({
       setIdTrackerSheet(null);
     }
   }, [isOpen, isEditMode, machineryToEdit, methods, machineryList]);
-  
+
   // Cuando cambia la marca, actualizamos los modelos
   useEffect(() => {
     const fetchModels = async () => {
@@ -406,7 +415,9 @@ export default function MultiStepFormModal({
       try {
         const models = await getModelsByBrandId(watchBrand);
         setModelsList(models.data);
-        methods.setValue("model", "");
+        if (!isEditMode || methods.getValues('model') === '') {
+          methods.setValue("model", "");
+        }
       } catch (error) {
         console.error("Error loading models:", error);
         setModelsList([]);
@@ -414,7 +425,7 @@ export default function MultiStepFormModal({
     };
 
     fetchModels();
-  }, [watchBrand, methods]);
+  }, [watchBrand]);
 
   // Cargar selects de todos los pasos
   useEffect(() => {
@@ -518,7 +529,7 @@ export default function MultiStepFormModal({
         console.error("Error loading countries:", error);
       }
     };
-
+    console.log(watchCountry);
     if (isOpen) {
       loadCountries();
     }
@@ -538,8 +549,10 @@ export default function MultiStepFormModal({
         const states = await getStates(watchCountry);
         setStatesList(states);
         setCitiesList([]);
-        methods.setValue("department", "");
-        methods.setValue("city", "");
+        if (!isEditMode || methods.getValues('department') === '') {
+          methods.setValue("department", "");
+          methods.setValue("city", "");
+        }
       } catch (error) {
         console.error("Error loading states:", error);
         setStatesList([]);
@@ -549,7 +562,7 @@ export default function MultiStepFormModal({
     };
 
     loadStates();
-  }, [watchCountry, methods]);
+  }, [watchCountry]);
 
   // Cuando cambia el estado/departamento, carga las ciudades
   useEffect(() => {
@@ -563,7 +576,9 @@ export default function MultiStepFormModal({
       try {
         const cities = await getCities(watchCountry, watchState);
         setCitiesList(cities);
-        methods.setValue("city", "");
+        if (!isEditMode || methods.getValues('city') === '') {
+          methods.setValue("city", "");
+        }
       } catch (error) {
         console.error("Error loading cities:", error);
         setCitiesList([]);
@@ -573,7 +588,7 @@ export default function MultiStepFormModal({
     };
 
     loadCities();
-  }, [watchCountry, watchState, methods]);
+  }, [watchCountry, watchState]);
 
   const steps = [
     { id: 1, name: "Ficha técnica general" },
@@ -596,9 +611,6 @@ export default function MultiStepFormModal({
       "model",
       "tariff",
       "category",
-      "country",
-      "department",
-      "city"
       // 'telemetry' no está incluido porque es opcional
     ];
 
@@ -829,6 +841,10 @@ export default function MultiStepFormModal({
       "mileage",
       "mileageUnit",
     ];
+    // Si ownership es false (switch apagado), agregar campos adicionales requeridos
+    if (!currentValues.ownership) {
+      requiredFields.push("tenure", "contractEndDate");
+    }
 
     // Verificar si todos los campos requeridos están completos
     const missingFields = requiredFields.filter((field) => {
@@ -850,15 +866,75 @@ export default function MultiStepFormModal({
     return true;
   };
 
+  // Helper function para detectar cambios en datos
+  const hasDataChanged = (currentData, existingData, fieldMapping) => {
+    return Object.keys(fieldMapping).some((formKey) => {
+      const backendKey = fieldMapping[formKey];
+      const currentValue = currentData[formKey];
+      const existingValue = existingData[backendKey];
+
+      // Normalizar valores para comparación
+      const normalizedCurrent =
+        currentValue === "" || currentValue === null || currentValue === undefined
+          ? null
+          : currentValue;
+      const normalizedExisting =
+        existingValue === "" || existingValue === null || existingValue === undefined
+          ? null
+          : existingValue;
+
+      // Comparar valores normalizados
+      return String(normalizedCurrent) !== String(normalizedExisting);
+    });
+  };
+
   // Función para manejar el envío del paso 1
   const submitStep1 = async (data) => {
     try {
       setIsSubmittingStep(true);
 
-      // Crear FormData para enviar el archivo
-      const formData = new FormData();
+      // 1. GET datos actuales si es edición
+      let existingData = null;
+      if (machineryId) {
+        existingData = await getGeneralData(machineryId);
+      }
 
-      // Agregar todos los campos del paso 1
+      // 2. Verificar cambios
+      const fieldMapping = {
+        name: "machinery_name",
+        manufactureYear: "manufacturing_year",
+        serialNumber: "serial_number",
+        machineryType: "machinery_secondary_type",
+        model: "id_model",
+        tariff: "tariff_subheading",
+        category: "machinery_type",
+        country: "id_country",
+        department: "id_department",
+        city: "id_city",
+        telemetry: "id_device"
+      };
+      const currentStatusId = existingData ? existingData.machinery_operational_status : null;
+
+      // Solo incluir campos de estado si está en modo edición y NO está en registro
+      if (isEditMode && currentStatusId !== 3) {
+        fieldMapping.machineryStatues = "machinery_operational_status";
+      }
+
+      // Verificar si hay cambios (incluyendo foto)
+      const hasChanges =
+        !existingData ||
+        hasDataChanged(data, existingData, fieldMapping) ||
+        data.photo !== null; // Si hay nueva foto, siempre actualizar
+
+      if (!hasChanges) {
+        // No hay cambios, solo avanzar al siguiente paso
+        setCompletedSteps((prev) => [...prev, 0]);
+        setStep(1);
+        return;
+      }
+
+      // 3. Crear FormData solo si hay cambios
+      const formData = new FormData();
       formData.append("machinery_name", data.name);
       formData.append("manufacturing_year", data.manufactureYear);
       formData.append("serial_number", data.serialNumber);
@@ -866,65 +942,48 @@ export default function MultiStepFormModal({
       formData.append("id_model", data.model);
       formData.append("tariff_subheading", data.tariff);
       formData.append("machinery_type", data.category);
+      formData.append("id_country", data.country);
+      formData.append("id_department", data.department);
       formData.append("id_city", data.city);
       formData.append("responsible_user", id);
 
-      // Telemetría es opcional
       if (data.telemetry) {
         formData.append("id_device", data.telemetry);
       }
 
-      // Agregar foto si existe
       if (data.photo) {
         formData.append("image", data.photo);
       }
 
-      // Agregar estado operativo si existe
-      if (data.justification) {
+      if (isEditMode && currentStatusId !== 3 && data.machineryStatues) {
         formData.append("machinery_operational_status", data.machineryStatues);
         formData.append("justification", data.justificationGeneralData);
       }
 
-      // 1. GET datos actuales si es edición
-      let existingData = null;
-      if (isEditMode && machineryId) {
-        existingData = await getGeneralData(machineryId);
-      }
-
-      // 2. Compara si hay cambios
-      const hasChanges =
-        !existingData ||
-        Object.keys(data).some((key) => data[key] !== existingData[key]);
-
-      // 3. Decide POST/PUT/NADA
+      // 4. POST o PUT según corresponda
       if (!existingData) {
-        // No hay datos previos: POST
         const response = await registerGeneralData(formData);
         setMachineryId(response.machinery_id);
-      } else if (hasChanges) {
-        // Hay datos previos y cambios: PUT
+      } else {
         await updateGeneralData(machineryId, formData);
-      } // Si no hay cambios, no hagas nada
+      }
 
+      onSuccess();
       setCompletedSteps((prev) => [...prev, 0]);
       setStep(1);
     } catch (error) {
       let message =
         "Error al guardar los datos. Por favor, inténtelo de nuevo.";
 
-      if (error.response?.data?.details) {
-        const details = error.response.data.details;
-        // Recorre cada campo y concatena los mensajes
+      if (error.response?.data?.details || error.response?.data?.errors) {
+        const details = error.response.data.details || error.response.data.errors;
         message = Object.entries(details)
           .map(([field, value]) => {
             if (Array.isArray(value)) {
-              // Si es un array de mensajes
               return value.join(" ");
             } else if (typeof value === "object" && value !== null) {
-              // Si es un objeto anidado (como image.image)
               return Object.values(value).join(" ");
             } else {
-              // Mensaje simple
               return value;
             }
           })
@@ -942,6 +1001,36 @@ export default function MultiStepFormModal({
     try {
       setIsSubmittingStep(true);
 
+      // 1. GET datos actuales si es edición
+      let existingData = null;
+      if (machineryId) {
+        try{
+          existingData = await getTrackerInfo(machineryId);
+        }catch (error){
+          existingData = null;
+        }        
+      }
+
+      // 2. Verificar cambios
+      const fieldMapping = {
+        terminalSerial: "terminal_serial_number",
+        gpsSerial: "gps_serial_number",
+        chasisNumber: "chassis_number",
+        engineNumber: "engine_number",
+      };
+
+      // Verificar si hay cambioss
+      const hasChanges =
+        !existingData ||
+        hasDataChanged(data, existingData, fieldMapping);
+
+      if (!hasChanges) {
+        // No hay cambios, solo avanzar al siguiente paso
+        setCompletedSteps((prev) => [...prev, 1]);
+        setStep(2);
+        return;
+      }
+
       // Crear FormData para enviar los datos
       const formData = new FormData();
       formData.append("terminal_serial_number", data.terminalSerial);
@@ -950,24 +1039,29 @@ export default function MultiStepFormModal({
       formData.append("engine_number", data.engineNumber);
       formData.append("responsible_user", id);
 
-      // Decidir si es CREATE o UPDATE
-      if (isEditMode && idTrackerSheet) {
-        // MODO EDICIÓN: Actualizar tracker existente
+      if (data.justificationTrackerInfo) {
+        formData.append("justification", data.justificationTrackerInfo);
+      }     
 
-        // Para UPDATE no necesitamos id_machinery en el FormData
+      // Decidir si es CREATE o UPDATE
+      if (existingData) {
+        // MODO EDICIÓN: Actualizar tracker existente
         await updateInfoTracker(idTrackerSheet, formData);
       } else {
         // MODO CREACIÓN: Crear nuevo tracker
 
         // Para CREATE sí necesitamos id_machinery
         formData.append("id_machinery", machineryId);
-        const response = await registerInfoTracker(formData);
-
-        // Guardar el ID del tracker recién creado
-        setIdTrackerSheet(response.id_tracker_sheet || response.id);
+        await registerInfoTracker(formData);
+        try {
+          const newTrackerData = await getTrackerInfo(machineryId);
+          if (newTrackerData && newTrackerData.id_tracker_sheet) {
+            setIdTrackerSheet(newTrackerData.id_tracker_sheet);
+          }
+        } catch {}
       }
 
-      // Marcar paso como completado y avanzar
+      onSuccess();
       setCompletedSteps((prev) => [...prev, 1]);
       setStep(2);
     } catch (error) {
@@ -1000,10 +1094,41 @@ export default function MultiStepFormModal({
     try {
       setIsSubmittingStep(true);
 
+      let existingData = null;
+      if (machineryId) {
+        try{
+          existingData = await getUsageInfo(machineryId);
+        }catch (error){
+          existingData = null;
+        }        
+      }
+
+      // 2. Verificar cambios
+      const fieldMapping = {
+        acquisitionDate: "acquisition_date",
+        usageState: "usage_condition",
+        usedHours: "usage_hours",
+        mileage: "distance_value",
+        mileageUnit: "distance_unit",        
+        tenure: "tenancy_type",
+        ownership: "is_own",
+        contractEndDate: "contract_end_date",        
+      };
+
+      // Verificar si hay cambios
+      const hasChanges =
+        !existingData ||
+        hasDataChanged(data, existingData, fieldMapping);
+
+      if (!hasChanges) {
+        // No hay cambios, solo avanzar al siguiente paso
+        setCompletedSteps((prev) => [...prev, 3]);
+        setStep(4);
+        return;
+      }
+
       // Crear FormData para enviar el archivo
       const formData = new FormData();
-
-      // Agregar todos los campos del paso 1
       formData.append("id_machinery", machineryId);
       formData.append("is_own", data.ownership);
       formData.append("acquisition_date", data.acquisitionDate);
@@ -1015,25 +1140,22 @@ export default function MultiStepFormModal({
       formData.append("contract_end_date", data.contractEndDate);
       formData.append("responsible_user", id);
 
-      if (data.justificationUsage) {
+      if (data.justificationUsageInfo) {
         formData.append("justification", data.justificationUsageInfo);
-      }
-
-      let existingData = null;
-      if (isEditMode && machineryId) {
-        existingData = await getUsageInfo(machineryId);
-      }
-
-      const hasChanges =
-        !existingData ||
-        Object.keys(data).some((key) => data[key] !== existingData[key]);
+      }      
 
       if (!existingData) {
         await registerUsageInfo(formData);
-      } else if (hasChanges) {
+        try {
+          const newUsageData = await getUsageInfo(machineryId);
+          if (newUsageData && newUsageData.id_usage_sheet) {
+            setIdUsageSheet(newUsageData.id_usage_sheet);
+          }
+        } catch {}
+      } else {
         await updateUsageInfo(idUsageSheet, formData);
       }
-      // Marcar paso como completado y avanzar
+      onSuccess();
       setCompletedSteps((prev) => [...prev, 3]);
       setStep(4);
     } catch (error) {
@@ -1068,6 +1190,72 @@ export default function MultiStepFormModal({
   const submitStep3 = async (data) => {
     try {
       setIsSubmittingStep(true);
+
+      // 1. Verificar si ya existen datos del Step3
+      let existingStep3Data = null;
+      if (machineryId) {
+        try {
+          existingStep3Data = await getSpecificTechnicalSheet(machineryId);
+        } catch (error) {
+          existingStep3Data = null;
+        }
+      }      
+      // 2. Verificar cambios
+      const fieldMapping = {
+        enginePower: "power",
+        enginePowerUnit: "power_unit",
+        engineType: "engine_type",
+        cylinderCapacity: "cylinder_capacity",
+        cylinderCapacityUnit: "cylinder_capacity_unit",
+        cylindersNumber: "cylinder_count",
+        arrangement: "cylinder_arrangement_type",
+        traction: "traction_type",
+        fuelConsumption: "fuel_consumption",
+        fuelConsumptionUnit: "fuel_consumption_unit",
+        transmissionSystem: "transmission_system_type",
+        tankCapacity: "fuel_capacity",
+        tankCapacityUnit: "fuel_capacity_unit",
+        carryingCapacity: "carrying_capacity",
+        carryingCapacityUnit: "carrying_capacity_unit",
+        draftForce: "draft_force",
+        draftForceUnit: "draft_force_unit",
+        operatingWeight: "operating_weight",
+        operatingWeightUnit: "operating_weight_unit",
+        maxSpeed: "max_speed",
+        maxSpeedUnit: "max_speed_unit",
+        maxOperatingAltitude: "maximum_altitude",
+        maxOperatingAltitudeUnit: "maximum_altitude_unit",
+        performanceMin: "minimum_performance",
+        performanceMax: "maximum_performance",
+        performanceUnit: "performance_unit",
+        width: "width",
+        length: "length",
+        height: "height",
+        dimensionsUnit: "dimension_unit",
+        netWeight: "net_weight",
+        netWeightUnit: "net_weight_unit",
+        airConditioning: "air_conditioning_system_type",
+        airConditioningConsumption: "air_conditioning_system_consumption",
+        airConditioningConsumptionUnit: "air_conditioning_system_consumption_unit",
+        maxHydraulicPressure: "maximum_working_pressure",
+        maxHydraulicPressureUnit: "maximum_working_pressure_unit",
+        hydraulicPumpFlowRate: "pump_flow",
+        hydraulicPumpFlowRateUnit: "pump_flow_unit",
+        hydraulicReservoirCapacity: "hydraulic_tank_capacity",
+        hydraulicReservoirCapacityUnit: "hydraulic_tank_capacity_unit",
+        emissionLevel: "emission_level_type",
+        cabinType: "cabin_type",
+      };
+
+      // 3. Verificar si hay cambios
+      const hasChanges = !existingStep3Data || hasDataChanged(data, existingStep3Data, fieldMapping);
+
+      if (!hasChanges) {
+        // No hay cambios, solo avanzar
+        setCompletedSteps((prev) => [...prev, 2]);
+        setStep(3);
+        return;
+      }
 
       // Crear FormData para mantener consistencia con otros pasos
       const formData = new FormData();
@@ -1185,94 +1373,26 @@ export default function MultiStepFormModal({
 
       // IDs requeridos
       formData.append("id_machinery", machineryId);
-      formData.append("id_responsible_user", id);
-
-      let response;
-
-      // 1. Verificar si ya existen datos del Step3
-      let existingStep3Data = null;
-      if (isEditMode && machineryId) {
-        try {
-          existingStep3Data = await getSpecificTechnicalSheet(machineryId);
-        } catch (error) {
-          existingStep3Data = null;
-        }
-      }
-
-      // 2. Comparar si hay cambios
-      const hasChanges =
-        !existingStep3Data ||
-        Object.keys(data).some((key) => {
-          // Mapear las keys del formulario a las del backend para comparación
-          const backendKeyMap = {
-            enginePower: "power",
-            enginePowerUnit: "power_unit",
-            engineType: "engine_type",
-            cylinderCapacity: "cylinder_capacity",
-            cylinderCapacityUnit: "cylinder_capacity_unit",
-            cylindersNumber: "cylinder_count",
-            arrangement: "cylinder_arrangement_type",
-            traction: "traction_type",
-            fuelConsumption: "fuel_consumption",
-            fuelConsumptionUnit: "fuel_consumption_unit",
-            transmissionSystem: "transmission_system_type",
-            tankCapacity: "fuel_capacity",
-            tankCapacityUnit: "fuel_capacity_unit",
-            carryingCapacity: "carrying_capacity",
-            carryingCapacityUnit: "carrying_capacity_unit",
-            draftForce: "draft_force",
-            draftForceUnit: "draft_force_unit",
-            operatingWeight: "operating_weight",
-            operatingWeightUnit: "operating_weight_unit",
-            maxSpeed: "max_speed",
-            maxSpeedUnit: "max_speed_unit",
-            maxOperatingAltitude: "maximum_altitude",
-            maxOperatingAltitudeUnit: "maximum_altitude_unit",
-            performanceMin: "minimum_performance",
-            performanceMax: "maximum_performance",
-            performanceUnit: "performance_unit",
-            width: "width",
-            length: "length",
-            height: "height",
-            dimensionsUnit: "dimension_unit",
-            netWeight: "net_weight",
-            netWeightUnit: "net_weight_unit",
-            airConditioning: "air_conditioning_system_type",
-            airConditioningConsumption: "air_conditioning_system_consumption",
-            airConditioningConsumptionUnit:
-              "air_conditioning_system_consumption_unit",
-            maxHydraulicPressure: "maximum_working_pressure",
-            maxHydraulicPressureUnit: "maximum_working_pressure_unit",
-            hydraulicPumpFlowRate: "pump_flow",
-            hydraulicPumpFlowRateUnit: "pump_flow_unit",
-            hydraulicReservoirCapacity: "hydraulic_tank_capacity",
-            hydraulicReservoirCapacityUnit: "hydraulic_tank_capacity_unit",
-            emissionLevel: "emission_level_type",
-            cabinType: "cabin_type",
-          };
-
-          const backendKey = backendKeyMap[key];
-          if (backendKey) {
-            return data[key] !== existingStep3Data[backendKey];
-          }
-          return false;
-        });
+      formData.append("id_responsible_user", id);      
 
       // 3. Decidir POST/PUT/NADA
       if (!existingStep3Data) {
         // No hay datos previos: POST (crear)
-        response = await createSpecificTechnicalSheet(formData);
-        setSpecificTechnicalSheetId(
-          response.id || response.id_specific_technical_sheet
-        );
+        await createSpecificTechnicalSheet(formData);
+        try {
+          const newEspecificData = await getSpecificTechnicalSheet(machineryId);
+          if (newEspecificData && newEspecificData.id_specific_sheet) {
+            setSpecificTechnicalSheetId(newEspecificData.id_specific_sheet);
+          }
+        } catch {}
       } else if (hasChanges) {
         // Hay datos previos y cambios: PUT (actualizar)
         // CORRECCIÓN: Obtener el estado actual de la maquinaria
         const currentStatus =
-          machineryToEdit?.machinery_operational_status_name?.toLowerCase();
+          machineryToEdit?.id_machinery_operational_status;
 
         // Agregar justificación si es necesario para el estado activo
-        if (isEditMode && currentStatus === "activa") {
+        if (isEditMode && currentStatus !== 3) {
           if (!data.justification || data.justification.trim() === "") {
             throw new Error(
               "La justificación es obligatoria cuando la maquinaria está en estado 'Activa'"
@@ -1281,13 +1401,10 @@ export default function MultiStepFormModal({
           formData.append("justification", data.justification);
         }
 
-        response = await updateSpecificTechnicalSheet(
-          specificTechnicalSheetId,
-          formData
-        );
+        await updateSpecificTechnicalSheet(specificTechnicalSheetId,formData);
       } // Si no hay cambios, no hacer nada
 
-      // Marcar paso como completado y avanzar
+      onSuccess();
       setCompletedSteps((prev) => [...prev, 2]);
       setStep(3);
     } catch (error) {
@@ -1712,10 +1829,15 @@ export default function MultiStepFormModal({
                   telemetryDevicesList={telemetryDevicesList}
                   isEditMode={isEditMode}
                   machineryStatuesList={machineryStatuesList}
-                  currentStatusName={machineryToEdit?.machinery_operational_status_name?.toLowerCase()}
+                  currentStatusId={machineryToEdit?.id_machinery_operational_status}
                 />
               )}
-              {step === 1 && <Step2TrackerData machineryId={machineryId} />}
+              {step === 1 && (
+                <Step2TrackerData 
+                  isEditMode={isEditMode}
+                  currentStatusId={machineryToEdit?.id_machinery_operational_status}
+                />
+                )}
               {step === 2 && (
                 <Step3SpecificData
                   machineryId={machineryId}
@@ -1736,7 +1858,7 @@ export default function MultiStepFormModal({
                   emissionLevelList={emissionLevelList}
                   cabinTypesList={cabinTypesList}
                   isEditMode={isEditMode}
-                  currentStatusName={machineryToEdit?.machinery_operational_status_name?.toLowerCase()}
+                  currentStatusId={machineryToEdit?.id_machinery_operational_status}
                 />
               )}
               {step === 3 && (
@@ -1745,8 +1867,8 @@ export default function MultiStepFormModal({
                   distanceUnitsList={distanceUnitsList}
                   usageStatesList={usageStatesList}
                   tenureTypesList={tenureTypesList}
-                  machineryStatuesList={machineryStatuesList}
-                  currentStatusName={machineryToEdit?.machinery_operational_status_name?.toLowerCase()}
+                  isEditMode={isEditMode}
+                  currentStatusId={machineryToEdit?.id_machinery_operational_status}
                 />
               )}
               {step === 4 && (
@@ -1754,7 +1876,7 @@ export default function MultiStepFormModal({
                   machineryId={machineryId}
                   maintenanceTypeList={maintenanceTypeList}
                   isEditMode={isEditMode}
-                  currentStatusName={machineryToEdit?.machinery_operational_status_name?.toLowerCase()}
+                  currentStatusId={machineryToEdit?.id_machinery_operational_status}
                 />
               )}
               {step === 5 && <Step6UploadDocs machineryId={machineryId} />}
@@ -1775,14 +1897,16 @@ export default function MultiStepFormModal({
 
               {/* Botón Siguiente / Guardar */}
               {isLastStep ? (
-                <button
-                  type="submit"
-                  aria-label="Save Button"
-                  disabled={isSubmittingStep}
-                  className="btn-theme btn-primary w-auto"
-                >
-                  {isSubmittingStep ? "Guardando..." : "Guardar"}
-                </button>
+                (!isEditMode || operationalStatus === 3) ? (
+                  <button
+                    type="submit"
+                    aria-label="Save Button"
+                    disabled={isSubmittingStep}
+                    className="btn-theme btn-primary w-auto"
+                  >
+                    {isSubmittingStep ? "Guardando..." : "Guardar"}
+                  </button>
+                ) : null               
               ) : (
                 <button
                   type="button"

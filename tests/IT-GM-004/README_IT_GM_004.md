@@ -107,3 +107,6 @@ Validar el flujo completo de eliminación de mantenimientos, incluyendo:
 - Actualizar selectores si cambia la UI
 - Revisar credenciales periódicamente
 - Verificar compatibilidad con nuevas versiones
+
+
+
