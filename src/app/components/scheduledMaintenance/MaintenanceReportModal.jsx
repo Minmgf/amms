@@ -4,10 +4,10 @@ import { IoClose } from "react-icons/io5";
 import { FiTrash2, FiClock } from "react-icons/fi";
 import {
   getActiveTechnicians,
-  getMaintenanceTypes,
   getActiveCurrencyUnits,
   getActiveSparePartsBrands,
   createMaintenanceReport,
+  getActiveMaintenance
 } from "@/services/maintenanceService";
 
 export default function MaintenanceReportModal({
@@ -20,7 +20,7 @@ export default function MaintenanceReportModal({
   const [form, setForm] = useState({
     title: "",
     description: "",
-    investedTime: { hours: "", minutes: "", seconds: "" },
+    investedTime: { hours: "", minutes: "" }, // Eliminar seconds
     technicians: [],
     performedMaintenances: [],
     spareParts: [],
@@ -32,6 +32,7 @@ export default function MaintenanceReportModal({
   const [maintenanceOptions, setMaintenanceOptions] = useState([]);
   const [brandsOptions, setBrandsOptions] = useState([]);
   const [currencyOptions, setCurrencyOptions] = useState([]);
+  const [activeMaintenanceOptions, setActiveMaintenanceOptions] = useState([]);
 
   const [currency, setCurrency] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -58,9 +59,9 @@ export default function MaintenanceReportModal({
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [technicians, maintenanceTypes, brands, currencies] = await Promise.all([
+        const [technicians, activeMaintenances, brands, currencies] = await Promise.all([
           getActiveTechnicians(),
-          getMaintenanceTypes(),
+          getActiveMaintenance(),
           getActiveSparePartsBrands(),
           getActiveCurrencyUnits()
         ]);
@@ -73,15 +74,18 @@ export default function MaintenanceReportModal({
           }))
         );
 
-        // Mapear tipos de mantenimiento
+        // Mapear mantenimientos activos - usar data del response
+        const maintenancesData = activeMaintenances.data || activeMaintenances;
         setMaintenanceOptions(
-          maintenanceTypes.map(type => ({
-            id: type.id_types,
-            name: type.name
+          maintenancesData.map(maint => ({
+            id: maint.id_maintenance,
+            name: maint.name,
+            description: maint.description,
+            tipo_mantenimiento: maint.tipo_mantenimiento
           }))
         );
 
-        // Mapear marcas - CORRECCIÓN: usar data del response
+        // Mapear marcas - usar data del response
         const brandsData = brands.data || brands;
         setBrandsOptions(
           brandsData.map(brand => ({
@@ -90,7 +94,7 @@ export default function MaintenanceReportModal({
           }))
         );
 
-        // Mapear monedas - CORRECCIÓN: usar data del response
+        // Mapear monedas - usar data del response
         const currenciesData = currencies.data || currencies;
         setCurrencyOptions(
           currenciesData.map(curr => ({
@@ -145,7 +149,7 @@ export default function MaintenanceReportModal({
     if (field === "hours") {
       const hours = parseInt(numValue) || 0;
       if (hours > 99) return;
-    } else if (field === "minutes" || field === "seconds") {
+    } else if (field === "minutes") {
       const timeValue = parseInt(numValue) || 0;
       if (timeValue > 59) return;
     }
@@ -300,15 +304,23 @@ export default function MaintenanceReportModal({
       return;
     }
 
+    // VALIDACIÓN ADICIONAL: Verificar que el mantenimiento esté en estado "Programado" (13)
+    if (maintenance.status_id !== 13) {
+      setError(`No se puede crear un reporte para un mantenimiento en estado "${maintenance.status_name}". Solo se permiten mantenimientos en estado "Programado".`);
+      return;
+    }
+
     setSubmitting(true);
     try {
-      // Preparar payload según el formato del API
+      const maintenanceId = maintenance.id_maintenance_scheduling || maintenance.id;
+      
+      // Preparar payload según el formato EXACTO del API
       const payload = {
-        title: form.description.substring(0, 100), // Usar primeros 100 caracteres de la descripción como título
+        title: `Reporte ${maintenanceId}`,
         description: form.description.trim(),
         time_invested_hours: parseInt(form.investedTime.hours) || 0,
         time_invested_minutes: parseInt(form.investedTime.minutes) || 0,
-        time_invested_seconds: parseInt(form.investedTime.seconds) || 0,
+        time_invested_seconds: 0, // Siempre 0 según la HU
         recommendations: form.recommendations?.trim() || "",
         technicians: form.technicians.map(t => t.id),
         currency_unit: parseInt(currency),
@@ -320,23 +332,23 @@ export default function MaintenanceReportModal({
         spare_parts: form.spareParts.map(p => ({
           name: p.name,
           spare_part_brand: p.brand.id,
-          part_number: p.partNumber || "",
+          part_number: p.partNumber || "", // Opcional pero debe estar en el payload
           description: p.description || "",
-          quantity_used: p.quantity,
+          quantity_used: parseInt(p.quantity),
           cost_at_time: parseFloat(p.unitCost)
         }))
       };
 
-      // Llamar al endpoint
-      const response = await createMaintenanceReport(
-        maintenance.id_maintenance_scheduling || maintenance.id,
-        payload
-      );
+      console.log('Payload a enviar:', payload);
+
+      const response = await createMaintenanceReport(maintenanceId, payload);
+
+      console.log('Respuesta del servidor:', response);
 
       if (response.success) {
         await onSave({
           ...form,
-          maintenanceId: maintenance.id_maintenance_scheduling || maintenance.id,
+          maintenanceId: maintenanceId,
           totalCost: totalMaintenanceCost,
           currency: currencyOptions.find(c => c.id === parseInt(currency))?.symbol || currency,
         });
@@ -357,9 +369,25 @@ export default function MaintenanceReportModal({
         }
         
         if (apiError.details) {
-          const detailsArray = Array.isArray(apiError.details) 
-            ? apiError.details 
-            : Object.values(apiError.details).flat();
+          const detailsArray = [];
+          
+          if (typeof apiError.details === 'object') {
+            Object.entries(apiError.details).forEach(([key, value]) => {
+              if (Array.isArray(value)) {
+                detailsArray.push(...value);
+              } else if (typeof value === 'object') {
+                Object.values(value).forEach(v => {
+                  if (Array.isArray(v)) {
+                    detailsArray.push(...v);
+                  } else {
+                    detailsArray.push(v);
+                  }
+                });
+              } else {
+                detailsArray.push(value);
+              }
+            });
+          }
           
           if (detailsArray.length > 0) {
             errorMessage += `: ${detailsArray.join(', ')}`;
@@ -381,12 +409,12 @@ export default function MaintenanceReportModal({
 
   if (!isOpen) return null;
 
-  // Obtener información de la maquinaria
+  // Obtener información de la maquinaria - CORRECCIÓN: usar estructura correcta del endpoint
   const machineryInfo = {
-    serial: maintenance?.machinery_serial || maintenance?.machinery?.serial || "N/A",
-    name: maintenance?.machinery_name || maintenance?.machinery?.name || "N/A",
-    type: maintenance?.machinery_type || maintenance?.type || "N/A",
-    image: maintenance?.machinery_image || maintenance?.machinery?.image || null
+    serial: maintenance?.machinery_serial || "N/A",
+    name: maintenance?.machinery_name || "N/A",
+    type: maintenance?.secondary_type_name || maintenance?.primary_type_name || "N/A",
+    image: maintenance?.machinery_image || null
   };
 
   return (
@@ -468,33 +496,6 @@ export default function MaintenanceReportModal({
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                   {/* Left Column - Info Fields */}
                   <div className="lg:col-span-8 space-y-4">
-                    {/* ELIMINAR: Campo de título del reporte */}
-                    {/* <div>
-                      <label
-                        className="block text-sm mb-2"
-                        style={{
-                          color: "var(--color-text-secondary)",
-                          fontSize: "var(--font-size-sm)",
-                        }}
-                      >
-                        Título del reporte*
-                      </label>
-                      <input
-                        type="text"
-                        value={form.title}
-                        onChange={(e) => setForm({ ...form, title: e.target.value })}
-                        placeholder="Ej: Reporte de mantenimiento preventivo"
-                        className="w-full px-3 py-2 rounded-lg text-sm"
-                        style={{
-                          backgroundColor: "var(--color-input-bg)",
-                          border: "1px solid var(--color-border)",
-                          color: "var(--color-text)",
-                          borderRadius: "var(--border-radius-md)",
-                          fontSize: "var(--font-size-sm)",
-                        }}
-                      />
-                    </div> */}
-
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label
@@ -557,13 +558,13 @@ export default function MaintenanceReportModal({
                             fontSize: "var(--font-size-sm)",
                           }}
                         >
-                          Tipo de maquinaria
+                          Tipo de maquina
                         </label>
                         <input
                           type="text"
                           value={machineryInfo.type}
                           readOnly
-                          aria-label="Tipo de maquinaria"
+                          aria-label="Tipo de maquina"
                           className="w-full px-3 py-2 rounded-lg text-sm"
                           style={{
                             backgroundColor: "var(--color-background)",
@@ -586,13 +587,14 @@ export default function MaintenanceReportModal({
                         </label>
                         <div className="flex items-center gap-1 sm:gap-2">
                           <input
-                            type="text"
+                            type="number"
                             value={form.investedTime.hours}
                             onChange={(e) =>
                               handleTimeChange("hours", e.target.value)
                             }
-                            placeholder="hh"
-                            maxLength="2"
+                            placeholder="00"
+                            min="0"
+                            max="99"
                             aria-label="Horas invertidas"
                             className="w-12 sm:w-16 px-2 sm:px-3 py-2 rounded-lg text-sm text-center"
                             style={{
@@ -607,35 +609,15 @@ export default function MaintenanceReportModal({
                             :
                           </span>
                           <input
-                            type="text"
+                            type="number"
                             value={form.investedTime.minutes}
                             onChange={(e) =>
                               handleTimeChange("minutes", e.target.value)
                             }
-                            placeholder="mm"
-                            maxLength="2"
+                            placeholder="00"
+                            min="0"
+                            max="59"
                             aria-label="Minutos invertidos"
-                            className="w-12 sm:w-16 px-2 sm:px-3 py-2 rounded-lg text-sm text-center"
-                            style={{
-                              backgroundColor: "var(--color-input-bg)",
-                              border: "1px solid var(--color-border)",
-                              color: "var(--color-text)",
-                              borderRadius: "var(--border-radius-md)",
-                              fontSize: "var(--font-size-sm)",
-                            }}
-                          />
-                          <span style={{ color: "var(--color-text-secondary)" }}>
-                            :
-                          </span>
-                          <input
-                            type="text"
-                            value={form.investedTime.seconds}
-                            onChange={(e) =>
-                              handleTimeChange("seconds", e.target.value)
-                            }
-                            placeholder="ss"
-                            maxLength="2"
-                            aria-label="Segundos invertidos"
                             className="w-12 sm:w-16 px-2 sm:px-3 py-2 rounded-lg text-sm text-center"
                             style={{
                               backgroundColor: "var(--color-input-bg)",
@@ -886,7 +868,7 @@ export default function MaintenanceReportModal({
                           maintenance: e.target.value,
                         })
                       }
-                      aria-label="Seleccionar tipo de mantenimiento"
+                      aria-label="Seleccionar mantenimiento"
                       className="w-full px-3 py-2 rounded-lg text-sm"
                       style={{
                         backgroundColor: "var(--color-input-bg)",

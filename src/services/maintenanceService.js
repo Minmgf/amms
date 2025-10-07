@@ -159,14 +159,17 @@ export const createMaintenanceReport = async (id_maintenance_scheduling, payload
 
 // Obtener unidades de moneda activas
 export const getActiveCurrencyUnits = async () => {
-    const response = await apiMain.get("/units/active/10/");
-    // Retornar solo el array de datos
-    return response.data.data || response.data;
+    const { data } = await apiMain.get("/units/active/10/");
+    return data;
 };
 
 // Obtener marcas de repuestos activas
 export const getActiveSparePartsBrands = async () => {
-    const response = await apiMain.get("/brands/list/active/2/");
-    // Retornar solo el array de datos
-    return response.data.data || response.data;
+    const { data } = await apiMain.get("/brands/list/active/2/");
+    return data;
+};
+
+export const getActiveMaintenance = async () => {
+    const { data } = await apiMain.get("/maintenance/active/");
+    return data;
 };
