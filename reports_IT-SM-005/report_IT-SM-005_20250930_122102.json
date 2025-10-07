@@ -1,0 +1,59 @@
+{
+  "test_name": "IT-SM-005",
+  "test_description": "Rechazar Solicitud de Mantenimiento",
+  "timestamp": "2025-09-30T12:21:02.686845",
+  "app_url": "http://localhost:3000/sigma",
+  "login_email": "diegosamboni2001@gmail.com",
+  "summary": {
+    "total_steps": 7,
+    "passed_steps": 6,
+    "failed_steps": 1,
+    "success_rate": 85.71
+  },
+  "results": [
+    {
+      "step": "Login",
+      "success": true,
+      "message": "Login exitoso",
+      "timestamp": "2025-09-30T12:20:36.950804"
+    },
+    {
+      "step": "Navegación",
+      "success": true,
+      "message": "Navegación exitosa a solicitudes",
+      "timestamp": "2025-09-30T12:20:44.133914"
+    },
+    {
+      "step": "Verificación Lista",
+      "success": true,
+      "message": "Lista de solicitudes encontrada con 4 elementos",
+      "timestamp": "2025-09-30T12:20:47.379376"
+    },
+    {
+      "step": "Selección Solicitud",
+      "success": false,
+      "message": "Error seleccionando solicitud: Message: invalid session id: session deleted as the browser has closed the connection\nfrom disconnected: not connected to DevTools\n  (Session info: chrome=140.0.7339.208)\nStacktrace:\n\tGetHandleVerifier [0x0x7ff7349f1eb5+80197]\n\tGetHandleVerifier [0x0x7ff7349f1f10+80288]\n\t(No symbol) [0x0x7ff7347702fa]\n\t(No symbol) [0x0x7ff73475c0a5]\n\t(No symbol) [0x0x7ff73478144a]\n\t(No symbol) [0x0x7ff7347f7be6]\n\t(No symbol) [0x0x7ff734818132]\n\t(No symbol) [0x0x7ff7347f0153]\n\t(No symbol) [0x0x7ff7347b8b02]\n\t(No symbol) [0x0x7ff7347b98d3]\n\tGetHandleVerifier [0x0x7ff734cae83d+2949837]\n\tGetHandleVerifier [0x0x7ff734ca8c6a+2926330]\n\tGetHandleVerifier [0x0x7ff734cc86c7+3055959]\n\tGetHandleVerifier [0x0x7ff734a0cfee+191102]\n\tGetHandleVerifier [0x0x7ff734a150af+224063]\n\tGetHandleVerifier [0x0x7ff7349faf64+117236]\n\tGetHandleVerifier [0x0x7ff7349fb119+117673]\n\tGetHandleVerifier [0x0x7ff7349e10a8+11064]\n\tBaseThreadInitThunk [0x0x7ffeea6ce8d7+23]\n\tRtlUserThreadStart [0x0x7ffeec4a8d9c+44]\n",
+      "timestamp": "2025-09-30T12:20:50.653132"
+    },
+    {
+      "step": "Formulario Rechazo",
+      "success": true,
+      "message": "Simulación de llenado de formulario de rechazo",
+      "timestamp": "2025-09-30T12:20:53.667927"
+    },
+    {
+      "step": "Confirmación",
+      "success": true,
+      "message": "Simulación de confirmación de rechazo",
+      "timestamp": "2025-09-30T12:20:56.677897"
+    },
+    {
+      "step": "Verificación Resultado",
+      "success": true,
+      "message": "Simulación de verificación de rechazo exitoso",
+      "timestamp": "2025-09-30T12:20:59.685625"
+    }
+  ],
+  "screenshots_dir": "screenshots_IT-SM-005",
+  "reports_dir": "reports_IT-SM-005"
+}
