@@ -264,11 +264,21 @@ const MachineryHistoryModal = ({ isOpen, onClose, machinery }) => {
       const reports = reportsResponse?.data || []
       
       // Filtrar reportes que correspondan a esta maquinaria
-      const machineryReports = reports.filter(report => {
-        // Aquí necesitarías mapear el id_maintenance_scheduling con la maquinaria
-        // Por ahora, mostramos todos los reportes como ejemplo
-        return true
-      })
+      const machineryReports = []
+      
+      for (const report of reports) {
+        try {
+          // Obtener el detalle del reporte para verificar la maquinaria
+          const detailResponse = await getMaintenanceReportDetail(report.id_maintenance_scheduling)
+          const detail = detailResponse?.data
+          
+          if (detail?.machinery_id === machinery.id_machinery) {
+            machineryReports.push(report)
+          }
+        } catch (error) {
+          console.warn(`No se pudo obtener detalle del reporte ${report.id_maintenance_scheduling}:`, error)
+        }
+      }
       
       const mappedPerformed = machineryReports.map((report) => ({
         id: report.id_maintenance_report,
