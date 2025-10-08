@@ -24,6 +24,8 @@ import {
   ConfirmModal,
   WarningModal,
 } from "@/app/components/shared/SuccessErrorModal";
+import AddClientModal from "@/app/components/request/clients/AddClientModal";
+import UpdateClientModal from "@/app/components/request/clients/UpdateClientModal";
 
 /**
  * ClientsView Component
@@ -816,6 +818,18 @@ const ClientsView = () => {
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
+      {/* Create Client Modal */}
+      <AddClientModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+      />
+
+      {/* Edit Client Modal */}
+      <UpdateClientModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        client={selectedClient}
+      />
 
       {/* Delete Confirmation Modal */}
       <ConfirmModal
