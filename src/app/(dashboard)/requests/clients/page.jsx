@@ -26,6 +26,7 @@ import {
 } from "@/app/components/shared/SuccessErrorModal";
 import AddClientModal from "@/app/components/request/clients/AddClientModal";
 import UpdateClientModal from "@/app/components/request/clients/UpdateClientModal";
+import DetailsClientModal from "@/app/components/request/clients/DetailsClientModal";
 
 /**
  * ClientsView Component
@@ -309,7 +310,6 @@ const ClientsView = () => {
     setSelectedClient(client);
     setIsDetailsModalOpen(true);
     console.log("View client details:", client);
-    // TODO: Open details modal
   };
 
   const handleDelete = (client) => {
@@ -828,6 +828,13 @@ const ClientsView = () => {
       <UpdateClientModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
+        client={selectedClient}
+      />
+
+      {/* Details Client Modal */}
+      <DetailsClientModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
         client={selectedClient}
       />
 
