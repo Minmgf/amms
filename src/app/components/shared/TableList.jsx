@@ -64,7 +64,7 @@ const TableList = ({
                             {table.getRowModel().rows.length === 0 ? (
                                 <tr>
                                     <td colSpan={columns.length} className="text-center text-secondary py-6 parametrization-empty">
-                                        No results found
+                                        Sin resultados encontrados
                                     </td>
                                 </tr>
                             ) : (

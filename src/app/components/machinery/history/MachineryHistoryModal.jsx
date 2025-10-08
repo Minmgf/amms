@@ -5,7 +5,7 @@ import UpdateHistorySection from '@/app/components/machinery/history/UpdateHisto
 import MaintenanceRequestSection from '@/app/components/machinery/history/MaintenanceRequestSection'
 import MaintenanceScheduledSection from '@/app/components/machinery/history/MaintenanceScheduledSection'
 import MaintenancePerformedSection from '@/app/components/machinery/history/MaintenancePerformedSection'
-import { getMachineryHistory, getMaintenanceRequestHistory, getMaintenanceScheduledHistory } from '@/services/auditService'
+import { getMachineryHistory, getMaintenanceRequestHistory, getMaintenanceScheduledHistory, getMaintenanceReports, getMaintenanceReportDetail } from '@/services/auditService'
 import { getPrioritiesList, getMaintenanceTypes, getMaintenanceRequestStatuses, getActiveTechnicians, getMaintenanceSchedulingStatuses } from '@/services/maintenanceService'
 import { ErrorModal } from '@/app/components/shared/SuccessErrorModal'
 
@@ -21,9 +21,11 @@ const MachineryHistoryModal = ({ isOpen, onClose, machinery }) => {
   const [historyData, setHistoryData] = useState([])
   const [maintenanceRequestData, setMaintenanceRequestData] = useState([])
   const [maintenanceScheduledData, setMaintenanceScheduledData] = useState([])
+  const [maintenancePerformedData, setMaintenancePerformedData] = useState([])
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
   const [isLoadingRequests, setIsLoadingRequests] = useState(false)
   const [isLoadingScheduled, setIsLoadingScheduled] = useState(false)
+  const [isLoadingPerformed, setIsLoadingPerformed] = useState(false)
   const [errorModalOpen, setErrorModalOpen] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   
@@ -58,6 +60,7 @@ const MachineryHistoryModal = ({ isOpen, onClose, machinery }) => {
       setHistoryData([])
       setMaintenanceRequestData([])
       setMaintenanceScheduledData([])
+      setMaintenancePerformedData([])
       const resetTabs = {
         updateHistory: false,
         maintenanceRequest: false,
@@ -123,6 +126,7 @@ const MachineryHistoryModal = ({ isOpen, onClose, machinery }) => {
         await loadMaintenanceScheduled()
         break
       case 'maintenancePerformed':
+        await loadMaintenancePerformed()
         break
       default:
         break
@@ -251,6 +255,50 @@ const MachineryHistoryModal = ({ isOpen, onClose, machinery }) => {
     }
   }
 
+  const loadMaintenancePerformed = async () => {
+    if (!machinery?.id_machinery) return
+
+    setIsLoadingPerformed(true)
+    try {
+      const reportsResponse = await getMaintenanceReports()
+      const reports = reportsResponse?.data || []
+      
+      // Filtrar reportes que correspondan a esta maquinaria
+      const machineryReports = []
+      
+      for (const report of reports) {
+        try {
+          // Obtener el detalle del reporte para verificar la maquinaria
+          const detailResponse = await getMaintenanceReportDetail(report.id_maintenance_scheduling)
+          const detail = detailResponse?.data
+          
+          if (detail?.machinery_id === machinery.id_machinery) {
+            machineryReports.push(report)
+          }
+        } catch (error) {
+          console.warn(`No se pudo obtener detalle del reporte ${report.id_maintenance_scheduling}:`, error)
+        }
+      }
+      
+      const mappedPerformed = machineryReports.map((report) => ({
+        id: report.id_maintenance_report,
+        idMaintenanceScheduling: report.id_maintenance_scheduling, // Necesario para la descarga del PDF
+        performedDate: report.registration_date,
+        assignedTechnician: report.assigned_technician,
+        maintenancePerformed: report.maintenance_names,
+        description: report.description,
+        costs: `$${report.total_cost?.toLocaleString() || '0'}`
+      }))
+      
+      setMaintenancePerformedData(mappedPerformed)
+    } catch (error) {
+      setErrorMessage('No se pudo cargar el historial de mantenimientos realizados.')
+      setErrorModalOpen(true)
+    } finally {
+      setIsLoadingPerformed(false)
+    }
+  }
+
   const machineTitle = machinery?.machinery_name
     ? `Historial de Cambios de ${machinery.machinery_name}`
     : 'Historial de maquinaria'
@@ -264,7 +312,7 @@ const MachineryHistoryModal = ({ isOpen, onClose, machinery }) => {
       case 'maintenanceScheduled':
         return <MaintenanceScheduledSection scheduledMaint={maintenanceScheduledData} loading={isLoadingScheduled} />
       case 'maintenancePerformed':
-        return <MaintenancePerformedSection performedMaint={[]} />
+        return <MaintenancePerformedSection performedMaint={maintenancePerformedData} loading={isLoadingPerformed} />
       default:
         return null
     }
