@@ -256,7 +256,7 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
               {/* Header */}
               <div className="flex justify-between items-center p-6 border-b border-gray-200">
                 <Dialog.Title className="text-2xl font-bold text-primary">
-                  Client Example details
+                  Client details
                 </Dialog.Title>
                 <button
                   onClick={onClose}
