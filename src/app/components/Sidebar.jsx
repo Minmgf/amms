@@ -213,9 +213,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           permissions: [],
         },
         {
-          name: "Gestión de servicios",
-          icon: <FaTools />,
-          path: "/requests/serviceManagement",
+          name: "Servicios",
+          icon: <FaClipboardCheck />,
+          path: "/requests/services",
           permissions: [],
         },
       ],
