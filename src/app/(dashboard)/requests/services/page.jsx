@@ -3,6 +3,7 @@ import TableList from "@/app/components/shared/TableList";
 import FilterModal from "@/app/components/shared/FilterModal";
 import ServiceFilterFields from "@/app/components/request/services/ServiceFilterFields";
 import { getServiceColumns } from "@/app/components/request/services/serviceColumns";
+import { ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
 import React, { useState, useMemo, useEffect } from "react";
 import { CiFilter } from "react-icons/ci";
 import { FaPlus, FaTimes } from "react-icons/fa";
@@ -36,6 +37,10 @@ const ServicesView = () => {
   const [unitFilter, setUnitFilter] = useState("");
   const [priceMinFilter, setPriceMinFilter] = useState(0);
   const [priceMaxFilter, setPriceMaxFilter] = useState(1000000);
+
+  // Estados de modales
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState(null);
 
   // Datos de ejemplo (mock)
   const sampleServicesData = [
@@ -244,11 +249,39 @@ const ServicesView = () => {
   };
 
   /**
-   * Maneja la eliminación de un servicio
+   * Maneja la eliminación de un servicio (abre el modal de confirmación)
    */
   const handleDelete = (service) => {
-    console.log("Delete service:", service);
-    // TODO: Implementar confirmación y eliminación
+    setSelectedService(service);
+    setIsConfirmDeleteOpen(true);
+  };
+
+  /**
+   * Confirma y ejecuta la eliminación del servicio
+   */
+  const handleConfirmDelete = async () => {
+    setIsConfirmDeleteOpen(false);
+
+    if (!selectedService) return;
+
+    try {
+      // TODO: Reemplazar con llamada real a la API
+      // await deleteService(selectedService.id);
+
+      // Simular delay de API
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      // Eliminar servicio de los datos locales
+      setServicesData((prevData) =>
+        prevData.filter((service) => service.id !== selectedService.id)
+      );
+
+      console.log("Servicio eliminado:", selectedService);
+    } catch (error) {
+      console.error("Error al eliminar servicio:", error);
+    } finally {
+      setSelectedService(null);
+    }
   };
 
   /**
@@ -370,6 +403,19 @@ const ServicesView = () => {
           uniqueUnits={uniqueUnits}
         />
       </FilterModal>
+
+      {/* Modal de confirmación de eliminación */}
+      <ConfirmModal
+        isOpen={isConfirmDeleteOpen}
+        onClose={() => setIsConfirmDeleteOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Confirmar Acción"
+        message="¿Está seguro que desea eliminar este servicio?"
+        confirmText="Confirmar"
+        cancelText="Cancelar"
+        confirmColor="btn-primary"
+        cancelColor="btn-error"
+      />
     </div>
   );
 };
