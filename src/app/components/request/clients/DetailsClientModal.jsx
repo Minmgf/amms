@@ -497,8 +497,8 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
               loading={false}
               globalFilter={globalFilter}
               onGlobalFilterChange={setGlobalFilter}
-              pageSizeOptions={[1, 5, 10, 20]}
-              defaultPageSize={1}
+              pageSizeOptions={[10, 20, 50, 100]}
+              defaultPageSize={10}
             />
           </section>
         </div>
