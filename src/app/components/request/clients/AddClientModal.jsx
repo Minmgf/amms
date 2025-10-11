@@ -1,14 +1,16 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
-import { useForm } from "react-hook-form";
+import { get, useForm } from "react-hook-form";
 import { useTheme } from "@/contexts/ThemeContext";
 import { SuccessModal, ErrorModal } from "../../shared/SuccessErrorModal";
 import { getMunicipalities } from "@/services/billingService";
+import { getTypeDocuments } from "@/services/authService";
+import { getPersonTypes } from "@/services/clientService";
 
 const AddClientModal = ({
     isOpen,
-    mode = "create", // "create" o "edit"
+    mode = "create",
     onClose,
     onSuccess,
     billingToken,
@@ -30,6 +32,8 @@ const AddClientModal = ({
     const [loading, setLoading] = useState(false);
     const [loadingMunicipalities, setLoadingMunicipalities] = useState(false);
     const [municipalities, setMunicipalities] = useState([]);
+    const [typeDocuments, setTypeDocuments] = useState([]);
+    const [personTypes, setPersonTypes] = useState([]);
 
     // Modales de éxito y error
     const [successOpen, setSuccessOpen] = useState(false);
@@ -37,17 +41,22 @@ const AddClientModal = ({
     const [modalMessage, setModalMessage] = useState("");
 
     // Datos para selects
-    const identificationTypes = [
-        { id: 1, name: "Cédula de Ciudadanía" },
-        { id: 2, name: "Cédula de Extranjería" },
-        { id: 3, name: "NIT" },
-        { id: 4, name: "Pasaporte" },
-    ];
-
-    const personTypes = [
-        { id: 1, name: "Persona Natural" },
-        { id: 2, name: "Persona Jurídica" },
-    ];
+    const getTypeDocumentsData = async () => {
+        try {
+            const response = await getTypeDocuments();
+            setTypeDocuments(response.data);
+        } catch (error) {
+            console.error("Error cargando tipos de documento:", error);
+        }
+    };
+    const getPersonTypesData = async () => {
+        try {
+            const response = await getPersonTypes();
+            setPersonTypes(response.data);
+        } catch (error) {
+            console.error("Error cargando tipos de persona:", error);
+        }
+    }
 
     const phoneCodes = [
         { code: "+57", country: "CO" },
@@ -62,18 +71,12 @@ const AddClientModal = ({
         { id: 3, name: "Gran Contribuyente" },
     ];
 
-    const regions = [
-        { id: 1, name: "Huila" },
-        { id: 2, name: "Cundinamarca" },
-        { id: 3, name: "Antioquia" },
-        { id: 4, name: "Valle del Cauca" },
-        { id: 5, name: "Atlántico" },
-    ];
-
     useEffect(() => {
         if (isOpen && billingToken) {
             loadMunicipalities();
         }
+        getTypeDocumentsData();
+        getPersonTypesData();
     }, [isOpen, billingToken]);
 
     const loadMunicipalities = async (searchTerm = "") => {
@@ -159,13 +162,13 @@ const AddClientModal = ({
                 id="Client Registration Modal"
             >
                 <div
-                    className="bg-background rounded-xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-hidden"
+                    className="bg-background rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}
                     <div className="flex items-center justify-between p-6 border-b border-gray-200">
                         <h2 className="text-xl font-bold text-gray-900 text-primary">
-                            {isEditMode ? "Actualizar Cliente" : "Registrar Cliente"}
+                            {isEditMode ? "Actualizar Cliente" : "Registrar Nuevo Cliente"}
                         </h2>
                         <button
                             aria-label="Close Modal Button"
@@ -184,173 +187,76 @@ const AddClientModal = ({
                         onSubmit={handleSubmit(handleFormSubmit)}
                         className="p-6 overflow-y-auto max-h-[calc(95vh-140px)]"
                     >
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-
-                            {/* Columna Izquierda */}
-                            <div className="space-y-6">
-                                {/* Número de Identificación */}
-                                <div>
-                                    <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
-                                        Número de Identificación
-                                    </label>
-                                    <input
-                                        type="text"
-                                        {...register("identificationNumber", {
-                                            required: "Este campo es obligatorio.",
-                                            pattern: {
-                                                value: /^[0-9]+$/,
-                                                message: "Solo se permiten números."
-                                            }
-                                        })}
-                                        className="parametrization-input w-full"
-                                        aria-label="Identification Number Input"
-                                        placeholder="Digite número de identificación"
-                                    />
-                                    {errors.identificationNumber && (
-                                        <span className="text-xs text-red-500 mt-1 block">
-                                            {errors.identificationNumber.message}
-                                        </span>
-                                    )}
+                        <div className="space-y-6 mb-6">
+                            {/* Fila 1: Número de identificación y Tipo de identificación */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div className="col-span-2">
+                                        <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
+                                            Número de identificación
+                                        </label>
+                                        <input
+                                            type="text"
+                                            {...register("identificationNumber", {
+                                                required: "Este campo es obligatorio.",
+                                                pattern: {
+                                                    value: /^[0-9]+$/,
+                                                    message: "Solo se permiten números."
+                                                }
+                                            })}
+                                            className="parametrization-input w-full"
+                                            placeholder="Digite número de identificación"
+                                            onKeyDown={(e) => {
+                                                if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'Tab' && e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') {
+                                                    e.preventDefault();
+                                                }
+                                            }}
+                                        />
+                                        {errors.identificationNumber && (
+                                            <span className="text-xs text-red-500 mt-1 block">
+                                                {errors.identificationNumber.message}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
+                                            Dígito Verificación
+                                        </label>
+                                        <input
+                                            type="text"
+                                            {...register("checkDigit", {
+                                                pattern: {
+                                                    value: /^[0-9]{1}$/,
+                                                    message: "Solo un dígito."
+                                                }
+                                            })}
+                                            className="parametrization-input w-full"
+                                            placeholder="DV"
+                                            onKeyDown={(e) => {
+                                                if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'Tab' && e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') {
+                                                    e.preventDefault();
+                                                }
+                                            }}
+                                        />
+                                        {errors.checkDigit && (
+                                            <span className="text-xs text-red-500 mt-1 block">
+                                                {errors.checkDigit.message}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
 
-                                {/* Check Digit */}
                                 <div>
                                     <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
-                                        Dígito de Verificación
-                                    </label>
-                                    <input
-                                        type="text"
-                                        {...register("checkDigit", {
-                                            pattern: {
-                                                value: /^[0-9]{1}$/,
-                                                message: "Solo un dígito."
-                                            }
-                                        })}
-                                        className="parametrization-input w-full"
-                                        aria-label="Check Digit Input"
-                                        placeholder="Dígito de verificación"
-                                        maxLength={1}
-                                        onKeyDown={(e) => {
-                                            if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'Tab' && e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') {
-                                                e.preventDefault();
-                                            }
-                                        }}
-                                    />
-                                    {errors.checkDigit && (
-                                        <span className="text-xs text-red-500 mt-1 block">
-                                            {errors.checkDigit.message}
-                                        </span>
-                                    )}
-                                </div>
-
-                                {/* Nombre Legal */}
-                                <div>
-                                    <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
-                                        Nombre Legal
-                                    </label>
-                                    <input
-                                        type="text"
-                                        {...register("legalName")}
-                                        className="parametrization-input w-full"
-                                        aria-label="Legal Name Input"
-                                        placeholder="Nombre legal"
-                                    />
-                                </div>
-
-                                {/* Nombre Completo */}
-                                <div>
-                                    <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
-                                        Nombre Completo
-                                    </label>
-                                    <input
-                                        type="text"
-                                        {...register("fullName", { required: "Este campo es obligatorio." })}
-                                        className="parametrization-input w-full"
-                                        aria-label="Full Name Input"
-                                        placeholder="Nombre completo"
-                                    />
-                                    {errors.fullName && (
-                                        <span className="text-xs text-red-500 mt-1 block">
-                                            {errors.fullName.message}
-                                        </span>
-                                    )}
-                                </div>
-
-                                {/* Segundo Apellido */}
-                                <div>
-                                    <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
-                                        Segundo Apellido
-                                    </label>
-                                    <input
-                                        type="text"
-                                        {...register("secondLastName")}
-                                        className="parametrization-input w-full"
-                                        aria-label="Second Last Name Input"
-                                        placeholder="Segundo apellido"
-                                    />
-                                </div>
-
-                                {/* Correo Electrónico */}
-                                <div>
-                                    <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
-                                        Correo Electrónico
-                                    </label>
-                                    <input
-                                        type="email"
-                                        {...register("email", {
-                                            required: "Este campo es obligatorio.",
-                                            pattern: {
-                                                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                                                message: "Correo electrónico inválido."
-                                            }
-                                        })}
-                                        className="parametrization-input w-full"
-                                        aria-label="Email Input"
-                                        placeholder="Digite el email"
-                                    />
-                                    {errors.email && (
-                                        <span className="text-xs text-red-500 mt-1 block">
-                                            {errors.email.message}
-                                        </span>
-                                    )}
-                                </div>
-
-                                {/* Régimen Fiscal */}
-                                <div>
-                                    <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
-                                        Régimen Fiscal
-                                    </label>
-                                    <select
-                                        {...register("taxRegime")}
-                                        className="parametrization-input w-full"
-                                        aria-label="Tax Regime Select"
-                                        defaultValue=""
-                                    >
-                                        <option value="">Seleccione régimen fiscal</option>
-                                        {taxRegimes.map((regime) => (
-                                            <option key={regime.id} value={regime.id}>
-                                                {regime.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* Columna Derecha */}
-                            <div className="space-y-6">
-                                {/* Tipo de Identificación */}
-                                <div>
-                                    <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
-                                        Tipo de Identificación
+                                        Tipo de identificación
                                     </label>
                                     <select
                                         {...register("identificationType", { required: "Este campo es obligatorio." })}
                                         className="parametrization-input w-full"
-                                        aria-label="Identification Type Select"
                                         defaultValue=""
                                     >
                                         <option value="">Seleccione el tipo</option>
-                                        {identificationTypes.map((type) => (
+                                        {typeDocuments.map((type) => (
                                             <option key={type.id} value={type.id}>
                                                 {type.name}
                                             </option>
@@ -362,16 +268,29 @@ const AddClientModal = ({
                                         </span>
                                     )}
                                 </div>
+                            </div>
 
-                                {/* Tipo de Persona */}
+                            {/* Fila 2: Nombre Comercial y Tipo de persona */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
-                                        Tipo de Persona
+                                        Nombre Comercial
+                                    </label>
+                                    <input
+                                        type="text"
+                                        {...register("legalName")}
+                                        className="parametrization-input w-full"
+                                        placeholder="Digite nombre comercial"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
+                                        Tipo de persona
                                     </label>
                                     <select
                                         {...register("personType", { required: "Este campo es obligatorio." })}
                                         className="parametrization-input w-full"
-                                        aria-label="Person Type Select"
                                         defaultValue=""
                                     >
                                         <option value="">Seleccione el tipo</option>
@@ -387,8 +306,10 @@ const AddClientModal = ({
                                         </span>
                                     )}
                                 </div>
+                            </div>
 
-                                {/* Razón Social */}
+                            {/* Fila 3: Razón Social y Nombres */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
                                         Razón Social
@@ -397,42 +318,92 @@ const AddClientModal = ({
                                         type="text"
                                         {...register("businessName")}
                                         className="parametrization-input w-full"
-                                        aria-label="Business Name Input"
-                                        placeholder="Razón social"
+                                        placeholder="Digite razón social"
                                     />
                                 </div>
 
-                                {/* Primer Apellido */}
                                 <div>
                                     <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
-                                        Primer Apellido
+                                        Nombres
                                     </label>
                                     <input
                                         type="text"
-                                        {...register("firstLastName", { required: "Este campo es obligatorio." })}
+                                        {...register("fullName", { required: "Este campo es obligatorio." })}
                                         className="parametrization-input w-full"
-                                        aria-label="First Last Name Input"
-                                        placeholder="Primer apellido"
+                                        placeholder="Digite nombres"
                                     />
-                                    {errors.firstLastName && (
+                                    {errors.fullName && (
                                         <span className="text-xs text-red-500 mt-1 block">
-                                            {errors.firstLastName.message}
+                                            {errors.fullName.message}
                                         </span>
                                     )}
                                 </div>
+                            </div>
 
-                                {/* Número de Teléfono */}
+                            {/* Fila 4: Apellidos y Régimen */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
+                                            Primer Apellido
+                                        </label>
+                                        <input
+                                            type="text"
+                                            {...register("firstLastName", { required: "Este campo es obligatorio." })}
+                                            className="parametrization-input w-full"
+                                            placeholder="Primer apellido"
+                                        />
+                                        {errors.firstLastName && (
+                                            <span className="text-xs text-red-500 mt-1 block">
+                                                {errors.firstLastName.message}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
+                                            Segundo Apellido
+                                        </label>
+                                        <input
+                                            type="text"
+                                            {...register("secondLastName")}
+                                            className="parametrization-input w-full"
+                                            placeholder="Segundo apellido"
+                                        />
+                                    </div>
+                                </div>
+
                                 <div>
                                     <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
-                                        Número de Teléfono
+                                        Régimen Tributario
+                                    </label>
+                                    <select
+                                        {...register("taxRegime")}
+                                        className="parametrization-input w-full"
+                                        defaultValue=""
+                                    >
+                                        <option value="">Seleccione régimen fiscal</option>
+                                        {taxRegimes.map((regime) => (
+                                            <option key={regime.id} value={regime.id}>
+                                                {regime.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Fila 5: Teléfono y Dirección */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
+                                        Número Telefónico
                                     </label>
                                     <div className="flex gap-2">
                                         <select
                                             {...register("phoneCode", { required: true })}
-                                            className="parametrization-input w-40"
-                                            aria-label="Phone Code Select"
+                                            className="parametrization-input w-20"
                                             defaultValue=""
-                                        >   <option value="">Código del País</option>
+                                        >
+                                            <option value="">Códido del país</option>
                                             {phoneCodes.map((phone) => (
                                                 <option key={phone.code} value={phone.code}>
                                                     {phone.code}
@@ -449,8 +420,7 @@ const AddClientModal = ({
                                                 }
                                             })}
                                             className="parametrization-input w-40"
-                                            aria-label="Phone Number Input"
-                                            placeholder="Digite número de teléfono"
+                                            placeholder="Digite número teléfonico"
                                             onKeyDown={(e) => {
                                                 if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'Tab' && e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') {
                                                     e.preventDefault();
@@ -465,7 +435,6 @@ const AddClientModal = ({
                                     )}
                                 </div>
 
-                                {/* Dirección */}
                                 <div>
                                     <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
                                         Dirección
@@ -474,21 +443,43 @@ const AddClientModal = ({
                                         type="text"
                                         {...register("address")}
                                         className="parametrization-input w-full"
-                                        aria-label="Address Input"
-                                        placeholder="Digite la dirección"
+                                        placeholder="Digite dirección"
                                     />
                                 </div>
+                            </div>
 
-                                {/* Región/Ciudad */}
-                                {/* Región/Ciudad */}
+                            {/* Fila 6: Email y Ciudad */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
-                                        Región/Ciudad
+                                        Correo Electrónico
+                                    </label>
+                                    <input
+                                        type="email"
+                                        {...register("email", {
+                                            required: "Este campo es obligatorio.",
+                                            pattern: {
+                                                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                                                message: "Correo electrónico inválido."
+                                            }
+                                        })}
+                                        className="parametrization-input w-full"
+                                        placeholder="Digite correo electrónico"
+                                    />
+                                    {errors.email && (
+                                        <span className="text-xs text-red-500 mt-1 block">
+                                            {errors.email.message}
+                                        </span>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label className="text-secondary block text-sm font-medium text-gray-700 mb-2">
+                                        Ciudad/Municipio
                                     </label>
                                     <select
                                         {...register("region")}
                                         className="parametrization-input w-full"
-                                        aria-label="Region Select"
                                         defaultValue=""
                                         disabled={loadingMunicipalities}
                                     >
@@ -507,7 +498,6 @@ const AddClientModal = ({
                                 </div>
                             </div>
                         </div>
-
                         <div className="flex justify-center gap-4 mt-6">
                             <button
                                 type="button"
@@ -518,7 +508,7 @@ const AddClientModal = ({
                                 className="btn-error btn-theme w-80 px-8 py-2 font-semibold rounded-lg"
                                 aria-label="Cancel Button"
                             >
-                                Cancelar
+                                Cancel
                             </button>
                             <button
                                 type="submit"
@@ -534,7 +524,6 @@ const AddClientModal = ({
                     </form>
                 </div>
             </div>
-
             <SuccessModal
                 isOpen={successOpen}
                 onClose={() => setSuccessOpen(false)}
