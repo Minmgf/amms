@@ -43,9 +43,14 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
     { id: 4, code: "PAS", name: "Pasaporte" },
   ]);
 
+  // Obtener el ID del cliente (soporta tanto 'id' como 'id_customer')
+  const getClientId = () => {
+    return client?.id_customer || client?.id || 1;
+  };
+
   // Cargar datos del cliente cuando se abre el modal
   useEffect(() => {
-    if (isOpen && client?.id) {
+    if (isOpen && getClientId()) {
       loadClientData();
       loadStatuses();
     }
@@ -90,25 +95,33 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
     setError(null);
 
     try {
+      const clientId = getClientId();
+      console.log('🔍 [DetailsClientModal] Cargando datos del cliente con ID:', clientId);
+      
       // Llamar al endpoint real
-      const response = await getClientDetail(client.id);
+      const response = await getClientDetail(clientId);
+      console.log('📡 [DetailsClientModal] Respuesta del endpoint:', response);
       
       if (response.success) {
+        console.log('✅ [DetailsClientModal] Datos del cliente cargados exitosamente:', response.data);
         setClientData(response.data);
         
         // Cargar historial de solicitudes
-        const historyResponse = await getClientRequestHistory(client.id);
+        const historyResponse = await getClientRequestHistory(clientId);
+        console.log('📡 [DetailsClientModal] Respuesta historial:', historyResponse);
+        
         if (historyResponse.success && historyResponse.data?.length > 0) {
+          console.log('✅ [DetailsClientModal] Historial cargado exitosamente');
           setRequestHistory(historyResponse.data);
         } else {
-          // Si no hay datos del endpoint, usar mock data para demostración
+          console.log('⚠️ [DetailsClientModal] Sin historial, usando mock data');
           setRequestHistory(generateMockRequestHistory());
         }
       } else {
         throw new Error(response.message || "Error al cargar datos del cliente");
       }
     } catch (err) {
-      console.error("Error loading client data:", err);
+      console.error("❌ [DetailsClientModal] Error loading client data:", err);
       setError("Error al cargar los datos del cliente. Mostrando datos de ejemplo.");
       
       // Usar datos mock si falla el endpoint
@@ -122,7 +135,7 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
   // Generar datos mock para el cliente (fallback)
   const generateMockClientData = () => {
     return {
-      id_customer: client?.id || 1,
+      id_customer: getClientId() || 1,
       id_user: null,
       document_number: "800.197.268",
       type_document_id: 2,

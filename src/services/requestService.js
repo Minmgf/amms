@@ -27,20 +27,33 @@ export const getIdentificationTypes = async () => {
 // Obtener detalle del cliente (HU-CLI-003)
 export const getClientDetail = async (clientId) => {
     try {
-        const { data } = await apiMain.get(`/customer/detail/${clientId}/`);
-        return { success: true, data };
+        const { data } = await apiMain.get(`/customers/${clientId}/detail/`);
+        return data;
     } catch (error) {
-        return { success: false, message: error?.message || "Error al obtener el detalle del cliente" };
+        console.error("Error al obtener detalle del cliente:", error);
+        return { 
+            success: false, 
+            message: error.response?.data?.message || error?.message || "Error al obtener el detalle del cliente" 
+        };
     }
 };
 
 // Obtener historial de solicitudes del cliente (HU-CLI-003)
 export const getClientRequestHistory = async (clientId) => {
     try {
-        const { data } = await apiMain.get(`/customer/requests/${clientId}/`);
-        return { success: true, data };
+        const { data } = await apiMain.get(`/customers/${clientId}/requests/`);
+        // Si el endpoint retorna con estructura {success, message, data}, usar directamente
+        // Si retorna un array directo, envolverlo
+        if (Array.isArray(data)) {
+            return { success: true, data };
+        }
+        return data;
     } catch (error) {
-        return { success: false, message: error?.message || "Error al obtener el historial de solicitudes" };
+        console.error("Error al obtener historial de solicitudes:", error);
+        return { 
+            success: false, 
+            message: error.response?.data?.message || error?.message || "Error al obtener el historial de solicitudes" 
+        };
     }
 };
 

@@ -94,6 +94,7 @@ const ClientsView = () => {
   const sampleClientsData = [
     {
       id: 1,
+      id_customer: 1,
       name: "Agrícola del Valle S.A.",
       identification_number: "900123456-7",
       document_type: "NIT",
@@ -106,6 +107,7 @@ const ClientsView = () => {
     },
     {
       id: 2,
+      id_customer: 2,
       name: "Juan Carlos Rodríguez",
       identification_number: "1098765432",
       document_type: "CC",
@@ -118,6 +120,7 @@ const ClientsView = () => {
     },
     {
       id: 3,
+      id_customer: 3,
       name: "Maquinaria Pesada Ltda.",
       identification_number: "900987654-3",
       document_type: "NIT",
@@ -130,6 +133,7 @@ const ClientsView = () => {
     },
     {
       id: 4,
+      id_customer: 4,
       name: "María Fernanda Gómez",
       identification_number: "52123456",
       document_type: "CC",
@@ -142,6 +146,7 @@ const ClientsView = () => {
     },
     {
       id: 5,
+      id_customer: 5,
       name: "Transportes del Norte S.A.S.",
       identification_number: "900555444-1",
       document_type: "NIT",
