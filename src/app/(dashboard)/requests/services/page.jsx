@@ -2,8 +2,10 @@
 import TableList from "@/app/components/shared/TableList";
 import FilterModal from "@/app/components/shared/FilterModal";
 import ServiceFilterFields from "@/app/components/request/services/ServiceFilterFields";
+import CreateServiceModal from "@/app/components/request/services/CreateServiceModal";
 import { getServiceColumns } from "@/app/components/request/services/serviceColumns";
 import { ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
+import { getServicesList } from "@/services/serviceService";
 import React, { useState, useMemo, useEffect } from "react";
 import { CiFilter } from "react-icons/ci";
 import { FaPlus, FaTimes } from "react-icons/fa";
@@ -39,6 +41,7 @@ const ServicesView = () => {
   const [priceMaxFilter, setPriceMaxFilter] = useState(1000000);
 
   // Estados de modales
+  const [isCreateServiceModalOpen, setIsCreateServiceModalOpen] = useState(false);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
 
@@ -288,8 +291,7 @@ const ServicesView = () => {
    * Maneja la creación de un nuevo servicio
    */
   const handleAddNewService = () => {
-    console.log("Add new service");
-    // TODO: Implementar modal de creación
+    setIsCreateServiceModalOpen(true);
   };
 
   // Obtener columnas de la tabla
@@ -415,6 +417,13 @@ const ServicesView = () => {
         cancelText="Cancelar"
         confirmColor="btn-primary"
         cancelColor="btn-error"
+      />
+
+      {/* Modal de creación de servicio */}
+      <CreateServiceModal
+        isOpen={isCreateServiceModalOpen}
+        onClose={() => setIsCreateServiceModalOpen(false)}
+        onCreated={loadInitialData}
       />
     </div>
   );
