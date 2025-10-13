@@ -2,8 +2,8 @@
 import TableList from "@/app/components/shared/TableList";
 import FilterModal from "@/app/components/shared/FilterModal";
 import ServiceFilterFields from "@/app/components/request/services/ServiceFilterFields";
-import CreateServiceModal from "@/app/components/request/services/createServiceModal";
-import EditServiceModal from "@/app/components/request/services/editServiceModal";
+import CreateServiceModal from "@/app/components/request/services/CreateServiceModal";
+import EditServiceModal from "@/app/components/request/services/EditServiceModal";
 import { getServiceColumns } from "@/app/components/request/services/serviceColumns";
 import { ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
 import { getServicesList } from "@/services/serviceService";
