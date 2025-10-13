@@ -10,7 +10,14 @@ const getAuthToken = () => {
   return token;
 };
 
-export default function CreateServiceModal({ isOpen, onClose, onCreated }) {
+export default function CreateEditServiceModal({ 
+  isOpen, 
+  onClose, 
+  onCreated, 
+  onUpdated, 
+  serviceData, 
+  mode = "create" 
+}) {
   const [formData, setFormData] = useState({
     service_name: "",
     description: "",
@@ -273,11 +280,11 @@ export default function CreateServiceModal({ isOpen, onClose, onCreated }) {
       className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
       onClick={handleBackdropClick}
     >
-      <div className="modal-theme rounded-xl shadow-2xl w-full max-w-2xl max-h-[95vh] overflow-y-auto">
+      <div className="bg-background rounded-xl shadow-2xl w-full max-w-2xl max-h-[95vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-bold text-primary">
-            Crear Nuevo Servicio
+            {mode === "edit" ? "Editar Servicio" : "Crear Nuevo Servicio"}
           </h2>
           <button
             onClick={onClose}
@@ -298,7 +305,7 @@ export default function CreateServiceModal({ isOpen, onClose, onCreated }) {
           )}
 
           {/* General Information Section */}
-          <div className="mb-8">
+          <div className="mb-8 p-6 border border-gray-200 rounded-lg">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Información General</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               
@@ -362,7 +369,7 @@ export default function CreateServiceModal({ isOpen, onClose, onCreated }) {
                   disabled={loading || loadingData}
                 />
                 <div className="mt-1 text-xs text-gray-500">
-                  0/500 caracteres
+                  {formData.description?.length || 0}/500 caracteres
                 </div>
                 {errors.description && (
                   <p className="mt-1 text-sm text-red-600">{errors.description}</p>
@@ -407,7 +414,7 @@ export default function CreateServiceModal({ isOpen, onClose, onCreated }) {
           </div>
 
           {/* Commercial Data Section */}
-          <div className="mb-8">
+          <div className="mb-8 p-6 border border-gray-200 rounded-lg">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Datos Comerciales</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               
@@ -566,33 +573,26 @@ export default function CreateServiceModal({ isOpen, onClose, onCreated }) {
           )}
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-4 mt-8 pt-6 border-t border-gray-200">
+          <div className="md:col-span-2 flex gap-4 mt-8 justify-center">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              aria-label="Cancelar creación del servicio"
+              className="btn-error btn-theme w-40 px-8 py-2 font-semibold rounded-lg"
               disabled={loading || loadingData}
+              aria-label={mode === "edit" ? "Cancelar edición del servicio" : "Cancelar creación del servicio"}
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading || loadingData}
-              className="px-6 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Crear servicio"
+              className="btn-primary w-40 px-8 py-2 font-semibold rounded-lg text-white"
+              aria-label={mode === "edit" ? "Actualizar servicio" : "Registrar servicio"}
             >
-              {loading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Creando...
-                </>
-              ) : (
-                <>
-                  <FiSave className="w-4 h-4" />
-                  Crear Servicio
-                </>
-              )}
+              {loading ? 
+                (mode === "edit" ? "Actualizando..." : "Registrando...") : 
+                (mode === "edit" ? "Actualizar" : "Registrar")
+              }
             </button>
           </div>
         </form>

@@ -2,8 +2,7 @@
 import TableList from "@/app/components/shared/TableList";
 import FilterModal from "@/app/components/shared/FilterModal";
 import ServiceFilterFields from "@/app/components/request/services/ServiceFilterFields";
-import CreateServiceModal from "@/app/components/request/services/createServiceModal";
-import EditServiceModal from "@/app/components/request/services/editServiceModal";
+import CreateEditServiceModal from "@/app/components/request/services/CreateEditServiceModal";
 import { getServiceColumns } from "@/app/components/request/services/serviceColumns";
 import { ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
 import { getServicesList } from "@/services/serviceService";
@@ -420,14 +419,15 @@ const ServicesView = () => {
       />
 
       {/* Modal de creación de servicio */}
-      <CreateServiceModal
+      <CreateEditServiceModal
         isOpen={isCreateServiceModalOpen}
         onClose={() => setIsCreateServiceModalOpen(false)}
         onCreated={loadInitialData}
+        mode="create"
       />
 
       {/* Modal de edición de servicio */}
-      <EditServiceModal
+      <CreateEditServiceModal
         isOpen={isEditServiceModalOpen}
         onClose={() => {
           setIsEditServiceModalOpen(false);
@@ -435,6 +435,7 @@ const ServicesView = () => {
         }}
         onUpdated={loadInitialData}
         serviceData={selectedService}
+        mode="edit"
       />
     </div>
   );
