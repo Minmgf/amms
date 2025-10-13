@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { FiX, FiSave } from "react-icons/fi";
-import { createService, getServiceTypes, getCurrencyUnits } from "@/services/serviceService";
+import { updateService, getServiceTypes, getCurrencyUnits } from "@/services/serviceService";
 
 const getAuthToken = () => {
   let token = localStorage.getItem("token");
@@ -10,7 +10,7 @@ const getAuthToken = () => {
   return token;
 };
 
-export default function CreateServiceModal({ isOpen, onClose, onCreated }) {
+export default function EditServiceModal({ isOpen, onClose, onUpdated, serviceData }) {
   const [formData, setFormData] = useState({
     service_name: "",
     description: "",
@@ -30,20 +30,15 @@ export default function CreateServiceModal({ isOpen, onClose, onCreated }) {
   const [serviceTypes, setServiceTypes] = useState([]);
   const [currencyUnits, setCurrencyUnits] = useState([]);
 
-  // Opciones de impuestos
-  const taxOptions = [
-    { id: 1, name: "19%", rate: 19.0, exempt: false },
-    { id: 2, name: "5%", rate: 5.0, exempt: false },
-    { id: 3, name: "Exento", rate: 0.0, exempt: true },
-  ];
-
   // Cargar datos del API al abrir el modal
   useEffect(() => {
     if (isOpen) {
       loadInitialData();
-      resetForm();
+      if (serviceData) {
+        populateForm(serviceData);
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, serviceData]);
 
   const loadInitialData = async () => {
     setLoadingData(true);
@@ -56,7 +51,7 @@ export default function CreateServiceModal({ isOpen, onClose, onCreated }) {
         return;
       }
 
-      console.log("Loading service types and currency units...");
+      console.log("Loading service types and currency units for edit...");
       
       // Intentar cargar datos del API
       try {
@@ -131,6 +126,20 @@ export default function CreateServiceModal({ isOpen, onClose, onCreated }) {
     } finally {
       setLoadingData(false);
     }
+  };
+
+  const populateForm = (service) => {
+    setFormData({
+      service_name: service.service_name || service.name || "",
+      description: service.description || "",
+      service_type: service.service_type || "",
+      base_price: service.base_price || "",
+      price_unit: service.price_unit || "",
+      applicable_tax: service.applicable_tax || "",
+      tax_rate: service.tax_rate || "",
+      is_vat_exempt: service.is_vat_exempt || false,
+    });
+    setErrors({});
   };
 
   const resetForm = () => {
@@ -213,11 +222,18 @@ export default function CreateServiceModal({ isOpen, onClose, onCreated }) {
       return;
     }
 
+    if (!serviceData?.id) {
+      setErrors({
+        general: "No se encontró el ID del servicio a actualizar."
+      });
+      return;
+    }
+
     setLoading(true);
     setErrors({});
 
     try {
-      const serviceData = {
+      const updatedServiceData = {
         service_name: formData.service_name,
         description: formData.description,
         service_type: parseInt(formData.service_type),
@@ -228,20 +244,20 @@ export default function CreateServiceModal({ isOpen, onClose, onCreated }) {
         is_vat_exempt: formData.is_vat_exempt
       };
 
-      const response = await createService(serviceData);
+      const response = await updateService(serviceData.id, updatedServiceData);
       
-      console.log("Servicio creado exitosamente:", response);
+      console.log("Servicio actualizado exitosamente:", response);
       
       // Llamar al callback para recargar los datos
-      if (onCreated) {
-        onCreated();
+      if (onUpdated) {
+        onUpdated();
       }
       
       // Cerrar el modal
       onClose();
       
     } catch (error) {
-      console.error("Error al crear el servicio:", error);
+      console.error("Error al actualizar el servicio:", error);
       
       if (error.response?.data?.errors) {
         // Manejar errores específicos del servidor
@@ -252,7 +268,7 @@ export default function CreateServiceModal({ isOpen, onClose, onCreated }) {
         setErrors(serverErrors);
       } else {
         setErrors({
-          general: error.response?.data?.message || "Error al crear el servicio. Por favor, intente nuevamente."
+          general: error.response?.data?.message || "Error al actualizar el servicio. Por favor, intente nuevamente."
         });
       }
     } finally {
@@ -277,7 +293,7 @@ export default function CreateServiceModal({ isOpen, onClose, onCreated }) {
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-bold text-primary">
-            Crear Nuevo Servicio
+            Editar Servicio
           </h2>
           <button
             onClick={onClose}
@@ -311,10 +327,9 @@ export default function CreateServiceModal({ isOpen, onClose, onCreated }) {
                   type="text"
                   id="service_id"
                   name="service_id"
-                  value="SVC-2024-0012"
+                  value={serviceData?.service_id || serviceData?.id || "SVC-2024-0012"}
                   className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg text-gray-600 cursor-not-allowed"
-                  placeholder="Se generará automáticamente"
-                  aria-label="ID del servicio generado automáticamente"
+                  aria-label="ID del servicio"
                   disabled
                   readOnly
                 />
@@ -362,7 +377,7 @@ export default function CreateServiceModal({ isOpen, onClose, onCreated }) {
                   disabled={loading || loadingData}
                 />
                 <div className="mt-1 text-xs text-gray-500">
-                  0/500 caracteres
+                  {formData.description?.length || 0}/500 caracteres
                 </div>
                 {errors.description && (
                   <p className="mt-1 text-sm text-red-600">{errors.description}</p>
@@ -571,7 +586,7 @@ export default function CreateServiceModal({ isOpen, onClose, onCreated }) {
               type="button"
               onClick={onClose}
               className="px-6 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              aria-label="Cancelar creación del servicio"
+              aria-label="Cancelar edición del servicio"
               disabled={loading || loadingData}
             >
               Cancelar
@@ -580,17 +595,17 @@ export default function CreateServiceModal({ isOpen, onClose, onCreated }) {
               type="submit"
               disabled={loading || loadingData}
               className="px-6 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Crear servicio"
+              aria-label="Actualizar servicio"
             >
               {loading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Creando...
+                  Actualizando...
                 </>
               ) : (
                 <>
                   <FiSave className="w-4 h-4" />
-                  Crear Servicio
+                  Actualizar Servicio
                 </>
               )}
             </button>
