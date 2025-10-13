@@ -5,7 +5,7 @@ import { FaFilter, FaDownload, FaTimes } from "react-icons/fa";
 import { useTheme } from "@/contexts/ThemeContext";
 import TableList from "../../shared/TableList";
 import FilterModal from "../../shared/FilterModal";
-import { getClientDetail, getClientRequestHistory, getClientStatuses, getRequestStatuses, getBillingStatuses } from "@/services/requestService";
+import { getClientDetail, getClientRequestHistory, getClientStatuses, getRequestStatuses, getBillingStatuses } from "@/services/clientService";
 
 /**
  * DetailsClientModal Component
