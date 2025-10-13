@@ -9,7 +9,7 @@ export const authorization = async () => {
         username: process.env.NEXT_PUBLIC_MAIL,
         password: process.env.NEXT_PUBLIC_PASSWORD,        
     };
-    const { data } = await apiBilling.post("/oauth2/token", payload,
+    const { data } = await apiBilling.post("/oauth/token", payload,
         {headers: {"Content-Type": "multipart/form-data"}}
     );
     return data;
@@ -30,9 +30,8 @@ export const refreshToken = async (refresh_token) => {
 };
 
 // Función para obtener el listado de departamentos
-export const getMunicipalities = async (token, name) => {
+export const getMunicipalities = async (token) => {
   const { data } = await apiBilling.get("/v1/municipalities", {
-    params: { name }, // genera ?name=Neiva
     headers: {
       Authorization: `Bearer ${token}`,
     },
