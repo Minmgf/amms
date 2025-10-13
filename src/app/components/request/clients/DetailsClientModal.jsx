@@ -45,7 +45,7 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
 
   // Obtener el ID del cliente (soporta tanto 'id' como 'id_customer')
   const getClientId = () => {
-    return client?.id_customer || client?.id || 1;
+    return client?.id_customer || client?.id;
   };
 
   // Cargar datos del cliente cuando se abre el modal
@@ -66,28 +66,23 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
         getBillingStatuses().catch(() => ({ data: [] }))
       ]);
 
-      // Si los endpoints no están disponibles, usar datos mock
-      setClientStatuses(clientStatusesRes.data?.length > 0 ? clientStatusesRes.data : [
-        { id_statues: 1, name: "Activo", description: "estado activo" },
-        { id_statues: 2, name: "Inactivo", description: "estado inactivo" },
-      ]);
-
-      setRequestStatuses(requestStatusesRes.data?.length > 0 ? requestStatusesRes.data : [
-        { id_statues: 13, name: "Finalizada", description: "Solicitud completada" },
-        { id_statues: 14, name: "En proceso", description: "Solicitud en curso" },
-        { id_statues: 15, name: "Cancelada", description: "Solicitud cancelada" },
-        { id_statues: 16, name: "Pendiente", description: "Solicitud pendiente" },
-      ]);
-
-      setBillingStatuses(billingStatusesRes.data?.length > 0 ? billingStatusesRes.data : [
-        { id_statues: 17, name: "Pagada", description: "Factura pagada" },
-        { id_statues: 18, name: "Pendiente", description: "Pago pendiente" },
-        { id_statues: 19, name: "No pagada", description: "Sin pago" },
-      ]);
+      setClientStatuses(clientStatusesRes.data || []);
+      setRequestStatuses(requestStatusesRes.data || []);
+      setBillingStatuses(billingStatusesRes.data || []);
     } catch (error) {
-      console.error("Error loading statuses:", error);
+      // Error silencioso
     }
   };
+
+  // Auto-dismiss error after 5 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   // Cargar datos del cliente desde el endpoint
   const loadClientData = async () => {
@@ -96,91 +91,35 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
 
     try {
       const clientId = getClientId();
-      console.log('🔍 [DetailsClientModal] Cargando datos del cliente con ID:', clientId);
       
       // Llamar al endpoint real
       const response = await getClientDetail(clientId);
-      console.log('📡 [DetailsClientModal] Respuesta del endpoint:', response);
       
-      if (response.success) {
-        console.log('✅ [DetailsClientModal] Datos del cliente cargados exitosamente:', response.data);
+      if (response.success && response.data) {
         setClientData(response.data);
         
         // Cargar historial de solicitudes
         const historyResponse = await getClientRequestHistory(clientId);
-        console.log('📡 [DetailsClientModal] Respuesta historial:', historyResponse);
         
         if (historyResponse.success && historyResponse.data?.length > 0) {
-          console.log('✅ [DetailsClientModal] Historial cargado exitosamente');
           setRequestHistory(historyResponse.data);
         } else {
-          console.log('⚠️ [DetailsClientModal] Sin historial, usando mock data');
-          setRequestHistory(generateMockRequestHistory());
+          setRequestHistory([]);
         }
       } else {
-        throw new Error(response.message || "Error al cargar datos del cliente");
+        setError("No se encontraron datos del cliente.");
+        setClientData(null);
+        setRequestHistory([]);
       }
     } catch (err) {
-      console.error("❌ [DetailsClientModal] Error loading client data:", err);
-      setError("Error al cargar los datos del cliente. Mostrando datos de ejemplo.");
-      
-      // Usar datos mock si falla el endpoint
-      setClientData(generateMockClientData());
-      setRequestHistory(generateMockRequestHistory());
+      setError("Error al cargar los datos del cliente.");
+      setClientData(null);
+      setRequestHistory([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Generar datos mock para el cliente (fallback)
-  const generateMockClientData = () => {
-    return {
-      id_customer: getClientId() || 1,
-      id_user: null,
-      document_number: "800.197.268",
-      type_document_id: 2,
-      type_document_name: "NIT",
-      check_digit: "4",
-      person_type_id: 2,
-      person_type_name: "Persona Jurídica",
-      legal_entity_name: "Panadería El Trigal S.A.S.",
-      name: "José Rómulo",
-      first_last_name: "Sosa",
-      second_last_name: "Ortiz",
-      email: "badbaajdhduf@gmail.com",
-      phone: "+57377777777",
-      address: "Calle 45 # 18-22",
-      id_municipality: 1,
-      tax_regime: 2,
-      customer_statues_id: 1,
-      customer_statues_name: "Activo",
-      // Campos adicionales para mostrar en el modal
-      business_name: "Panadería y Café El Trigal",
-      region_city: "Medellín"
-    };
-  };
-
-  // Generar historial mock (fallback)
-  const generateMockRequestHistory = () => {
-    return [
-      {
-        id: "S-00001",
-        date: "2024-01-15",
-        billing_status_id: 17,
-        request_status_id: 13,
-        invoice_url: "/invoices/S-00001.pdf",
-        total_amount: "$1,250,000",
-      },
-      ...Array.from({ length: 66 }, (_, i) => ({
-        id: `S-${String(i + 2).padStart(5, "0")}`,
-        date: "2024-01-15",
-        billing_status_id: [17, 18, 19][i % 3],
-        request_status_id: [13, 14, 15, 16][i % 4],
-        invoice_url: i % 2 === 0 ? `/invoices/S-${String(i + 2).padStart(5, "0")}.pdf` : null,
-        total_amount: `$${Math.floor(Math.random() * 5000000)}`,
-      })),
-    ];
-  };
 
   // Funciones para obtener información por ID
   const getStatusById = (id, statusArray) => {
@@ -240,9 +179,8 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
 
   // Manejar descarga de factura
   const handleDownloadInvoice = (invoiceUrl, requestId) => {
-    console.log(`Descargando factura para solicitud ${requestId}:`, invoiceUrl);
     // TODO: Implementar descarga real cuando esté disponible el endpoint
-    alert(`Descargando factura para solicitud ${requestId}`);
+    window.open(invoiceUrl, '_blank');
   };
 
   // Aplicar filtros
@@ -345,7 +283,7 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
   if (!isOpen || !client) return null;
 
   // Preparar datos para mostrar
-  const displayData = clientData || generateMockClientData();
+  const displayData = clientData || {};
 
   // Formatear el nombre completo
   const getFullName = () => {
@@ -356,7 +294,7 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
   // Formatear región/ciudad
   const getRegionCity = () => {
     // TODO: Obtener el nombre del municipio desde un endpoint o catálogo
-    return displayData.region_city || "Medellín";
+    return displayData.region_city || "N/A";
   };
 
   return (
@@ -392,8 +330,14 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
         {/* Error message */}
         {error && !loading && (
           <div className="p-4 sm:p-6">
-            <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
-              {error}
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded flex items-center justify-between">
+              <span>{error}</span>
+              <button
+                onClick={() => setError(null)}
+                className="text-red-500 hover:text-red-700"
+              >
+                <FiX className="w-5 h-5" />
+              </button>
             </div>
           </div>
         )}
