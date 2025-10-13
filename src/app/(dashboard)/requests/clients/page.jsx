@@ -17,13 +17,15 @@ import {
   FaBuilding,
   FaHashtag,
 } from "react-icons/fa";
-import * as Dialog from "@radix-ui/react-dialog";
 import {
   SuccessModal,
   ErrorModal,
   ConfirmModal,
   WarningModal,
 } from "@/app/components/shared/SuccessErrorModal";
+import FilterModal from "@/app/components/shared/FilterModal";
+import ClientDetailsModal from "@/app/components/ClientDetailsModal";
+import { getClientsList } from "@/services/clientServices";
 import AddClientModal from "@/app/components/request/clients/AddClientModal";
 import DetailsClientModal from "@/app/components/request/clients/DetailsClientModal";
 import { authorization } from "@/services/billingService";
@@ -90,75 +92,6 @@ const ClientsView = () => {
   const [modalMessage, setModalMessage] = useState("");
   const [modalTitle, setModalTitle] = useState("");
 
-  // Mock data - 5 sample records as requested
-  const sampleClientsData = [
-    {
-      id: 1,
-      id_customer: 1,
-      name: "Agrícola del Valle S.A.",
-      identification_number: "900123456-7",
-      document_type: "NIT",
-      phone_number: "+57 310 555 1234",
-      email: "contacto@agricoladelvalle.com",
-      status: "Activo",
-      active_user: true,
-      address: "Calle 50 #23-45, Cali",
-      created_date: "2024-01-15",
-    },
-    {
-      id: 2,
-      id_customer: 2,
-      name: "Juan Carlos Rodríguez",
-      identification_number: "1098765432",
-      document_type: "CC",
-      phone_number: "+57 320 444 5678",
-      email: "jcrodriguez@email.com",
-      status: "Activo",
-      active_user: true,
-      address: "Carrera 12 #34-56, Bogotá",
-      created_date: "2024-02-20",
-    },
-    {
-      id: 3,
-      id_customer: 3,
-      name: "Maquinaria Pesada Ltda.",
-      identification_number: "900987654-3",
-      document_type: "NIT",
-      phone_number: "+57 315 777 8899",
-      email: "ventas@maquinariapesada.com",
-      status: "Inactivo",
-      active_user: false,
-      address: "Zona Industrial, Medellín",
-      created_date: "2024-03-10",
-    },
-    {
-      id: 4,
-      id_customer: 4,
-      name: "María Fernanda Gómez",
-      identification_number: "52123456",
-      document_type: "CC",
-      phone_number: "+57 301 222 3344",
-      email: "mfgomez@email.com",
-      status: "Activo",
-      active_user: true,
-      address: "Avenida 6 #15-30, Barranquilla",
-      created_date: "2024-04-05",
-    },
-    {
-      id: 5,
-      id_customer: 5,
-      name: "Transportes del Norte S.A.S.",
-      identification_number: "900555444-1",
-      document_type: "NIT",
-      phone_number: "+57 318 999 0011",
-      email: "info@transportesnorte.com",
-      status: "Activo",
-      active_user: false,
-      address: "Km 5 Vía Norte, Bucaramanga",
-      created_date: "2024-05-12",
-    },
-  ];
-
   // Load initial data
   useEffect(() => {
     loadInitialData();
@@ -190,19 +123,17 @@ const ClientsView = () => {
     setError(null);
 
     try {
-      // TODO: Replace with actual API call
-      // const response = await getClientsList();
-      // if (response.success) {
-      //   setClientsData(response.data);
-      // }
-
-      // Using mock data for now
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API delay
-      setClientsData(sampleClientsData);
+      const response = await getClientsList();
+      if (response.success) {
+        setClientsData(response.data);
+      } else {
+        setError("No se pudieron cargar los clientes.");
+        setClientsData([]);
+      }
     } catch (err) {
       console.error("Error loading clients:", err);
-      setError("Error al conectar con el servidor. Mostrando datos de ejemplo.");
-      setClientsData(sampleClientsData);
+      setError("Error al conectar con el servidor.");
+      setClientsData([]);
     } finally {
       setLoading(false);
     }
@@ -210,13 +141,18 @@ const ClientsView = () => {
 
   // Get unique values for filters
   const uniqueDocumentTypes = useMemo(() => {
-    const types = clientsData.map((client) => client.document_type).filter(Boolean);
+    const types = clientsData.map((client) => client.type_document_name).filter(Boolean);
     return [...new Set(types)];
   }, [clientsData]);
 
   const uniqueStatuses = useMemo(() => {
-    const statuses = clientsData.map((client) => client.status).filter(Boolean);
-    return [...new Set(statuses)];
+    const statuses = clientsData.map((client) => ({
+      id: client.customer_statues_id,
+      name: client.customer_statues_name,
+    })).filter(Boolean);
+    // Remove duplicates based on id
+    const uniqueMap = new Map(statuses.map(s => [s.id, s]));
+    return Array.from(uniqueMap.values());
   }, [clientsData]);
 
   // Apply filters
@@ -225,35 +161,35 @@ const ClientsView = () => {
 
     if (nameFilter) {
       filtered = filtered.filter((client) =>
-        client.name.toLowerCase().includes(nameFilter.toLowerCase())
+        client.legal_entity_name?.toLowerCase().includes(nameFilter.toLowerCase())
       );
     }
 
     if (identificationFilter) {
       filtered = filtered.filter((client) =>
-        client.identification_number.includes(identificationFilter)
+        client.document_number?.toString().includes(identificationFilter)
       );
     }
 
     if (documentTypeFilter) {
       filtered = filtered.filter(
-        (client) => client.document_type === documentTypeFilter
+        (client) => client.type_document_name === documentTypeFilter
       );
     }
 
     if (statusFilter) {
-      filtered = filtered.filter((client) => client.status === statusFilter);
+      filtered = filtered.filter((client) => client.customer_statues_id === parseInt(statusFilter));
     }
 
     if (phoneFilter) {
       filtered = filtered.filter((client) =>
-        client.phone_number.includes(phoneFilter)
+        client.phone?.includes(phoneFilter)
       );
     }
 
     if (emailFilter) {
       filtered = filtered.filter((client) =>
-        client.email.toLowerCase().includes(emailFilter.toLowerCase())
+        client.email?.toLowerCase().includes(emailFilter.toLowerCase())
       );
     }
 
@@ -287,13 +223,13 @@ const ClientsView = () => {
       const client = row.original;
 
       const searchableFields = [
-        client.name,
-        client.identification_number,
-        client.document_type,
-        client.phone_number,
+        client.legal_entity_name,
+        client.document_number,
+        client.type_document_name,
+        client.phone,
         client.email,
-        client.status,
-        client.active_user ? "Sí" : "No",
+        client.customer_statues_name,
+        client.id_user ? "Sí" : "No",
       ];
 
       return searchableFields.some((field) => {
@@ -303,14 +239,14 @@ const ClientsView = () => {
     };
   }, []);
 
-  // Get status badge color
-  const getStatusColor = (status) => {
+  // Get status badge color by ID
+  const getStatusColor = (statusId) => {
     const colors = {
-      Activo: "bg-green-100 text-green-800",
-      Inactivo: "bg-red-100 text-red-800",
-      Pendiente: "bg-yellow-100 text-yellow-800",
+      1: "bg-green-100 text-green-800", // Activo
+      2: "bg-red-100 text-red-800",     // Inactivo
+      3: "bg-yellow-100 text-yellow-800", // Pendiente
     };
-    return colors[status] || "bg-gray-100 text-gray-800";
+    return colors[statusId] || "bg-gray-100 text-gray-800";
   };
 
   // Action handlers
@@ -403,7 +339,7 @@ const ClientsView = () => {
   const columns = useMemo(
     () => [
       {
-        accessorKey: "name",
+        accessorKey: "legal_entity_name",
         header: () => (
           <div className="flex items-center gap-2">
             <FaBuilding className="w-4 h-4" />
@@ -412,7 +348,7 @@ const ClientsView = () => {
         ),
         cell: ({ row }) => {
           const client = row.original;
-          const isCompany = client.document_type === "NIT";
+          const isCompany = client.person_type_id === 1; // 1 = Juridic Entity, 2 = Natural Person
           return (
             <div className="flex items-center gap-3">
               <div className={`w-8 h-8 rounded-md flex items-center justify-center ${
@@ -426,10 +362,10 @@ const ClientsView = () => {
               </div>
               <div>
                 <div className="font-medium parametrization-text">
-                  {client.name}
+                  {client.legal_entity_name}
                 </div>
                 <div className="text-xs text-gray-500">
-                  {client.document_type}
+                  {client.type_document_name}
                 </div>
               </div>
             </div>
@@ -437,7 +373,7 @@ const ClientsView = () => {
         },
       },
       {
-        accessorKey: "identification_number",
+        accessorKey: "document_number",
         header: () => (
           <div className="flex items-center gap-2">
             <FaIdCard className="w-4 h-4" />
@@ -446,12 +382,12 @@ const ClientsView = () => {
         ),
         cell: ({ row }) => (
           <div className="text-sm parametrization-text font-mono">
-            {row.getValue("identification_number")}
+            {row.getValue("document_number")}
           </div>
         ),
       },
       {
-        accessorKey: "phone_number",
+        accessorKey: "phone",
         header: () => (
           <div className="flex items-center gap-2">
             <FaPhone className="w-4 h-4" />
@@ -460,7 +396,7 @@ const ClientsView = () => {
         ),
         cell: ({ row }) => (
           <div className="text-sm parametrization-text">
-            {row.getValue("phone_number")}
+            +{row.getValue("phone")}
           </div>
         ),
       },
@@ -479,7 +415,7 @@ const ClientsView = () => {
         ),
       },
       {
-        accessorKey: "status",
+        accessorKey: "customer_statues_id",
         header: () => (
           <div className="flex items-center gap-2">
             <FaCheckCircle className="w-4 h-4" />
@@ -487,20 +423,22 @@ const ClientsView = () => {
           </div>
         ),
         cell: ({ row }) => {
-          const status = row.getValue("status");
+          const client = row.original;
+          const statusId = client.customer_statues_id;
+          const statusName = client.customer_statues_name;
           return (
             <span
               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                status
+                statusId
               )}`}
             >
-              {status}
+              {statusName}
             </span>
           );
         },
       },
       {
-        accessorKey: "active_user",
+        accessorKey: "id_user",
         header: () => (
           <div className="flex items-center gap-2">
             <FaUser className="w-4 h-4" />
@@ -508,7 +446,7 @@ const ClientsView = () => {
           </div>
         ),
         cell: ({ row }) => {
-          const isActive = row.getValue("active_user");
+          const isActive = row.getValue("id_user");
           return (
             <div className="flex items-center gap-2">
               {isActive ? (
@@ -694,125 +632,114 @@ const ClientsView = () => {
       />
 
       {/* Filter Modal */}
-      <Dialog.Root open={isFilterModalOpen} onOpenChange={setIsFilterModalOpen}>
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
-          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-xl z-50 w-full max-w-2xl">
-            <div className="p-8 card-theme rounded-2xl">
-              <div className="flex justify-between items-center mb-8">
-                <Dialog.Title className="text-2xl font-bold text-primary">
-                  Filtros de Clientes
-                </Dialog.Title>
-                <button
-                  onClick={() => setIsFilterModalOpen(false)}
-                  className="text-secondary hover:text-primary"
-                >
-                  <FaTimes className="w-6 h-6" />
-                </button>
-              </div>
+      <FilterModal
+        open={isFilterModalOpen}
+        onClose={() => setIsFilterModalOpen(false)}
+        onClear={handleClearFilters}
+        onApply={handleApplyFilters}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Name/Business Name Filter */}
+          <div>
+            <label className="block text-sm font-medium text-primary mb-3">
+              <FaBuilding className="inline w-4 h-4 mr-2" />
+              Nombre/Razón Social
+            </label>
+            <input
+              type="text"
+              value={nameFilter}
+              onChange={(e) => setNameFilter(e.target.value)}
+              placeholder="Buscar por nombre..."
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
+            />
+          </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Name/Business Name Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-primary mb-3">
-                    <FaBuilding className="inline w-4 h-4 mr-2" />
-                    Nombre/Razón Social
-                  </label>
-                  <input
-                    type="text"
-                    value={nameFilter}
-                    onChange={(e) => setNameFilter(e.target.value)}
-                    placeholder="Buscar por nombre..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
-                  />
-                </div>
+          {/* Identification Number Filter */}
+          <div>
+            <label className="block text-sm font-medium text-primary mb-3">
+              <FaIdCard className="inline w-4 h-4 mr-2" />
+              Número de Identificación
+            </label>
+            <input
+              type="text"
+              value={identificationFilter}
+              onChange={(e) => setIdentificationFilter(e.target.value)}
+              placeholder="Ej: 900123456-7"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
+            />
+          </div>
 
-                {/* Identification Number Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-primary mb-3">
-                    <FaIdCard className="inline w-4 h-4 mr-2" />
-                    Número de Identificación
-                  </label>
-                  <input
-                    type="text"
-                    value={identificationFilter}
-                    onChange={(e) => setIdentificationFilter(e.target.value)}
-                    placeholder="Ej: 900123456-7"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
-                  />
-                </div>
+          {/* Document Type Filter */}
+          <div>
+            <label className="block text-sm font-medium text-primary mb-3">
+              <FaIdCard className="inline w-4 h-4 mr-2" />
+              Tipo de Documento
+            </label>
+            <select
+              value={documentTypeFilter}
+              onChange={(e) => setDocumentTypeFilter(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
+            >
+              <option value="">Todos los tipos</option>
+              {uniqueDocumentTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </div>
 
-                {/* Document Type Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-primary mb-3">
-                    <FaIdCard className="inline w-4 h-4 mr-2" />
-                    Tipo de Documento
-                  </label>
-                  <select
-                    value={documentTypeFilter}
-                    onChange={(e) => setDocumentTypeFilter(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
-                  >
-                    <option value="">Todos los tipos</option>
-                    {uniqueDocumentTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+          {/* Status Filter */}
+          <div>
+            <label className="block text-sm font-medium text-primary mb-3">
+              <FaCheckCircle className="inline w-4 h-4 mr-2" />
+              Estado
+            </label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
+            >
+              <option value="">Todos los estados</option>
+              {uniqueStatuses.map((status) => (
+                <option key={status.id} value={status.id}>
+                  {status.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-                {/* Status Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-primary mb-3">
-                    <FaCheckCircle className="inline w-4 h-4 mr-2" />
-                    Estado
-                  </label>
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none"
-                  >
-                    <option value="">Todos los estados</option>
-                    {uniqueStatuses.map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+          {/* Phone Number Filter */}
+          <div>
+            <label className="block text-sm font-medium text-primary mb-3">
+              <FaPhone className="inline w-4 h-4 mr-2" />
+              Número de Teléfono
+            </label>
+            <input
+              type="text"
+              value={phoneFilter}
+              onChange={(e) => setPhoneFilter(e.target.value)}
+              placeholder="Ej: +57 310 555 1234"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
+            />
+          </div>
 
-                {/* Phone Number Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-primary mb-3">
-                    <FaPhone className="inline w-4 h-4 mr-2" />
-                    Número de Teléfono
-                  </label>
-                  <input
-                    type="text"
-                    value={phoneFilter}
-                    onChange={(e) => setPhoneFilter(e.target.value)}
-                    placeholder="Ej: +57 310 555 1234"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
-                  />
-                </div>
-
-                {/* Email Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-primary mb-3">
-                    <FaEnvelope className="inline w-4 h-4 mr-2" />
-                    Correo Electrónico
-                  </label>
-                  <input
-                    type="email"
-                    value={emailFilter}
-                    onChange={(e) => setEmailFilter(e.target.value)}
-                    placeholder="Ej: ejemplo@email.com"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
-                  />
-                </div>
-              </div>
-
+          {/* Email Filter */}
+          <div>
+            <label className="block text-sm font-medium text-primary mb-3">
+              <FaEnvelope className="inline w-4 h-4 mr-2" />
+              Correo Electrónico
+            </label>
+            <input
+              type="email"
+              value={emailFilter}
+              onChange={(e) => setEmailFilter(e.target.value)}
+              placeholder="Ej: ejemplo@email.com"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
+            />
+          </div>
+        </div>
+      </FilterModal>
               {/* Action buttons */}
               <div className="flex gap-4 mt-8">
                 <button
@@ -890,7 +817,14 @@ const ClientsView = () => {
         buttonText="Cerrar"
       />
 
-      {/* TODO: Add modals for Create, Edit, Details operations */}
+      {/* Client Details Modal */}
+      <ClientDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        client={selectedClient}
+      />
+
+      {/* TODO: Add modals for Create, Edit operations */}
       {/* These will be implemented in separate modal components */}
     </div>
   );
