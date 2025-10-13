@@ -2,8 +2,10 @@
 import TableList from "@/app/components/shared/TableList";
 import FilterModal from "@/app/components/shared/FilterModal";
 import ServiceFilterFields from "@/app/components/request/services/ServiceFilterFields";
+import CreateEditServiceModal from "@/app/components/request/services/CreateEditServiceModal";
 import { getServiceColumns } from "@/app/components/request/services/serviceColumns";
 import { ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
+import { getServicesList } from "@/services/serviceService";
 import React, { useState, useMemo, useEffect } from "react";
 import { CiFilter } from "react-icons/ci";
 import { FaPlus, FaTimes } from "react-icons/fa";
@@ -39,6 +41,8 @@ const ServicesView = () => {
   const [priceMaxFilter, setPriceMaxFilter] = useState(1000000);
 
   // Estados de modales
+  const [isCreateServiceModalOpen, setIsCreateServiceModalOpen] = useState(false);
+  const [isEditServiceModalOpen, setIsEditServiceModalOpen] = useState(false);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
 
@@ -113,20 +117,17 @@ const ServicesView = () => {
   }, [servicesData, taxesFilter, statusFilter, unitFilter, priceMinFilter, priceMaxFilter]);
 
   /**
-   * Carga los datos iniciales (mock data)
+   * Carga los datos iniciales usando la API real
    */
   const loadInitialData = async () => {
     setLoading(true);
     try {
-      // TODO: Reemplazar con llamada real a la API
-      // const response = await getServicesList();
-      // setServicesData(response.data);
-
-      // Simulando delay de API
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setServicesData(sampleServicesData);
+      const response = await getServicesList();
+      console.log("Services loaded:", response);
+      setServicesData(response?.data || response || []);
     } catch (err) {
       console.error("Error loading services:", err);
+      // En caso de error, usar datos de ejemplo
       setServicesData(sampleServicesData);
     } finally {
       setLoading(false);
@@ -245,7 +246,8 @@ const ServicesView = () => {
    */
   const handleEdit = (service) => {
     console.log("Edit service:", service);
-    // TODO: Implementar modal de edición
+    setSelectedService(service);
+    setIsEditServiceModalOpen(true);
   };
 
   /**
@@ -288,8 +290,7 @@ const ServicesView = () => {
    * Maneja la creación de un nuevo servicio
    */
   const handleAddNewService = () => {
-    console.log("Add new service");
-    // TODO: Implementar modal de creación
+    setIsCreateServiceModalOpen(true);
   };
 
   // Obtener columnas de la tabla
@@ -415,6 +416,26 @@ const ServicesView = () => {
         cancelText="Cancelar"
         confirmColor="btn-primary"
         cancelColor="btn-error"
+      />
+
+      {/* Modal de creación de servicio */}
+      <CreateEditServiceModal
+        isOpen={isCreateServiceModalOpen}
+        onClose={() => setIsCreateServiceModalOpen(false)}
+        onCreated={loadInitialData}
+        mode="create"
+      />
+
+      {/* Modal de edición de servicio */}
+      <CreateEditServiceModal
+        isOpen={isEditServiceModalOpen}
+        onClose={() => {
+          setIsEditServiceModalOpen(false);
+          setSelectedService(null);
+        }}
+        onUpdated={loadInitialData}
+        serviceData={selectedService}
+        mode="edit"
       />
     </div>
   );
