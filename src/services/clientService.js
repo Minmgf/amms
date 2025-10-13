@@ -23,3 +23,53 @@ export const createClient = async (payload) => {
     const { data } = await apiMain.post("customers/create_customer/", payload);
     return data;
 };
+
+// Obtener detalle del cliente (HU-CLI-003)
+export const getClientDetail = async (clientId) => {
+    try {
+        const { data } = await apiMain.get(`/customers/${clientId}/detail/`);
+        return data; // Mantener la respuesta tal como el backend la entrega ({success, message, data})
+    } catch (error) {
+        console.error("Error al obtener detalle del cliente:", error);
+        return {
+            success: false,
+            message: error.response?.data?.message || error?.message || "Error al obtener el detalle del cliente"
+        };
+    }
+};
+
+// Obtener historial de solicitudes del cliente (HU-CLI-003)
+export const getClientRequestHistory = async (clientId) => {
+    try {
+        const { data } = await apiMain.get(`/customers/${clientId}/requests/`);
+        if (Array.isArray(data)) {
+            return { success: true, data };
+        }
+        return data;
+    } catch (error) {
+        console.error("Error al obtener historial de solicitudes:", error);
+        return {
+            success: false,
+            message: error.response?.data?.message || error?.message || "Error al obtener el historial de solicitudes"
+        };
+    }
+};
+
+// Obtener estados del cliente
+export const getClientStatuses = async () => {
+    const { data } = await apiMain.get("/statues/list/1/");
+    return { data };
+};
+
+// Obtener estados de solicitudes
+export const getRequestStatuses = async () => {
+    const { data } = await apiMain.get("/statues/list/4/");
+    return { data };
+};
+
+// Obtener estados de facturación
+export const getBillingStatuses = async () => {
+    const { data } = await apiMain.get("/statues/list/5/");
+    return { data };
+};
+
