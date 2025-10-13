@@ -13,7 +13,8 @@ import TableList from '@/app/components/shared/TableList';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getScheduledMaintenanceList, getMaintenanceSchedulingStatuses, getMaintenanceTypes } from '@/services/maintenanceService';
 import { getUserInfo } from '@/services/authService';
-import MaintenanceReportModal from '@/app/components/maintenance/machineMaintenance/MaintenanceReportModal';
+import { downloadMaintenanceReportPDF } from '@/services/auditService';
+import MaintenanceReportModal from '@/app/components/scheduledMaintenance/MaintenanceReportModal';
 import PermissionGuard from '@/app/(auth)/PermissionGuard';
 
 const ScheduledMaintenancePage = () => {
@@ -47,6 +48,7 @@ const ScheduledMaintenancePage = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [downloadingPDF, setDownloadingPDF] = useState(null);
 
 
   // Datos precargados para filtros
@@ -199,6 +201,37 @@ const ScheduledMaintenancePage = () => {
     setCreateModalOpen(true);
   };
 
+  const handleDownloadReport = async (maintenanceId) => {
+    const maintenance = maintenanceData.find(m => m.id === maintenanceId);
+    
+    if (!maintenance?.id_maintenance_scheduling) {
+      setModalMessage('No se pudo obtener la información del reporte.');
+      setErrorOpen(true);
+      return;
+    }
+
+    setDownloadingPDF(maintenanceId);
+    try {
+      const pdfBlob = await downloadMaintenanceReportPDF(maintenance.id_maintenance_scheduling);
+      
+      // Crear URL del blob y descargar
+      const url = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `reporte_mantenimiento_${maintenance.id_maintenance_scheduling}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error al descargar el PDF:', error);
+      setModalMessage('Error al descargar el reporte. Por favor, intente nuevamente.');
+      setErrorOpen(true);
+    } finally {
+      setDownloadingPDF(null);
+    }
+  };
+
   // Funciones de callback para modales
   const handleModalSuccess = (message) => {
     setModalMessage(message);
@@ -215,15 +248,30 @@ const ScheduledMaintenancePage = () => {
   const ActionsCell = ({ maintenance }) => {
     return (
       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-        {/* Ver reporte - siempre disponible */}
-        {[13, 15].includes(maintenance.status_id) && (
+        {/* Ver reporte - solo para mantenimientos realizados (estado 15) */}
+        {maintenance.status_id === 15 && (
+          <PermissionGuard permission={127}>
+            <button
+              onClick={() => handleDownloadReport(maintenance.id)}
+              disabled={downloadingPDF === maintenance.id}
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600"
+              title="Descargar reporte del mantenimiento"
+            >
+              <FiEye className="w-3 h-3" /> 
+              {downloadingPDF === maintenance.id ? 'Descargando...' : 'Ver Reporte'}
+            </button>
+          </PermissionGuard>
+        )}
+
+        {/* Crear reporte - solo para mantenimientos programados (estado 13) */}
+        {maintenance.status_id === 13 && (
           <PermissionGuard permission={127}>
             <button
               onClick={() => handleViewReport(maintenance.id)}
-              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600"
-              title="Ver reporte del mantenimiento"
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 hover:border-green-500 hover:text-green-600 text-green-600"
+              title="Registrar reporte del mantenimiento"
             >
-              <FiEye className="w-3 h-3" /> Reporte
+              <FiCheck className="w-3 h-3" /> Reporte
             </button>
           </PermissionGuard>
         )}
@@ -233,7 +281,7 @@ const ScheduledMaintenancePage = () => {
           <PermissionGuard permission={126}>
             <button
               onClick={() => handleUpdateMaintenance(maintenance.id)}
-              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 hover:border-green-500 hover:text-green-600 text-green-600"
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-blue-300 hover:border-blue-500 hover:text-blue-600 text-blue-600"
               title="Actualizar mantenimiento"
             >
               <FiEdit3 className="w-3 h-3" /> Actualizar
@@ -886,10 +934,10 @@ const ScheduledMaintenancePage = () => {
           isOpen={reportModalOpen}
           onClose={() => setReportModalOpen(false)}
           maintenance={selectedMaintenance}
-          onSave={(reportData) => {
-
+          onSave={async (reportData) => {
             setReportModalOpen(false);
             handleModalSuccess('Reporte de mantenimiento guardado exitosamente');
+            await loadMaintenanceData(); // Recargar datos después de guardar
           }}
         />
       )}
