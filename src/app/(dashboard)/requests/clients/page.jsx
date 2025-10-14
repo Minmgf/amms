@@ -26,9 +26,6 @@ import {
 import FilterModal from "@/app/components/shared/FilterModal";
 import ClientDetailsModal from "@/app/components/ClientDetailsModal";
 import { getClientsList } from "@/services/clientServices";
-import AddClientModal from "@/app/components/request/clients/AddClientModal";
-import DetailsClientModal from "@/app/components/request/clients/DetailsClientModal";
-import { authorization } from "@/services/billingService";
 
 /**
  * ClientsView Component
@@ -77,12 +74,10 @@ const ClientsView = () => {
 
   // Modal states for CRUD operations
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState("create"); // "create" o "edit"
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
-  const [billingToken, setBillingToken] = useState("");
 
   // Delete flow modal states
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
@@ -95,14 +90,6 @@ const ClientsView = () => {
   // Load initial data
   useEffect(() => {
     loadInitialData();
-    const getTokenBilling = async () => {
-      try {
-        const response = await authorization();
-        setBillingToken(response.access_token);        
-      } catch (error) {
-        console.error("Error en inicialización:", error);      }
-    };
-    getTokenBilling();
   }, []);
 
   // Apply filters when data or filters change
@@ -252,14 +239,16 @@ const ClientsView = () => {
   // Action handlers
   const handleEdit = (client) => {
     setSelectedClient(client);
-    setModalMode("edit");
-    setIsCreateModalOpen(true);
+    setIsEditModalOpen(true);
+    console.log("Edit client:", client);
+    // TODO: Open edit modal
   };
 
   const handleView = (client) => {
     setSelectedClient(client);
     setIsDetailsModalOpen(true);
     console.log("View client details:", client);
+    // TODO: Open details modal
   };
 
   const handleDelete = (client) => {
@@ -330,9 +319,9 @@ const ClientsView = () => {
   };
 
   const handleAddNewClient = () => {
-    setSelectedClient(null);
-    setModalMode("create");
     setIsCreateModalOpen(true);
+    console.log("Add new client");
+    // TODO: Open create modal
   };
 
   // Table columns definition
@@ -740,43 +729,6 @@ const ClientsView = () => {
           </div>
         </div>
       </FilterModal>
-              {/* Action buttons */}
-              <div className="flex gap-4 mt-8">
-                <button
-                  onClick={handleClearFilters}
-                  className="flex-1 px-6 py-3 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 transition-colors"
-                >
-                  Limpiar
-                </button>
-                <button
-                  onClick={handleApplyFilters}
-                  className="flex-1 px-6 py-3 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
-                >
-                  Aplicar
-                </button>
-              </div>
-            </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
-      {/* Create Client Modal */}
-      <AddClientModal
-        isOpen={isCreateModalOpen}
-        onClose={() => {
-          setIsCreateModalOpen(false);
-          setSelectedClient(null);
-        }}
-        mode={modalMode}
-        client={selectedClient}
-        billingToken={billingToken} 
-      />
-
-      {/* Details Client Modal */}
-      <DetailsClientModal
-        isOpen={isDetailsModalOpen}
-        onClose={() => setIsDetailsModalOpen(false)}
-        client={selectedClient}
-      />
 
       {/* Delete Confirmation Modal */}
       <ConfirmModal
