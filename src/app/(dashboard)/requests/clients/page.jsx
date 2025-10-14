@@ -77,10 +77,12 @@ const ClientsView = () => {
 
   // Modal states for CRUD operations
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState("create");
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
+  const [billingToken, setBillingToken] = useState("");
 
   // Delete flow modal states
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
@@ -93,6 +95,14 @@ const ClientsView = () => {
   // Load initial data
   useEffect(() => {
     loadInitialData();
+    const getTokenBilling = async () => {
+      try {
+        const response = await authorization();
+        setBillingToken(response.access_token);        
+      } catch (error) {
+        console.error("Error en inicialización:", error);      }
+    };
+    getTokenBilling();
   }, []);
 
   // Apply filters when data or filters change
@@ -242,9 +252,8 @@ const ClientsView = () => {
   // Action handlers
   const handleEdit = (client) => {
     setSelectedClient(client);
-    setIsEditModalOpen(true);
-    console.log("Edit client:", client);
-    // TODO: Open edit modal
+    setModalMode("edit");
+    setIsCreateModalOpen(true);
   };
 
   const handleView = (client) => {
@@ -323,8 +332,8 @@ const ClientsView = () => {
 
   const handleAddNewClient = () => {
     setIsCreateModalOpen(true);
-    console.log("Add new client");
-    // TODO: Open create modal
+    setSelectedClient(null);
+    setModalMode("create");
   };
 
   // Table columns definition
