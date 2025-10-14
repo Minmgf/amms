@@ -1,5 +1,11 @@
 import { apiMain, apiUsers } from "@/lib/axios";
 
+//Obtener lista de clientes
+export const getClientsList = async (token) => {
+    const { data } = await apiMain.get(`/customers/`);
+    return data;
+};
+
 //Obtener tipos de persona
 export const getPersonTypes = async () => {
     const { data } = await apiMain.get("/person_types/");
@@ -73,3 +79,14 @@ export const getBillingStatuses = async () => {
     return { data };
 };
 
+// Actualizar un cliente existente
+export const updateClient = async (clientId, payload) => {
+    const { data } = await apiMain.patch(`/customers/${clientId}/update_customer/`, payload);
+    return data;
+};
+
+// Actualizar un usuario
+export const updateUser = async (userId, payload) => {
+    const { data } = await apiUsers.put(`/users/${userId}/profile`, payload);
+    return data;
+}

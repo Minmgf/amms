@@ -25,7 +25,10 @@ import {
 } from "@/app/components/shared/SuccessErrorModal";
 import FilterModal from "@/app/components/shared/FilterModal";
 import ClientDetailsModal from "@/app/components/ClientDetailsModal";
-import { getClientsList } from "@/services/clientServices";
+import { getClientsList } from "@/services/clientService";
+import AddClientModal from "@/app/components/request/clients/AddClientModal";
+import DetailsClientModal from "@/app/components/request/clients/DetailsClientModal";
+import { authorization } from "@/services/billingService";
 
 /**
  * ClientsView Component
@@ -729,6 +732,28 @@ const ClientsView = () => {
           </div>
         </div>
       </FilterModal>
+              
+      {/* Create Client Modal */}
+      <AddClientModal
+        isOpen={isCreateModalOpen}
+        onClose={() => {
+          setIsCreateModalOpen(false);
+          setSelectedClient(null);
+        }}
+        mode={modalMode}
+        client={selectedClient}
+        billingToken={billingToken}
+        onSuccess={() => {
+          loadInitialData();
+        }} 
+      />
+
+      {/* Details Client Modal */}
+      <DetailsClientModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        client={selectedClient}
+      />
 
       {/* Delete Confirmation Modal */}
       <ConfirmModal
