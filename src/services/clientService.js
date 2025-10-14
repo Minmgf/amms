@@ -1,5 +1,11 @@
 import { apiMain, apiUsers } from "@/lib/axios";
 
+//Obtener lista de clientes
+export const getClientsList = async (token) => {
+    const { data } = await apiMain.get(`/customers/`);
+    return data;
+};
+
 //Obtener tipos de persona
 export const getPersonTypes = async () => {
     const { data } = await apiMain.get("/person_types/");
@@ -23,3 +29,64 @@ export const createClient = async (payload) => {
     const { data } = await apiMain.post("customers/create_customer/", payload);
     return data;
 };
+
+// Obtener detalle del cliente (HU-CLI-003)
+export const getClientDetail = async (clientId) => {
+    try {
+        const { data } = await apiMain.get(`/customers/${clientId}/detail/`);
+        return data; // Mantener la respuesta tal como el backend la entrega ({success, message, data})
+    } catch (error) {
+        console.error("Error al obtener detalle del cliente:", error);
+        return {
+            success: false,
+            message: error.response?.data?.message || error?.message || "Error al obtener el detalle del cliente"
+        };
+    }
+};
+
+// Obtener historial de solicitudes del cliente (HU-CLI-003)
+export const getClientRequestHistory = async (clientId) => {
+    try {
+        const { data } = await apiMain.get(`/customers/${clientId}/requests/`);
+        if (Array.isArray(data)) {
+            return { success: true, data };
+        }
+        return data;
+    } catch (error) {
+        console.error("Error al obtener historial de solicitudes:", error);
+        return {
+            success: false,
+            message: error.response?.data?.message || error?.message || "Error al obtener el historial de solicitudes"
+        };
+    }
+};
+
+// Obtener estados del cliente
+export const getClientStatuses = async () => {
+    const { data } = await apiMain.get("/statues/list/1/");
+    return { data };
+};
+
+// Obtener estados de solicitudes
+export const getRequestStatuses = async () => {
+    const { data } = await apiMain.get("/statues/list/4/");
+    return { data };
+};
+
+// Obtener estados de facturación
+export const getBillingStatuses = async () => {
+    const { data } = await apiMain.get("/statues/list/5/");
+    return { data };
+};
+
+// Actualizar un cliente existente
+export const updateClient = async (clientId, payload) => {
+    const { data } = await apiMain.patch(`/customers/${clientId}/update_customer/`, payload);
+    return data;
+};
+
+// Actualizar un usuario
+export const updateUser = async (userId, payload) => {
+    const { data } = await apiUsers.put(`/users/${userId}/profile`, payload);
+    return data;
+}
