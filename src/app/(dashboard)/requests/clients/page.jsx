@@ -25,7 +25,7 @@ import {
 } from "@/app/components/shared/SuccessErrorModal";
 import FilterModal from "@/app/components/shared/FilterModal";
 import ClientDetailsModal from "@/app/components/ClientDetailsModal";
-import { getClientsList } from "@/services/clientServices";
+import { getClientsList } from "@/services/clientService";
 import AddClientModal from "@/app/components/request/clients/AddClientModal";
 import DetailsClientModal from "@/app/components/request/clients/DetailsClientModal";
 import { authorization } from "@/services/billingService";
@@ -740,25 +740,7 @@ const ClientsView = () => {
           </div>
         </div>
       </FilterModal>
-              {/* Action buttons */}
-              <div className="flex gap-4 mt-8">
-                <button
-                  onClick={handleClearFilters}
-                  className="flex-1 px-6 py-3 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 transition-colors"
-                >
-                  Limpiar
-                </button>
-                <button
-                  onClick={handleApplyFilters}
-                  className="flex-1 px-6 py-3 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
-                >
-                  Aplicar
-                </button>
-              </div>
-            </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+              
       {/* Create Client Modal */}
       <AddClientModal
         isOpen={isCreateModalOpen}
@@ -768,7 +750,10 @@ const ClientsView = () => {
         }}
         mode={modalMode}
         client={selectedClient}
-        billingToken={billingToken} 
+        billingToken={billingToken}
+        onSuccess={() => {
+          loadInitialData();
+        }} 
       />
 
       {/* Details Client Modal */}
