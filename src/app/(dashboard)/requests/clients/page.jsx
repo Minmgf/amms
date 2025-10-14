@@ -24,7 +24,6 @@ import {
   WarningModal,
 } from "@/app/components/shared/SuccessErrorModal";
 import FilterModal from "@/app/components/shared/FilterModal";
-import ClientDetailsModal from "@/app/components/ClientDetailsModal";
 import { getClientsList } from "@/services/clientService";
 import AddClientModal from "@/app/components/request/clients/AddClientModal";
 import DetailsClientModal from "@/app/components/request/clients/DetailsClientModal";
@@ -801,13 +800,6 @@ const ClientsView = () => {
         title={modalTitle}
         message={modalMessage}
         buttonText="Cerrar"
-      />
-
-      {/* Client Details Modal */}
-      <ClientDetailsModal
-        isOpen={isDetailsModalOpen}
-        onClose={() => setIsDetailsModalOpen(false)}
-        client={selectedClient}
       />
 
       {/* TODO: Add modals for Create, Edit operations */}
