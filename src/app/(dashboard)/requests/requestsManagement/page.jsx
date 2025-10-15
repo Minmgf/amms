@@ -7,6 +7,7 @@ import FilterModal from '@/app/components/shared/FilterModal';
 import TableList from '@/app/components/shared/TableList';
 import CancelRequestModal from '@/app/components/request/CancelRequestModal';
 import { SuccessModal, ConfirmModal } from '@/app/components/shared/SuccessErrorModal';
+import MultiStepFormModal from "@/app/components/request/requestsManagement/multistepForm/MultiStepFormModal";
 
 const RequestsManagementPage = () => {
   // Estados principales
@@ -28,6 +29,8 @@ const RequestsManagementPage = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [mode, setMode] = useState('preregister'); // 'preregister' o 'register'
 
   // Mock data para solicitudes
   const mockRequestsData = [
@@ -327,11 +330,13 @@ const RequestsManagementPage = () => {
   };
 
   const handleNewPreRequest = () => {
-    console.log('Nueva Pre-Solicitud');
+    setMode('preregister');
+    setIsRequestModalOpen(true);
   };
 
   const handleNewRequest = () => {
-    console.log('Nueva Solicitud');
+    setMode('register');
+    setIsRequestModalOpen(true);
   };
 
   const handleGenerateReport = () => {
@@ -761,6 +766,13 @@ const RequestsManagementPage = () => {
           </div>
         </div>
       </FilterModal>
+
+      {/* Modal de Formulario de Solicitud (Pre-registro y Registro) */}
+      <MultiStepFormModal
+        isOpen={isRequestModalOpen}
+        onClose={() => setIsRequestModalOpen(false)}
+        mode={mode}
+      />
 
       {/* Modal de Cancelar Solicitud */}
       <CancelRequestModal
