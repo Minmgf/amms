@@ -1,6 +1,5 @@
 "use client";
 import AddClientModal from "@/app/components/request/clients/AddClientModal";
-import UpdateClientModal from "@/app/components/request/clients/UpdateClientModal";
 import DetailsRequestModal from "@/app/components/request/services/DetailsRequestModal";
 import { useState } from "react";
 
@@ -56,10 +55,6 @@ const Prueba = () => {
       <AddClientModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-      />
-      <UpdateClientModal
-        isOpen={isUpdateModalOpen}
-        onClose={() => setIsUpdateModalOpen(false)}
       />
       
       {/* Modal de Detalles de Solicitud */}
