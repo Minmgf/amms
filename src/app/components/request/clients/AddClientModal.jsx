@@ -16,6 +16,7 @@ const AddClientModal = ({
     onSuccess,
     billingToken,
     defaultValues = {},
+    existingClientDocuments = [],
 }) => {
     const isEditMode = mode === "edit";
     const shouldCheckDocument = useRef(false); // Flag para controlar verificación
@@ -113,14 +114,31 @@ const AddClientModal = ({
         setDocumentExists(false);
         setExistingUserId(null);
         onClose();
-    };    
+    };
 
+    // Verificar documento existente
     // Verificar documento existente
     const checkDocument = async (documentNumber) => {
         if (!documentNumber) return;
 
         setCheckingDocument(true);
         try {
+            //Verificar primero si el documento ya existe como cliente
+            const isAlreadyClient = existingClientDocuments.includes(documentNumber.toString());
+
+            if (isAlreadyClient) {
+                setDocumentExists(false);
+                setExistingUserId(null);
+                resetForm();
+                reset({ identificationNumber: documentNumber });
+                setTittle("Cliente Ya Registrado");
+                setModalMessage("Este número de identificación ya está registrado como cliente en el sistema.");
+                setErrorOpen(true);
+                setCheckingDocument(false);
+                return;
+            }
+
+            // Si no existe como cliente, buscar en usuarios.
             const response = await checkUserExists(documentNumber);
 
             if (response.success && response.data) {
@@ -172,19 +190,19 @@ const AddClientModal = ({
 
     // Cargar datos del cliente en modo edición
     useEffect(() => {
-        if (isEditMode && client && isOpen && 
-            typeDocuments.length > 0 && 
-            personTypes.length > 0 && 
-            taxRegimens.length > 0 && 
+        if (isEditMode && client && isOpen &&
+            typeDocuments.length > 0 &&
+            personTypes.length > 0 &&
+            taxRegimens.length > 0 &&
             municipalities.length > 0) {
 
             console.log("Cargando datos del cliente para edición:", client);
             shouldCheckDocument.current = false; // No verificar en modo edición
-            
+
             // Extraer código y número de teléfono
             let phoneCode = "+57";
             let phoneNumber = "";
-            
+
             if (client.phone) {
                 const phone = client.phone.toString();
                 // Buscar el código de país
@@ -287,11 +305,11 @@ const AddClientModal = ({
 
             if (isEditMode) {
                 // Llamar al endpoint de actualizar cliente
-                response = await updateClient(client.id_customer, payload);               
+                response = await updateClient(client.id_customer, payload);
 
                 if (existingUserId !== null) {
-                    if(response.success) {
-                        try{
+                    if (response.success) {
+                        try {
                             const userPayload = {
                                 name: data.fullName,
                                 first_last_name: data.firstLastName,
@@ -313,11 +331,11 @@ const AddClientModal = ({
                                 setSuccessOpen(false);
                                 handleCloseModal();
                             }, 2000);
-                        }catch(userError) { 
+                        } catch (userError) {
                             setTittle("Error");
                             setModalMessage(userError.message || "Ocurrio un error al actualizar el cliente.");
                             setErrorOpen(true);
-                        }                        
+                        }
                     }
                 } else {
                     setTittle("Éxito");
@@ -340,11 +358,11 @@ const AddClientModal = ({
                     setSuccessOpen(false);
                     handleCloseModal();
                 }, 2000);
-            }            
+            }
 
             if (onSuccess) {
                 onSuccess();
-            }           
+            }
 
         } catch (error) {
             setTittle("Error");
@@ -446,7 +464,7 @@ const AddClientModal = ({
                                         </label>
                                         <input
                                             type="text"
-                                            {...register("checkDigit", {required: "Este campo es obligatorio."})}
+                                            {...register("checkDigit", { required: "Este campo es obligatorio." })}
                                             className="parametrization-input w-full"
                                             placeholder="DV"
                                             onKeyDown={(e) => {
