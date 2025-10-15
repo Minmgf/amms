@@ -752,6 +752,7 @@ const ClientsView = () => {
         mode={modalMode}
         client={selectedClient}
         billingToken={billingToken}
+        existingClientDocuments={clientsData.map(c => c.document_number?.toString())}
         onSuccess={() => {
           loadInitialData();
         }} 
