@@ -10,6 +10,22 @@ const getAuthToken = () => {
   return token;
 };
 
+/**
+ * Modal para crear/editar servicios
+ * 
+ * FORMATO JSON REQUERIDO por la API /services/create/:
+ * {
+ *   "service_name": "string (max 100 chars)",
+ *   "description": "string (max 500 chars, opcional)",
+ *   "service_type": number (ID del tipo desde /types/list/active/14/),
+ *   "base_price": number (float),
+ *   "price_unit": number (ID de la unidad desde /units/active/10/),
+ *   "applicable_tax": number (1, 2, 3),
+ *   "tax_rate": number (float),
+ *   "is_vat_exempt": boolean
+ * }
+ */
+
 export default function CreateEditServiceModal({ 
   isOpen, 
   onClose, 
@@ -33,11 +49,9 @@ export default function CreateEditServiceModal({
   const [errors, setErrors] = useState({});
   const [loadingData, setLoadingData] = useState(false);
 
-  // Opciones para los selectores
   const [serviceTypes, setServiceTypes] = useState([]);
   const [currencyUnits, setCurrencyUnits] = useState([]);
 
-  // Opciones de impuestos
   const taxOptions = [
     { id: 1, name: "19%", rate: 19.0, exempt: false },
     { id: 2, name: "5%", rate: 5.0, exempt: false },
@@ -54,87 +68,51 @@ export default function CreateEditServiceModal({
 
   const loadInitialData = async () => {
     setLoadingData(true);
+    setErrors({});
+    
+    // Datos por defecto - siempre disponibles
+    const defaultServiceTypes = [
+      { id: 17, name: "Operativo", description: "Servicios operativos" },
+      { id: 18, name: "Logístico", description: "Servicios logísticos" },
+      { id: 19, name: "Administrativo", description: "Servicios administrativos" },
+      { id: 20, name: "Mantenimiento Preventivo", description: "Servicios de mantenimiento preventivo" },
+      { id: 21, name: "Mantenimiento Correctivo", description: "Servicios de mantenimiento correctivo" }
+    ];
+    
+    const defaultCurrencyUnits = [
+      { id: 17, name: "Pesos Colombianos", code: "COP", symbol: "$" },
+      { id: 18, name: "Dólares Americanos", code: "USD", symbol: "$" },
+      { id: 19, name: "Euros", code: "EUR", symbol: "€" },
+      { id: 20, name: "Unidad", code: "UND", symbol: "UND" },
+      { id: 21, name: "Metro", code: "M", symbol: "m" }
+    ];
+    
     try {
-      const token = getAuthToken();
-      if (!token) {
-        setErrors({
-          general: "No se encontró token de autenticación. Por favor, inicie sesión nuevamente."
-        });
-        return;
-      }
-
-      console.log("Loading service types and currency units...");
+      // Intentar cargar datos de la API
+      const [typesData, unitsData] = await Promise.all([
+        getServiceTypes(),
+        getCurrencyUnits()
+      ]);
       
-      // Intentar cargar datos del API
-      try {
-        const [typesData, unitsData] = await Promise.all([
-          getServiceTypes(),
-          getCurrencyUnits()
-        ]);
-        
-        console.log("Service types response:", typesData);
-        console.log("Currency units response:", unitsData);
-        
-        // Handle different possible response structures
-        const types = Array.isArray(typesData) ? typesData : 
-                     (typesData?.data ? (Array.isArray(typesData.data) ? typesData.data : []) : []);
-        
-        const units = Array.isArray(unitsData) ? unitsData : 
-                     (unitsData?.data ? (Array.isArray(unitsData.data) ? unitsData.data : []) : []);
-        
-        console.log("Processed types:", types);
-        console.log("Processed units:", units);
-        
-        setServiceTypes(types);
-        setCurrencyUnits(units);
-        
-        // Si no hay datos del API, usar datos mock
-        if (types.length === 0) {
-          console.warn("No se encontraron tipos de servicios del API, usando datos mock");
-          setServiceTypes([
-            { id: 1, name: "Mantenimiento" },
-            { id: 2, name: "Reparación" },
-            { id: 3, name: "Consultoría" },
-            { id: 4, name: "Instalación" }
-          ]);
-        }
-        
-        if (units.length === 0) {
-          console.warn("No se encontraron unidades del API, usando datos mock");
-          setCurrencyUnits([
-            { id: 1, name: "Pesos Colombianos", code: "COP" },
-            { id: 2, name: "Dólares Americanos", code: "USD" },
-            { id: 3, name: "Euros", code: "EUR" }
-          ]);
-        }
-        
-      } catch (apiError) {
-        console.warn("Error con API, usando datos mock:", apiError);
-        
-        // Usar datos mock como fallback
-        setServiceTypes([
-          { id: 1, name: "Mantenimiento" },
-          { id: 2, name: "Reparación" },
-          { id: 3, name: "Consultoría" },
-          { id: 4, name: "Instalación" }
-        ]);
-        
-        setCurrencyUnits([
-          { id: 1, name: "Pesos Colombianos", code: "COP" },
-          { id: 2, name: "Dólares Americanos", code: "USD" },
-          { id: 3, name: "Euros", code: "EUR" }
-        ]);
-        
-        setErrors({
-          general: `Usando datos de ejemplo. Error del API: ${apiError.response?.status === 404 ? 'Endpoints no encontrados' : apiError.message}`
-        });
-      }
+      // Procesar tipos de servicios
+      const types = Array.isArray(typesData) ? typesData : 
+                   (typesData?.data && Array.isArray(typesData.data)) ? typesData.data : [];
+      
+      // Procesar unidades de moneda
+      const units = Array.isArray(unitsData) ? unitsData : 
+                    (unitsData?.data && Array.isArray(unitsData.data)) ? unitsData.data : [];
+      
+      // Usar datos de API si están disponibles, si no usar por defecto
+      setServiceTypes(types.length > 0 ? types : defaultServiceTypes);
+      setCurrencyUnits(units.length > 0 ? units : defaultCurrencyUnits);
+      
+      console.log("Tipos de servicios cargados:", types.length > 0 ? types : defaultServiceTypes);
+      console.log("Unidades de moneda cargadas:", units.length > 0 ? units : defaultCurrencyUnits);
       
     } catch (error) {
-      console.error("Error loading initial data:", error);
-      setErrors({
-        general: `Error al cargar los datos iniciales: ${error.message}`
-      });
+      console.log("Error al cargar datos de API, usando datos por defecto:", error);
+      setServiceTypes(defaultServiceTypes);
+      setCurrencyUnits(defaultCurrencyUnits);
     } finally {
       setLoadingData(false);
     }
@@ -154,12 +132,32 @@ export default function CreateEditServiceModal({
     setErrors({});
   };
 
+  const handleClose = () => {
+    if (loading) return;
+    resetForm();
+    onClose?.();
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    // Manejar cambios en el impuesto aplicable
+    if (name === 'applicable_tax') {
+      const newTaxRate = value === '19' ? '19.0' : value === '5' ? '5.0' : '0.0';
+      const isExempt = value === '0';
+      
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        tax_rate: newTaxRate,
+        is_vat_exempt: isExempt
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
     
     // Limpiar error del campo cuando el usuario comience a escribir
     if (errors[name]) {
@@ -173,12 +171,16 @@ export default function CreateEditServiceModal({
   const validateForm = () => {
     const newErrors = {};
 
+    // Validar nombre del servicio (requerido, máximo 100 caracteres)
     if (!formData.service_name?.trim()) {
       newErrors.service_name = "El nombre del servicio es requerido";
+    } else if (formData.service_name.length > 100) {
+      newErrors.service_name = "El nombre del servicio no puede exceder 100 caracteres";
     }
 
-    if (!formData.description?.trim()) {
-      newErrors.description = "La descripción es requerida";
+    // Validar descripción (opcional, máximo 500 caracteres)
+    if (formData.description && formData.description.length > 500) {
+      newErrors.description = "La descripción no puede exceder 500 caracteres";
     }
 
     if (!formData.service_type) {
@@ -212,29 +214,23 @@ export default function CreateEditServiceModal({
       return;
     }
 
-    const token = getAuthToken();
-    if (!token) {
-      setErrors({
-        general: "No se encontró token de autenticación. Por favor, inicie sesión nuevamente."
-      });
-      return;
-    }
-
     setLoading(true);
     setErrors({});
 
     try {
       const serviceData = {
-        service_name: formData.service_name,
-        description: formData.description,
+        service_name: formData.service_name.trim(),
+        description: formData.description?.trim() || "Servicio sin descripción específica",
         service_type: parseInt(formData.service_type),
         base_price: parseFloat(formData.base_price),
         price_unit: parseInt(formData.price_unit),
-        applicable_tax: parseFloat(formData.applicable_tax),
+        applicable_tax: parseInt(formData.applicable_tax),
         tax_rate: parseFloat(formData.tax_rate),
-        is_vat_exempt: formData.is_vat_exempt
+        is_vat_exempt: Boolean(formData.is_vat_exempt)
       };
 
+      console.log("Creando servicio con datos:", serviceData);
+      
       const response = await createService(serviceData);
       
       console.log("Servicio creado exitosamente:", response);
@@ -250,18 +246,17 @@ export default function CreateEditServiceModal({
     } catch (error) {
       console.error("Error al crear el servicio:", error);
       
-      if (error.response?.data?.errors) {
-        // Manejar errores específicos del servidor
-        const serverErrors = {};
-        Object.keys(error.response.data.errors).forEach(field => {
-          serverErrors[field] = error.response.data.errors[field][0];
-        });
-        setErrors(serverErrors);
-      } else {
-        setErrors({
-          general: error.response?.data?.message || "Error al crear el servicio. Por favor, intente nuevamente."
-        });
-      }
+      const apiMsg = error?.response?.data?.message || "Error al crear el servicio.";
+      const fieldErrs = error?.response?.data?.errors;
+      const extra = fieldErrs
+        ? Object.entries(fieldErrs)
+            .map(([k, v]) => `• ${k}: ${Array.isArray(v) ? v.join(", ") : v}`)
+            .join("\n")
+        : "";
+      
+      setErrors({
+        general: [apiMsg, extra].filter(Boolean).join("\n")
+      });
     } finally {
       setLoading(false);
     }
@@ -269,7 +264,7 @@ export default function CreateEditServiceModal({
 
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) {
-      onClose();
+      handleClose();
     }
   };
 
@@ -287,7 +282,7 @@ export default function CreateEditServiceModal({
             {mode === "edit" ? "Editar Servicio" : "Crear Nuevo Servicio"}
           </h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             aria-label="Cerrar modal"
           >
@@ -338,6 +333,7 @@ export default function CreateEditServiceModal({
                   name="service_name"
                   value={formData.service_name}
                   onChange={handleInputChange}
+                  maxLength={100}
                   className={`w-full px-4 py-3 bg-gray-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:bg-white transition-colors ${
                     errors.service_name ? 'ring-2 ring-red-300 bg-red-50' : ''
                   }`}
@@ -345,6 +341,9 @@ export default function CreateEditServiceModal({
                   aria-label="Nombre del servicio"
                   disabled={loading || loadingData}
                 />
+                <div className="mt-1 text-xs text-gray-500">
+                  {formData.service_name?.length || 0}/100 caracteres
+                </div>
                 {errors.service_name && (
                   <p className="mt-1 text-sm text-red-600">{errors.service_name}</p>
                 )}
@@ -353,13 +352,14 @@ export default function CreateEditServiceModal({
               {/* Description - Full width */}
               <div className="md:col-span-2">
                 <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                  Descripción *
+                  Descripción
                 </label>
                 <textarea
                   id="description"
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
+                  maxLength={500}
                   rows={3}
                   className={`w-full px-4 py-3 bg-gray-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:bg-white transition-colors resize-none ${
                     errors.description ? 'ring-2 ring-red-300 bg-red-50' : ''
@@ -395,8 +395,8 @@ export default function CreateEditServiceModal({
                   <option value="">Seleccionar tipo...</option>
                   {serviceTypes.length > 0 ? (
                     serviceTypes.map((type) => (
-                      <option key={type.id || type.id_types} value={type.id || type.id_types}>
-                        {type.name}
+                      <option key={type.id || type.id_types || type.type_id} value={type.id || type.id_types || type.type_id}>
+                        {type.name || type.type_name}
                       </option>
                     ))
                   ) : (
@@ -462,8 +462,8 @@ export default function CreateEditServiceModal({
                   <option value="">Seleccionar unidad...</option>
                   {currencyUnits.length > 0 ? (
                     currencyUnits.map((unit) => (
-                      <option key={unit.id || unit.id_units} value={unit.id || unit.id_units}>
-                        {unit.name} {unit.code ? `(${unit.code})` : ''}
+                      <option key={unit.id || unit.id_units || unit.unit_id} value={unit.id || unit.id_units || unit.unit_id}>
+                        {unit.name || unit.unit_name} {(unit.code || unit.unit_code) ? `(${unit.code || unit.unit_code})` : ''}
                       </option>
                     ))
                   ) : (
@@ -555,9 +555,9 @@ export default function CreateEditServiceModal({
 
           {/* Error general */}
           {errors.general && (
-            <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-yellow-700 text-sm">
-                <strong>Información:</strong> {errors.general}
+            <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-700 text-sm">
+                <strong>Error:</strong> {errors.general}
               </p>
             </div>
           )}
@@ -576,9 +576,9 @@ export default function CreateEditServiceModal({
           <div className="md:col-span-2 flex gap-4 mt-8 justify-center">
             <button
               type="button"
-              onClick={onClose}
-              className="btn-error btn-theme w-40 px-8 py-2 font-semibold rounded-lg"
+              onClick={handleClose}
               disabled={loading || loadingData}
+              className="btn-error btn-theme w-40 px-8 py-2 font-semibold rounded-lg"
               aria-label={mode === "edit" ? "Cancelar edición del servicio" : "Cancelar creación del servicio"}
             >
               Cancelar

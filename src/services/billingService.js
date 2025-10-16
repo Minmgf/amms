@@ -39,3 +39,14 @@ export const getMunicipalities = async (token) => {
 
   return data;
 };
+
+// Función para obtener tipos de impuestos
+export const getTaxTypes = async (token) => {
+  const { data } = await apiBilling.get("/v1/tax-types", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return data;
+};

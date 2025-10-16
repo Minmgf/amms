@@ -89,4 +89,26 @@ export const updateClient = async (clientId, payload) => {
 export const updateUser = async (userId, payload) => {
     const { data } = await apiUsers.put(`/users/${userId}/profile`, payload);
     return data;
-}
+};
+
+// Eliminar cliente (HU-CLI-004)
+export const deleteClient = async (clientId) => {
+    try {
+        const { data } = await apiMain.delete(`/customers/${clientId}/`);
+        return data;
+    } catch (error) {
+        console.error("Error al eliminar cliente:", error);
+        throw error;
+    }
+};
+
+// Alternar estado del cliente (activar/desactivar) (HU-CLI-004)
+export const toggleClientStatus = async (clientId) => {
+    try {
+        const { data } = await apiMain.patch(`/customers/${clientId}/toggle-status/`);
+        return data;
+    } catch (error) {
+        console.error("Error al cambiar estado del cliente:", error);
+        throw error;
+    }
+};

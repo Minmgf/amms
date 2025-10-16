@@ -21,10 +21,9 @@ import {
   SuccessModal,
   ErrorModal,
   ConfirmModal,
-  WarningModal,
 } from "@/app/components/shared/SuccessErrorModal";
 import FilterModal from "@/app/components/shared/FilterModal";
-import { getClientsList } from "@/services/clientService";
+import { getClientsList, deleteClient, toggleClientStatus } from "@/services/clientService";
 import AddClientModal from "@/app/components/request/clients/AddClientModal";
 import DetailsClientModal from "@/app/components/request/clients/DetailsClientModal";
 import { authorization } from "@/services/billingService";
@@ -85,7 +84,7 @@ const ClientsView = () => {
 
   // Delete flow modal states
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
-  const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
+  const [isConfirmDeactivateOpen, setIsConfirmDeactivateOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
@@ -267,19 +266,43 @@ const ClientsView = () => {
     setIsConfirmDeleteOpen(true);
   };
 
-  // Check if client has associated records (mock implementation)
-  const checkClientHasAssociations = async (clientId) => {
-    // TODO: Replace with actual API call to check associations
-    // Example: const response = await checkClientAssociations(clientId);
+  // Handle toggle client status (activate/deactivate)
+  const handleToggleClientStatus = async () => {
+    setIsConfirmDeactivateOpen(false);
 
-    // Mock implementation - randomly return true/false for demo
-    // In real implementation, check if client has:
-    // - Associated requests
-    // - Associated records
-    // - Associated invoices
+    if (!selectedClient) return;
 
-    // For demo: clients with id 1 and 3 have associations
-    return clientId === 1 || clientId === 3;
+    try {
+      const response = await toggleClientStatus(selectedClient.id_customer || selectedClient.id);
+      
+      if (response.success) {
+        // Actualizar el cliente en la lista
+        setClientsData(prevData =>
+          prevData.map(client =>
+            (client.id_customer || client.id) === (selectedClient.id_customer || selectedClient.id)
+              ? { 
+                  ...client, 
+                  customer_statues_id: client.customer_statues_id === 1 ? 2 : 1,
+                  customer_statues_name: client.customer_statues_id === 1 ? "Inactivo" : "Activo"
+                }
+              : client
+          )
+        );
+
+        // Mostrar modal de éxito
+        setModalTitle("Estado Actualizado");
+        setModalMessage(response.message || "El estado del cliente ha sido actualizado exitosamente.");
+        setIsSuccessModalOpen(true);
+      }
+    } catch (error) {
+      console.error("Error toggling client status:", error);
+      setModalTitle("Error");
+      setModalMessage(
+        error.response?.data?.message || 
+        "Ocurrió un error al cambiar el estado del cliente. Por favor, inténtelo de nuevo."
+      );
+      setIsErrorModalOpen(true);
+    }
   };
 
   // Handle confirm delete action
@@ -289,43 +312,41 @@ const ClientsView = () => {
     if (!selectedClient) return;
 
     try {
-      // Check if client has associations
-      const hasAssociations = await checkClientHasAssociations(selectedClient.id);
-
-      if (hasAssociations) {
-        // Show warning modal - client has associations
-        setModalTitle("Advertencia");
-        setModalMessage(
-          "Este cliente está asociado con solicitudes, registros o facturas. No puede ser eliminado, pero será desactivado para que no esté disponible en futuros formularios."
-        );
-        setIsWarningModalOpen(true);
-
-        // TODO: Call API to deactivate client
-        // await deactivateClient(selectedClient.id);
-
-      } else {
-        // No associations - proceed with deletion
-        // TODO: Replace with actual API call
-        // const response = await deleteClient(selectedClient.id);
-
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        // Remove client from data
+      // Intentar eliminar el cliente directamente
+      // El backend validará automáticamente si tiene asociaciones
+      const response = await deleteClient(selectedClient.id_customer || selectedClient.id);
+      
+      if (response.success) {
+        // Eliminación exitosa - remover cliente de la lista
         setClientsData(prevData =>
-          prevData.filter(client => client.id !== selectedClient.id)
+          prevData.filter(client => (client.id_customer || client.id) !== (selectedClient.id_customer || selectedClient.id))
         );
 
-        // Show success modal
+        // Mostrar modal de éxito
         setModalTitle("Eliminación Exitosa");
-        setModalMessage("El cliente ha sido eliminado exitosamente.");
+        setModalMessage(response.message || "El cliente ha sido eliminado exitosamente.");
         setIsSuccessModalOpen(true);
       }
     } catch (error) {
       console.error("Error deleting client:", error);
-      setModalTitle("Error");
-      setModalMessage("Ocurrió un error al eliminar el cliente. Por favor, inténtelo de nuevo.");
-      setIsErrorModalOpen(true);
+      
+      if (error.response?.status === 400 || error.response?.status === 409) {
+        // Cliente tiene asociaciones - ofrecer desactivarlo
+        setModalTitle("Cliente con Asociaciones");
+        setModalMessage(
+          error.response?.data?.message || 
+          "Este cliente está asociado con solicitudes, registros o facturas y no puede ser eliminado. ¿Desea desactivarlo en su lugar? Esto lo ocultará de futuros formularios."
+        );
+        setIsConfirmDeactivateOpen(true);
+      } else {
+        // Otro tipo de error
+        setModalTitle("Error");
+        setModalMessage(
+          error.response?.data?.message || 
+          "Ocurrió un error al eliminar el cliente. Por favor, inténtelo de nuevo."
+        );
+        setIsErrorModalOpen(true);
+      }
     }
   };
 
@@ -777,13 +798,17 @@ const ClientsView = () => {
         cancelColor="btn-error"
       />
 
-      {/* Warning Modal - Client has associations */}
-      <WarningModal
-        isOpen={isWarningModalOpen}
-        onClose={() => setIsWarningModalOpen(false)}
+      {/* Deactivate Confirmation Modal */}
+      <ConfirmModal
+        isOpen={isConfirmDeactivateOpen}
+        onClose={() => setIsConfirmDeactivateOpen(false)}
+        onConfirm={handleToggleClientStatus}
         title={modalTitle}
         message={modalMessage}
-        buttonText="Aceptar"
+        confirmText="Desactivar"
+        cancelText="Cancelar"
+        confirmColor="btn-primary"
+        cancelColor="btn-error"
       />
 
       {/* Success Modal */}
