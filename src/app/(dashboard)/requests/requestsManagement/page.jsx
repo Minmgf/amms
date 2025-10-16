@@ -7,6 +7,7 @@ import FilterModal from '@/app/components/shared/FilterModal';
 import TableList from '@/app/components/shared/TableList';
 import CancelRequestModal from '@/app/components/request/CancelRequestModal';
 import { SuccessModal, ConfirmModal } from '@/app/components/shared/SuccessErrorModal';
+import GenerateInvoiceModal from '@/app/components/request/invoice/multistepform/GenerateInvoiceModal';
 import MultiStepFormModal from "@/app/components/request/requestsManagement/multistepForm/MultiStepFormModal";
 
 const RequestsManagementPage = () => {
@@ -26,6 +27,7 @@ const RequestsManagementPage = () => {
   // Estados de modales
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [GenerateInvoiceModalOpen, setGenerateInvoiceModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -322,6 +324,7 @@ const RequestsManagementPage = () => {
   };
 
   const handleRegisterInvoice = (requestId) => {
+    setGenerateInvoiceModalOpen(true);
     console.log('Registrar factura:', requestId);
   };
 
@@ -801,6 +804,13 @@ const RequestsManagementPage = () => {
         onClose={() => setSuccessModalOpen(false)}
         title="Operación Exitosa"
         message={successMessage}
+      />
+
+      {/* Modal de Generar Factura */}
+      <GenerateInvoiceModal
+        isOpen={GenerateInvoiceModalOpen}
+        onClose={() => setGenerateInvoiceModalOpen(false)}
+        request={selectedRequest}
       />
     </div>
   );
