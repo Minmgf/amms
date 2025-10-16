@@ -7,9 +7,10 @@ import FilterModal from '@/app/components/shared/FilterModal';
 import TableList from '@/app/components/shared/TableList';
 import CancelRequestModal from '@/app/components/request/CancelRequestModal';
 import CompleteRequestModal from '@/app/components/request/CompleteRequestModal';
-import { SuccessModal, ConfirmModal } from '@/app/components/shared/SuccessErrorModal';
+import { SuccessModal } from '@/app/components/shared/SuccessErrorModal';
 import GenerateInvoiceModal from '@/app/components/request/invoice/multistepform/GenerateInvoiceModal';
 import MultiStepFormModal from "@/app/components/request/requestsManagement/multistepForm/MultiStepFormModal";
+import ValidatePreRequestModal from "@/app/components/request/requestsManagement/multistepForm/ValidatePreRequestModal";
 import { getGestionServicesList } from '@/services/serviceService';
 
 const RequestsManagementPage = () => {
@@ -30,7 +31,7 @@ const RequestsManagementPage = () => {
   // Estados de modales
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [completeModalOpen, setCompleteModalOpen] = useState(false);
-  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [validatePreRequestModalOpen, setValidatePreRequestModalOpen] = useState(false);
   const [GenerateInvoiceModalOpen, setGenerateInvoiceModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [selectedRequestForComplete, setSelectedRequestForComplete] = useState(null);
@@ -214,18 +215,16 @@ const RequestsManagementPage = () => {
   const handleConfirmRequest = (requestId) => {
     const request = requestsData.find(r => r.id === requestId);
     setSelectedRequest(request);
-    setConfirmModalOpen(true);
+    setValidatePreRequestModalOpen(true);
   };
 
-  const handleConfirmSuccess = () => {
-    setConfirmModalOpen(false);
-    // TODO: Aquí se debería abrir el formulario de edición completo
-    // Por ahora solo mostramos mensaje de éxito
-    setSuccessMessage(`Solicitud confirmada exitosamente. La solicitud pasó a estado "Pendiente".`);
+  const handleValidatePreRequestSuccess = () => {
+    setValidatePreRequestModalOpen(false);
+    setSuccessMessage(`Solicitud validada exitosamente. La solicitud pasó a estado "Pendiente".`);
     setSuccessModalOpen(true);
     // Recargar la lista de solicitudes desde el API
     loadRequests();
-    console.log('Abriendo formulario de confirmación para:', selectedRequest?.requestCode);
+    console.log('Pre-solicitud validada:', selectedRequest?.requestCode);
   };
 
   const handleCompleteRequest = (requestId) => {
@@ -716,17 +715,12 @@ const RequestsManagementPage = () => {
         onSuccess={handleCompleteSuccess}
       />
 
-      {/* Modal de Confirmar Solicitud */}
-      <ConfirmModal
-        isOpen={confirmModalOpen}
-        onClose={() => setConfirmModalOpen(false)}
-        onConfirm={handleConfirmSuccess}
-        title="Confirmar Solicitud"
-        message="¿Desea confirmar esta solicitud? Se abrirá el formulario de edición para completar la información."
-        confirmText="Confirmar"
-        cancelText="Cancelar"
-        confirmColor="btn-primary"
-        cancelColor="btn-error"
+      {/* Modal de Validar Pre-Solicitud */}
+      <ValidatePreRequestModal
+        isOpen={validatePreRequestModalOpen}
+        onClose={() => setValidatePreRequestModalOpen(false)}
+        request={selectedRequest}
+        onSuccess={handleValidatePreRequestSuccess}
       />
 
       {/* Modal de Éxito */}
