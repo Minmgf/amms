@@ -6,6 +6,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { SuccessModal, ErrorModal } from "../../shared/SuccessErrorModal";
 import { getMunicipalities } from "@/services/billingService";
 import { getTypeDocuments } from "@/services/authService";
+import { getCountries } from "@/services/locationService";
 import { getPersonTypes, getTaxRegimens, checkUserExists, createClient, updateClient, updateUser } from "@/services/clientService";
 
 const AddClientModal = ({
@@ -42,6 +43,7 @@ const AddClientModal = ({
     const [checkingDocument, setCheckingDocument] = useState(false);
     const [documentExists, setDocumentExists] = useState(false);
     const [existingUserId, setExistingUserId] = useState(null);
+    const [phoneCodes, setPhoneCodes] = useState([]);
 
     // Modales de éxito y error
     const [successOpen, setSuccessOpen] = useState(false);
@@ -80,12 +82,14 @@ const AddClientModal = ({
         }
     };
 
-    const phoneCodes = [
-        { code: "+57", country: "CO" },
-        { code: "+1", country: "US" },
-        { code: "+52", country: "MX" },
-        { code: "+34", country: "ES" },
-    ];
+    const getPhoneCodesData = async () => {
+        try {
+            const response = await getCountries();
+            setPhoneCodes(response)
+        } catch (error) {
+            console.error("Error al cargar los paises")
+        }
+    }
 
     const resetForm = () => {
         reset({
@@ -185,6 +189,7 @@ const AddClientModal = ({
             getTypeDocumentsData();
             getPersonTypesData();
             getTaxRegimensData();
+            getPhoneCodesData();
         }
     }, [isOpen, billingToken]);
 
@@ -195,23 +200,27 @@ const AddClientModal = ({
             personTypes.length > 0 &&
             taxRegimens.length > 0 &&
             municipalities.length > 0) {
-
-            console.log("Cargando datos del cliente para edición:", client);
             shouldCheckDocument.current = false; // No verificar en modo edición
 
-            // Extraer código y número de teléfono
-            let phoneCode = "+57";
+            let phoneCode = "+57"; // valor por defecto
             let phoneNumber = "";
 
             if (client.phone) {
                 const phone = client.phone.toString();
-                // Buscar el código de país
-                const matchedCode = phoneCodes.find(pc => phone.startsWith(pc.code.replace('+', '')));
-                if (matchedCode) {
-                    phoneCode = matchedCode.code;
-                    phoneNumber = phone.substring(matchedCode.code.replace('+', '').length);
-                } else {
-                    phoneNumber = phone;
+
+                // Ordenar los códigos de país por longitud (descendente) para encontrar el más largo primero
+                const sortedCodes = [...phoneCodes].sort((a, b) =>
+                    b.phonecode.toString().length - a.phonecode.toString().length
+                );
+
+                // Buscar el código que coincida
+                for (const country of sortedCodes) {
+                    const code = country.phonecode.toString();
+                    if (phone.startsWith(code)) {
+                        phoneCode = code;
+                        phoneNumber = phone.substring(code.length);
+                        break;
+                    }
                 }
             }
 
@@ -294,8 +303,7 @@ const AddClientModal = ({
                 first_last_name: data.firstLastName,
                 second_last_name: data.secondLastName,
                 email: data.email,
-                phone_code: data.phoneCode,
-                phone: data.phoneNumber,
+                phone: data.phoneCode + data.phoneNumber,
                 address: data.address,
                 tax_regime: data.taxRegime,
                 id_municipality: data.region,
@@ -317,7 +325,7 @@ const AddClientModal = ({
                                 type_document_id: data.identificationType,
                                 document_number: data.identificationNumber.toString(),
                                 email: data.email,
-                                phone: data.phoneNumber,
+                                phone: data.phoneCode + data.phoneNumber,
                                 address: data.address,
                             };
 
@@ -642,12 +650,11 @@ const AddClientModal = ({
                                         <select
                                             {...register("phoneCode", { required: "Este campo es obligatorio." })}
                                             className="parametrization-input w-24"
-                                            defaultValue=""
                                         >
-                                            <option value="">Código</option>
+                                            <option value="">Código del Pais</option>
                                             {phoneCodes.map((phone) => (
-                                                <option key={phone.code} value={phone.code}>
-                                                    {phone.code}
+                                                <option key={phone.id} value={phone.phonecode}>
+                                                    +{phone.phonecode} ({phone.iso2})
                                                 </option>
                                             ))}
                                         </select>
