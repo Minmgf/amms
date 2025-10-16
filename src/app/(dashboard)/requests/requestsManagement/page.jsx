@@ -12,6 +12,7 @@ import GenerateInvoiceModal from '@/app/components/request/invoice/multistepform
 import MultiStepFormModal from "@/app/components/request/requestsManagement/multistepForm/MultiStepFormModal";
 import ValidatePreRequestModal from "@/app/components/request/requestsManagement/multistepForm/ValidatePreRequestModal";
 import { getGestionServicesList } from '@/services/serviceService';
+import PermissionGuard from '@/app/(auth)/PermissionGuard';
 
 const RequestsManagementPage = () => {
   // Estados principales
@@ -269,23 +270,27 @@ const RequestsManagementPage = () => {
     return (
       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
         {/* Detalles - siempre disponible */}
-        <button
-          onClick={() => handleViewDetails(request.id)}
-          className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600 text-gray-700"
-          title="Ver detalles"
-        >
-          <FiEye className="w-3 h-3" /> Detalles
-        </button>
+        <PermissionGuard permission={154}>
+          <button
+            onClick={() => handleViewDetails(request.id)}
+            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600 text-gray-700"
+            title="Ver detalles"
+          >
+            <FiEye className="w-3 h-3" /> Detalles
+          </button>
+        </PermissionGuard>
 
         {/* Confirmar - solo para presolicitudes */}
         {(request.requestStatusId === 1 || request.requestStatusId === 19) && (
-          <button
-            onClick={() => handleConfirmRequest(request.id)}
-            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-blue-300 hover:border-blue-500 hover:text-blue-600 text-blue-600"
-            title="Confirmar solicitud"
-          >
-            <FiCheck className="w-3 h-3" /> Confirmar
-          </button>
+          <PermissionGuard permission={150}>
+            <button
+              onClick={() => handleConfirmRequest(request.id)}
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-blue-300 hover:border-blue-500 hover:text-blue-600 text-blue-600"
+              title="Confirmar solicitud"
+            >
+              <FiCheck className="w-3 h-3" /> Confirmar
+            </button>
+          </PermissionGuard>
         )}
 
         {/* Editar - solo para pendientes */}
@@ -301,24 +306,28 @@ const RequestsManagementPage = () => {
 
         {/* Cancelar - solo para pendientes */}
         {request.requestStatusId === 2 && (
-          <button
-            onClick={() => handleCancelRequest(request.id)}
-            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-red-300 hover:border-red-500 hover:text-red-600 text-red-600"
-            title="Cancelar solicitud"
-          >
-            <FiX className="w-3 h-3" /> Cancelar
-          </button>
+          <PermissionGuard permission={153}>
+            <button
+              onClick={() => handleCancelRequest(request.id)}
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-red-300 hover:border-red-500 hover:text-red-600 text-red-600"
+              title="Cancelar solicitud"
+            >
+              <FiX className="w-3 h-3" /> Cancelar
+            </button>
+          </PermissionGuard>
         )}
 
         {/* Completar - solo para pendientes */}
         {request.requestStatusId === 2 && (
-          <button
-            onClick={() => handleCompleteRequest(request.id)}
-            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 hover:border-green-500 hover:text-green-600 text-green-600"
-            title="Completar solicitud"
-          >
-            <FiCheck className="w-3 h-3" /> Completar
-          </button>
+          <PermissionGuard permission={152}>
+            <button
+              onClick={() => handleCompleteRequest(request.id)}
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 hover:border-green-500 hover:text-green-600 text-green-600"
+              title="Completar solicitud"
+            >
+              <FiCheck className="w-3 h-3" /> Completar
+            </button>
+          </PermissionGuard>
         )}
 
         {/* Registrar factura - si no tiene factura */}
@@ -511,22 +520,26 @@ const RequestsManagementPage = () => {
           </button>
 
           {/* Nueva Pre-Solicitud */}
-          <button
-            onClick={handleNewPreRequest}
-            className="w-full parametrization-filter-button flex items-center justify-center space-x-2 px-4 py-2 transition-colors"
-          >
-            <FaCalendarAlt className="w-4 h-4" />
-            <span className="text-sm">Nueva Pre-Solicitud</span>
-          </button>
+          <PermissionGuard permission={146}>
+            <button
+              onClick={handleNewPreRequest}
+              className="w-full parametrization-filter-button flex items-center justify-center space-x-2 px-4 py-2 transition-colors"
+            >
+              <FaCalendarAlt className="w-4 h-4" />
+              <span className="text-sm">Nueva Pre-Solicitud</span>
+            </button>
+          </PermissionGuard>
 
           {/* Nueva Solicitud */}
-          <button
-            onClick={handleNewRequest}
-            className="w-full parametrization-filter-button flex items-center justify-center space-x-2 px-4 py-2 transition-colors"
-          >
-            <FaPlus className="w-4 h-4" />
-            <span className="text-sm">Nueva Solicitud</span>
-          </button>
+          <PermissionGuard permission={151}>
+            <button
+              onClick={handleNewRequest}
+              className="w-full parametrization-filter-button flex items-center justify-center space-x-2 px-4 py-2 transition-colors"
+            >
+              <FaPlus className="w-4 h-4" />
+              <span className="text-sm">Nueva Solicitud</span>
+            </button>
+          </PermissionGuard>
 
           {/* Generar Reporte */}
           <button
@@ -634,15 +647,17 @@ const RequestsManagementPage = () => {
       </div>
 
       {/* Lista de solicitudes */}
-      <div className="card-theme rounded-lg shadow">
-        <TableList
-          columns={columns}
-          data={filteredData}
-          loading={loading}
-          globalFilter={globalFilter}
-          onGlobalFilterChange={setGlobalFilter}
-        />
-      </div>
+      <PermissionGuard permission={149}>
+        <div className="card-theme rounded-lg shadow">
+          <TableList
+            columns={columns}
+            data={filteredData}
+            loading={loading}
+            globalFilter={globalFilter}
+            onGlobalFilterChange={setGlobalFilter}
+          />
+        </div>
+      </PermissionGuard>
 
       {/* Modal de Filtros */}
       <FilterModal

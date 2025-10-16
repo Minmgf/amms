@@ -1,3 +1,4 @@
+import PermissionGuard from "@/app/(auth)/PermissionGuard";
 import { FaPen, FaTrash, FaHashtag } from "react-icons/fa";
 
 /**
@@ -119,22 +120,26 @@ export const getServiceColumns = (handleEdit, handleDelete) => [
       const service = row.original;
       return (
         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          <button
-            onClick={() => handleEdit(service)}
-            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
-            title="Editar servicio"
-            aria-label="Editar servicio"
-          >
-            <FaPen className="w-3 h-3" /> Editar
-          </button>
-          <button
-            onClick={() => handleDelete(service)}
-            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-red-500 hover:text-red-600 text-gray-700"
-            title="Eliminar servicio"
-            aria-label="Eliminar servicio"
-          >
-            <FaTrash className="w-3 h-3" /> Eliminar
-          </button>
+          <PermissionGuard permission={141}>
+            <button
+              onClick={() => handleEdit(service)}
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
+              title="Editar servicio"
+              aria-label="Editar servicio"
+            >
+              <FaPen className="w-3 h-3" /> Editar
+            </button>
+          </PermissionGuard>
+          <PermissionGuard permission={144}>
+            <button
+              onClick={() => handleDelete(service)}
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-red-500 hover:text-red-600 text-gray-700"
+              title="Eliminar servicio"
+              aria-label="Eliminar servicio"
+            >
+              <FaTrash className="w-3 h-3" /> Eliminar
+            </button>
+          </PermissionGuard>
         </div>
       );
     },
