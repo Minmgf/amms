@@ -6,6 +6,7 @@ import Calendar from '@/app/components/scheduledMaintenance/Calendar';
 import FilterModal from '@/app/components/shared/FilterModal';
 import TableList from '@/app/components/shared/TableList';
 import CancelRequestModal from '@/app/components/request/CancelRequestModal';
+import CompleteRequestModal from '@/app/components/request/CompleteRequestModal';
 import { SuccessModal, ConfirmModal } from '@/app/components/shared/SuccessErrorModal';
 import MultiStepFormModal from "@/app/components/request/requestsManagement/multistepForm/MultiStepFormModal";
 
@@ -25,8 +26,10 @@ const RequestsManagementPage = () => {
 
   // Estados de modales
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [completeModalOpen, setCompleteModalOpen] = useState(false);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [selectedRequestForComplete, setSelectedRequestForComplete] = useState(null);
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
@@ -318,7 +321,16 @@ const RequestsManagementPage = () => {
   };
 
   const handleCompleteRequest = (requestId) => {
-    console.log('Completar solicitud:', requestId);
+    const request = mockRequestsData.find(r => r.id === requestId);
+    setSelectedRequestForComplete(request);
+    setCompleteModalOpen(true);
+  };
+
+  const handleCompleteSuccess = (requestCode) => {
+    setSuccessMessage(`Solicitud completada exitosamente. Código: ${requestCode}`);
+    setSuccessModalOpen(true);
+    // TODO: Aquí se debería recargar la lista de solicitudes desde el API
+    console.log('Solicitud completada:', requestCode);
   };
 
   const handleRegisterInvoice = (requestId) => {
@@ -780,6 +792,14 @@ const RequestsManagementPage = () => {
         onClose={() => setCancelModalOpen(false)}
         request={selectedRequest}
         onSuccess={handleCancelSuccess}
+      />
+
+      {/* Modal de Completar Solicitud */}
+      <CompleteRequestModal
+        isOpen={completeModalOpen}
+        onClose={() => setCompleteModalOpen(false)}
+        request={selectedRequestForComplete}
+        onSuccess={handleCompleteSuccess}
       />
 
       {/* Modal de Confirmar Solicitud */}
