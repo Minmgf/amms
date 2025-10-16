@@ -35,3 +35,10 @@ export const deleteService = async (serviceId) => {
   const { data } = await apiMain.delete(`/services/${serviceId}/`);
   return data;
 };
+
+
+// Obtener lista de solicitudes de servicio para gestión
+export const getGestionServicesList = async () => {
+  const { data } = await apiMain.get("/service_requests/list/");
+  return data;
+};
