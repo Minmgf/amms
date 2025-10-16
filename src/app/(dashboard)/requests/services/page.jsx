@@ -4,7 +4,7 @@ import FilterModal from "@/app/components/shared/FilterModal";
 import ServiceFilterFields from "@/app/components/request/services/ServiceFilterFields";
 import CreateEditServiceModal from "@/app/components/request/services/CreateEditServiceModal";
 import { getServiceColumns } from "@/app/components/request/services/serviceColumns";
-import { ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
+import { ConfirmModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
 import { getServicesList } from "@/services/serviceService";
 import React, { useState, useMemo, useEffect } from "react";
 import { CiFilter } from "react-icons/ci";
@@ -34,7 +34,7 @@ const ServicesView = () => {
 
   // Estados de filtros
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-  const [taxesFilter, setTaxesFilter] = useState("");
+  const [taxRateFilter, setTaxRateFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [unitFilter, setUnitFilter] = useState("");
   const [priceMinFilter, setPriceMinFilter] = useState(0);
@@ -44,67 +44,9 @@ const ServicesView = () => {
   const [isCreateServiceModalOpen, setIsCreateServiceModalOpen] = useState(false);
   const [isEditServiceModalOpen, setIsEditServiceModalOpen] = useState(false);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+  const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [selectedService, setSelectedService] = useState(null);
-
-  // Datos de ejemplo (mock)
-  const sampleServicesData = [
-    {
-      id: 1,
-      name: "Mantenimiento Preventivo",
-      base_price: 250000,
-      unit_of_measure: "Servicio",
-      taxes: "19%",
-      status: "Activo",
-    },
-    {
-      id: 2,
-      name: "Reparación de Motor",
-      base_price: 450000,
-      unit_of_measure: "Hora",
-      taxes: "19%",
-      status: "Activo",
-    },
-    {
-      id: 3,
-      name: "Cambio de Aceite",
-      base_price: 120000,
-      unit_of_measure: "Servicio",
-      taxes: "5%",
-      status: "Activo",
-    },
-    {
-      id: 4,
-      name: "Revisión Eléctrica",
-      base_price: 180000,
-      unit_of_measure: "Hora",
-      taxes: "19%",
-      status: "Inactivo",
-    },
-    {
-      id: 5,
-      name: "Reparación de Transmisión",
-      base_price: 650000,
-      unit_of_measure: "Servicio",
-      taxes: "19%",
-      status: "Activo",
-    },
-    {
-      id: 6,
-      name: "Pintura Completa",
-      base_price: 800000,
-      unit_of_measure: "Metro",
-      taxes: "Exento",
-      status: "Activo",
-    },
-    {
-      id: 7,
-      name: "Alineación y Balanceo",
-      base_price: 95000,
-      unit_of_measure: "Unidad",
-      taxes: "5%",
-      status: "Activo",
-    },
-  ];
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -114,7 +56,7 @@ const ServicesView = () => {
   // Aplicar filtros cuando cambien
   useEffect(() => {
     applyFilters();
-  }, [servicesData, taxesFilter, statusFilter, unitFilter, priceMinFilter, priceMaxFilter]);
+  }, [servicesData, taxRateFilter, statusFilter, unitFilter, priceMinFilter, priceMaxFilter]);
 
   /**
    * Carga los datos iniciales usando la API real
@@ -123,12 +65,14 @@ const ServicesView = () => {
     setLoading(true);
     try {
       const response = await getServicesList();
-      console.log("Services loaded:", response);
       setServicesData(response?.data || response || []);
     } catch (err) {
-      console.error("Error loading services:", err);
-      // En caso de error, usar datos de ejemplo
-      setServicesData(sampleServicesData);
+      setErrorMessage(
+        err.response?.data?.message || 
+        "Error al cargar los servicios. Por favor, intente nuevamente."
+      );
+      setIsErrorModalOpen(true);
+      setServicesData([]);
     } finally {
       setLoading(false);
     }
@@ -138,12 +82,12 @@ const ServicesView = () => {
    * Obtiene valores únicos para los filtros
    */
   const uniqueStatuses = useMemo(() => {
-    const statuses = servicesData.map((service) => service.status).filter(Boolean);
+    const statuses = servicesData.map((service) => service.status_name).filter(Boolean);
     return [...new Set(statuses)];
   }, [servicesData]);
 
   const uniqueUnits = useMemo(() => {
-    const units = servicesData.map((service) => service.unit_of_measure).filter(Boolean);
+    const units = servicesData.map((service) => service.unit_name).filter(Boolean);
     return [...new Set(units)];
   }, [servicesData]);
 
@@ -153,18 +97,19 @@ const ServicesView = () => {
   const applyFilters = () => {
     let filtered = servicesData;
 
-    if (taxesFilter) {
-      filtered = filtered.filter((service) =>
-        service.taxes.toLowerCase().includes(taxesFilter.toLowerCase())
-      );
+    if (taxRateFilter) {
+      filtered = filtered.filter((service) => {
+        const taxDisplay = service.is_vat_exempt ? "exento" : `${service.tax_rate}`;
+        return taxDisplay.toLowerCase().includes(taxRateFilter.toLowerCase());
+      });
     }
 
     if (statusFilter) {
-      filtered = filtered.filter((service) => service.status === statusFilter);
+      filtered = filtered.filter((service) => service.status_name === statusFilter);
     }
 
     if (unitFilter) {
-      filtered = filtered.filter((service) => service.unit_of_measure === unitFilter);
+      filtered = filtered.filter((service) => service.unit_name === unitFilter);
     }
 
     if (priceMinFilter > 0 || priceMaxFilter < 1000000) {
@@ -189,7 +134,7 @@ const ServicesView = () => {
    * Limpia todos los filtros activos
    */
   const handleClearFilters = () => {
-    setTaxesFilter("");
+    setTaxRateFilter("");
     setStatusFilter("");
     setUnitFilter("");
     setPriceMinFilter(0);
@@ -208,13 +153,15 @@ const ServicesView = () => {
 
       const service = row.original;
 
+      const taxDisplay = service.is_vat_exempt ? "exento" : `${service.tax_rate}%`;
+
       const searchableFields = [
         service.id?.toString(),
         service.name,
         service.base_price?.toString(),
-        service.unit_of_measure,
-        service.taxes,
-        service.status,
+        service.unit_name,
+        taxDisplay,
+        service.status_name,
       ];
 
       return searchableFields.some((field) => {
@@ -229,12 +176,12 @@ const ServicesView = () => {
    */
   const activeFiltersCount = useMemo(() => {
     let count = 0;
-    if (taxesFilter) count++;
+    if (taxRateFilter) count++;
     if (statusFilter) count++;
     if (unitFilter) count++;
     if (priceMinFilter > 0 || priceMaxFilter < 1000000) count++;
     return count;
-  }, [taxesFilter, statusFilter, unitFilter, priceMinFilter, priceMaxFilter]);
+  }, [taxRateFilter, statusFilter, unitFilter, priceMinFilter, priceMaxFilter]);
 
   /**
    * Verifica si hay algún filtro activo
@@ -245,7 +192,6 @@ const ServicesView = () => {
    * Maneja la edición de un servicio
    */
   const handleEdit = (service) => {
-    console.log("Edit service:", service);
     setSelectedService(service);
     setIsEditServiceModalOpen(true);
   };
@@ -267,20 +213,14 @@ const ServicesView = () => {
     if (!selectedService) return;
 
     try {
-      // TODO: Reemplazar con llamada real a la API
-      // await deleteService(selectedService.id);
-
-      // Simular delay de API
       await new Promise((resolve) => setTimeout(resolve, 300));
 
-      // Eliminar servicio de los datos locales
       setServicesData((prevData) =>
         prevData.filter((service) => service.id !== selectedService.id)
       );
-
-      console.log("Servicio eliminado:", selectedService);
     } catch (error) {
-      console.error("Error al eliminar servicio:", error);
+      setErrorMessage("Error al eliminar el servicio. Por favor, intente nuevamente.");
+      setIsErrorModalOpen(true);
     } finally {
       setSelectedService(null);
     }
@@ -390,8 +330,8 @@ const ServicesView = () => {
         onApply={handleApplyFilters}
       >
         <ServiceFilterFields
-          taxesFilter={taxesFilter}
-          setTaxesFilter={setTaxesFilter}
+          taxesFilter={taxRateFilter}
+          setTaxesFilter={setTaxRateFilter}
           statusFilter={statusFilter}
           setStatusFilter={setStatusFilter}
           unitFilter={unitFilter}
@@ -404,6 +344,14 @@ const ServicesView = () => {
           uniqueUnits={uniqueUnits}
         />
       </FilterModal>
+
+      {/* Modal de error */}
+      <ErrorModal
+        isOpen={isErrorModalOpen}
+        onClose={() => setIsErrorModalOpen(false)}
+        title="Error"
+        message={errorMessage}
+      />
 
       {/* Modal de confirmación de eliminación */}
       <ConfirmModal

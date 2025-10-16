@@ -18,9 +18,9 @@ export const getCurrencyUnits = async () => {
   return data;
 };
 
-// Obtener lista de servicios (placeholder para futura implementación)
+// Obtener lista de servicios
 export const getServicesList = async () => {
-  const { data } = await apiMain.get("/services/list/");
+  const { data } = await apiMain.get("/services/");
   return data;
 };
 
