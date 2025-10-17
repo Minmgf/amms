@@ -36,7 +36,6 @@ export const getClientDetail = async (clientId) => {
         const { data } = await apiMain.get(`/customers/${clientId}/detail/`);
         return data; // Mantener la respuesta tal como el backend la entrega ({success, message, data})
     } catch (error) {
-        console.error("Error al obtener detalle del cliente:", error);
         return {
             success: false,
             message: error.response?.data?.message || error?.message || "Error al obtener el detalle del cliente"
@@ -63,7 +62,6 @@ export const getClientRequestHistory = async (clientId) => {
         
         return data;
     } catch (error) {
-        console.error("Error al obtener historial de solicitudes:", error);
         return {
             success: false,
             message: error.response?.data?.message || error?.message || "Error al obtener el historial de solicitudes",
@@ -108,7 +106,6 @@ export const deleteClient = async (clientId) => {
         const { data } = await apiMain.delete(`/customers/${clientId}/`);
         return data;
     } catch (error) {
-        console.error("Error al eliminar cliente:", error);
         throw error;
     }
 };
@@ -119,7 +116,6 @@ export const toggleClientStatus = async (clientId) => {
         const { data } = await apiMain.patch(`/customers/${clientId}/toggle-status/`);
         return data;
     } catch (error) {
-        console.error("Error al cambiar estado del cliente:", error);
         throw error;
     }
 };

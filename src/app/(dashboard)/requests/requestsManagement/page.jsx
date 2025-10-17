@@ -39,6 +39,7 @@ const RequestsManagementPage = () => {
   const [validatePreRequestModalOpen, setValidatePreRequestModalOpen] = useState(false);
   const [GenerateInvoiceModalOpen, setGenerateInvoiceModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [selectedRequestForComplete, setSelectedRequestForComplete] = useState(null);
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -54,7 +55,8 @@ const RequestsManagementPage = () => {
       if (response.success && response.results) {
         // Mapear datos del API a la estructura del componente
         const mappedData = response.results.map((item, index) => ({
-          id: item.customer_id || index + 1, // Usamos customer_id como id único
+          id: item.code || `temp-${index}`, // Usar code como ID único
+          requestId: item.code, // ID real de la solicitud para el endpoint
           requestCode: item.code,
           client: {
             name: item.legal_entity_name,
@@ -245,9 +247,10 @@ const RequestsManagementPage = () => {
   };
 
   // Funciones de acciones
-  const handleViewDetails = (requestId) => {
-    const request = requestsData.find(r => r.id === requestId);
-    setSelectedRequest(getRequestDetailData(requestId));
+  const handleViewDetails = (requestCode) => {
+    console.log('🔍 handleViewDetails - Código de solicitud:', requestCode);
+    // El código de la solicitud (ej: SOL-2025-0001) se usa directamente
+    setSelectedRequestId(requestCode);
     setDetailsModalOpen(true);
   };
 
@@ -809,8 +812,11 @@ const RequestsManagementPage = () => {
       {/* Modal de Detalles de Solicitud */}
       <DetailsRequestModal
         isOpen={detailsModalOpen}
-        onClose={() => setDetailsModalOpen(false)}
-
+        onClose={() => {
+          setDetailsModalOpen(false);
+          setSelectedRequestId(null);
+        }}
+        requestId={selectedRequestId}
       />
       
       {/* Modal de Generar Factura */}
