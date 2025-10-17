@@ -1,5 +1,11 @@
 import { apiMain, apiUsers } from "@/lib/axios";
 
+//Obtener lista de clientes
+export const getClientsList = async (token) => {
+    const { data } = await apiMain.get(`/customers/`);
+    return data;
+};
+
 //Obtener tipos de persona
 export const getPersonTypes = async () => {
     const { data } = await apiMain.get("/person_types/");
@@ -73,3 +79,36 @@ export const getBillingStatuses = async () => {
     return { data };
 };
 
+// Actualizar un cliente existente
+export const updateClient = async (clientId, payload) => {
+    const { data } = await apiMain.patch(`/customers/${clientId}/update_customer/`, payload);
+    return data;
+};
+
+// Actualizar un usuario
+export const updateUser = async (userId, payload) => {
+    const { data } = await apiUsers.put(`/users/${userId}/profile`, payload);
+    return data;
+};
+
+// Eliminar cliente (HU-CLI-004)
+export const deleteClient = async (clientId) => {
+    try {
+        const { data } = await apiMain.delete(`/customers/${clientId}/`);
+        return data;
+    } catch (error) {
+        console.error("Error al eliminar cliente:", error);
+        throw error;
+    }
+};
+
+// Alternar estado del cliente (activar/desactivar) (HU-CLI-004)
+export const toggleClientStatus = async (clientId) => {
+    try {
+        const { data } = await apiMain.patch(`/customers/${clientId}/toggle-status/`);
+        return data;
+    } catch (error) {
+        console.error("Error al cambiar estado del cliente:", error);
+        throw error;
+    }
+};

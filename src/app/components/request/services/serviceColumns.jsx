@@ -1,3 +1,4 @@
+import PermissionGuard from "@/app/(auth)/PermissionGuard";
 import { FaPen, FaTrash, FaHashtag } from "react-icons/fa";
 
 /**
@@ -14,16 +15,28 @@ const formatPrice = (price) => {
 };
 
 /**
- * Retorna la clase CSS para el badge de estado
- * @param {string} status - El estado del servicio
+ * Formatea la visualización de impuestos
+ * @param {number} taxRate - La tasa de impuesto
+ * @param {boolean} isVatExempt - Si está exento de IVA
+ * @returns {string} Texto formateado de impuesto
+ */
+const formatTaxDisplay = (taxRate, isVatExempt) => {
+  if (isVatExempt) return "Exento";
+  return `${taxRate}%`;
+};
+
+/**
+ * Retorna la clase CSS para el badge de estado basado en el ID
+ * Los IDs son inmutables, por lo que los colores son consistentes
+ * @param {number} statusId - El ID del estado del servicio
  * @returns {string} Clases CSS para el badge
  */
-const getStatusColor = (status) => {
+const getStatusColor = (statusId) => {
   const colors = {
-    Activo: "bg-green-100 text-green-800",
-    Inactivo: "bg-red-100 text-red-800",
+    1: "bg-green-100 text-green-800", // Activo
+    2: "bg-red-100 text-red-800",     // Inactivo
   };
-  return colors[status] || "bg-gray-100 text-gray-800";
+  return colors[statusId] || "bg-gray-100 text-gray-800";
 };
 
 /**
@@ -66,35 +79,36 @@ export const getServiceColumns = (handleEdit, handleDelete) => [
     ),
   },
   {
-    accessorKey: "unit_of_measure",
+    accessorKey: "unit_name",
     header: "Unidad de Medida",
     cell: ({ row }) => (
       <div className="text-sm parametrization-text">
-        {row.getValue("unit_of_measure")}
+        {row.getValue("unit_name")}
       </div>
     ),
   },
   {
-    accessorKey: "taxes",
+    accessorKey: "tax_rate",
     header: "Impuestos",
     cell: ({ row }) => (
       <div className="text-sm parametrization-text">
-        {row.getValue("taxes")}
+        {formatTaxDisplay(row.original.tax_rate, row.original.is_vat_exempt)}
       </div>
     ),
   },
   {
-    accessorKey: "status",
+    accessorKey: "status_name",
     header: "Estado",
     cell: ({ row }) => {
-      const status = row.getValue("status");
+      const statusName = row.getValue("status_name");
+      const statusId = row.original.status_id;
       return (
         <span
           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-            status
+            statusId
           )}`}
         >
-          {status}
+          {statusName}
         </span>
       );
     },
@@ -106,22 +120,26 @@ export const getServiceColumns = (handleEdit, handleDelete) => [
       const service = row.original;
       return (
         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          <button
-            onClick={() => handleEdit(service)}
-            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
-            title="Editar servicio"
-            aria-label="Editar servicio"
-          >
-            <FaPen className="w-3 h-3" /> Editar
-          </button>
-          <button
-            onClick={() => handleDelete(service)}
-            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-red-500 hover:text-red-600 text-gray-700"
-            title="Eliminar servicio"
-            aria-label="Eliminar servicio"
-          >
-            <FaTrash className="w-3 h-3" /> Eliminar
-          </button>
+          <PermissionGuard permission={141}>
+            <button
+              onClick={() => handleEdit(service)}
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
+              title="Editar servicio"
+              aria-label="Editar servicio"
+            >
+              <FaPen className="w-3 h-3" /> Editar
+            </button>
+          </PermissionGuard>
+          <PermissionGuard permission={144}>
+            <button
+              onClick={() => handleDelete(service)}
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-red-500 hover:text-red-600 text-gray-700"
+              title="Eliminar servicio"
+              aria-label="Eliminar servicio"
+            >
+              <FaTrash className="w-3 h-3" /> Eliminar
+            </button>
+          </PermissionGuard>
         </div>
       );
     },
