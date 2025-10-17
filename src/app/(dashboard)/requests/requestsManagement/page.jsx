@@ -33,6 +33,7 @@ const RequestsManagementPage = () => {
   // Estados de modales
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [requestToCancel, setRequestToCancel] = useState(null);
   const [requestToConfirm, setRequestToConfirm] = useState(null);
   const [completeModalOpen, setCompleteModalOpen] = useState(false);
