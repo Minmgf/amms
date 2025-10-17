@@ -541,9 +541,9 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
                       
                       {/* Coordinates overlay */}
                       <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm rounded-lg shadow-md p-2 border border-gray-200 z-10">
-                        <div className="text-xs font-semibold text-gray-700 mb-1">Coords</div>
-                        <div className="text-xs text-gray-600">Latitude: {mappedData.location_latitude}</div>
-                        <div className="text-xs text-gray-600">Longitude: {mappedData.location_longitude}</div>
+                        <div className="text-xs font-semibold text-gray-700 mb-1">Coordenadas</div>
+                        <div className="text-xs text-gray-600">Latitud: {mappedData.location_latitude}</div>
+                        <div className="text-xs text-gray-600">Longitud: {mappedData.location_longitude}</div>
                       </div>
                     </div>
                   ) : (
