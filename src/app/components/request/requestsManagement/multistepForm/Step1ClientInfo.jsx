@@ -53,16 +53,11 @@ export default function Step1ClientInfo() {
             <input
               {...register("identificationNumber",{
                 required: "Este campo es obligatorio",
+                pattern: { value: /^[0-9]+$/, message: "Solo se permiten números" }
               })}
               className="parametrization-input"
               placeholder="Ingrese número de identificación"
               aria-label="Número de identificación"
-              autoComplete="off"
-              onKeyDown={e => {
-                if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'Tab' && e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') {
-                  e.preventDefault();
-                }
-              }}
             />
             {errors.identificationNumber && (
               <span className="text-theme-xs mt-1 block" style={{ color: 'var(--color-error)' }}>
