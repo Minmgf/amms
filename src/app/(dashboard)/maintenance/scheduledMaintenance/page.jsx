@@ -250,7 +250,7 @@ const ScheduledMaintenancePage = () => {
       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
         {/* Ver reporte - solo para mantenimientos realizados (estado 15) */}
         {maintenance.status_id === 15 && (
-          <PermissionGuard permission={127}>
+          <PermissionGuard permission={128}>
             <button
               onClick={() => handleDownloadReport(maintenance.id)}
               disabled={downloadingPDF === maintenance.id}

@@ -27,6 +27,7 @@ import { getClientsList, deleteClient, toggleClientStatus } from "@/services/cli
 import AddClientModal from "@/app/components/request/clients/AddClientModal";
 import DetailsClientModal from "@/app/components/request/clients/DetailsClientModal";
 import { authorization } from "@/services/billingService";
+import PermissionGuard from "@/app/(auth)/PermissionGuard";
 
 /**
  * ClientsView Component
@@ -96,9 +97,10 @@ const ClientsView = () => {
     const getTokenBilling = async () => {
       try {
         const response = await authorization();
-        setBillingToken(response.access_token);        
+        setBillingToken(response.access_token);
       } catch (error) {
-        console.error("Error en inicialización:", error);      }
+        console.error("Error en inicialización:", error);
+      }
     };
     getTokenBilling();
   }, []);
@@ -372,9 +374,8 @@ const ClientsView = () => {
           const isCompany = client.person_type_id === 1; // 1 = Juridic Entity, 2 = Natural Person
           return (
             <div className="flex items-center gap-3">
-              <div className={`w-8 h-8 rounded-md flex items-center justify-center ${
-                isCompany ? "bg-blue-100" : "bg-purple-100"
-              }`}>
+              <div className={`w-8 h-8 rounded-md flex items-center justify-center ${isCompany ? "bg-blue-100" : "bg-purple-100"
+                }`}>
                 {isCompany ? (
                   <FaBuilding className="w-4 h-4 text-blue-600" />
                 ) : (
@@ -494,27 +495,33 @@ const ClientsView = () => {
           const client = row.original;
           return (
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              <button
-                onClick={() => handleView(client)}
-                className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600 text-gray-700"
-                title="Ver detalles"
-              >
-                <FaEye className="w-3 h-3" /> Detalles
-              </button>
-              <button
-                onClick={() => handleEdit(client)}
-                className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
-                title="Editar cliente"
-              >
-                <FaPen className="w-3 h-3" /> Editar
-              </button>
-              <button
-                onClick={() => handleDelete(client)}
-                className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-red-500 hover:text-red-600 text-gray-700"
-                title="Eliminar cliente"
-              >
-                <FaTrash className="w-3 h-3" /> Eliminar
-              </button>
+              <PermissionGuard permission={134}>
+                <button
+                  onClick={() => handleView(client)}
+                  className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600 text-gray-700"
+                  title="Ver detalles"
+                >
+                  <FaEye className="w-3 h-3" /> Detalles
+                </button>
+              </PermissionGuard>
+              <PermissionGuard permission={137}>
+                <button
+                  onClick={() => handleEdit(client)}
+                  className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
+                  title="Editar cliente"
+                >
+                  <FaPen className="w-3 h-3" /> Editar
+                </button>
+              </PermissionGuard>
+              <PermissionGuard permission={138}>
+                <button
+                  onClick={() => handleDelete(client)}
+                  className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-red-500 hover:text-red-600 text-gray-700"
+                  title="Eliminar cliente"
+                >
+                  <FaTrash className="w-3 h-3" /> Eliminar
+                </button>
+              </PermissionGuard>
             </div>
           );
         },
@@ -572,16 +579,15 @@ const ClientsView = () => {
         {/* Filter button */}
         <button
           onClick={() => setIsFilterModalOpen(true)}
-          className={`parametrization-filter-button ${
-            nameFilter ||
+          className={`parametrization-filter-button ${nameFilter ||
             identificationFilter ||
             documentTypeFilter ||
             statusFilter ||
             phoneFilter ||
             emailFilter
-              ? "bg-blue-100 border-blue-300 text-blue-700"
-              : ""
-          }`}
+            ? "bg-blue-100 border-blue-300 text-blue-700"
+            : ""
+            }`}
         >
           <CiFilter className="w-4 h-4" />
           Filtrar por
@@ -591,19 +597,19 @@ const ClientsView = () => {
             statusFilter ||
             phoneFilter ||
             emailFilter) && (
-            <span className="ml-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
-              {
-                [
-                  nameFilter,
-                  identificationFilter,
-                  documentTypeFilter,
-                  statusFilter,
-                  phoneFilter,
-                  emailFilter,
-                ].filter(Boolean).length
-              }
-            </span>
-          )}
+              <span className="ml-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                {
+                  [
+                    nameFilter,
+                    identificationFilter,
+                    documentTypeFilter,
+                    statusFilter,
+                    phoneFilter,
+                    emailFilter,
+                  ].filter(Boolean).length
+                }
+              </span>
+            )}
         </button>
 
         {/* Clear filters button */}
@@ -613,44 +619,48 @@ const ClientsView = () => {
           statusFilter ||
           phoneFilter ||
           emailFilter) && (
-          <button
-            onClick={handleClearFilters}
-            className="text-sm text-red-500 hover:text-red-700 underline flex items-center gap-1"
-          >
-            <FaTimes className="w-3 h-3" /> Limpiar filtros
-          </button>
-        )}
+            <button
+              onClick={handleClearFilters}
+              className="text-sm text-red-500 hover:text-red-700 underline flex items-center gap-1"
+            >
+              <FaTimes className="w-3 h-3" /> Limpiar filtros
+            </button>
+          )}
 
         {/* Add new client button */}
-        <button
-          onClick={handleAddNewClient}
-          className="parametrization-filter-button bg-black text-white hover:bg-gray-800"
-        >
-          <FaPlus className="w-4 h-4" />
-          Agregar Cliente
-        </button>
+        <PermissionGuard permission={133}>
+          <button
+            onClick={handleAddNewClient}
+            className="parametrization-filter-button bg-black text-white hover:bg-gray-800"
+          >
+            <FaPlus className="w-4 h-4" />
+            Agregar Cliente
+          </button>
+        </PermissionGuard>
       </div>
 
       {/* Clients table */}
-      <TableList
-        columns={columns}
-        data={
-          filteredData.length > 0 ||
-          nameFilter ||
-          identificationFilter ||
-          documentTypeFilter ||
-          statusFilter ||
-          phoneFilter ||
-          emailFilter
-            ? filteredData
-            : clientsData
-        }
-        loading={loading}
-        globalFilter={globalFilter}
-        onGlobalFilterChange={setGlobalFilter}
-        globalFilterFn={globalFilterFn}
-        pageSizeOptions={[10, 20, 30, 50]}
-      />
+      <PermissionGuard permission={135}>
+        <TableList
+          columns={columns}
+          data={
+            filteredData.length > 0 ||
+              nameFilter ||
+              identificationFilter ||
+              documentTypeFilter ||
+              statusFilter ||
+              phoneFilter ||
+              emailFilter
+              ? filteredData
+              : clientsData
+          }
+          loading={loading}
+          globalFilter={globalFilter}
+          onGlobalFilterChange={setGlobalFilter}
+          globalFilterFn={globalFilterFn}
+          pageSizeOptions={[10, 20, 30, 50]}
+        />
+      </PermissionGuard>
 
       {/* Filter Modal */}
       <FilterModal
@@ -761,7 +771,7 @@ const ClientsView = () => {
           </div>
         </div>
       </FilterModal>
-              
+
       {/* Create Client Modal */}
       <AddClientModal
         isOpen={isCreateModalOpen}
@@ -775,7 +785,7 @@ const ClientsView = () => {
         existingClientDocuments={clientsData.map(c => c.document_number?.toString())}
         onSuccess={() => {
           loadInitialData();
-        }} 
+        }}
       />
 
       {/* Details Client Modal */}
