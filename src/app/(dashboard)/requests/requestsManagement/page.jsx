@@ -6,6 +6,7 @@ import Calendar from '@/app/components/scheduledMaintenance/Calendar';
 import FilterModal from '@/app/components/shared/FilterModal';
 import TableList from '@/app/components/shared/TableList';
 import CancelRequestModal from '@/app/components/request/CancelRequestModal';
+import DetailsRequestModal from '@/app/components/request/services/DetailsRequestModal';
 import { SuccessModal, ConfirmModal } from '@/app/components/shared/SuccessErrorModal';
 
 const RequestsManagementPage = () => {
@@ -25,7 +26,10 @@ const RequestsManagementPage = () => {
   // Estados de modales
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [requestToCancel, setRequestToCancel] = useState(null);
+  const [requestToConfirm, setRequestToConfirm] = useState(null);
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -277,9 +281,61 @@ const RequestsManagementPage = () => {
     return translations[status] || status;
   };
 
-  // Funciones de acciones (sin funcionalidad por ahora)
+  // Función para transformar datos de la solicitud al formato del modal
+  const getRequestDetailData = (requestId) => {
+    const request = mockRequestsData.find(r => r.id === requestId);
+    if (!request) return null;
+
+    // Transformar a formato esperado por el modal
+    return {
+      request_code: request.requestCode,
+      status_id: request.requestStatusId,
+      detail: "Servicio de mantenimiento y reparación",
+      registration_date: "2025-09-28T10:45:00",
+      scheduled_date: `${request.scheduledDate}T07:30:00`,
+      completion_date: request.completionDate ? `${request.completionDate}T16:00:00` : null,
+      
+      // Client information
+      client_name: request.client.name,
+      client_document_type: request.client.idNumber.includes('900') ? "NIT" : "CC",
+      client_document_number: request.client.idNumber,
+      client_email: "contacto@" + request.client.name.toLowerCase().replace(/\s+/g, '') + ".com",
+      client_phone: "+57 310 456 7821",
+      
+      // Machinery
+      machinery: [
+        {
+          name: "Tractor para banano",
+          serial_number: "CAT12381238109",
+          operator: "Juan Pérez"
+        }
+      ],
+      
+      // Location
+      location_country: "Colombia",
+      location_department: "Tolima",
+      location_municipality: "Espinal",
+      location_place_name: "Finca La Esperanza",
+      location_latitude: -12312,
+      location_longitude: 813,
+      location_area: 15,
+      location_soil_type: "Clay loam",
+      location_humidity: 42,
+      location_altitude: 420,
+      
+      // Billing
+      billing_total_amount: 8500.00,
+      billing_amount_paid: request.paymentStatusId === 3 ? 8500.00 : request.paymentStatusId === 2 ? 4000.00 : 0,
+      payment_status_id: request.paymentStatusId,
+      payment_method_id: 2, // Crédito
+    };
+  };
+
+  // Funciones de acciones
   const handleViewDetails = (requestId) => {
-    console.log('Ver detalles:', requestId);
+    const request = mockRequestsData.find(r => r.id === requestId);
+    setSelectedRequest(getRequestDetailData(requestId));
+    setDetailsModalOpen(true);
   };
 
   const handleEditRequest = (requestId) => {
@@ -288,7 +344,7 @@ const RequestsManagementPage = () => {
 
   const handleCancelRequest = (requestId) => {
     const request = mockRequestsData.find(r => r.id === requestId);
-    setSelectedRequest(request);
+    setRequestToCancel(request);
     setCancelModalOpen(true);
   };
 
@@ -301,7 +357,7 @@ const RequestsManagementPage = () => {
 
   const handleConfirmRequest = (requestId) => {
     const request = mockRequestsData.find(r => r.id === requestId);
-    setSelectedRequest(request);
+    setRequestToConfirm(request);
     setConfirmModalOpen(true);
   };
 
@@ -311,7 +367,7 @@ const RequestsManagementPage = () => {
     // Por ahora solo mostramos mensaje de éxito
     setSuccessMessage(`Solicitud confirmada exitosamente. La solicitud pasó a estado "Pendiente".`);
     setSuccessModalOpen(true);
-    console.log('Abriendo formulario de confirmación para:', selectedRequest?.requestCode);
+    console.log('Abriendo formulario de confirmación para:', requestToConfirm?.requestCode);
   };
 
   const handleCompleteRequest = (requestId) => {
@@ -766,7 +822,7 @@ const RequestsManagementPage = () => {
       <CancelRequestModal
         isOpen={cancelModalOpen}
         onClose={() => setCancelModalOpen(false)}
-        request={selectedRequest}
+        request={requestToCancel}
         onSuccess={handleCancelSuccess}
       />
 
@@ -789,6 +845,13 @@ const RequestsManagementPage = () => {
         onClose={() => setSuccessModalOpen(false)}
         title="Operación Exitosa"
         message={successMessage}
+      />
+
+      {/* Modal de Detalles de Solicitud */}
+      <DetailsRequestModal
+        isOpen={detailsModalOpen}
+        onClose={() => setDetailsModalOpen(false)}
+        request={selectedRequest}
       />
     </div>
   );
