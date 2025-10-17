@@ -179,7 +179,7 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
         {/* Header */}
         <div className="sticky top-0 z-10 bg-background flex items-center justify-between px-4 sm:px-6 py-5 border-b border-primary">
           <h2 className="text-theme-xl text-primary font-theme-semibold">
-            Request Information
+            Información de la Solicitud
           </h2>
           <button
             onClick={onClose}
@@ -213,19 +213,19 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
               {/* General Information Card */}
               <div className="card-theme">
                 <h3 className="font-theme-semibold text-theme-base text-primary mb-6">
-                  General Information
+                  Información General
                 </h3>
                 
                 <div className="space-y-4">
                   {/* Request ID */}
                   <div>
-                    <span className="text-theme-sm text-secondary">Request ID:</span>
+                    <span className="text-theme-sm text-secondary">ID de Solicitud:</span>
                     <div className="font-theme-medium text-primary mt-1">{requestData.request_code || "N/A"}</div>
                   </div>
 
                   {/* Status */}
                   <div>
-                    <span className="text-theme-sm text-secondary">Status:</span>
+                    <span className="text-theme-sm text-secondary">Estado:</span>
                     <div className="mt-1">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
                         getRequestStatusColorById(requestData.status_id)
@@ -237,25 +237,25 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
 
                   {/* Request detail */}
                   <div>
-                    <span className="text-theme-sm text-secondary">Request detail:</span>
+                    <span className="text-theme-sm text-secondary">Detalle de solicitud:</span>
                     <div className="font-theme-medium text-primary mt-1">{requestData.detail || "Example"}</div>
                   </div>
 
                   {/* Registration date */}
                   <div>
-                    <span className="text-theme-sm text-secondary">Registration date:</span>
+                    <span className="text-theme-sm text-secondary">Fecha de registro:</span>
                     <div className="font-theme-medium text-primary mt-1">{formatDateTime(requestData.registration_date)}</div>
                   </div>
 
                   {/* Scheduled date */}
                   <div>
-                    <span className="text-theme-sm text-secondary">Scheduled date:</span>
+                    <span className="text-theme-sm text-secondary">Fecha programada:</span>
                     <div className="font-theme-medium text-primary mt-1">{formatDateTime(requestData.scheduled_date)}</div>
                   </div>
 
                   {/* Completion date */}
                   <div>
-                    <span className="text-theme-sm text-secondary">Completion date:</span>
+                    <span className="text-theme-sm text-secondary">Fecha de finalización:</span>
                     <div className="font-theme-medium text-primary mt-1">{formatDateTime(requestData.completion_date) || "N/A"}</div>
                   </div>
                 </div>
@@ -264,37 +264,37 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
               {/* Client Information Card */}
               <div className="card-theme">
                 <h3 className="font-theme-semibold text-theme-base text-primary mb-6">
-                  Client Information
+                  Información del Cliente
                 </h3>
                 
                 <div className="space-y-4">
                   {/* Name/Legal name */}
                   <div>
-                    <span className="text-theme-sm text-secondary">Name/Legal name:</span>
+                    <span className="text-theme-sm text-secondary">Nombre/Razón social:</span>
                     <div className="font-theme-medium text-primary mt-1">{requestData.client_name || "N/A"}</div>
                   </div>
 
                   {/* Documentation type */}
                   <div>
-                    <span className="text-theme-sm text-secondary">Documentation type:</span>
+                    <span className="text-theme-sm text-secondary">Tipo de documento:</span>
                     <div className="font-theme-medium text-primary mt-1">{requestData.client_document_type || "N/A"}</div>
                   </div>
 
                   {/* Documentation number */}
                   <div>
-                    <span className="text-theme-sm text-secondary">Documentation number:</span>
+                    <span className="text-theme-sm text-secondary">Número de documento:</span>
                     <div className="font-theme-medium text-primary mt-1">{requestData.client_document_number || "N/A"}</div>
                   </div>
 
                   {/* Email */}
                   <div>
-                    <span className="text-theme-sm text-secondary">Email:</span>
+                    <span className="text-theme-sm text-secondary">Correo electrónico:</span>
                     <div className="font-theme-medium text-primary mt-1">{requestData.client_email || "N/A"}</div>
                   </div>
 
                   {/* Phone number */}
                   <div>
-                    <span className="text-theme-sm text-secondary">Phone number:</span>
+                    <span className="text-theme-sm text-secondary">Número de teléfono:</span>
                     <div className="font-theme-medium text-primary mt-1">{requestData.client_phone || "N/A"}</div>
                   </div>
                 </div>
@@ -304,51 +304,53 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
             {/* Service details and assigned resources Card */}
             <div className="card-theme">
               <h3 className="font-theme-semibold text-theme-base text-primary mb-6">
-                Service details and assigned resources
+                Detalles del servicio y recursos asignados
               </h3>
 
               {/* Machinery table */}
               <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-surface">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-theme-sm font-theme-semibold text-primary">Machine</th>
-                      <th className="px-4 py-3 text-left text-theme-sm font-theme-semibold text-primary">Serial Number</th>
-                      <th className="px-4 py-3 text-left text-theme-sm font-theme-semibold text-primary">Operator</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-primary">
-                    {requestData.machinery && requestData.machinery.length > 0 ? (
-                      requestData.machinery.map((machine, index) => (
-                        <tr key={index} className="hover:bg-hover transition-colors">
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-md bg-green-100 flex items-center justify-center flex-shrink-0">
-                                <FaTractor className="w-5 h-5 text-green-600" />
-                              </div>
-                              <span className="font-theme-medium text-primary">{machine.name || "N/A"}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-secondary">{machine.serial_number || "N/A"}</td>
-                          <td className="px-4 py-3 text-secondary">{machine.operator || "N/A"}</td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="3" className="px-4 py-6 text-center text-secondary">
-                          No hay maquinaria asignada
-                        </td>
+                <div className="border border-primary rounded-lg overflow-hidden">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-surface border-b border-primary">
+                        <th className="px-6 py-3 text-left text-theme-sm font-theme-medium text-secondary">Máquina</th>
+                        <th className="px-6 py-3 text-left text-theme-sm font-theme-medium text-secondary">Número de Serie</th>
+                        <th className="px-6 py-3 text-left text-theme-sm font-theme-medium text-secondary">Operador</th>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {requestData.machinery && requestData.machinery.length > 0 ? (
+                        requestData.machinery.map((machine, index) => (
+                          <tr key={index} className="bg-background hover:bg-hover transition-colors">
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-md bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+                                  <FaTractor className="w-5 h-5 text-green-600 dark:text-green-500" />
+                                </div>
+                                <span className="font-theme-medium text-primary">{machine.name || "N/A"}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-secondary">{machine.serial_number || "N/A"}</td>
+                            <td className="px-6 py-4 text-secondary">{machine.operator || "N/A"}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr className="bg-background">
+                          <td colSpan="3" className="px-6 py-8 text-center text-secondary">
+                            No hay maquinaria asignada
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
             {/* Location Information Card */}
             <div className="card-theme">
               <h3 className="font-theme-semibold text-theme-base text-primary mb-6">
-                Location Information
+                Información de Ubicación
               </h3>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -356,45 +358,45 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
                 <div className="space-y-4">
                   {/* Country */}
                   <div>
-                    <span className="text-theme-sm text-secondary">Country:</span>
+                    <span className="text-theme-sm text-secondary">País:</span>
                     <div className="font-theme-medium text-primary mt-1">{requestData.location_country || "N/A"}</div>
                   </div>
 
                   {/* Department */}
                   <div>
-                    <span className="text-theme-sm text-secondary">Department:</span>
+                    <span className="text-theme-sm text-secondary">Departamento:</span>
                     <div className="font-theme-medium text-primary mt-1">{requestData.location_department || "N/A"}</div>
                   </div>
 
                   {/* Municipality */}
                   <div>
-                    <span className="text-theme-sm text-secondary">Municipality:</span>
+                    <span className="text-theme-sm text-secondary">Municipio:</span>
                     <div className="font-theme-medium text-primary mt-1">{requestData.location_municipality || "N/A"}</div>
                   </div>
 
                   {/* Place name */}
                   <div>
-                    <span className="text-theme-sm text-secondary">Place name:</span>
+                    <span className="text-theme-sm text-secondary">Nombre del lugar:</span>
                     <div className="font-theme-medium text-primary mt-1">{requestData.location_place_name || "N/A"}</div>
                   </div>
 
                   {/* Area */}
                   <div>
-                    <span className="text-theme-sm text-secondary">Area:</span>
+                    <span className="text-theme-sm text-secondary">Área:</span>
                     <div className="font-theme-medium text-primary mt-1">
-                      {requestData.location_area ? `${requestData.location_area} hectares` : "N/A"}
+                      {requestData.location_area ? `${requestData.location_area} hectáreas` : "N/A"}
                     </div>
                   </div>
 
                   {/* Type of soil */}
                   <div>
-                    <span className="text-theme-sm text-secondary">Type of soil:</span>
+                    <span className="text-theme-sm text-secondary">Tipo de suelo:</span>
                     <div className="font-theme-medium text-primary mt-1">{requestData.location_soil_type || "N/A"}</div>
                   </div>
 
                   {/* Humidity level */}
                   <div>
-                    <span className="text-theme-sm text-secondary">Humidity level:</span>
+                    <span className="text-theme-sm text-secondary">Nivel de humedad:</span>
                     <div className="font-theme-medium text-primary mt-1">
                       {requestData.location_humidity ? `${requestData.location_humidity}%` : "N/A"}
                     </div>
@@ -402,9 +404,9 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
 
                   {/* Altitude */}
                   <div>
-                    <span className="text-theme-sm text-secondary">Altitude:</span>
+                    <span className="text-theme-sm text-secondary">Altitud:</span>
                     <div className="font-theme-medium text-primary mt-1">
-                      {requestData.location_altitude ? `${requestData.location_altitude} m a.s.l` : "N/A"}
+                      {requestData.location_altitude ? `${requestData.location_altitude} m s.n.m` : "N/A"}
                     </div>
                   </div>
                 </div>
@@ -421,9 +423,9 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
                       
                       {/* Coordinates overlay */}
                       <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-md p-3 border border-gray-200">
-                        <div className="text-xs font-medium text-gray-600 mb-1">Coords</div>
-                        <div className="text-xs text-gray-700">Latitude: {requestData.location_latitude}</div>
-                        <div className="text-xs text-gray-700">Longitude: {requestData.location_longitude}</div>
+                        <div className="text-xs font-medium text-gray-600 mb-1">Coordenadas</div>
+                        <div className="text-xs text-gray-700">Latitud: {requestData.location_latitude}</div>
+                        <div className="text-xs text-gray-700">Longitud: {requestData.location_longitude}</div>
                       </div>
                     </div>
                   ) : (
@@ -438,25 +440,25 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
             {/* Billing Information Card */}
             <div className="card-theme">
               <h3 className="font-theme-semibold text-theme-base text-primary mb-6">
-                Billing Information
+                Información de Facturación
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                 {/* Total amount */}
                 <div>
-                  <span className="text-theme-sm text-secondary">Total amount:</span>
+                  <span className="text-theme-sm text-secondary">Monto total:</span>
                   <div className="font-theme-medium text-primary mt-1">{formatCurrency(requestData.billing_total_amount)}</div>
                 </div>
 
                 {/* Amount paid */}
                 <div>
-                  <span className="text-theme-sm text-secondary">Amount paid:</span>
+                  <span className="text-theme-sm text-secondary">Monto pagado:</span>
                   <div className="font-theme-medium text-primary mt-1">{formatCurrency(requestData.billing_amount_paid)}</div>
                 </div>
 
                 {/* Payment status */}
                 <div>
-                  <span className="text-theme-sm text-secondary">Payment status:</span>
+                  <span className="text-theme-sm text-secondary">Estado de pago:</span>
                   <div className="mt-1">
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
                       getPaymentStatusColorById(requestData.payment_status_id)
@@ -468,7 +470,7 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
 
                 {/* Payment method */}
                 <div>
-                  <span className="text-theme-sm text-secondary">Payment method:</span>
+                  <span className="text-theme-sm text-secondary">Método de pago:</span>
                   <div className="font-theme-medium text-primary mt-1">{paymentMethod?.name || "N/A"}</div>
                 </div>
               </div>
