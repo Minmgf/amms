@@ -171,7 +171,7 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
     }
 
     if (billingFilter) {
-      filtered = filtered.filter((req) => req.billing_status_id === parseInt(billingFilter));
+      filtered = filtered.filter((req) => req.payment_status_id === parseInt(billingFilter));
     }
 
     return filtered;
@@ -199,28 +199,36 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
   const columns = useMemo(
     () => [
       {
-        accessorKey: "id",
-        header: "ID Solicitud",
+        accessorKey: "code",
+        header: "Consecutivo",
         cell: ({ row }) => (
           <div className="font-mono text-sm font-medium text-primary">
-            {row.getValue("id")}
+            {row.getValue("code")}
           </div>
         ),
       },
       {
-        accessorKey: "date",
+        accessorKey: "scheduled_date",
         header: "Fecha de solicitud",
         cell: ({ row }) => (
-          <div className="text-sm text-secondary">{row.getValue("date")}</div>
+          <div className="text-sm text-secondary">{row.getValue("scheduled_date") || "N/A"}</div>
         ),
       },
       {
-        accessorKey: "billing_status_id",
+        accessorKey: "payment_status_id",
         header: "Estado de facturación",
         cell: ({ row }) => {
-          const statusId = row.getValue("billing_status_id");
-          const status = getStatusById(statusId, billingStatuses);
-          const statusName = status?.name || "N/A";
+          const statusId = row.getValue("payment_status_id");
+          const statusName = row.original.payment_status_name;
+
+          // Si no hay estado de pago, mostrar N/A
+          if (!statusId) {
+            return (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                N/A
+              </span>
+            );
+          }
 
           return (
             <span
@@ -229,7 +237,7 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
                 "billing"
               )}`}
             >
-              {statusName}
+              {statusName || "N/A"}
             </span>
           );
         },
@@ -239,8 +247,7 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
         header: "Estado de solicitud",
         cell: ({ row }) => {
           const statusId = row.getValue("request_status_id");
-          const status = getStatusById(statusId, requestStatuses);
-          const statusName = status?.name || "N/A";
+          const statusName = row.original.request_status_name;
 
           return (
             <span
@@ -249,7 +256,7 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
                 "request"
               )}`}
             >
-              {statusName}
+              {statusName || "N/A"}
             </span>
           );
         },
@@ -259,13 +266,14 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
         header: "Acciones",
         cell: ({ row }) => {
           const request = row.original;
-          const canDownload = request.invoice_url && request.billing_status_id === 17;
+          // TODO: Ajustar cuando esté disponible el campo invoice_url y el ID correcto del estado "Pagada"
+          const canDownload = request.invoice_url && request.payment_status_id === 17;
 
           return (
             <div className="flex items-center justify-center gap-2">
               {canDownload && (
                 <button
-                  onClick={() => handleDownloadInvoice(request.invoice_url, request.id)}
+                  onClick={() => handleDownloadInvoice(request.invoice_url, request.code)}
                   className="inline-flex items-center px-3 py-1.5 gap-2 border border-orange-500 text-orange-600 text-xs font-medium rounded-md hover:bg-orange-50 transition-all opacity-0 group-hover:opacity-100"
                   title="Descargar factura"
                 >

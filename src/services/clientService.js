@@ -47,16 +47,27 @@ export const getClientDetail = async (clientId) => {
 // Obtener historial de solicitudes del cliente (HU-CLI-003)
 export const getClientRequestHistory = async (clientId) => {
     try {
-        const { data } = await apiMain.get(`/customers/${clientId}/requests/`);
+        const { data } = await apiMain.get(`/service_requests/list-by-customer`, {
+            params: { customer_id: clientId }
+        });
+        
+        // El endpoint devuelve { success: true, results: [...] }
+        if (data.success && Array.isArray(data.results)) {
+            return { success: true, data: data.results };
+        }
+        
+        // Por si devuelve directamente un array
         if (Array.isArray(data)) {
             return { success: true, data };
         }
+        
         return data;
     } catch (error) {
         console.error("Error al obtener historial de solicitudes:", error);
         return {
             success: false,
-            message: error.response?.data?.message || error?.message || "Error al obtener el historial de solicitudes"
+            message: error.response?.data?.message || error?.message || "Error al obtener el historial de solicitudes",
+            data: []
         };
     }
 };
