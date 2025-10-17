@@ -29,3 +29,9 @@ export const getClientByIdentification = async (identification) => {
     const { data } = await apiMain.get(`/customers/search_by_document/?document_number=${identification}`);    
     return data;
 }
+
+// Obtener detalles completos de una solicitud (HU-SOL-004)
+export const getRequestDetails = async (requestId) => {
+    const { data } = await apiMain.get(`/service_requests/${requestId}/details/`);
+    return data;
+}

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
 import { FaTractor, FaMapMarkerAlt } from "react-icons/fa";
 import { useTheme } from "@/contexts/ThemeContext";
+import { getRequestDetails } from "@/services/requestService";
 
 /**
  * DetailsRequestModal Component
@@ -14,37 +15,38 @@ import { useTheme } from "@/contexts/ThemeContext";
  * @param {Object} props
  * @param {boolean} props.isOpen - Controla si el modal está abierto
  * @param {Function} props.onClose - Función para cerrar el modal
- * @param {Object} props.request - Datos de la solicitud a mostrar
+ * @param {string} props.requestId - ID de la solicitud a cargar
  */
-const DetailsRequestModal = ({ isOpen, onClose, request }) => {
+const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
   const { getCurrentTheme } = useTheme();
 
   // Estados para datos parametrizables
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [requestData, setRequestData] = useState(null);
 
-  // Mock data - Estados parametrizables (vendrá del endpoint)
-  // TODO: Cuando se implemente el endpoint, reemplazar con llamada a la API
+  // Estados parametrizables (sincronizados con el backend)
   const [requestStatuses] = useState([
-    { id_statues: 1, name: "Presolicitud", description: "Solicitud en estado inicial" },
-    { id_statues: 2, name: "Pendiente", description: "Solicitud pendiente de aprobación" },
-    { id_statues: 3, name: "Confirmada", description: "Solicitud confirmada" },
+    { id_statues: 19, name: "Presolicitud", description: "Solicitud en estado inicial" },
+    { id_statues: 20, name: "Pendiente", description: "Solicitud pendiente de aprobación" },
+    { id_statues: 21, name: "Confirmada", description: "Solicitud confirmada" },
     { id_statues: 4, name: "En ejecución", description: "Solicitud en proceso" },
-    { id_statues: 5, name: "Finalizada", description: "Solicitud completada" },
-    { id_statues: 6, name: "Cancelada", description: "Solicitud cancelada" },
+    { id_statues: 22, name: "Finalizada", description: "Solicitud completada" },
+    { id_statues: 23, name: "Cancelada", description: "Solicitud cancelada" },
   ]);
 
   const [paymentStatuses] = useState([
-    { id_statues: 1, name: "Pendiente", description: "Pago pendiente" },
-    { id_statues: 2, name: "Pago parcial", description: "Pago parcial realizado" },
-    { id_statues: 3, name: "Pagado", description: "Pago completado" },
+    { id_statues: 15, name: "Pendiente", description: "Pago pendiente" },
+    { id_statues: 17, name: "Pago Parcial", description: "Pago parcial realizado" },
+    { id_statues: 16, name: "Pagado", description: "Pago completado" },
   ]);
 
   const [paymentMethods] = useState([
-    { id: 1, name: "Contado", description: "Pago al contado" },
-    { id: 2, name: "Crédito", description: "Pago a crédito" },
-    { id: 3, name: "Anticipado", description: "Pago anticipado" },
-    { id: 4, name: "Por cuotas", description: "Pago en cuotas" },
+    { id: "1", name: "Medio de pago no definido", description: "Método no especificado" },
+    { id: "2", name: "Contado", description: "Pago al contado" },
+    { id: "3", name: "Crédito", description: "Pago a crédito" },
+    { id: "4", name: "Anticipado", description: "Pago anticipado" },
+    { id: "5", name: "Por cuotas", description: "Pago en cuotas" },
   ]);
 
   // Mock data - Datos de prueba de la solicitud
@@ -92,6 +94,32 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
     payment_method_id: 2, // Crédito
   };
 
+  // Cargar detalles de la solicitud cuando se proporciona requestId
+  useEffect(() => {
+    const loadRequestDetails = async () => {
+      if (!requestId || !isOpen) {
+        console.log('🔹 Modal - No hay requestId o modal cerrado:', { requestId, isOpen });
+        return;
+      }
+
+      console.log('📥 Modal - Cargando detalles de solicitud:', requestId);
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await getRequestDetails(requestId);
+        console.log('✅ Modal - Datos recibidos:', data);
+        setRequestData(data);
+      } catch (err) {
+        console.error('❌ Error al cargar detalles de la solicitud:', err);
+        setError('No se pudieron cargar los detalles de la solicitud. Por favor, intente nuevamente.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadRequestDetails();
+  }, [requestId, isOpen]);
+
   // Auto-dismiss error after 5 seconds
   useEffect(() => {
     if (error) {
@@ -111,24 +139,24 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
   };
 
   // Función para obtener colores por ID (basada en ID, no en nombre)
-  // Los colores están mapeados según el diseño del sistema
+  // Los colores están mapeados según el diseño del sistema y sincronizados con el backend
   const getRequestStatusColorById = (id) => {
     switch (id) {
-      case 1: return "bg-purple-100 text-purple-800"; // Presolicitud
-      case 2: return "bg-yellow-100 text-yellow-800"; // Pendiente
-      case 3: return "bg-blue-100 text-blue-800"; // Confirmada
+      case 19: return "bg-purple-100 text-purple-800"; // Presolicitud
+      case 20: return "bg-yellow-100 text-yellow-800"; // Pendiente
+      case 21: return "bg-blue-100 text-blue-800"; // Confirmada
       case 4: return "bg-cyan-100 text-cyan-800"; // En ejecución
-      case 5: return "bg-green-100 text-green-800"; // Finalizada
-      case 6: return "bg-gray-100 text-gray-800"; // Cancelada
+      case 22: return "bg-green-100 text-green-800"; // Finalizada
+      case 23: return "bg-gray-100 text-gray-800"; // Cancelada
       default: return "bg-gray-100 text-gray-800";
     }
   };
 
   const getPaymentStatusColorById = (id) => {
     switch (id) {
-      case 1: return "bg-yellow-100 text-yellow-800"; // Pendiente
-      case 2: return "bg-green-100 text-green-800"; // Pago parcial / Pending (paid partially)
-      case 3: return "bg-green-100 text-green-800"; // Pagado
+      case 15: return "bg-yellow-100 text-yellow-800"; // Pendiente
+      case 17: return "bg-orange-100 text-orange-800"; // Pago parcial
+      case 16: return "bg-green-100 text-green-800"; // Pagado
       default: return "bg-gray-100 text-gray-800";
     }
   };
@@ -138,6 +166,9 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
     if (!dateString) return "N/A";
     try {
       const date = new Date(dateString);
+      // Verificar si la fecha es válida
+      if (isNaN(date.getTime())) return "N/A";
+      
       return date.toLocaleString('es-CO', {
         year: 'numeric',
         month: '2-digit',
@@ -146,7 +177,27 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
         minute: '2-digit',
         hour12: true
       });
-    } catch {
+    } catch (error) {
+      console.error('Error formateando fecha:', dateString, error);
+      return dateString;
+    }
+  };
+  
+  // Formatear solo fecha (sin hora)
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    try {
+      const date = new Date(dateString);
+      // Verificar si la fecha es válida
+      if (isNaN(date.getTime())) return "N/A";
+      
+      return date.toLocaleDateString('es-CO', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+    } catch (error) {
+      console.error('Error formateando fecha:', dateString, error);
       return dateString;
     }
   };
@@ -162,13 +213,63 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
 
   if (!isOpen) return null;
 
-  // Usar datos mock si no se proporciona request, o usar request si está disponible
-  const requestData = request || mockRequestData;
+  // Mapear datos del endpoint al formato del modal
+  const mappedData = requestData ? {
+    // Información general
+    request_code: requestData.id_request,
+    status_id: requestData.request_status_id,
+    status_name: requestData.request_status_name,
+    detail: requestData.request_detail,
+    registration_date: requestData.confirmation_datetime,
+    scheduled_start_date: requestData.scheduled_start_date,
+    scheduled_end_date: requestData.scheduled_end_date,
+    completion_date: requestData.completion_cancellation_datetime,
+    completion_observations: requestData.completion_cancellation_observations,
+    confirmation_user: requestData.confirmation_user_name,
+    completion_user: requestData.completion_cancellation_user_name,
+    
+    // Información del cliente
+    client_name: requestData.customer_legal_entity_name || 
+                `${requestData.customer_name || ''} ${requestData.customer_first_last_name || ''} ${requestData.customer_second_last_name || ''}`.trim(),
+    client_document_type: requestData.customer_document_type,
+    client_document_number: requestData.customer_document_number,
+    client_email: requestData.customer_email,
+    client_phone: requestData.customer_phone,
+    
+    // Maquinaria asignada
+    machinery: (requestData.request_machinery_user || []).map(m => ({
+      image: m.machinery_image_path,
+      serial_number: m.serial_number,
+      name: `Maquinaria ${m.serial_number}`,
+      operator: m.user_name
+    })),
+    
+    // Ubicación
+    location_country: requestData.request_location?.country,
+    location_department: requestData.request_location?.department,
+    location_municipality: requestData.request_location?.city_id,
+    location_place_name: requestData.request_location?.place_name,
+    location_latitude: requestData.request_location?.latitude,
+    location_longitude: requestData.request_location?.longitude,
+    location_area: requestData.request_location?.area,
+    location_area_unit: requestData.request_location?.area_unit_symbol,
+    location_soil_type: requestData.request_location?.soil_type_name,
+    location_humidity: requestData.request_location?.humidity_level,
+    location_altitude: requestData.request_location?.altitude,
+    location_altitude_unit: requestData.request_location?.altitude_unit_symbol,
+    
+    // Información económica
+    billing_total_amount: requestData.amount_to_pay,
+    billing_currency: requestData.currency_unit_amount_to_pay_symbol,
+    billing_amount_paid: requestData.amount_paid,
+    payment_status_id: requestData.payment_status_id,
+    payment_method_id: requestData.payment_method_code,
+  } : mockRequestData;
 
   // Obtener información de estados
-  const requestStatus = getStatusById(requestData.status_id, requestStatuses);
-  const paymentStatus = getStatusById(requestData.payment_status_id, paymentStatuses);
-  const paymentMethod = getStatusById(requestData.payment_method_id, paymentMethods);
+  const requestStatus = getStatusById(mappedData.status_id, requestStatuses);
+  const paymentStatus = getStatusById(mappedData.payment_status_id, paymentStatuses);
+  const paymentMethod = getStatusById(mappedData.payment_method_id, paymentMethods);
 
   return (
     <div
@@ -190,6 +291,15 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
           </button>
         </div>
 
+        {/* Loading state */}
+        {loading && (
+          <div className="p-4 sm:p-6">
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+          </div>
+        )}
+
         {/* Error message */}
         {error && !loading && (
           <div className="p-4 sm:p-6">
@@ -206,8 +316,9 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
         )}
 
         {/* Content - Scrollable */}
-        <div className="overflow-y-auto max-h-[calc(90vh-90px)]">
-          <div className="p-4 sm:p-6 space-y-6">
+        {!loading && (
+          <div className="overflow-y-auto max-h-[calc(90vh-90px)]">
+            <div className="p-4 sm:p-6 space-y-6">
             {/* Cards Container */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* General Information Card */}
@@ -216,48 +327,48 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
                   Información General
                 </h3>
                 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {/* Request ID */}
-                  <div>
+                  <div className="flex justify-between items-start">
                     <span className="text-theme-sm text-secondary">ID de Solicitud:</span>
-                    <div className="font-theme-medium text-primary mt-1">{requestData.request_code || "N/A"}</div>
+                    <span className="font-theme-medium text-primary text-right">{mappedData.request_code || "N/A"}</span>
                   </div>
 
                   {/* Status */}
-                  <div>
+                  <div className="flex justify-between items-center">
                     <span className="text-theme-sm text-secondary">Estado:</span>
-                    <div className="mt-1">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                        getRequestStatusColorById(requestData.status_id)
-                      }`}>
-                        {requestStatus?.name || "N/A"}
-                      </span>
-                    </div>
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                      getRequestStatusColorById(mappedData.status_id)
+                    }`}>
+                      {requestStatus?.name || "N/A"}
+                    </span>
                   </div>
 
                   {/* Request detail */}
-                  <div>
+                  <div className="flex justify-between items-start">
                     <span className="text-theme-sm text-secondary">Detalle de solicitud:</span>
-                    <div className="font-theme-medium text-primary mt-1">{requestData.detail || "Example"}</div>
+                    <span className="font-theme-medium text-primary text-right max-w-[60%]">{mappedData.detail || "N/A"}</span>
                   </div>
 
                   {/* Registration date */}
-                  <div>
+                  <div className="flex justify-between items-start">
                     <span className="text-theme-sm text-secondary">Fecha de registro:</span>
-                    <div className="font-theme-medium text-primary mt-1">{formatDateTime(requestData.registration_date)}</div>
+                    <span className="font-theme-medium text-primary text-right">{formatDateTime(mappedData.registration_date)}</span>
                   </div>
 
-                  {/* Scheduled date */}
-                  <div>
+                  {/* Scheduled start date */}
+                  <div className="flex justify-between items-start">
                     <span className="text-theme-sm text-secondary">Fecha programada:</span>
-                    <div className="font-theme-medium text-primary mt-1">{formatDateTime(requestData.scheduled_date)}</div>
+                    <span className="font-theme-medium text-primary text-right">{formatDate(mappedData.scheduled_start_date)}</span>
                   </div>
 
                   {/* Completion date */}
-                  <div>
-                    <span className="text-theme-sm text-secondary">Fecha de finalización:</span>
-                    <div className="font-theme-medium text-primary mt-1">{formatDateTime(requestData.completion_date) || "N/A"}</div>
-                  </div>
+                  {mappedData.completion_date && (
+                    <div className="flex justify-between items-start">
+                      <span className="text-theme-sm text-secondary">Fecha de realización:</span>
+                      <span className="font-theme-medium text-primary text-right">{formatDateTime(mappedData.completion_date)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -267,35 +378,35 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
                   Información del Cliente
                 </h3>
                 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {/* Name/Legal name */}
-                  <div>
+                  <div className="flex justify-between items-start">
                     <span className="text-theme-sm text-secondary">Nombre/Razón social:</span>
-                    <div className="font-theme-medium text-primary mt-1">{requestData.client_name || "N/A"}</div>
+                    <span className="font-theme-medium text-primary text-right max-w-[60%]">{mappedData.client_name || "N/A"}</span>
                   </div>
 
                   {/* Documentation type */}
-                  <div>
+                  <div className="flex justify-between items-start">
                     <span className="text-theme-sm text-secondary">Tipo de documento:</span>
-                    <div className="font-theme-medium text-primary mt-1">{requestData.client_document_type || "N/A"}</div>
+                    <span className="font-theme-medium text-primary text-right">{mappedData.client_document_type || "N/A"}</span>
                   </div>
 
                   {/* Documentation number */}
-                  <div>
+                  <div className="flex justify-between items-start">
                     <span className="text-theme-sm text-secondary">Número de documento:</span>
-                    <div className="font-theme-medium text-primary mt-1">{requestData.client_document_number || "N/A"}</div>
+                    <span className="font-theme-medium text-primary text-right">{mappedData.client_document_number || "N/A"}</span>
                   </div>
 
                   {/* Email */}
-                  <div>
+                  <div className="flex justify-between items-start">
                     <span className="text-theme-sm text-secondary">Correo electrónico:</span>
-                    <div className="font-theme-medium text-primary mt-1">{requestData.client_email || "N/A"}</div>
+                    <span className="font-theme-medium text-primary text-right">{mappedData.client_email || "N/A"}</span>
                   </div>
 
                   {/* Phone number */}
-                  <div>
+                  <div className="flex justify-between items-start">
                     <span className="text-theme-sm text-secondary">Número de teléfono:</span>
-                    <div className="font-theme-medium text-primary mt-1">{requestData.client_phone || "N/A"}</div>
+                    <span className="font-theme-medium text-primary text-right">{mappedData.client_phone || "N/A"}</span>
                   </div>
                 </div>
               </div>
@@ -319,14 +430,18 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {requestData.machinery && requestData.machinery.length > 0 ? (
-                        requestData.machinery.map((machine, index) => (
+                      {mappedData.machinery && mappedData.machinery.length > 0 ? (
+                        mappedData.machinery.map((machine, index) => (
                           <tr key={index} className="bg-background hover:bg-hover transition-colors">
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-md bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
-                                  <FaTractor className="w-5 h-5 text-green-600 dark:text-green-500" />
-                                </div>
+                                {machine.image ? (
+                                  <img src={machine.image} alt={machine.name} className="w-10 h-10 rounded-md object-cover flex-shrink-0" />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-md bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+                                    <FaTractor className="w-5 h-5 text-green-600 dark:text-green-500" />
+                                  </div>
+                                )}
                                 <span className="font-theme-medium text-primary">{machine.name || "N/A"}</span>
                               </div>
                             </td>
@@ -355,81 +470,84 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Location details */}
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {/* Country */}
-                  <div>
+                  <div className="flex justify-between items-start">
                     <span className="text-theme-sm text-secondary">País:</span>
-                    <div className="font-theme-medium text-primary mt-1">{requestData.location_country || "N/A"}</div>
+                    <span className="font-theme-medium text-primary text-right">{mappedData.location_country || "N/A"}</span>
                   </div>
 
                   {/* Department */}
-                  <div>
+                  <div className="flex justify-between items-start">
                     <span className="text-theme-sm text-secondary">Departamento:</span>
-                    <div className="font-theme-medium text-primary mt-1">{requestData.location_department || "N/A"}</div>
+                    <span className="font-theme-medium text-primary text-right">{mappedData.location_department || "N/A"}</span>
                   </div>
 
                   {/* Municipality */}
-                  <div>
+                  <div className="flex justify-between items-start">
                     <span className="text-theme-sm text-secondary">Municipio:</span>
-                    <div className="font-theme-medium text-primary mt-1">{requestData.location_municipality || "N/A"}</div>
+                    <span className="font-theme-medium text-primary text-right">{mappedData.location_municipality || "N/A"}</span>
                   </div>
 
                   {/* Place name */}
-                  <div>
+                  <div className="flex justify-between items-start">
                     <span className="text-theme-sm text-secondary">Nombre del lugar:</span>
-                    <div className="font-theme-medium text-primary mt-1">{requestData.location_place_name || "N/A"}</div>
+                    <span className="font-theme-medium text-primary text-right">{mappedData.location_place_name || "N/A"}</span>
                   </div>
 
                   {/* Area */}
-                  <div>
+                  <div className="flex justify-between items-start">
                     <span className="text-theme-sm text-secondary">Área:</span>
-                    <div className="font-theme-medium text-primary mt-1">
-                      {requestData.location_area ? `${requestData.location_area} hectáreas` : "N/A"}
-                    </div>
+                    <span className="font-theme-medium text-primary text-right">
+                      {mappedData.location_area ? `${mappedData.location_area} ${mappedData.location_area_unit || ''}` : "N/A"}
+                    </span>
                   </div>
 
                   {/* Type of soil */}
-                  <div>
+                  <div className="flex justify-between items-start">
                     <span className="text-theme-sm text-secondary">Tipo de suelo:</span>
-                    <div className="font-theme-medium text-primary mt-1">{requestData.location_soil_type || "N/A"}</div>
+                    <span className="font-theme-medium text-primary text-right">{mappedData.location_soil_type || "N/A"}</span>
                   </div>
 
                   {/* Humidity level */}
-                  <div>
+                  <div className="flex justify-between items-start">
                     <span className="text-theme-sm text-secondary">Nivel de humedad:</span>
-                    <div className="font-theme-medium text-primary mt-1">
-                      {requestData.location_humidity ? `${requestData.location_humidity}%` : "N/A"}
-                    </div>
+                    <span className="font-theme-medium text-primary text-right">
+                      {mappedData.location_humidity ? `${mappedData.location_humidity}%` : "N/A"}
+                    </span>
                   </div>
 
                   {/* Altitude */}
-                  <div>
+                  <div className="flex justify-between items-start">
                     <span className="text-theme-sm text-secondary">Altitud:</span>
-                    <div className="font-theme-medium text-primary mt-1">
-                      {requestData.location_altitude ? `${requestData.location_altitude} m s.n.m` : "N/A"}
-                    </div>
+                    <span className="font-theme-medium text-primary text-right">
+                      {mappedData.location_altitude ? `${mappedData.location_altitude} ${mappedData.location_altitude_unit || 'msnm'}` : "N/A"}
+                    </span>
                   </div>
                 </div>
 
                 {/* Map */}
-                <div className="h-[400px] flex flex-col">
-                  {requestData.location_latitude && requestData.location_longitude ? (
-                    <div className="flex-1 bg-surface rounded-lg flex items-center justify-center relative overflow-hidden">
-                      {/* Placeholder for map - TODO: Integrate with map library */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-green-100 to-blue-100"></div>
-                      <div className="relative z-10 text-center">
-                        <FaMapMarkerAlt className="w-16 h-16 text-red-500 mx-auto mb-2" />
-                      </div>
+                <div className="flex items-center justify-center">
+                  {mappedData.location_latitude && mappedData.location_longitude ? (
+                    <div className="w-full h-[280px] bg-surface rounded-lg relative overflow-hidden">
+                      {/* Google Maps Embed - Sin necesidad de API Key */}
+                      <iframe
+                        src={`https://www.google.com/maps?q=${mappedData.location_latitude},${mappedData.location_longitude}&output=embed&z=15`}
+                        className="w-full h-full border-0"
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                        title="Mapa de ubicación"
+                      ></iframe>
                       
                       {/* Coordinates overlay */}
-                      <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-md p-3 border border-gray-200">
-                        <div className="text-xs font-medium text-gray-600 mb-1">Coordenadas</div>
-                        <div className="text-xs text-gray-700">Latitud: {requestData.location_latitude}</div>
-                        <div className="text-xs text-gray-700">Longitud: {requestData.location_longitude}</div>
+                      <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm rounded-lg shadow-md p-2 border border-gray-200 z-10">
+                        <div className="text-xs font-semibold text-gray-700 mb-1">Coords</div>
+                        <div className="text-xs text-gray-600">Latitude: {mappedData.location_latitude}</div>
+                        <div className="text-xs text-gray-600">Longitude: {mappedData.location_longitude}</div>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex-1 bg-surface rounded-lg flex items-center justify-center">
+                    <div className="w-full h-[280px] bg-surface rounded-lg flex items-center justify-center">
                       <p className="text-secondary">No hay coordenadas disponibles</p>
                     </div>
                   )}
@@ -443,40 +561,39 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
                 Información de Facturación
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
                 {/* Total amount */}
-                <div>
+                <div className="flex justify-between items-start">
                   <span className="text-theme-sm text-secondary">Monto total:</span>
-                  <div className="font-theme-medium text-primary mt-1">{formatCurrency(requestData.billing_total_amount)}</div>
+                  <span className="font-theme-medium text-primary text-right">{formatCurrency(mappedData.billing_total_amount)}</span>
                 </div>
 
                 {/* Amount paid */}
-                <div>
+                <div className="flex justify-between items-start">
                   <span className="text-theme-sm text-secondary">Monto pagado:</span>
-                  <div className="font-theme-medium text-primary mt-1">{formatCurrency(requestData.billing_amount_paid)}</div>
+                  <span className="font-theme-medium text-primary text-right">{formatCurrency(mappedData.billing_amount_paid)}</span>
                 </div>
 
                 {/* Payment status */}
-                <div>
+                <div className="flex justify-between items-center">
                   <span className="text-theme-sm text-secondary">Estado de pago:</span>
-                  <div className="mt-1">
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                      getPaymentStatusColorById(requestData.payment_status_id)
-                    }`}>
-                      {paymentStatus?.name || "N/A"}
-                    </span>
-                  </div>
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                    getPaymentStatusColorById(mappedData.payment_status_id)
+                  }`}>
+                    {paymentStatus?.name || "N/A"}
+                  </span>
                 </div>
 
                 {/* Payment method */}
-                <div>
+                <div className="flex justify-between items-start">
                   <span className="text-theme-sm text-secondary">Método de pago:</span>
-                  <div className="font-theme-medium text-primary mt-1">{paymentMethod?.name || "N/A"}</div>
+                  <span className="font-theme-medium text-primary text-right">{paymentMethod?.name || "N/A"}</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
+        )}
       </div>
     </div>
   );
