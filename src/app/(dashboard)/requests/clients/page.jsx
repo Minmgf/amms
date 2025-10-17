@@ -21,13 +21,13 @@ import {
   SuccessModal,
   ErrorModal,
   ConfirmModal,
-  WarningModal,
 } from "@/app/components/shared/SuccessErrorModal";
 import FilterModal from "@/app/components/shared/FilterModal";
-import { getClientsList } from "@/services/clientService";
+import { getClientsList, deleteClient, toggleClientStatus } from "@/services/clientService";
 import AddClientModal from "@/app/components/request/clients/AddClientModal";
 import DetailsClientModal from "@/app/components/request/clients/DetailsClientModal";
 import { authorization } from "@/services/billingService";
+import PermissionGuard from "@/app/(auth)/PermissionGuard";
 
 /**
  * ClientsView Component
@@ -76,7 +76,7 @@ const ClientsView = () => {
 
   // Modal states for CRUD operations
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState("create"); // "create" o "edit"
+  const [modalMode, setModalMode] = useState("create");
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -85,7 +85,7 @@ const ClientsView = () => {
 
   // Delete flow modal states
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
-  const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
+  const [isConfirmDeactivateOpen, setIsConfirmDeactivateOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
@@ -97,8 +97,10 @@ const ClientsView = () => {
     const getTokenBilling = async () => {
       try {
         const response = await authorization();
-        setBillingToken(response.access_token);        
-      } catch (error) {}
+        setBillingToken(response.access_token);
+      } catch (error) {
+        console.error("Error en inicialización:", error);
+      }
     };
     getTokenBilling();
   }, []);
@@ -129,6 +131,7 @@ const ClientsView = () => {
         setClientsData([]);
       }
     } catch (err) {
+      console.error("Error loading clients:", err);
       setError("Error al conectar con el servidor.");
       setClientsData([]);
     } finally {
@@ -256,6 +259,8 @@ const ClientsView = () => {
   const handleView = (client) => {
     setSelectedClient(client);
     setIsDetailsModalOpen(true);
+    console.log("View client details:", client);
+    // TODO: Open details modal
   };
 
   const handleDelete = (client) => {
@@ -263,19 +268,43 @@ const ClientsView = () => {
     setIsConfirmDeleteOpen(true);
   };
 
-  // Check if client has associated records (mock implementation)
-  const checkClientHasAssociations = async (clientId) => {
-    // TODO: Replace with actual API call to check associations
-    // Example: const response = await checkClientAssociations(clientId);
+  // Handle toggle client status (activate/deactivate)
+  const handleToggleClientStatus = async () => {
+    setIsConfirmDeactivateOpen(false);
 
-    // Mock implementation - randomly return true/false for demo
-    // In real implementation, check if client has:
-    // - Associated requests
-    // - Associated records
-    // - Associated invoices
+    if (!selectedClient) return;
 
-    // For demo: clients with id 1 and 3 have associations
-    return clientId === 1 || clientId === 3;
+    try {
+      const response = await toggleClientStatus(selectedClient.id_customer || selectedClient.id);
+      
+      if (response.success) {
+        // Actualizar el cliente en la lista
+        setClientsData(prevData =>
+          prevData.map(client =>
+            (client.id_customer || client.id) === (selectedClient.id_customer || selectedClient.id)
+              ? { 
+                  ...client, 
+                  customer_statues_id: client.customer_statues_id === 1 ? 2 : 1,
+                  customer_statues_name: client.customer_statues_id === 1 ? "Inactivo" : "Activo"
+                }
+              : client
+          )
+        );
+
+        // Mostrar modal de éxito
+        setModalTitle("Estado Actualizado");
+        setModalMessage(response.message || "El estado del cliente ha sido actualizado exitosamente.");
+        setIsSuccessModalOpen(true);
+      }
+    } catch (error) {
+      console.error("Error toggling client status:", error);
+      setModalTitle("Error");
+      setModalMessage(
+        error.response?.data?.message || 
+        "Ocurrió un error al cambiar el estado del cliente. Por favor, inténtelo de nuevo."
+      );
+      setIsErrorModalOpen(true);
+    }
   };
 
   // Handle confirm delete action
@@ -285,49 +314,48 @@ const ClientsView = () => {
     if (!selectedClient) return;
 
     try {
-      // Check if client has associations
-      const hasAssociations = await checkClientHasAssociations(selectedClient.id);
-
-      if (hasAssociations) {
-        // Show warning modal - client has associations
-        setModalTitle("Advertencia");
-        setModalMessage(
-          "Este cliente está asociado con solicitudes, registros o facturas. No puede ser eliminado, pero será desactivado para que no esté disponible en futuros formularios."
-        );
-        setIsWarningModalOpen(true);
-
-        // TODO: Call API to deactivate client
-        // await deactivateClient(selectedClient.id);
-
-      } else {
-        // No associations - proceed with deletion
-        // TODO: Replace with actual API call
-        // const response = await deleteClient(selectedClient.id);
-
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        // Remove client from data
+      // Intentar eliminar el cliente directamente
+      // El backend validará automáticamente si tiene asociaciones
+      const response = await deleteClient(selectedClient.id_customer || selectedClient.id);
+      
+      if (response.success) {
+        // Eliminación exitosa - remover cliente de la lista
         setClientsData(prevData =>
-          prevData.filter(client => client.id !== selectedClient.id)
+          prevData.filter(client => (client.id_customer || client.id) !== (selectedClient.id_customer || selectedClient.id))
         );
 
-        // Show success modal
+        // Mostrar modal de éxito
         setModalTitle("Eliminación Exitosa");
-        setModalMessage("El cliente ha sido eliminado exitosamente.");
+        setModalMessage(response.message || "El cliente ha sido eliminado exitosamente.");
         setIsSuccessModalOpen(true);
       }
     } catch (error) {
-      setModalTitle("Error");
-      setModalMessage("Ocurrió un error al eliminar el cliente. Por favor, inténtelo de nuevo.");
-      setIsErrorModalOpen(true);
+      console.error("Error deleting client:", error);
+      
+      if (error.response?.status === 400 || error.response?.status === 409) {
+        // Cliente tiene asociaciones - ofrecer desactivarlo
+        setModalTitle("Cliente con Asociaciones");
+        setModalMessage(
+          error.response?.data?.message || 
+          "Este cliente está asociado con solicitudes, registros o facturas y no puede ser eliminado. ¿Desea desactivarlo en su lugar? Esto lo ocultará de futuros formularios."
+        );
+        setIsConfirmDeactivateOpen(true);
+      } else {
+        // Otro tipo de error
+        setModalTitle("Error");
+        setModalMessage(
+          error.response?.data?.message || 
+          "Ocurrió un error al eliminar el cliente. Por favor, inténtelo de nuevo."
+        );
+        setIsErrorModalOpen(true);
+      }
     }
   };
 
   const handleAddNewClient = () => {
+    setIsCreateModalOpen(true);
     setSelectedClient(null);
     setModalMode("create");
-    setIsCreateModalOpen(true);
   };
 
   // Table columns definition
@@ -346,9 +374,8 @@ const ClientsView = () => {
           const isCompany = client.person_type_id === 1; // 1 = Juridic Entity, 2 = Natural Person
           return (
             <div className="flex items-center gap-3">
-              <div className={`w-8 h-8 rounded-md flex items-center justify-center ${
-                isCompany ? "bg-blue-100" : "bg-purple-100"
-              }`}>
+              <div className={`w-8 h-8 rounded-md flex items-center justify-center ${isCompany ? "bg-blue-100" : "bg-purple-100"
+                }`}>
                 {isCompany ? (
                   <FaBuilding className="w-4 h-4 text-blue-600" />
                 ) : (
@@ -468,27 +495,33 @@ const ClientsView = () => {
           const client = row.original;
           return (
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              <button
-                onClick={() => handleView(client)}
-                className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600 text-gray-700"
-                title="Ver detalles"
-              >
-                <FaEye className="w-3 h-3" /> Detalles
-              </button>
-              <button
-                onClick={() => handleEdit(client)}
-                className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
-                title="Editar cliente"
-              >
-                <FaPen className="w-3 h-3" /> Editar
-              </button>
-              <button
-                onClick={() => handleDelete(client)}
-                className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-red-500 hover:text-red-600 text-gray-700"
-                title="Eliminar cliente"
-              >
-                <FaTrash className="w-3 h-3" /> Eliminar
-              </button>
+              <PermissionGuard permission={134}>
+                <button
+                  onClick={() => handleView(client)}
+                  className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600 text-gray-700"
+                  title="Ver detalles"
+                >
+                  <FaEye className="w-3 h-3" /> Detalles
+                </button>
+              </PermissionGuard>
+              <PermissionGuard permission={137}>
+                <button
+                  onClick={() => handleEdit(client)}
+                  className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
+                  title="Editar cliente"
+                >
+                  <FaPen className="w-3 h-3" /> Editar
+                </button>
+              </PermissionGuard>
+              <PermissionGuard permission={138}>
+                <button
+                  onClick={() => handleDelete(client)}
+                  className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-red-500 hover:text-red-600 text-gray-700"
+                  title="Eliminar cliente"
+                >
+                  <FaTrash className="w-3 h-3" /> Eliminar
+                </button>
+              </PermissionGuard>
             </div>
           );
         },
@@ -546,16 +579,15 @@ const ClientsView = () => {
         {/* Filter button */}
         <button
           onClick={() => setIsFilterModalOpen(true)}
-          className={`parametrization-filter-button ${
-            nameFilter ||
+          className={`parametrization-filter-button ${nameFilter ||
             identificationFilter ||
             documentTypeFilter ||
             statusFilter ||
             phoneFilter ||
             emailFilter
-              ? "bg-blue-100 border-blue-300 text-blue-700"
-              : ""
-          }`}
+            ? "bg-blue-100 border-blue-300 text-blue-700"
+            : ""
+            }`}
         >
           <CiFilter className="w-4 h-4" />
           Filtrar por
@@ -565,19 +597,19 @@ const ClientsView = () => {
             statusFilter ||
             phoneFilter ||
             emailFilter) && (
-            <span className="ml-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
-              {
-                [
-                  nameFilter,
-                  identificationFilter,
-                  documentTypeFilter,
-                  statusFilter,
-                  phoneFilter,
-                  emailFilter,
-                ].filter(Boolean).length
-              }
-            </span>
-          )}
+              <span className="ml-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                {
+                  [
+                    nameFilter,
+                    identificationFilter,
+                    documentTypeFilter,
+                    statusFilter,
+                    phoneFilter,
+                    emailFilter,
+                  ].filter(Boolean).length
+                }
+              </span>
+            )}
         </button>
 
         {/* Clear filters button */}
@@ -587,44 +619,48 @@ const ClientsView = () => {
           statusFilter ||
           phoneFilter ||
           emailFilter) && (
-          <button
-            onClick={handleClearFilters}
-            className="text-sm text-red-500 hover:text-red-700 underline flex items-center gap-1"
-          >
-            <FaTimes className="w-3 h-3" /> Limpiar filtros
-          </button>
-        )}
+            <button
+              onClick={handleClearFilters}
+              className="text-sm text-red-500 hover:text-red-700 underline flex items-center gap-1"
+            >
+              <FaTimes className="w-3 h-3" /> Limpiar filtros
+            </button>
+          )}
 
         {/* Add new client button */}
-        <button
-          onClick={handleAddNewClient}
-          className="parametrization-filter-button bg-black text-white hover:bg-gray-800"
-        >
-          <FaPlus className="w-4 h-4" />
-          Agregar Cliente
-        </button>
+        <PermissionGuard permission={133}>
+          <button
+            onClick={handleAddNewClient}
+            className="parametrization-filter-button bg-black text-white hover:bg-gray-800"
+          >
+            <FaPlus className="w-4 h-4" />
+            Agregar Cliente
+          </button>
+        </PermissionGuard>
       </div>
 
       {/* Clients table */}
-      <TableList
-        columns={columns}
-        data={
-          filteredData.length > 0 ||
-          nameFilter ||
-          identificationFilter ||
-          documentTypeFilter ||
-          statusFilter ||
-          phoneFilter ||
-          emailFilter
-            ? filteredData
-            : clientsData
-        }
-        loading={loading}
-        globalFilter={globalFilter}
-        onGlobalFilterChange={setGlobalFilter}
-        globalFilterFn={globalFilterFn}
-        pageSizeOptions={[10, 20, 30, 50]}
-      />
+      <PermissionGuard permission={135}>
+        <TableList
+          columns={columns}
+          data={
+            filteredData.length > 0 ||
+              nameFilter ||
+              identificationFilter ||
+              documentTypeFilter ||
+              statusFilter ||
+              phoneFilter ||
+              emailFilter
+              ? filteredData
+              : clientsData
+          }
+          loading={loading}
+          globalFilter={globalFilter}
+          onGlobalFilterChange={setGlobalFilter}
+          globalFilterFn={globalFilterFn}
+          pageSizeOptions={[10, 20, 30, 50]}
+        />
+      </PermissionGuard>
 
       {/* Filter Modal */}
       <FilterModal
@@ -745,7 +781,11 @@ const ClientsView = () => {
         }}
         mode={modalMode}
         client={selectedClient}
-        billingToken={billingToken} 
+        billingToken={billingToken}
+        existingClientDocuments={clientsData.map(c => c.document_number?.toString())}
+        onSuccess={() => {
+          loadInitialData();
+        }}
       />
 
       {/* Details Client Modal */}
@@ -768,13 +808,17 @@ const ClientsView = () => {
         cancelColor="btn-error"
       />
 
-      {/* Warning Modal - Client has associations */}
-      <WarningModal
-        isOpen={isWarningModalOpen}
-        onClose={() => setIsWarningModalOpen(false)}
+      {/* Deactivate Confirmation Modal */}
+      <ConfirmModal
+        isOpen={isConfirmDeactivateOpen}
+        onClose={() => setIsConfirmDeactivateOpen(false)}
+        onConfirm={handleToggleClientStatus}
         title={modalTitle}
         message={modalMessage}
-        buttonText="Aceptar"
+        confirmText="Desactivar"
+        cancelText="Cancelar"
+        confirmColor="btn-primary"
+        cancelColor="btn-error"
       />
 
       {/* Success Modal */}
