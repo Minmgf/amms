@@ -98,8 +98,7 @@ const ClientsView = () => {
       try {
         const response = await authorization();
         setBillingToken(response.access_token);        
-      } catch (error) {
-        console.error("Error en inicialización:", error);      }
+      } catch (error) {}
     };
     getTokenBilling();
   }, []);
@@ -130,7 +129,6 @@ const ClientsView = () => {
         setClientsData([]);
       }
     } catch (err) {
-      console.error("Error loading clients:", err);
       setError("Error al conectar con el servidor.");
       setClientsData([]);
     } finally {
@@ -258,7 +256,6 @@ const ClientsView = () => {
   const handleView = (client) => {
     setSelectedClient(client);
     setIsDetailsModalOpen(true);
-    console.log("View client details:", client);
   };
 
   const handleDelete = (client) => {
@@ -321,7 +318,6 @@ const ClientsView = () => {
         setIsSuccessModalOpen(true);
       }
     } catch (error) {
-      console.error("Error deleting client:", error);
       setModalTitle("Error");
       setModalMessage("Ocurrió un error al eliminar el cliente. Por favor, inténtelo de nuevo.");
       setIsErrorModalOpen(true);

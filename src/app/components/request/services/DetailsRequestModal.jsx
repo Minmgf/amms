@@ -98,19 +98,14 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
   useEffect(() => {
     const loadRequestDetails = async () => {
       if (!requestId || !isOpen) {
-        console.log('🔹 Modal - No hay requestId o modal cerrado:', { requestId, isOpen });
         return;
       }
-
-      console.log('📥 Modal - Cargando detalles de solicitud:', requestId);
       try {
         setLoading(true);
         setError(null);
         const data = await getRequestDetails(requestId);
-        console.log('✅ Modal - Datos recibidos:', data);
         setRequestData(data);
       } catch (err) {
-        console.error('❌ Error al cargar detalles de la solicitud:', err);
         setError('No se pudieron cargar los detalles de la solicitud. Por favor, intente nuevamente.');
       } finally {
         setLoading(false);
@@ -178,7 +173,6 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
         hour12: true
       });
     } catch (error) {
-      console.error('Error formateando fecha:', dateString, error);
       return dateString;
     }
   };
@@ -197,7 +191,6 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
         day: '2-digit'
       });
     } catch (error) {
-      console.error('Error formateando fecha:', dateString, error);
       return dateString;
     }
   };
