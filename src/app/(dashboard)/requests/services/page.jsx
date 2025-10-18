@@ -9,6 +9,7 @@ import { getServicesList } from "@/services/serviceService";
 import React, { useState, useMemo, useEffect } from "react";
 import { CiFilter } from "react-icons/ci";
 import { FaPlus, FaTimes } from "react-icons/fa";
+import PermissionGuard from "@/app/(auth)/PermissionGuard";
 
 /**
  * ServicesView Component
@@ -68,7 +69,7 @@ const ServicesView = () => {
       setServicesData(response?.data || response || []);
     } catch (err) {
       setErrorMessage(
-        err.response?.data?.message || 
+        err.response?.data?.message ||
         "Error al cargar los servicios. Por favor, intente nuevamente."
       );
       setIsErrorModalOpen(true);
@@ -275,9 +276,8 @@ const ServicesView = () => {
         {/* Botón de filtros */}
         <button
           onClick={() => setIsFilterModalOpen(true)}
-          className={`parametrization-filter-button ${
-            hasActiveFilters ? "bg-blue-100 border-blue-300 text-blue-700" : ""
-          }`}
+          className={`parametrization-filter-button ${hasActiveFilters ? "bg-blue-100 border-blue-300 text-blue-700" : ""
+            }`}
           aria-label="Abrir filtros"
         >
           <CiFilter className="w-4 h-4" />
@@ -301,26 +301,30 @@ const ServicesView = () => {
         )}
 
         {/* Botón agregar servicio */}
-        <button
-          onClick={handleAddNewService}
-          className="parametrization-filter-button bg-black text-white hover:bg-gray-800"
-          aria-label="Agregar nuevo servicio"
-        >
-          <FaPlus className="w-4 h-4" />
-          Nuevo Servicio
-        </button>
+        <PermissionGuard permission={140}>
+          <button
+            onClick={handleAddNewService}
+            className="parametrization-filter-button bg-black text-white hover:bg-gray-800"
+            aria-label="Agregar nuevo servicio"
+          >
+            <FaPlus className="w-4 h-4" />
+            Nuevo Servicio
+          </button>
+        </PermissionGuard>
       </div>
 
       {/* Tabla de servicios */}
-      <TableList
-        columns={columns}
-        data={dataToDisplay}
-        loading={loading}
-        globalFilter={globalFilter}
-        onGlobalFilterChange={setGlobalFilter}
-        globalFilterFn={globalFilterFn}
-        pageSizeOptions={[10, 20, 30, 50]}
-      />
+      <PermissionGuard permission={142}>
+        <TableList
+          columns={columns}
+          data={dataToDisplay}
+          loading={loading}
+          globalFilter={globalFilter}
+          onGlobalFilterChange={setGlobalFilter}
+          globalFilterFn={globalFilterFn}
+          pageSizeOptions={[10, 20, 30, 50]}
+        />
+      </PermissionGuard>
 
       {/* Modal de filtros */}
       <FilterModal

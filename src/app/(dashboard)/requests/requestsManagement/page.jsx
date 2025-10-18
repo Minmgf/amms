@@ -6,12 +6,14 @@ import Calendar from '@/app/components/scheduledMaintenance/Calendar';
 import FilterModal from '@/app/components/shared/FilterModal';
 import TableList from '@/app/components/shared/TableList';
 import CancelRequestModal from '@/app/components/request/CancelRequestModal';
+import DetailsRequestModal from '@/app/components/request/services/DetailsRequestModal';
+import { SuccessModal, ConfirmModal } from '@/app/components/shared/SuccessErrorModal';
 import CompleteRequestModal from '@/app/components/request/CompleteRequestModal';
-import { SuccessModal } from '@/app/components/shared/SuccessErrorModal';
 import GenerateInvoiceModal from '@/app/components/request/invoice/multistepform/GenerateInvoiceModal';
 import MultiStepFormModal from "@/app/components/request/requestsManagement/multistepForm/MultiStepFormModal";
 import ValidatePreRequestModal from "@/app/components/request/requestsManagement/multistepForm/ValidatePreRequestModal";
 import { getGestionServicesList } from '@/services/serviceService';
+import PermissionGuard from '@/app/(auth)/PermissionGuard';
 
 const RequestsManagementPage = () => {
   // Estados principales
@@ -30,10 +32,15 @@ const RequestsManagementPage = () => {
 
   // Estados de modales
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [requestToCancel, setRequestToCancel] = useState(null);
+  const [requestToConfirm, setRequestToConfirm] = useState(null);
   const [completeModalOpen, setCompleteModalOpen] = useState(false);
   const [validatePreRequestModalOpen, setValidatePreRequestModalOpen] = useState(false);
   const [GenerateInvoiceModalOpen, setGenerateInvoiceModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [selectedRequestForComplete, setSelectedRequestForComplete] = useState(null);
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -49,7 +56,8 @@ const RequestsManagementPage = () => {
       if (response.success && response.results) {
         // Mapear datos del API a la estructura del componente
         const mappedData = response.results.map((item, index) => ({
-          id: item.customer_id || index + 1, // Usamos customer_id como id único
+          id: item.code || `temp-${index}`, // Usar code como ID único
+          requestId: item.code, // ID real de la solicitud para el endpoint
           requestCode: item.code,
           client: {
             name: item.legal_entity_name,
@@ -189,9 +197,62 @@ const RequestsManagementPage = () => {
     return translations[status] || status;
   };
 
-  // Funciones de acciones (sin funcionalidad por ahora)
-  const handleViewDetails = (requestId) => {
-    console.log('Ver detalles:', requestId);
+  // Función para transformar datos de la solicitud al formato del modal
+  const getRequestDetailData = (requestId) => {
+    const request = requestsData.find(r => r.id === requestId);
+    if (!request) return null;
+
+    // Transformar a formato esperado por el modal
+    return {
+      request_code: request.requestCode,
+      status_id: request.requestStatusId,
+      detail: "Servicio de mantenimiento y reparación",
+      registration_date: "2025-09-28T10:45:00",
+      scheduled_date: `${request.scheduledDate}T07:30:00`,
+      completion_date: request.completionDate ? `${request.completionDate}T16:00:00` : null,
+      
+      // Client information
+      client_name: request.client.name,
+      client_document_type: request.client.idNumber.includes('900') ? "NIT" : "CC",
+      client_document_number: request.client.idNumber,
+      client_email: "contacto@" + request.client.name.toLowerCase().replace(/\s+/g, '') + ".com",
+      client_phone: "+57 310 456 7821",
+      
+      // Machinery
+      machinery: [
+        {
+          name: "Tractor para banano",
+          serial_number: "CAT12381238109",
+          operator: "Juan Pérez"
+        }
+      ],
+      
+      // Location
+      location_country: "Colombia",
+      location_department: "Tolima",
+      location_municipality: "Espinal",
+      location_place_name: "Finca La Esperanza",
+      location_latitude: -12312,
+      location_longitude: 813,
+      location_area: 15,
+      location_soil_type: "Clay loam",
+      location_humidity: 42,
+      location_altitude: 420,
+      
+      // Billing
+      billing_total_amount: 8500.00,
+      billing_amount_paid: request.paymentStatusId === 3 ? 8500.00 : request.paymentStatusId === 2 ? 4000.00 : 0,
+      payment_status_id: request.paymentStatusId,
+      payment_method_id: 2, // Crédito
+    };
+  };
+
+  // Funciones de acciones
+  const handleViewDetails = (requestCode) => {
+    console.log('🔍 handleViewDetails - Código de solicitud:', requestCode);
+    // El código de la solicitud (ej: SOL-2025-0001) se usa directamente
+    setSelectedRequestId(requestCode);
+    setDetailsModalOpen(true);
   };
 
   const handleEditRequest = (requestId) => {
@@ -200,6 +261,7 @@ const RequestsManagementPage = () => {
 
   const handleCancelRequest = (requestId) => {
     const request = requestsData.find(r => r.id === requestId);
+    setRequestToCancel(request);
     setSelectedRequest(request);
     setCancelModalOpen(true);
   };
@@ -214,6 +276,8 @@ const RequestsManagementPage = () => {
 
   const handleConfirmRequest = (requestId) => {
     const request = requestsData.find(r => r.id === requestId);
+    setRequestToConfirm(request);
+    setConfirmModalOpen(true);
     setSelectedRequest(request);
     setValidatePreRequestModalOpen(true);
   };
@@ -222,6 +286,7 @@ const RequestsManagementPage = () => {
     setValidatePreRequestModalOpen(false);
     setSuccessMessage(`Solicitud validada exitosamente. La solicitud pasó a estado "Pendiente".`);
     setSuccessModalOpen(true);
+    console.log('Abriendo formulario de confirmación para:', requestToConfirm?.requestCode);
     // Recargar la lista de solicitudes desde el API
     loadRequests();
     console.log('Pre-solicitud validada:', selectedRequest?.requestCode);
@@ -269,23 +334,27 @@ const RequestsManagementPage = () => {
     return (
       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
         {/* Detalles - siempre disponible */}
-        <button
-          onClick={() => handleViewDetails(request.id)}
-          className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600 text-gray-700"
-          title="Ver detalles"
-        >
-          <FiEye className="w-3 h-3" /> Detalles
-        </button>
+        <PermissionGuard permission={154}>
+          <button
+            onClick={() => handleViewDetails(request.id)}
+            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600 text-gray-700"
+            title="Ver detalles"
+          >
+            <FiEye className="w-3 h-3" /> Detalles
+          </button>
+        </PermissionGuard>
 
         {/* Confirmar - solo para presolicitudes */}
         {(request.requestStatusId === 1 || request.requestStatusId === 19) && (
-          <button
-            onClick={() => handleConfirmRequest(request.id)}
-            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-blue-300 hover:border-blue-500 hover:text-blue-600 text-blue-600"
-            title="Confirmar solicitud"
-          >
-            <FiCheck className="w-3 h-3" /> Confirmar
-          </button>
+          <PermissionGuard permission={150}>
+            <button
+              onClick={() => handleConfirmRequest(request.id)}
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-blue-300 hover:border-blue-500 hover:text-blue-600 text-blue-600"
+              title="Confirmar solicitud"
+            >
+              <FiCheck className="w-3 h-3" /> Confirmar
+            </button>
+          </PermissionGuard>
         )}
 
         {/* Editar - solo para pendientes */}
@@ -301,24 +370,28 @@ const RequestsManagementPage = () => {
 
         {/* Cancelar - solo para pendientes */}
         {request.requestStatusId === 2 && (
-          <button
-            onClick={() => handleCancelRequest(request.id)}
-            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-red-300 hover:border-red-500 hover:text-red-600 text-red-600"
-            title="Cancelar solicitud"
-          >
-            <FiX className="w-3 h-3" /> Cancelar
-          </button>
+          <PermissionGuard permission={153}>
+            <button
+              onClick={() => handleCancelRequest(request.id)}
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-red-300 hover:border-red-500 hover:text-red-600 text-red-600"
+              title="Cancelar solicitud"
+            >
+              <FiX className="w-3 h-3" /> Cancelar
+            </button>
+          </PermissionGuard>
         )}
 
         {/* Completar - solo para pendientes */}
         {request.requestStatusId === 2 && (
-          <button
-            onClick={() => handleCompleteRequest(request.id)}
-            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 hover:border-green-500 hover:text-green-600 text-green-600"
-            title="Completar solicitud"
-          >
-            <FiCheck className="w-3 h-3" /> Completar
-          </button>
+          <PermissionGuard permission={152}>
+            <button
+              onClick={() => handleCompleteRequest(request.id)}
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 hover:border-green-500 hover:text-green-600 text-green-600"
+              title="Completar solicitud"
+            >
+              <FiCheck className="w-3 h-3" /> Completar
+            </button>
+          </PermissionGuard>
         )}
 
         {/* Registrar factura - si no tiene factura */}
@@ -511,22 +584,26 @@ const RequestsManagementPage = () => {
           </button>
 
           {/* Nueva Pre-Solicitud */}
-          <button
-            onClick={handleNewPreRequest}
-            className="w-full parametrization-filter-button flex items-center justify-center space-x-2 px-4 py-2 transition-colors"
-          >
-            <FaCalendarAlt className="w-4 h-4" />
-            <span className="text-sm">Nueva Pre-Solicitud</span>
-          </button>
+          <PermissionGuard permission={146}>
+            <button
+              onClick={handleNewPreRequest}
+              className="w-full parametrization-filter-button flex items-center justify-center space-x-2 px-4 py-2 transition-colors"
+            >
+              <FaCalendarAlt className="w-4 h-4" />
+              <span className="text-sm">Nueva Pre-Solicitud</span>
+            </button>
+          </PermissionGuard>
 
           {/* Nueva Solicitud */}
-          <button
-            onClick={handleNewRequest}
-            className="w-full parametrization-filter-button flex items-center justify-center space-x-2 px-4 py-2 transition-colors"
-          >
-            <FaPlus className="w-4 h-4" />
-            <span className="text-sm">Nueva Solicitud</span>
-          </button>
+          <PermissionGuard permission={151}>
+            <button
+              onClick={handleNewRequest}
+              className="w-full parametrization-filter-button flex items-center justify-center space-x-2 px-4 py-2 transition-colors"
+            >
+              <FaPlus className="w-4 h-4" />
+              <span className="text-sm">Nueva Solicitud</span>
+            </button>
+          </PermissionGuard>
 
           {/* Generar Reporte */}
           <button
@@ -634,15 +711,17 @@ const RequestsManagementPage = () => {
       </div>
 
       {/* Lista de solicitudes */}
-      <div className="card-theme rounded-lg shadow">
-        <TableList
-          columns={columns}
-          data={filteredData}
-          loading={loading}
-          globalFilter={globalFilter}
-          onGlobalFilterChange={setGlobalFilter}
-        />
-      </div>
+      <PermissionGuard permission={149}>
+        <div className="card-theme rounded-lg shadow">
+          <TableList
+            columns={columns}
+            data={filteredData}
+            loading={loading}
+            globalFilter={globalFilter}
+            onGlobalFilterChange={setGlobalFilter}
+          />
+        </div>
+      </PermissionGuard>
 
       {/* Modal de Filtros */}
       <FilterModal
@@ -703,7 +782,7 @@ const RequestsManagementPage = () => {
       <CancelRequestModal
         isOpen={cancelModalOpen}
         onClose={() => setCancelModalOpen(false)}
-        request={selectedRequest}
+        request={requestToCancel}
         onSuccess={handleCancelSuccess}
       />
 
@@ -731,6 +810,16 @@ const RequestsManagementPage = () => {
         message={successMessage}
       />
 
+      {/* Modal de Detalles de Solicitud */}
+      <DetailsRequestModal
+        isOpen={detailsModalOpen}
+        onClose={() => {
+          setDetailsModalOpen(false);
+          setSelectedRequestId(null);
+        }}
+        requestId={selectedRequestId}
+      />
+      
       {/* Modal de Generar Factura */}
       <GenerateInvoiceModal
         isOpen={GenerateInvoiceModalOpen}

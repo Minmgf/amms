@@ -1,23 +1,10 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
-import { 
-  FaFileAlt, 
-  FaCalendarAlt, 
-  FaClock, 
-  FaUser, 
-  FaIdCard, 
-  FaEnvelope, 
-  FaPhone,
-  FaTractor,
-  FaMapMarkerAlt,
-  FaGlobe,
-  FaRulerCombined,
-  FaMountain,
-  FaDollarSign,
-  FaCreditCard
-} from "react-icons/fa";
+import { FaTractor, FaMapMarkerAlt } from "react-icons/fa";
 import { useTheme } from "@/contexts/ThemeContext";
+import { getRequestDetails } from "@/services/requestService";
+import { getCountries, getStates, getCities } from "@/services/locationService";
 
 /**
  * DetailsRequestModal Component
@@ -29,36 +16,45 @@ import { useTheme } from "@/contexts/ThemeContext";
  * @param {Object} props
  * @param {boolean} props.isOpen - Controla si el modal está abierto
  * @param {Function} props.onClose - Función para cerrar el modal
- * @param {Object} props.request - Datos de la solicitud a mostrar
+ * @param {string} props.requestId - ID de la solicitud a cargar
  */
-const DetailsRequestModal = ({ isOpen, onClose, request }) => {
+const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
   const { getCurrentTheme } = useTheme();
 
   // Estados para datos parametrizables
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [requestData, setRequestData] = useState(null);
+  
+  // Estados para nombres de ubicaciones
+  const [locationNames, setLocationNames] = useState({
+    country: null,
+    department: null,
+    city: null
+  });
 
-  // Mock data - Estados parametrizables (vendrá del endpoint)
-  // TODO: Cuando se implemente el endpoint, reemplazar con llamada a la API
+  // Estados parametrizables (sincronizados con el backend)
   const [requestStatuses] = useState([
-    { id_statues: 1, name: "Presolicitud", description: "Solicitud en estado inicial" },
-    { id_statues: 2, name: "Pendiente", description: "Solicitud pendiente de aprobación" },
-    { id_statues: 3, name: "En ejecución", description: "Solicitud en proceso" },
-    { id_statues: 4, name: "Finalizada", description: "Solicitud completada" },
-    { id_statues: 5, name: "Cancelada", description: "Solicitud cancelada" },
+    { id_statues: 19, name: "Presolicitud", description: "Solicitud en estado inicial" },
+    { id_statues: 20, name: "Pendiente", description: "Solicitud pendiente de aprobación" },
+    { id_statues: 21, name: "Confirmada", description: "Solicitud confirmada" },
+    { id_statues: 4, name: "En ejecución", description: "Solicitud en proceso" },
+    { id_statues: 22, name: "Finalizada", description: "Solicitud completada" },
+    { id_statues: 23, name: "Cancelada", description: "Solicitud cancelada" },
   ]);
 
   const [paymentStatuses] = useState([
-    { id_statues: 1, name: "Pendiente", description: "Pago pendiente" },
-    { id_statues: 2, name: "Pago parcial", description: "Pago parcial realizado" },
-    { id_statues: 3, name: "Pagado", description: "Pago completado" },
+    { id_statues: 15, name: "Pendiente", description: "Pago pendiente" },
+    { id_statues: 17, name: "Pago Parcial", description: "Pago parcial realizado" },
+    { id_statues: 16, name: "Pagado", description: "Pago completado" },
   ]);
 
   const [paymentMethods] = useState([
-    { id: 1, name: "Contado", description: "Pago al contado" },
-    { id: 2, name: "Crédito", description: "Pago a crédito" },
-    { id: 3, name: "Anticipado", description: "Pago anticipado" },
-    { id: 4, name: "Por cuotas", description: "Pago en cuotas" },
+    { id: "1", name: "Medio de pago no definido", description: "Método no especificado" },
+    { id: "2", name: "Contado", description: "Pago al contado" },
+    { id: "3", name: "Crédito", description: "Pago a crédito" },
+    { id: "4", name: "Anticipado", description: "Pago anticipado" },
+    { id: "5", name: "Por cuotas", description: "Pago en cuotas" },
   ]);
 
   // Mock data - Datos de prueba de la solicitud
@@ -106,6 +102,72 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
     payment_method_id: 2, // Crédito
   };
 
+  // Cargar detalles de la solicitud cuando se proporciona requestId
+  useEffect(() => {
+    const loadRequestDetails = async () => {
+      if (!requestId || !isOpen) {
+        return;
+      }
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await getRequestDetails(requestId);
+        setRequestData(data);
+      } catch (err) {
+        setError('No se pudieron cargar los detalles de la solicitud. Por favor, intente nuevamente.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadRequestDetails();
+  }, [requestId, isOpen]);
+
+  // Cargar nombres de ubicaciones cuando se reciben los datos
+  useEffect(() => {
+    const loadLocationNames = async () => {
+      if (!requestData?.request_location) return;
+      
+      const location = requestData.request_location;
+      const countryIso2 = location.country;
+      const departmentIso2 = location.department;
+      const cityId = location.city_id;
+      
+      if (!countryIso2) return;
+      
+      try {
+        // Cargar país
+        const countries = await getCountries();
+        const country = countries.find(c => c.iso2 === countryIso2);
+        
+        let department = null;
+        let city = null;
+        
+        // Cargar departamento si existe
+        if (departmentIso2) {
+          const states = await getStates(countryIso2);
+          department = states.find(s => s.iso2 === departmentIso2);
+          
+          // Cargar ciudad si existe
+          if (cityId && departmentIso2) {
+            const cities = await getCities(countryIso2, departmentIso2);
+            city = cities.find(c => c.id === cityId);
+          }
+        }
+        
+        setLocationNames({
+          country: country?.name || null,
+          department: department?.name || null,
+          city: city?.name || null
+        });
+      } catch (err) {
+        console.error('Error cargando nombres de ubicaciones:', err);
+      }
+    };
+    
+    loadLocationNames();
+  }, [requestData]);
+
   // Auto-dismiss error after 5 seconds
   useEffect(() => {
     if (error) {
@@ -125,22 +187,24 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
   };
 
   // Función para obtener colores por ID (basada en ID, no en nombre)
+  // Los colores están mapeados según el diseño del sistema y sincronizados con el backend
   const getRequestStatusColorById = (id) => {
     switch (id) {
-      case 1: return "bg-gray-100 text-gray-800"; // Presolicitud
-      case 2: return "bg-yellow-100 text-yellow-800"; // Pendiente
-      case 3: return "bg-blue-100 text-blue-800"; // En ejecución
-      case 4: return "bg-green-100 text-green-800"; // Finalizada
-      case 5: return "bg-red-100 text-red-800"; // Cancelada
+      case 19: return "bg-purple-100 text-purple-800"; // Presolicitud
+      case 20: return "bg-yellow-100 text-yellow-800"; // Pendiente
+      case 21: return "bg-blue-100 text-blue-800"; // Confirmada
+      case 4: return "bg-cyan-100 text-cyan-800"; // En ejecución
+      case 22: return "bg-green-100 text-green-800"; // Finalizada
+      case 23: return "bg-gray-100 text-gray-800"; // Cancelada
       default: return "bg-gray-100 text-gray-800";
     }
   };
 
   const getPaymentStatusColorById = (id) => {
     switch (id) {
-      case 1: return "bg-yellow-100 text-yellow-800"; // Pendiente
-      case 2: return "bg-orange-100 text-orange-800"; // Pago parcial
-      case 3: return "bg-green-100 text-green-800"; // Pagado
+      case 15: return "bg-yellow-100 text-yellow-800"; // Pendiente
+      case 17: return "bg-orange-100 text-orange-800"; // Pago parcial
+      case 16: return "bg-green-100 text-green-800"; // Pagado
       default: return "bg-gray-100 text-gray-800";
     }
   };
@@ -150,6 +214,9 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
     if (!dateString) return "N/A";
     try {
       const date = new Date(dateString);
+      // Verificar si la fecha es válida
+      if (isNaN(date.getTime())) return "N/A";
+      
       return date.toLocaleString('es-CO', {
         year: 'numeric',
         month: '2-digit',
@@ -158,7 +225,25 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
         minute: '2-digit',
         hour12: true
       });
-    } catch {
+    } catch (error) {
+      return dateString;
+    }
+  };
+  
+  // Formatear solo fecha (sin hora)
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    try {
+      const date = new Date(dateString);
+      // Verificar si la fecha es válida
+      if (isNaN(date.getTime())) return "N/A";
+      
+      return date.toLocaleDateString('es-CO', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+    } catch (error) {
       return dateString;
     }
   };
@@ -174,13 +259,63 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
 
   if (!isOpen) return null;
 
-  // Usar datos mock si no se proporciona request, o usar request si está disponible
-  const requestData = request || mockRequestData;
+  // Mapear datos del endpoint al formato del modal
+  const mappedData = requestData ? {
+    // Información general
+    request_code: requestData.id_request,
+    status_id: requestData.request_status_id,
+    status_name: requestData.request_status_name,
+    detail: requestData.request_detail,
+    registration_date: requestData.confirmation_datetime,
+    scheduled_start_date: requestData.scheduled_start_date,
+    scheduled_end_date: requestData.scheduled_end_date,
+    completion_date: requestData.completion_cancellation_datetime,
+    completion_observations: requestData.completion_cancellation_observations,
+    confirmation_user: requestData.confirmation_user_name,
+    completion_user: requestData.completion_cancellation_user_name,
+    
+    // Información del cliente
+    client_name: requestData.customer_legal_entity_name || 
+                `${requestData.customer_name || ''} ${requestData.customer_first_last_name || ''} ${requestData.customer_second_last_name || ''}`.trim(),
+    client_document_type: requestData.customer_document_type,
+    client_document_number: requestData.customer_document_number,
+    client_email: requestData.customer_email,
+    client_phone: requestData.customer_phone,
+    
+    // Maquinaria asignada
+    machinery: (requestData.request_machinery_user || []).map(m => ({
+      image: m.machinery_image_path,
+      serial_number: m.serial_number,
+      name: `Maquinaria ${m.serial_number}`,
+      operator: m.user_name
+    })),
+    
+    // Ubicación
+    location_country: requestData.request_location?.country,
+    location_department: requestData.request_location?.department,
+    location_municipality: requestData.request_location?.city_id,
+    location_place_name: requestData.request_location?.place_name,
+    location_latitude: requestData.request_location?.latitude,
+    location_longitude: requestData.request_location?.longitude,
+    location_area: requestData.request_location?.area,
+    location_area_unit: requestData.request_location?.area_unit_symbol,
+    location_soil_type: requestData.request_location?.soil_type_name,
+    location_humidity: requestData.request_location?.humidity_level,
+    location_altitude: requestData.request_location?.altitude,
+    location_altitude_unit: requestData.request_location?.altitude_unit_symbol,
+    
+    // Información económica
+    billing_total_amount: requestData.amount_to_pay,
+    billing_currency: requestData.currency_unit_amount_to_pay_symbol,
+    billing_amount_paid: requestData.amount_paid,
+    payment_status_id: requestData.payment_status_id,
+    payment_method_id: requestData.payment_method_code,
+  } : mockRequestData;
 
   // Obtener información de estados
-  const requestStatus = getStatusById(requestData.status_id, requestStatuses);
-  const paymentStatus = getStatusById(requestData.payment_status_id, paymentStatuses);
-  const paymentMethod = getStatusById(requestData.payment_method_id, paymentMethods);
+  const requestStatus = getStatusById(mappedData.status_id, requestStatuses);
+  const paymentStatus = getStatusById(mappedData.payment_status_id, paymentStatuses);
+  const paymentMethod = getStatusById(mappedData.payment_method_id, paymentMethods);
 
   return (
     <div
@@ -191,7 +326,7 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
         {/* Header */}
         <div className="sticky top-0 z-10 bg-background flex items-center justify-between px-4 sm:px-6 py-5 border-b border-primary">
           <h2 className="text-theme-xl text-primary font-theme-semibold">
-            Request Information
+            Información de la Solicitud
           </h2>
           <button
             onClick={onClose}
@@ -201,6 +336,15 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
             <FiX className="w-5 h-5 text-secondary" />
           </button>
         </div>
+
+        {/* Loading state */}
+        {loading && (
+          <div className="p-4 sm:p-6">
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+          </div>
+        )}
 
         {/* Error message */}
         {error && !loading && (
@@ -218,382 +362,270 @@ const DetailsRequestModal = ({ isOpen, onClose, request }) => {
         )}
 
         {/* Content - Scrollable */}
-        <div className="overflow-y-auto max-h-[calc(90vh-90px)]">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-4 sm:p-6">
-            
-            {/* General Information Section */}
-            <section className="card-theme p-6">
-              <h3 className="text-theme-lg font-theme-semibold text-primary mb-6">
-                General Information
-              </h3>
-              
-              <div className="space-y-5">
-                {/* Request ID */}
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-md bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <FaFileAlt className="w-5 h-5 text-blue-600" />
+        {!loading && (
+          <div className="overflow-y-auto max-h-[calc(90vh-90px)]">
+            <div className="p-4 sm:p-6 space-y-6">
+            {/* Cards Container */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* General Information Card */}
+              <div className="card-theme">
+                <h3 className="font-theme-semibold text-theme-base text-primary mb-6">
+                  Información General
+                </h3>
+                
+                <div className="space-y-3">
+                  {/* Request ID */}
+                  <div className="flex justify-between items-start">
+                    <span className="text-theme-sm text-secondary">ID de Solicitud:</span>
+                    <span className="font-theme-medium text-primary text-right">{mappedData.request_code || "N/A"}</span>
                   </div>
-                  <div className="flex-1">
-                    <div className="text-theme-sm text-secondary mb-1">Request ID:</div>
-                    <div className="font-theme-medium text-primary">{requestData.request_code || "N/A"}</div>
-                  </div>
-                </div>
 
-                {/* Status */}
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-md bg-purple-100 flex items-center justify-center flex-shrink-0">
-                    <FaFileAlt className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-theme-sm text-secondary mb-1">Status:</div>
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                      getRequestStatusColorById(requestData.status_id)
+                  {/* Status */}
+                  <div className="flex justify-between items-center">
+                    <span className="text-theme-sm text-secondary">Estado:</span>
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                      getRequestStatusColorById(mappedData.status_id)
                     }`}>
                       {requestStatus?.name || "N/A"}
                     </span>
                   </div>
-                </div>
 
-                {/* Request detail */}
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-md bg-green-100 flex items-center justify-center flex-shrink-0">
-                    <FaFileAlt className="w-5 h-5 text-green-600" />
+                  {/* Request detail */}
+                  <div className="flex justify-between items-start">
+                    <span className="text-theme-sm text-secondary">Detalle de solicitud:</span>
+                    <span className="font-theme-medium text-primary text-right max-w-[60%]">{mappedData.detail || "N/A"}</span>
                   </div>
-                  <div className="flex-1">
-                    <div className="text-theme-sm text-secondary mb-1">Request detail:</div>
-                    <div className="font-theme-medium text-primary">{requestData.detail || "Example"}</div>
-                  </div>
-                </div>
 
-                {/* Registration date */}
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-md bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                    <FaCalendarAlt className="w-5 h-5 text-indigo-600" />
+                  {/* Registration date */}
+                  <div className="flex justify-between items-start">
+                    <span className="text-theme-sm text-secondary">Fecha de registro:</span>
+                    <span className="font-theme-medium text-primary text-right">{formatDateTime(mappedData.registration_date)}</span>
                   </div>
-                  <div className="flex-1">
-                    <div className="text-theme-sm text-secondary mb-1">Registration date:</div>
-                    <div className="font-theme-medium text-primary">{formatDateTime(requestData.registration_date)}</div>
-                  </div>
-                </div>
 
-                {/* Scheduled date */}
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-md bg-orange-100 flex items-center justify-center flex-shrink-0">
-                    <FaClock className="w-5 h-5 text-orange-600" />
+                  {/* Scheduled start date */}
+                  <div className="flex justify-between items-start">
+                    <span className="text-theme-sm text-secondary">Fecha programada:</span>
+                    <span className="font-theme-medium text-primary text-right">{formatDate(mappedData.scheduled_start_date)}</span>
                   </div>
-                  <div className="flex-1">
-                    <div className="text-theme-sm text-secondary mb-1">Scheduled date:</div>
-                    <div className="font-theme-medium text-primary">{formatDateTime(requestData.scheduled_date)}</div>
-                  </div>
-                </div>
 
-                {/* Completion date */}
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-md bg-teal-100 flex items-center justify-center flex-shrink-0">
-                    <FaCalendarAlt className="w-5 h-5 text-teal-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-theme-sm text-secondary mb-1">Completion date:</div>
-                    <div className="font-theme-medium text-primary">{formatDateTime(requestData.completion_date) || "N/A"}</div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Client Information Section */}
-            <section className="card-theme p-6">
-              <h3 className="text-theme-lg font-theme-semibold text-primary mb-6">
-                Client Information
-              </h3>
-              
-              <div className="space-y-5">
-                {/* Name/Legal name */}
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-md bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <FaUser className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-theme-sm text-secondary mb-1">Name/Legal name:</div>
-                    <div className="font-theme-medium text-primary">{requestData.client_name || "N/A"}</div>
-                  </div>
-                </div>
-
-                {/* Documentation type */}
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-md bg-purple-100 flex items-center justify-center flex-shrink-0">
-                    <FaIdCard className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-theme-sm text-secondary mb-1">Documentation type:</div>
-                    <div className="font-theme-medium text-primary">{requestData.client_document_type || "N/A"}</div>
-                  </div>
-                </div>
-
-                {/* Documentation number */}
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-md bg-green-100 flex items-center justify-center flex-shrink-0">
-                    <FaIdCard className="w-5 h-5 text-green-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-theme-sm text-secondary mb-1">Documentation number:</div>
-                    <div className="font-theme-medium text-primary">{requestData.client_document_number || "N/A"}</div>
-                  </div>
-                </div>
-
-                {/* Email */}
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-md bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                    <FaEnvelope className="w-5 h-5 text-indigo-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-theme-sm text-secondary mb-1">Email:</div>
-                    <div className="font-theme-medium text-primary">{requestData.client_email || "N/A"}</div>
-                  </div>
-                </div>
-
-                {/* Phone number */}
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-md bg-orange-100 flex items-center justify-center flex-shrink-0">
-                    <FaPhone className="w-5 h-5 text-orange-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-theme-sm text-secondary mb-1">Phone number:</div>
-                    <div className="font-theme-medium text-primary">{requestData.client_phone || "N/A"}</div>
-                  </div>
-                </div>
-              </div>
-            </section>
-          </div>
-
-          {/* Service details and assigned resources Section */}
-          <section className="p-4 sm:p-6 border-t border-primary">
-            <h3 className="text-theme-lg font-theme-semibold text-primary mb-6">
-              Service details and assigned resources
-            </h3>
-
-            {/* Machinery table */}
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-surface">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-theme-sm font-theme-semibold text-primary">Machine</th>
-                    <th className="px-4 py-3 text-left text-theme-sm font-theme-semibold text-primary">Serial Number</th>
-                    <th className="px-4 py-3 text-left text-theme-sm font-theme-semibold text-primary">Operator</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-primary">
-                  {requestData.machinery && requestData.machinery.length > 0 ? (
-                    requestData.machinery.map((machine, index) => (
-                      <tr key={index} className="hover:bg-hover transition-colors">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-md bg-green-100 flex items-center justify-center flex-shrink-0">
-                              <FaTractor className="w-5 h-5 text-green-600" />
-                            </div>
-                            <span className="font-theme-medium text-primary">{machine.name || "N/A"}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-secondary">{machine.serial_number || "N/A"}</td>
-                        <td className="px-4 py-3 text-secondary">{machine.operator || "N/A"}</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="3" className="px-4 py-6 text-center text-secondary">
-                        No hay maquinaria asignada
-                      </td>
-                    </tr>
+                  {/* Completion date */}
+                  {mappedData.completion_date && (
+                    <div className="flex justify-between items-start">
+                      <span className="text-theme-sm text-secondary">Fecha de realización:</span>
+                      <span className="font-theme-medium text-primary text-right">{formatDateTime(mappedData.completion_date)}</span>
+                    </div>
                   )}
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          {/* Location Information Section */}
-          <section className="p-4 sm:p-6 border-t border-primary">
-            <h3 className="text-theme-lg font-theme-semibold text-primary mb-6">
-              Location Information
-            </h3>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Location details */}
-              <div className="space-y-5">
-                {/* Country */}
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-md bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <FaGlobe className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-theme-sm text-secondary mb-1">Country:</div>
-                    <div className="font-theme-medium text-primary">{requestData.location_country || "N/A"}</div>
-                  </div>
-                </div>
-
-                {/* Department */}
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-md bg-purple-100 flex items-center justify-center flex-shrink-0">
-                    <FaMapMarkerAlt className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-theme-sm text-secondary mb-1">Department:</div>
-                    <div className="font-theme-medium text-primary">{requestData.location_department || "N/A"}</div>
-                  </div>
-                </div>
-
-                {/* Municipality */}
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-md bg-green-100 flex items-center justify-center flex-shrink-0">
-                    <FaMapMarkerAlt className="w-5 h-5 text-green-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-theme-sm text-secondary mb-1">Municipality:</div>
-                    <div className="font-theme-medium text-primary">{requestData.location_municipality || "N/A"}</div>
-                  </div>
-                </div>
-
-                {/* Place name */}
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-md bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                    <FaMapMarkerAlt className="w-5 h-5 text-indigo-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-theme-sm text-secondary mb-1">Place name:</div>
-                    <div className="font-theme-medium text-primary">{requestData.location_place_name || "N/A"}</div>
-                  </div>
-                </div>
-
-                {/* Area */}
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-md bg-orange-100 flex items-center justify-center flex-shrink-0">
-                    <FaRulerCombined className="w-5 h-5 text-orange-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-theme-sm text-secondary mb-1">Area:</div>
-                    <div className="font-theme-medium text-primary">
-                      {requestData.location_area ? `${requestData.location_area} hectares` : "N/A"}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Type of soil */}
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-md bg-yellow-100 flex items-center justify-center flex-shrink-0">
-                    <FaRulerCombined className="w-5 h-5 text-yellow-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-theme-sm text-secondary mb-1">Type of soil:</div>
-                    <div className="font-theme-medium text-primary">{requestData.location_soil_type || "N/A"}</div>
-                  </div>
-                </div>
-
-                {/* Humidity level */}
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-md bg-cyan-100 flex items-center justify-center flex-shrink-0">
-                    <FaRulerCombined className="w-5 h-5 text-cyan-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-theme-sm text-secondary mb-1">Humidity level:</div>
-                    <div className="font-theme-medium text-primary">
-                      {requestData.location_humidity ? `${requestData.location_humidity}%` : "N/A"}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Altitude */}
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-md bg-teal-100 flex items-center justify-center flex-shrink-0">
-                    <FaMountain className="w-5 h-5 text-teal-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-theme-sm text-secondary mb-1">Altitude:</div>
-                    <div className="font-theme-medium text-primary">
-                      {requestData.location_altitude ? `${requestData.location_altitude} m a.s.l` : "N/A"}
-                    </div>
-                  </div>
                 </div>
               </div>
 
-              {/* Map */}
-              <div className="card-theme p-4 h-[400px] flex flex-col">
-                <div className="text-theme-sm text-secondary mb-2">Coordinates (Map)</div>
-                {requestData.location_latitude && requestData.location_longitude ? (
-                  <div className="flex-1 bg-surface rounded-lg flex items-center justify-center relative overflow-hidden">
-                    {/* Placeholder for map - TODO: Integrate with map library */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-green-100 to-blue-100"></div>
-                    <div className="relative z-10 text-center">
-                      <FaMapMarkerAlt className="w-16 h-16 text-red-500 mx-auto mb-2" />
-                      <div className="text-sm text-secondary bg-white/90 px-4 py-2 rounded-lg">
-                        <div className="font-medium">Latitude: {requestData.location_latitude}</div>
-                        <div className="font-medium">Longitude: {requestData.location_longitude}</div>
+              {/* Client Information Card */}
+              <div className="card-theme">
+                <h3 className="font-theme-semibold text-theme-base text-primary mb-6">
+                  Información del Cliente
+                </h3>
+                
+                <div className="space-y-3">
+                  {/* Name/Legal name */}
+                  <div className="flex justify-between items-start">
+                    <span className="text-theme-sm text-secondary">Nombre/Razón social:</span>
+                    <span className="font-theme-medium text-primary text-right max-w-[60%]">{mappedData.client_name || "N/A"}</span>
+                  </div>
+
+                  {/* Documentation type */}
+                  <div className="flex justify-between items-start">
+                    <span className="text-theme-sm text-secondary">Tipo de documento:</span>
+                    <span className="font-theme-medium text-primary text-right">{mappedData.client_document_type || "N/A"}</span>
+                  </div>
+
+                  {/* Documentation number */}
+                  <div className="flex justify-between items-start">
+                    <span className="text-theme-sm text-secondary">Número de documento:</span>
+                    <span className="font-theme-medium text-primary text-right">{mappedData.client_document_number || "N/A"}</span>
+                  </div>
+
+                  {/* Email */}
+                  <div className="flex justify-between items-start">
+                    <span className="text-theme-sm text-secondary">Correo electrónico:</span>
+                    <span className="font-theme-medium text-primary text-right">{mappedData.client_email || "N/A"}</span>
+                  </div>
+
+                  {/* Phone number */}
+                  <div className="flex justify-between items-start">
+                    <span className="text-theme-sm text-secondary">Número de teléfono:</span>
+                    <span className="font-theme-medium text-primary text-right">{mappedData.client_phone || "N/A"}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Service details and assigned resources Card */}
+            <div className="card-theme">
+              <h3 className="font-theme-semibold text-theme-base text-primary mb-6">
+                Detalles del servicio y recursos asignados
+              </h3>
+
+              {/* Machinery table */}
+              <div className="overflow-x-auto">
+                <div className="border border-primary rounded-lg overflow-hidden">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-surface border-b border-primary">
+                        <th className="px-6 py-3 text-left text-theme-sm font-theme-medium text-secondary">Máquina</th>
+                        <th className="px-6 py-3 text-left text-theme-sm font-theme-medium text-secondary">Número de Serie</th>
+                        <th className="px-6 py-3 text-left text-theme-sm font-theme-medium text-secondary">Operador</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {mappedData.machinery && mappedData.machinery.length > 0 ? (
+                        mappedData.machinery.map((machine, index) => (
+                          <tr key={index} className="bg-background hover:bg-hover transition-colors">
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                {machine.image ? (
+                                  <img src={machine.image} alt={machine.name} className="w-10 h-10 rounded-md object-cover flex-shrink-0" />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-md bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+                                    <FaTractor className="w-5 h-5 text-green-600 dark:text-green-500" />
+                                  </div>
+                                )}
+                                <span className="font-theme-medium text-primary">{machine.name || "N/A"}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-secondary">{machine.serial_number || "N/A"}</td>
+                            <td className="px-6 py-4 text-secondary">{machine.operator || "N/A"}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr className="bg-background">
+                          <td colSpan="3" className="px-6 py-8 text-center text-secondary">
+                            No hay maquinaria asignada
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Location Information Card */}
+            <div className="card-theme">
+              <h3 className="font-theme-semibold text-theme-base text-primary mb-6">
+                Información de Ubicación
+              </h3>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Location details */}
+                <div className="space-y-5">
+                  {/* Country */}
+                  <div className="flex justify-between items-start">
+                    <span className="text-theme-sm text-secondary">País:</span>
+                    <span className="font-theme-medium text-primary text-right">{locationNames.country || "N/A"}</span>
+                  </div>
+
+                  {/* Department */}
+                  <div className="flex justify-between items-start">
+                    <span className="text-theme-sm text-secondary">Departamento:</span>
+                    <span className="font-theme-medium text-primary text-right">{locationNames.department || "N/A"}</span>
+                  </div>
+
+                  {/* Municipality */}
+                  <div className="flex justify-between items-start">
+                    <span className="text-theme-sm text-secondary">Municipio:</span>
+                    <span className="font-theme-medium text-primary text-right">{locationNames.city || "N/A"}</span>
+                  </div>
+
+                  {/* Place name */}
+                  <div className="flex justify-between items-start">
+                    <span className="text-theme-sm text-secondary">Nombre del lugar:</span>
+                    <span className="font-theme-medium text-primary text-right">{mappedData.location_place_name || "N/A"}</span>
+                  </div>
+
+                  {/* Area */}
+                  <div className="flex justify-between items-start">
+                    <span className="text-theme-sm text-secondary">Área:</span>
+                    <span className="font-theme-medium text-primary text-right">
+                      {mappedData.location_area ? `${mappedData.location_area} ${mappedData.location_area_unit || ''}` : "N/A"}
+                    </span>
+                  </div>
+
+                  {/* Altitude */}
+                  <div className="flex justify-between items-start">
+                    <span className="text-theme-sm text-secondary">Altitud:</span>
+                    <span className="font-theme-medium text-primary text-right">
+                      {mappedData.location_altitude ? `${mappedData.location_altitude} ${mappedData.location_altitude_unit || 'msnm'}` : "N/A"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Map */}
+                <div className="flex items-center justify-center">
+                  {mappedData.location_latitude && mappedData.location_longitude ? (
+                    <div className="w-full h-[280px] bg-surface rounded-lg relative overflow-hidden">
+                      {/* Google Maps Embed - Sin necesidad de API Key */}
+                      <iframe
+                        src={`https://www.google.com/maps?q=${mappedData.location_latitude},${mappedData.location_longitude}&output=embed&z=15`}
+                        className="w-full h-full border-0"
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                        title="Mapa de ubicación"
+                      ></iframe>
+                      
+                      {/* Coordinates overlay */}
+                      <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm rounded-lg shadow-md p-2 border border-gray-200 z-10">
+                        <div className="text-xs font-semibold text-gray-700 mb-1">Coordenadas</div>
+                        <div className="text-xs text-gray-600">Latitud: {mappedData.location_latitude}</div>
+                        <div className="text-xs text-gray-600">Longitud: {mappedData.location_longitude}</div>
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="flex-1 bg-surface rounded-lg flex items-center justify-center">
-                    <p className="text-secondary">No hay coordenadas disponibles</p>
-                  </div>
-                )}
+                  ) : (
+                    <div className="w-full h-[280px] bg-surface rounded-lg flex items-center justify-center">
+                      <p className="text-secondary">No hay coordenadas disponibles</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </section>
 
-          {/* Billing Information Section */}
-          <section className="p-4 sm:p-6 border-t border-primary">
-            <h3 className="text-theme-lg font-theme-semibold text-primary mb-6">
-              Billing Information
-            </h3>
+            {/* Billing Information Card */}
+            <div className="card-theme">
+              <h3 className="font-theme-semibold text-theme-base text-primary mb-6">
+                Información de Facturación
+              </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Total amount */}
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-md bg-green-100 flex items-center justify-center flex-shrink-0">
-                  <FaDollarSign className="w-5 h-5 text-green-600" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
+                {/* Total amount */}
+                <div className="flex justify-between items-start">
+                  <span className="text-theme-sm text-secondary">Monto total:</span>
+                  <span className="font-theme-medium text-primary text-right">{formatCurrency(mappedData.billing_total_amount)}</span>
                 </div>
-                <div className="flex-1">
-                  <div className="text-theme-sm text-secondary mb-1">Total amount:</div>
-                  <div className="font-theme-medium text-primary text-lg">{formatCurrency(requestData.billing_total_amount)}</div>
-                </div>
-              </div>
 
-              {/* Amount paid */}
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-md bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <FaDollarSign className="w-5 h-5 text-blue-600" />
+                {/* Amount paid */}
+                <div className="flex justify-between items-start">
+                  <span className="text-theme-sm text-secondary">Monto pagado:</span>
+                  <span className="font-theme-medium text-primary text-right">{formatCurrency(mappedData.billing_amount_paid)}</span>
                 </div>
-                <div className="flex-1">
-                  <div className="text-theme-sm text-secondary mb-1">Amount paid:</div>
-                  <div className="font-theme-medium text-primary text-lg">{formatCurrency(requestData.billing_amount_paid)}</div>
-                </div>
-              </div>
 
-              {/* Payment status */}
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-md bg-purple-100 flex items-center justify-center flex-shrink-0">
-                  <FaCreditCard className="w-5 h-5 text-purple-600" />
-                </div>
-                <div className="flex-1">
-                  <div className="text-theme-sm text-secondary mb-1">Payment status:</div>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                    getPaymentStatusColorById(requestData.payment_status_id)
+                {/* Payment status */}
+                <div className="flex justify-between items-center">
+                  <span className="text-theme-sm text-secondary">Estado de pago:</span>
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                    getPaymentStatusColorById(mappedData.payment_status_id)
                   }`}>
                     {paymentStatus?.name || "N/A"}
                   </span>
                 </div>
-              </div>
 
-              {/* Payment method */}
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-md bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                  <FaCreditCard className="w-5 h-5 text-indigo-600" />
-                </div>
-                <div className="flex-1">
-                  <div className="text-theme-sm text-secondary mb-1">Payment method:</div>
-                  <div className="font-theme-medium text-primary">{paymentMethod?.name || "N/A"}</div>
+                {/* Payment method */}
+                <div className="flex justify-between items-start">
+                  <span className="text-theme-sm text-secondary">Método de pago:</span>
+                  <span className="font-theme-medium text-primary text-right">{paymentMethod?.name || "N/A"}</span>
                 </div>
               </div>
             </div>
-          </section>
+          </div>
         </div>
+        )}
       </div>
     </div>
   );
