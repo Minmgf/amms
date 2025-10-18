@@ -4,6 +4,7 @@ import { FiX } from "react-icons/fi";
 import { FaTractor, FaMapMarkerAlt } from "react-icons/fa";
 import { useTheme } from "@/contexts/ThemeContext";
 import { getRequestDetails } from "@/services/requestService";
+import { getCountries, getStates, getCities } from "@/services/locationService";
 
 /**
  * DetailsRequestModal Component
@@ -24,6 +25,13 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [requestData, setRequestData] = useState(null);
+  
+  // Estados para nombres de ubicaciones
+  const [locationNames, setLocationNames] = useState({
+    country: null,
+    department: null,
+    city: null
+  });
 
   // Estados parametrizables (sincronizados con el backend)
   const [requestStatuses] = useState([
@@ -114,6 +122,51 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
 
     loadRequestDetails();
   }, [requestId, isOpen]);
+
+  // Cargar nombres de ubicaciones cuando se reciben los datos
+  useEffect(() => {
+    const loadLocationNames = async () => {
+      if (!requestData?.request_location) return;
+      
+      const location = requestData.request_location;
+      const countryIso2 = location.country;
+      const departmentIso2 = location.department;
+      const cityId = location.city_id;
+      
+      if (!countryIso2) return;
+      
+      try {
+        // Cargar país
+        const countries = await getCountries();
+        const country = countries.find(c => c.iso2 === countryIso2);
+        
+        let department = null;
+        let city = null;
+        
+        // Cargar departamento si existe
+        if (departmentIso2) {
+          const states = await getStates(countryIso2);
+          department = states.find(s => s.iso2 === departmentIso2);
+          
+          // Cargar ciudad si existe
+          if (cityId && departmentIso2) {
+            const cities = await getCities(countryIso2, departmentIso2);
+            city = cities.find(c => c.id === cityId);
+          }
+        }
+        
+        setLocationNames({
+          country: country?.name || null,
+          department: department?.name || null,
+          city: city?.name || null
+        });
+      } catch (err) {
+        console.error('Error cargando nombres de ubicaciones:', err);
+      }
+    };
+    
+    loadLocationNames();
+  }, [requestData]);
 
   // Auto-dismiss error after 5 seconds
   useEffect(() => {
@@ -463,23 +516,23 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Location details */}
-                <div className="space-y-3">
+                <div className="space-y-5">
                   {/* Country */}
                   <div className="flex justify-between items-start">
                     <span className="text-theme-sm text-secondary">País:</span>
-                    <span className="font-theme-medium text-primary text-right">{mappedData.location_country || "N/A"}</span>
+                    <span className="font-theme-medium text-primary text-right">{locationNames.country || "N/A"}</span>
                   </div>
 
                   {/* Department */}
                   <div className="flex justify-between items-start">
                     <span className="text-theme-sm text-secondary">Departamento:</span>
-                    <span className="font-theme-medium text-primary text-right">{mappedData.location_department || "N/A"}</span>
+                    <span className="font-theme-medium text-primary text-right">{locationNames.department || "N/A"}</span>
                   </div>
 
                   {/* Municipality */}
                   <div className="flex justify-between items-start">
                     <span className="text-theme-sm text-secondary">Municipio:</span>
-                    <span className="font-theme-medium text-primary text-right">{mappedData.location_municipality || "N/A"}</span>
+                    <span className="font-theme-medium text-primary text-right">{locationNames.city || "N/A"}</span>
                   </div>
 
                   {/* Place name */}
@@ -493,20 +546,6 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
                     <span className="text-theme-sm text-secondary">Área:</span>
                     <span className="font-theme-medium text-primary text-right">
                       {mappedData.location_area ? `${mappedData.location_area} ${mappedData.location_area_unit || ''}` : "N/A"}
-                    </span>
-                  </div>
-
-                  {/* Type of soil */}
-                  <div className="flex justify-between items-start">
-                    <span className="text-theme-sm text-secondary">Tipo de suelo:</span>
-                    <span className="font-theme-medium text-primary text-right">{mappedData.location_soil_type || "N/A"}</span>
-                  </div>
-
-                  {/* Humidity level */}
-                  <div className="flex justify-between items-start">
-                    <span className="text-theme-sm text-secondary">Nivel de humedad:</span>
-                    <span className="font-theme-medium text-primary text-right">
-                      {mappedData.location_humidity ? `${mappedData.location_humidity}%` : "N/A"}
                     </span>
                   </div>
 
