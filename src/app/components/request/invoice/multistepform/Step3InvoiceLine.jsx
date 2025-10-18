@@ -9,6 +9,7 @@ export default function Step3InvoiceLine() {
         control,
         watch,
         setValue,
+        trigger,
         formState: { errors },
     } = useFormContext();
 
@@ -79,7 +80,6 @@ export default function Step3InvoiceLine() {
     };
 
     const handleOpenModal = (index) => {
-        console.log("Abriendo Modal")
         setSelectedLineIndex(index);
         setIsModalOpen(true);
     };
@@ -87,9 +87,30 @@ export default function Step3InvoiceLine() {
     const handleSelectService = (serviceName) => {
         if (selectedLineIndex !== null) {
             setValue(`invoiceLines.${selectedLineIndex}.serviceName`, serviceName);
+            // Validar el campo cuando se selecciona del modal
+            trigger(`invoiceLines.${selectedLineIndex}.serviceName`);
         }
         setIsModalOpen(false);
         setSelectedLineIndex(null);
+    };
+
+    const handleNegativeInput = (e) => {
+        if (e.target.value < 0) {
+            e.target.value = 0;
+        }
+    };
+
+    const validateNonNegative = (value) => {
+        const numValue = parseFloat(value);
+        if (numValue < 0) {
+            return "No puede ser negativo";
+        }
+        return true;
+    };
+
+    const handleFieldChange = (fieldPath) => {
+        // Validar el campo específico cuando cambia
+        trigger(fieldPath);
     };
 
     return (
@@ -127,6 +148,7 @@ export default function Step3InvoiceLine() {
                                             type="text"
                                             {...register(`invoiceLines.${index}.serviceCode`, {
                                                 required: "Campo obligatorio",
+                                                onChange: () => handleFieldChange(`invoiceLines.${index}.serviceCode`),
                                             })}
                                             className="parametrization-input w-full pr-10"
                                             placeholder="Código de Servicio"
@@ -155,6 +177,7 @@ export default function Step3InvoiceLine() {
                                             type="text"
                                             {...register(`invoiceLines.${index}.serviceName`, {
                                                 required: "Campo obligatorio",
+                                                onChange: () => handleFieldChange(`invoiceLines.${index}.serviceName`),
                                             })}
                                             className="parametrization-input w-full pr-10"
                                             placeholder="Nombre del Servicio"
@@ -163,7 +186,6 @@ export default function Step3InvoiceLine() {
                                         <button
                                             type="button"
                                             onClick={() => {
-                                                console.log("Click registrado - Index:", index);
                                                 handleOpenModal(index);
                                             }}
                                             aria-label="Active Services Button"
@@ -186,10 +208,16 @@ export default function Step3InvoiceLine() {
                                     <input
                                         type="number"
                                         step="0.01"
+                                        min="0"
                                         {...register(`invoiceLines.${index}.amount`, {
                                             required: "Campo obligatorio",
-                                            onChange: () => calculateLineTotals(index),
+                                            validate: validateNonNegative,
+                                            onChange: () => {
+                                                calculateLineTotals(index);
+                                                handleFieldChange(`invoiceLines.${index}.amount`);
+                                            },
                                         })}
+                                        onBlur={handleNegativeInput}
                                         className="parametrization-input w-full"
                                         placeholder="0.00"
                                         aria-label="Amount Input"
@@ -208,6 +236,7 @@ export default function Step3InvoiceLine() {
                                     <select
                                         {...register(`invoiceLines.${index}.unitOfMeasurement`, {
                                             required: "Campo obligatorio",
+                                            onChange: () => handleFieldChange(`invoiceLines.${index}.unitOfMeasurement`),
                                         })}
                                         className="parametrization-input w-full"
                                         aria-label="Unit of Measurement Select"
@@ -232,15 +261,18 @@ export default function Step3InvoiceLine() {
                                 </label>
                                 <textarea
                                     {...register(`invoiceLines.${index}.description`, {
-                                        required: "Campo obligatorio",
                                         maxLength: {
                                             value: 500,
                                             message: "Máximo 500 caracteres",
                                         },
+                                        onChange: () => handleFieldChange(`invoiceLines.${index}.description`),
                                     })}
                                     className="parametrization-input w-full"
                                     rows={3}
-                                    onChange={(e) => setCharCount(e.target.value.length)}
+                                    onChange={(e) => {
+                                        setCharCount(e.target.value.length);
+                                        handleFieldChange(`invoiceLines.${index}.description`);
+                                    }}
                                     aria-label="Service Description Textarea"
                                     placeholder="Describa el servicio prestado..."
                                 />
@@ -261,6 +293,7 @@ export default function Step3InvoiceLine() {
                                     <select
                                         {...register(`invoiceLines.${index}.tax`, {
                                             required: "Campo obligatorio",
+                                            onChange: () => handleFieldChange(`invoiceLines.${index}.tax`),
                                         })}
                                         className="parametrization-input w-full"
                                         aria-label="Tax Select"
@@ -284,12 +317,18 @@ export default function Step3InvoiceLine() {
                                     <input
                                         type="number"
                                         step="0.01"
+                                        min="0"
                                         {...register(`invoiceLines.${index}.taxPercent`, {
                                             required: "Campo obligatorio",
-                                            onChange: () => calculateLineTotals(index),
+                                            validate: validateNonNegative,
+                                            onChange: () => {
+                                                calculateLineTotals(index);
+                                                handleFieldChange(`invoiceLines.${index}.taxPercent`);
+                                            },
                                         })}
                                         className="parametrization-input w-full"
                                         placeholder="0.00"
+                                        onBlur={handleNegativeInput}
                                         aria-label="Tax Percent Input"
                                     />
                                     {errors.invoiceLines?.[index]?.taxPercent && (
@@ -306,13 +345,24 @@ export default function Step3InvoiceLine() {
                                     <input
                                         type="number"
                                         step="0.01"
+                                        min="0"
                                         {...register(`invoiceLines.${index}.discountPercent`, {
-                                            onChange: () => calculateLineTotals(index),
+                                            validate: validateNonNegative,
+                                            onChange: () => {
+                                                calculateLineTotals(index);
+                                                handleFieldChange(`invoiceLines.${index}.discountPercent`);
+                                            },
                                         })}
                                         className="parametrization-input w-full"
                                         placeholder="0.00"
                                         aria-label="Discount Percent Input"
+                                        onBlur={handleNegativeInput}
                                     />
+                                    {errors.invoiceLines?.[index]?.discountPercent && (
+                                        <span className="text-xs text-red-500 mt-1 block">
+                                            {errors.invoiceLines[index].discountPercent.message}
+                                        </span>
+                                    )}
                                 </div>
 
                                 <div>
