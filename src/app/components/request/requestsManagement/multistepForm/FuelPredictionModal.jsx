@@ -82,13 +82,13 @@ export default function FuelPredictionModal({ isOpen, onClose, onSave, formData 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" id="fuel-prediction-modal">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="bg-white rounded-lg shadow-lg z-10 max-w-2xl w-full p-6">
+      <div className="bg-background rounded-lg shadow-lg z-10 max-w-2xl w-full p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Predicción de Consumo de Combustible</h3>
           <button type="button" onClick={onClose} aria-label="Cerrar" className="text-gray-600">✕</button>
         </div>
 
-        <div className="mb-4 text-sm text-gray-600 bg-gray-50 p-3 rounded">
+        <div className="card-theme">
           Con la información proporcionada a continuación se generará una predicción del consumo de combustible para su operación agrícola.
         </div>
 
