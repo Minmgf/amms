@@ -2,42 +2,20 @@ import { apiMain } from "@/lib/axios";
 
 // Crear un nuevo servicio
 export const createService = async (serviceData) => {
-  try {
-    console.log("Llamando a API: /services/create/ con datos:", serviceData);
-    const { data } = await apiMain.post("/services/create/", serviceData);
-    console.log("Respuesta de creación de servicio:", data);
-    return data;
-  } catch (error) {
-    console.error("Error al crear servicio:", error);
-    console.error("Respuesta de error:", error.response?.data);
-    throw error;
-  }
+  const { data } = await apiMain.post("/services/create/", serviceData);
+  return data;
 };
 
 // Obtener tipos de servicios activos
 export const getServiceTypes = async () => {
-  try {
-    console.log("Llamando a API: /types/list/active/14/");
-    const { data } = await apiMain.get("/types/list/active/14/");
-    console.log("Respuesta tipos de servicios:", data);
-    return data;
-  } catch (error) {
-    console.error("Error al obtener tipos de servicios:", error);
-    throw error;
-  }
+  const { data } = await apiMain.get("/types/list/active/14/");
+  return data;
 };
 
 // Obtener unidades de moneda activas
 export const getCurrencyUnits = async () => {
-  try {
-    console.log("Llamando a API: /units/active/10/");
-    const { data } = await apiMain.get("/units/active/10/");
-    console.log("Respuesta unidades de moneda:", data);
-    return data;
-  } catch (error) {
-    console.error("Error al obtener unidades de moneda:", error);
-    throw error;
-  }
+  const { data } = await apiMain.get("/units/active/10/");
+  return data;
 };
 
 // Obtener lista de servicios
@@ -58,7 +36,11 @@ export const updateService = async (serviceId, serviceData) => {
   return data;
 };
 
-// Eliminar servicio (placeholder para futura implementación)
+/**
+ * Elimina un servicio
+ * @param {number} serviceId - El ID del servicio a eliminar
+ * @returns {Promise} Respuesta de la API
+ */
 export const deleteService = async (serviceId) => {
   const { data } = await apiMain.delete(`/services/${serviceId}/`);
   return data;
