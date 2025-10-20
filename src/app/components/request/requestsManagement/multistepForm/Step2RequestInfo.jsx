@@ -270,6 +270,7 @@ export default function Step2RequestInfo({ mode, machineryOptions = [], operator
                     type="button"
                     className="btn-theme btn-primary px-4"
                     onClick={handleAddMachinery}
+                    aria-label="Añadir maquinaria y operador"
                     disabled={!selectedMachinery || !selectedOperator}
                   >
                     Añadir
@@ -279,6 +280,7 @@ export default function Step2RequestInfo({ mode, machineryOptions = [], operator
                     type="button"
                     className="btn-theme btn-success px-4"
                     onClick={handleSaveEdit}
+                    aria-label="Guardar cambios de maquinaria y operador"
                     disabled={!selectedMachinery || !selectedOperator}
                   >
                     Guardar
@@ -306,30 +308,33 @@ export default function Step2RequestInfo({ mode, machineryOptions = [], operator
                         <td className="py-2 px-2">{item.operator?.name || "-"}</td>
                         <td className="py-2 px-2">
                           <button
-                            tilt="Editar"
+                            title="Editar"
                             type="button"
                             className="btn-theme btn-secondary mr-2"
                             onClick={() => handleEdit(idx)}
+                            aria-label="Editar maquinaria y operador"
                             disabled={editIdx !== null}
                           >
                             <FiEdit2 />
                             <span className="ml-1">Editar</span>
                           </button>
                           <button
-                            tilt="Eliminar"
+                            title="Eliminar"
                             type="button"
                             className="btn-theme btn-error"
                             onClick={() => handleDelete(idx)}
+                            aria-label="Eliminar maquinaria y operador"
                             disabled={editIdx !== null}
                           >
                             <FiTrash2 />
                             <span className="ml-1">Eliminar</span>
                           </button>
                           <button
-                            tilt="Predicción de combustible"
+                            title="Predicción de combustible"
                             type="button"
                             className="btn-theme btn-secondary ml-2"
                             onClick={() => {setPredictionOpen(true);}}
+                            aria-label="Abrir modal de predicción de combustible"
                           >
                             <BsFillFuelPumpFill />
                             <span className="ml-1">Predicción</span>                         

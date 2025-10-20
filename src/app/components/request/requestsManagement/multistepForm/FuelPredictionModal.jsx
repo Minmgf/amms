@@ -80,7 +80,7 @@ export default function FuelPredictionModal({ isOpen, onClose, onSave, formData 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center" id="fuel-prediction-modal">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="bg-white rounded-lg shadow-lg z-10 max-w-2xl w-full p-6">
         <div className="flex items-center justify-between mb-4">
@@ -99,6 +99,7 @@ export default function FuelPredictionModal({ isOpen, onClose, onSave, formData 
               value={form.implementation}
               onChange={e => handleChange("implementation", e.target.value)}
               className="parametrization-input w-full"
+              aria-label="Seleccionar implementación"
             >
               {implementationOptions.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -115,6 +116,7 @@ export default function FuelPredictionModal({ isOpen, onClose, onSave, formData 
               value={form.workDepth}
               onChange={e => handleChange("workDepth", e.target.value)}
               className="parametrization-input w-full"
+              aria-label="Profundidad de trabajo en metros"
               placeholder="Ej: 0.15"
             />
             {errors.workDepth && <div className="text-red-600 text-xs mt-1">{errors.workDepth}</div>}
@@ -130,6 +132,7 @@ export default function FuelPredictionModal({ isOpen, onClose, onSave, formData 
               value={form.humidity}
               onChange={e => handleChange("humidity", e.target.value)}
               className="parametrization-input w-full"
+              aria-label="Humedad en porcentaje"
               placeholder="Ej: 12.5"
             />
             {errors.humidity && <div className="text-red-600 text-xs mt-1">{errors.humidity}</div>}
@@ -141,6 +144,7 @@ export default function FuelPredictionModal({ isOpen, onClose, onSave, formData 
               value={form.soilType}
               onChange={e => handleChange("soilType", e.target.value)}
               className="parametrization-input w-full"
+              aria-label="Seleccionar tipo de suelo"
             >
               {soilTypes.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </select>
@@ -153,6 +157,7 @@ export default function FuelPredictionModal({ isOpen, onClose, onSave, formData 
               value={form.texture}
               onChange={e => handleChange("texture", e.target.value)}
               className="parametrization-input w-full"
+              aria-label="Seleccionar textura"
             >
               {textureOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </select>
@@ -166,6 +171,7 @@ export default function FuelPredictionModal({ isOpen, onClose, onSave, formData 
               value={form.slope}
               onChange={e => handleChange("slope", e.target.value)}
               className="parametrization-input w-full"
+              aria-label="Pendiente en porcentaje"
               placeholder="Ej: 5"
             />
             {errors.slope && <div className="text-red-600 text-xs mt-1">{errors.slope}</div>}
@@ -179,6 +185,7 @@ export default function FuelPredictionModal({ isOpen, onClose, onSave, formData 
               value={form.estimatedHours}
               onChange={e => handleChange("estimatedHours", e.target.value)}
               className="parametrization-input w-full"
+              aria-label="Duración estimada de trabajo en horas"
               placeholder="Ej: 2.5"
             />
             {errors.estimatedHours && <div className="text-red-600 text-xs mt-1">{errors.estimatedHours}</div>}
@@ -186,8 +193,8 @@ export default function FuelPredictionModal({ isOpen, onClose, onSave, formData 
         </div>
 
         <div className="flex justify-end gap-3 mt-5">
-          <button type="button" onClick={handleClean} className="btn-theme btn-error">Limpiar</button>
-          <button type="button" onClick={handleSave} className="btn-theme btn-primary">Guardar</button>
+          <button type="button" onClick={handleClean} className="btn-theme btn-error" aria-label="Limpiar formulario">Limpiar</button>
+          <button type="button" onClick={handleSave} className="btn-theme btn-primary" aria-label="Guardar formulario">Guardar</button>
         </div>
       </div>
     </div>
