@@ -81,7 +81,7 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
         const countries = await getCountries();
         const areas = await getAreaUnits();
         const altitudes = await getAltitudeUnits();
-        const soils = await getSoilTypes();
+        //const soils = await getSoilTypes();
 
         if (!mounted) return;
         setMachineryOptions(Array.isArray(machs?.data) ? machs.data : (Array.isArray(machs) ? machs : []));
@@ -91,7 +91,7 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
         setCountriesList(Array.isArray(countries) ? countries : (Array.isArray(countries?.data) ? countries.data : []));
         setAreaUnits(Array.isArray(areas) ? areas : (Array.isArray(areas?.data) ? areas.data : []));
         setAltitudeUnits(Array.isArray(altitudes) ? altitudes : (Array.isArray(altitudes?.data) ? altitudes.data : []));
-        setSoilTypes(Array.isArray(soils) ? soils : (Array.isArray(soils?.data) ? soils.data : []));
+        //setSoilTypes(Array.isArray(soils) ? soils : (Array.isArray(soils?.data) ? soils.data : []));
         // opcional: set default currency in form if exist
         if (currencyArray.length > 0) {
           methods.setValue("amountPaidCurrency", currencyArray[0].symbol);
