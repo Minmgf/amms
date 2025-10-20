@@ -218,6 +218,12 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           path: "/requests/services",
           permissions: [],
         },
+        {
+          name: "Gestión de solicitudes",
+          icon: <FaTools />,
+          path: "/requests/requestsManagement",
+          permissions: [],
+        },
       ],
     },
     {

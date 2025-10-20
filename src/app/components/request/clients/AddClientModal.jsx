@@ -6,15 +6,18 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { SuccessModal, ErrorModal } from "../../shared/SuccessErrorModal";
 import { getMunicipalities } from "@/services/billingService";
 import { getTypeDocuments } from "@/services/authService";
-import { getPersonTypes, getTaxRegimens, checkUserExists, createClient } from "@/services/clientService";
+import { getCountries } from "@/services/locationService";
+import { getPersonTypes, getTaxRegimens, checkUserExists, createClient, updateClient, updateUser } from "@/services/clientService";
 
 const AddClientModal = ({
     isOpen,
     mode = "create",
+    client,
     onClose,
     onSuccess,
     billingToken,
     defaultValues = {},
+    existingClientDocuments = [],
 }) => {
     const isEditMode = mode === "edit";
     const shouldCheckDocument = useRef(false); // Flag para controlar verificación
@@ -40,6 +43,7 @@ const AddClientModal = ({
     const [checkingDocument, setCheckingDocument] = useState(false);
     const [documentExists, setDocumentExists] = useState(false);
     const [existingUserId, setExistingUserId] = useState(null);
+    const [phoneCodes, setPhoneCodes] = useState([]);
 
     // Modales de éxito y error
     const [successOpen, setSuccessOpen] = useState(false);
@@ -78,12 +82,14 @@ const AddClientModal = ({
         }
     };
 
-    const phoneCodes = [
-        { code: "+57", country: "CO" },
-        { code: "+1", country: "US" },
-        { code: "+52", country: "MX" },
-        { code: "+34", country: "ES" },
-    ];
+    const getPhoneCodesData = async () => {
+        try {
+            const response = await getCountries();
+            setPhoneCodes(response)
+        } catch (error) {
+            console.error("Error al cargar los paises")
+        }
+    }
 
     const resetForm = () => {
         reset({
@@ -115,11 +121,28 @@ const AddClientModal = ({
     };
 
     // Verificar documento existente
+    // Verificar documento existente
     const checkDocument = async (documentNumber) => {
         if (!documentNumber) return;
 
         setCheckingDocument(true);
         try {
+            //Verificar primero si el documento ya existe como cliente
+            const isAlreadyClient = existingClientDocuments.includes(documentNumber.toString());
+
+            if (isAlreadyClient) {
+                setDocumentExists(false);
+                setExistingUserId(null);
+                resetForm();
+                reset({ identificationNumber: documentNumber });
+                setTittle("Cliente Ya Registrado");
+                setModalMessage("Este número de identificación ya está registrado como cliente en el sistema.");
+                setErrorOpen(true);
+                setCheckingDocument(false);
+                return;
+            }
+
+            // Si no existe como cliente, buscar en usuarios.
             const response = await checkUserExists(documentNumber);
 
             if (response.success && response.data) {
@@ -166,13 +189,70 @@ const AddClientModal = ({
             getTypeDocumentsData();
             getPersonTypesData();
             getTaxRegimensData();
+            getPhoneCodesData();
         }
     }, [isOpen, billingToken]);
+
+    // Cargar datos del cliente en modo edición
+    useEffect(() => {
+        if (isEditMode && client && isOpen &&
+            typeDocuments.length > 0 &&
+            personTypes.length > 0 &&
+            taxRegimens.length > 0 &&
+            municipalities.length > 0) {
+            shouldCheckDocument.current = false; // No verificar en modo edición
+
+            let phoneCode = "+57"; // valor por defecto
+            let phoneNumber = "";
+
+            if (client.phone) {
+                const phone = client.phone.toString();
+
+                // Ordenar los códigos de país por longitud (descendente) para encontrar el más largo primero
+                const sortedCodes = [...phoneCodes].sort((a, b) =>
+                    b.phonecode.toString().length - a.phonecode.toString().length
+                );
+
+                // Buscar el código que coincida
+                for (const country of sortedCodes) {
+                    const code = country.phonecode.toString();
+                    if (phone.startsWith(code)) {
+                        phoneCode = code;
+                        phoneNumber = phone.substring(code.length);
+                        break;
+                    }
+                }
+            }
+
+            reset({
+                identificationNumber: client.document_number || "",
+                identificationType: client.type_document_id || "",
+                checkDigit: client.check_digit || "",
+                personType: client.person_type_id || "",
+                legalName: client.legal_entity_name || "",
+                businessName: client.business_name || "",
+                fullName: client.name || "",
+                firstLastName: client.first_last_name || "",
+                secondLastName: client.second_last_name || "",
+                email: client.email || "",
+                phoneCode: phoneCode,
+                phoneNumber: phoneNumber,
+                address: client.address || "",
+                taxRegime: client.tax_regime || "",
+                region: client.id_municipality || "",
+            });
+
+            setExistingUserId(client.id_user || null);
+        } else if (!isEditMode && isOpen) {
+            shouldCheckDocument.current = true;
+            resetForm();
+        }
+    }, [isEditMode, client, isOpen, typeDocuments, personTypes, taxRegimens, municipalities]);
 
     // useEffect para verificar cuando el número esté completo
     useEffect(() => {
         // Solo verificar si el flag está activo
-        if (!shouldCheckDocument.current) return;
+        if (!shouldCheckDocument.current || isEditMode) return;
 
         if (identificationNumber && identificationNumber.length >= 7) {
             const timeoutId = setTimeout(() => {
@@ -223,28 +303,74 @@ const AddClientModal = ({
                 first_last_name: data.firstLastName,
                 second_last_name: data.secondLastName,
                 email: data.email,
-                phone_code: data.phoneCode,
-                phone: data.phoneNumber,
+                phone: data.phoneCode + data.phoneNumber,
                 address: data.address,
                 tax_regime: data.taxRegime,
                 id_municipality: data.region,
             };
 
-            const response = await createClient(payload);
+            let response;
 
-            // Si la respuesta es exitosa
-            setTittle("Éxito");
-            setModalMessage(response.message || "Cliente registrado con éxito.");
-            setSuccessOpen(true);
+            if (isEditMode) {
+                // Llamar al endpoint de actualizar cliente
+                response = await updateClient(client.id_customer, payload);
+
+                if (existingUserId !== null) {
+                    if (response.success) {
+                        try {
+                            const userPayload = {
+                                name: data.fullName,
+                                first_last_name: data.firstLastName,
+                                second_last_name: data.secondLastName,
+                                type_document_id: data.identificationType,
+                                document_number: data.identificationNumber.toString(),
+                                email: data.email,
+                                phone: data.phoneCode + data.phoneNumber,
+                                address: data.address,
+                            };
+
+                            // Actualizar también el usuario asociado
+                            const userResponse = await updateUser(existingUserId, userPayload);
+                            setTittle("Éxito");
+                            setModalMessage(userResponse.message || "Cliente actualizado con éxito.");
+                            setSuccessOpen(true);
+
+                            setTimeout(() => {
+                                setSuccessOpen(false);
+                                handleCloseModal();
+                            }, 2000);
+                        } catch (userError) {
+                            setTittle("Error");
+                            setModalMessage(userError.message || "Ocurrio un error al actualizar el cliente.");
+                            setErrorOpen(true);
+                        }
+                    }
+                } else {
+                    setTittle("Éxito");
+                    setModalMessage(response.message || "Cliente actualizado con éxito.");
+                    setSuccessOpen(true);
+
+                    setTimeout(() => {
+                        setSuccessOpen(false);
+                        handleCloseModal();
+                    }, 2000);
+                }
+            } else {
+                // Llamar al endpoint de creación
+                response = await createClient(payload);
+                setTittle("Éxito");
+                setModalMessage(response.message || "Cliente registrado con éxito.");
+                setSuccessOpen(true);
+
+                setTimeout(() => {
+                    setSuccessOpen(false);
+                    handleCloseModal();
+                }, 2000);
+            }
 
             if (onSuccess) {
                 onSuccess();
             }
-
-            setTimeout(() => {
-                setSuccessOpen(false);
-                handleCloseModal();
-            }, 2000);
 
         } catch (error) {
             setTittle("Error");
@@ -346,7 +472,7 @@ const AddClientModal = ({
                                         </label>
                                         <input
                                             type="text"
-                                            {...register("checkDigit", {required: "Este campo es obligatorio."})}
+                                            {...register("checkDigit", { required: "Este campo es obligatorio." })}
                                             className="parametrization-input w-full"
                                             placeholder="DV"
                                             onKeyDown={(e) => {
@@ -524,12 +650,11 @@ const AddClientModal = ({
                                         <select
                                             {...register("phoneCode", { required: "Este campo es obligatorio." })}
                                             className="parametrization-input w-24"
-                                            defaultValue=""
                                         >
-                                            <option value="">Código</option>
+                                            <option value="">Código del Pais</option>
                                             {phoneCodes.map((phone) => (
-                                                <option key={phone.code} value={phone.code}>
-                                                    {phone.code}
+                                                <option key={phone.id} value={phone.phonecode}>
+                                                    +{phone.phonecode} ({phone.iso2})
                                                 </option>
                                             ))}
                                         </select>
