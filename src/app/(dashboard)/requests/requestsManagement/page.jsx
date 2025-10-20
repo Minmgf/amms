@@ -249,14 +249,13 @@ const RequestsManagementPage = () => {
 
   // Funciones de acciones
   const handleViewDetails = (requestCode) => {
-    console.log('🔍 handleViewDetails - Código de solicitud:', requestCode);
     // El código de la solicitud (ej: SOL-2025-0001) se usa directamente
     setSelectedRequestId(requestCode);
     setDetailsModalOpen(true);
   };
 
   const handleEditRequest = (requestId) => {
-    console.log('Editar solicitud:', requestId);
+    // TODO: Implementar edición de solicitud
   };
 
   const handleCancelRequest = (requestId) => {
@@ -271,7 +270,6 @@ const RequestsManagementPage = () => {
     setSuccessModalOpen(true);
     // Recargar la lista de solicitudes desde el API
     loadRequests();
-    console.log('Solicitud cancelada:', requestCode);
   };
 
   const handleConfirmRequest = (requestId) => {
@@ -286,10 +284,8 @@ const RequestsManagementPage = () => {
     setValidatePreRequestModalOpen(false);
     setSuccessMessage(`Solicitud validada exitosamente. La solicitud pasó a estado "Pendiente".`);
     setSuccessModalOpen(true);
-    console.log('Abriendo formulario de confirmación para:', requestToConfirm?.requestCode);
     // Recargar la lista de solicitudes desde el API
     loadRequests();
-    console.log('Pre-solicitud validada:', selectedRequest?.requestCode);
   };
 
   const handleCompleteRequest = (requestId) => {
@@ -303,16 +299,15 @@ const RequestsManagementPage = () => {
     setSuccessModalOpen(true);
     // Recargar la lista de solicitudes desde el API
     loadRequests();
-    console.log('Solicitud completada:', requestCode);
   };
 
   const handleRegisterInvoice = (requestId) => {
     setGenerateInvoiceModalOpen(true);
-    console.log('Registrar factura:', requestId);
+    // TODO: Implementar registro de factura
   };
 
   const handleDownloadInvoice = (requestId) => {
-    console.log('Descargar factura:', requestId);
+    // TODO: Implementar descarga de factura
   };
 
   const handleNewPreRequest = () => {
@@ -326,7 +321,7 @@ const RequestsManagementPage = () => {
   };
 
   const handleGenerateReport = () => {
-    console.log('Generar reporte');
+    // TODO: Implementar generación de reporte
   };
 
   // Componente de acciones dinámicas con hover
