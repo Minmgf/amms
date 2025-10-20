@@ -3,7 +3,7 @@ import { FiSearch, FiMenu, FiTrash2 } from "react-icons/fi";
 import { useState } from "react";
 import ServicesModal from "../ServicesModal";
 
-export default function Step3InvoiceLine() {
+export default function Step3InvoiceLine({ unitsMeasurement = [] }) {
     const {
         register,
         control,
@@ -242,10 +242,15 @@ export default function Step3InvoiceLine() {
                                         aria-label="Unit of Measurement Select"
                                     >
                                         <option value="">Seleccione</option>
-                                        <option value="Unit">Unit</option>
-                                        <option value="Hour">Hour</option>
-                                        <option value="Day">Day</option>
-                                        <option value="Service">Service</option>
+                                        {unitsMeasurement && unitsMeasurement.length > 0 ? (
+                                            unitsMeasurement.map((unit) => (
+                                                <option key={unit.id} value={unit.id}>
+                                                    {unit.name}
+                                                </option>
+                                            ))
+                                        ) : (
+                                            <option disabled>Cargando unidades...</option>
+                                        )}
                                     </select>
                                     {errors.invoiceLines?.[index]?.unitOfMeasurement && (
                                         <span className="text-xs text-red-500 mt-1 block">
