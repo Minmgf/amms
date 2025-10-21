@@ -249,12 +249,44 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
   };
 
   // Formatear moneda
-  const formatCurrency = (amount) => {
+  const formatCurrency = (amount, currencySymbol = null) => {
     if (!amount && amount !== 0) return "N/A";
+    
+    // Si hay símbolo de moneda del endpoint, usarlo
+    if (currencySymbol) {
+      return `${currencySymbol} ${new Intl.NumberFormat('es-CO').format(amount)}`;
+    }
+    
+    // Si no, usar formato USD por defecto
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD'
     }).format(amount);
+  };
+
+  // Formatear número de teléfono
+  const formatPhoneNumber = (phone) => {
+    if (!phone) return "N/A";
+    
+    // Convertir a string y limpiar espacios
+    const cleanPhone = String(phone).replace(/\s+/g, '');
+    
+    // Si el número comienza con 57 (indicativo de Colombia) y tiene 12 dígitos
+    if (cleanPhone.startsWith('57') && cleanPhone.length === 12) {
+      const countryCode = cleanPhone.substring(0, 2); // 57
+      const part1 = cleanPhone.substring(2, 5); // 310
+      const part2 = cleanPhone.substring(5, 8); // 235
+      const part3 = cleanPhone.substring(8, 12); // 5419
+      return `+${countryCode} ${part1} ${part2} ${part3}`;
+    }
+    
+    // Si ya tiene formato con +, devolverlo tal cual
+    if (cleanPhone.startsWith('+')) {
+      return phone;
+    }
+    
+    // Retornar el número sin modificar
+    return phone;
   };
 
   if (!isOpen) return null;
@@ -275,8 +307,10 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
     completion_user: requestData.completion_cancellation_user_name,
     
     // Información del cliente
-    client_name: requestData.customer_legal_entity_name || 
-                `${requestData.customer_name || ''} ${requestData.customer_first_last_name || ''} ${requestData.customer_second_last_name || ''}`.trim(),
+    client_name: (() => {
+      const fullName = `${requestData.customer_name || ''} ${requestData.customer_first_last_name || ''} ${requestData.customer_second_last_name || ''}`.trim();
+      return fullName || requestData.customer_legal_entity_name || 'N/A';
+    })(),
     client_document_type: requestData.customer_document_type,
     client_document_number: requestData.customer_document_number,
     client_email: requestData.customer_email,
@@ -299,8 +333,6 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
     location_longitude: requestData.request_location?.longitude,
     location_area: requestData.request_location?.area,
     location_area_unit: requestData.request_location?.area_unit_symbol,
-    location_soil_type: requestData.request_location?.soil_type_name,
-    location_humidity: requestData.request_location?.humidity_level,
     location_altitude: requestData.request_location?.altitude,
     location_altitude_unit: requestData.request_location?.altitude_unit_symbol,
     
@@ -308,6 +340,7 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
     billing_total_amount: requestData.amount_to_pay,
     billing_currency: requestData.currency_unit_amount_to_pay_symbol,
     billing_amount_paid: requestData.amount_paid,
+    billing_currency_paid: requestData.currency_unit_amount_paid_symbol,
     payment_status_id: requestData.payment_status_id,
     payment_method_id: requestData.payment_method_code,
   } : mockRequestData;
@@ -404,8 +437,8 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
 
                   {/* Scheduled start date */}
                   <div className="flex justify-between items-start">
-                    <span className="text-theme-sm text-secondary">Fecha programada:</span>
-                    <span className="font-theme-medium text-primary text-right">{formatDate(mappedData.scheduled_start_date)}</span>
+                    <span className="text-theme-sm text-secondary">Fecha y hora programada:</span>
+                    <span className="font-theme-medium text-primary text-right">{formatDateTime(mappedData.scheduled_start_date)}</span>
                   </div>
 
                   {/* Completion date */}
@@ -452,7 +485,7 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
                   {/* Phone number */}
                   <div className="flex justify-between items-start">
                     <span className="text-theme-sm text-secondary">Número de teléfono:</span>
-                    <span className="font-theme-medium text-primary text-right">{mappedData.client_phone || "N/A"}</span>
+                    <span className="font-theme-medium text-primary text-right">{formatPhoneNumber(mappedData.client_phone)}</span>
                   </div>
                 </div>
               </div>
@@ -597,13 +630,13 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
                 {/* Total amount */}
                 <div className="flex justify-between items-start">
                   <span className="text-theme-sm text-secondary">Monto total:</span>
-                  <span className="font-theme-medium text-primary text-right">{formatCurrency(mappedData.billing_total_amount)}</span>
+                  <span className="font-theme-medium text-primary text-right">{formatCurrency(mappedData.billing_total_amount, mappedData.billing_currency)}</span>
                 </div>
 
                 {/* Amount paid */}
                 <div className="flex justify-between items-start">
                   <span className="text-theme-sm text-secondary">Monto pagado:</span>
-                  <span className="font-theme-medium text-primary text-right">{formatCurrency(mappedData.billing_amount_paid)}</span>
+                  <span className="font-theme-medium text-primary text-right">{formatCurrency(mappedData.billing_amount_paid, mappedData.billing_currency_paid)}</span>
                 </div>
 
                 {/* Payment status */}
