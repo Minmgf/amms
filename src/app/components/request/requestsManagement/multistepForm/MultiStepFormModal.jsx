@@ -10,6 +10,7 @@ import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorMo
 
 export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mode, onSuccess }) {
   const isEditMode = !!requestToEdit;
+  const isConfirmMode = mode === 'confirm';
   const [successOpen, setSuccessOpen] = useState(false);
   const [errorOpen, setErrorOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
@@ -50,6 +51,38 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
     altitudeUnit: "",
   };
 
+  // Datos estáticos de ejemplo para el modo de confirmación
+  const getConfirmModeData = () => ({
+    identificationNumber: requestToEdit?.client?.idNumber || "900123456",
+    customer: "1", // ID del cliente (estático)
+    customerName: requestToEdit?.client?.name || "Empresa Agrícola S.A.",
+    customerPhone: "+57 310 456 7821",
+    customerEmail: "contacto@empresaagricola.com",
+    requestDetails: "Servicio de mantenimiento preventivo y correctivo de maquinaria agrícola en terreno de cultivo de banano",
+    scheduledStartDate: "2025-02-15",
+    endDate: "2025-02-20",
+    paymentMethod: "2", // Crédito
+    paymentStatus: "1", // Pendiente
+    amountPaid: "0",
+    amountToBePaid: "8500000",
+    amountPaidCurrency: "COP",
+    amountToBePaidCurrency: "COP",
+    requestedMachinery: "Tractor para banano - CAT12381238109",
+    requestedOperator: "Juan Pérez",
+    country: "48", // Colombia
+    department: "73", // Tolima
+    city: "268", // Espinal
+    placeName: "Finca La Esperanza - Vereda El Cocal",
+    latitude: "4.1530",
+    longitude: "-74.8830",
+    area: "15.5",
+    areaUnit: "ha",
+    soilType: "1", // Arcilloso
+    humidityLevel: "42",
+    altitude: "420",
+    altitudeUnit: "m",
+  });
+
   const methods = useForm({
     defaultValues,
     mode: "onTouched", 
@@ -58,14 +91,22 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
 
   const { reset } = methods;
 
-  // Cuando se abre el modal en preregister o register los campos estan vacios
+  // Cuando se abre el modal, configurar valores según el modo
   useEffect(() => {
-    if (isOpen && (mode === "preregister" || mode === "register")) {
-      reset(defaultValues);
-      setStep(0);
-      setCompletedSteps([]);
+    if (isOpen) {
+      if (mode === "confirm" && requestToEdit) {
+        // Modo confirmación: precargar datos estáticos
+        reset(getConfirmModeData());
+        setStep(0);
+        setCompletedSteps([]);
+      } else if (mode === "preregister" || mode === "register") {
+        // Modo registro/preregistro: campos vacíos
+        reset(defaultValues);
+        setStep(0);
+        setCompletedSteps([]);
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, mode]);
 
   const nextStep = async (e) => {
     if (e) {
@@ -137,7 +178,17 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
   }
 
   const handleSubmitForm = async (formData) => {
-    // Construir el payload para preregistro
+    // Modo confirmación: solo simular confirmación sin enviar al backend
+    if (mode === "confirm") {
+      console.log("Datos de confirmación (estáticos):", formData);
+      setModalMessage("Solicitud confirmada exitosamente. La solicitud pasó a estado 'Pendiente'.");
+      setSuccessOpen(true);
+      reset();
+      if (onSuccess) onSuccess();
+      return;
+    }
+
+    // Construir el payload para preregistro/registro
     const payload = {
       customer: formData.customer,
       request_detail: formData.requestDetails,
@@ -170,7 +221,7 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
         setModalMessage(formatBackendErrors(error.response.data.errors) || "Error al crear el preregistro.");
         setErrorOpen(true);
       }
-      
+
       // Puedes mostrar un mensaje de éxito o cerrar el modal
       if (onSuccess) onSuccess();
     }
@@ -293,7 +344,13 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
             {/* Header */}
             <div className="flex justify-between items-center mb-4 sm:mb-6 md:mb-8">
               <h2 className="text-lg sm:text-xl md:text-theme-xl font-theme-semibold text-primary">
-                {isEditMode ? "Editar Solicitud de Servicio" : mode === "preregister" ? "Preregistro de Solicitud de Servicio" : "Nueva Solicitud de Servicio"}
+                {mode === "confirm"
+                  ? "Confirmar Solicitud de Servicio"
+                  : isEditMode
+                    ? "Editar Solicitud de Servicio"
+                    : mode === "preregister"
+                      ? "Preregistro de Solicitud de Servicio"
+                      : "Nueva Solicitud de Servicio"}
               </h2>
               <button type="button" onClick={onClose} className="text-secondary hover:text-primary">
                 <FiX size={18} />
@@ -330,10 +387,10 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
               ) : (
                 <button
                   type="submit"
-                  aria-label="Save Button"
+                  aria-label={mode === "confirm" ? "Confirm Button" : "Save Button"}
                   className="btn-theme btn-primary w-auto"
                 >
-                  Guardar
+                  {mode === "confirm" ? "Confirmar" : "Guardar"}
                 </button>
               )}
             </div>
