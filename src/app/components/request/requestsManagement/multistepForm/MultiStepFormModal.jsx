@@ -1,15 +1,21 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useForm, FormProvider, set } from "react-hook-form";
+import React, { useState, useEffect } from "react";
+import { useForm, FormProvider } from "react-hook-form";
 import Step1ClientInfo from "./Step1ClientInfo";
 import Step2RequestInfo from "./Step2RequestInfo";
 import Step3LocationConditions from "./Step3LocationConditions";
+// import de servicios
+import { getCountries, getStates, getCities } from "@/services/locationService";
+import { getAreaUnits, getAltitudeUnits, getSoilTypes } from "@/services/requestService";
 import { createPreRegister } from "@/services/requestService";
 import { FiX } from "react-icons/fi";
 import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
+// importa tus servicios reales para obtener options
+import { getActiveMachineries, getActiveTechnicians, getActiveCurrencyUnits } from "@/services/maintenanceService";
 
 export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mode, onSuccess }) {
   const isEditMode = !!requestToEdit;
+  const isConfirmMode = mode === 'confirm';
   const [successOpen, setSuccessOpen] = useState(false);
   const [errorOpen, setErrorOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
@@ -20,6 +26,7 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
     { id: 2, name: "Información de la Solicitud" },
     { id: 3, name: "Condiciones de Ubicación y Terreno" },
   ];
+  const [fuelPrediction, setFuelPrediction] = useState(null);
 
   const defaultValues = {
     customer: "",
@@ -32,10 +39,6 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
     amountToBePaid: "",
     amountPaidCurrency: "",
     amountToBePaidCurrency: "",
-    requestedMachinery: "",
-    requestedOperator: "",
-    availableMachinery: "",
-    availableOperator: "",
     department: "",
     city: "",
     country: "",
@@ -48,17 +51,113 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
     humidityLevel: "",
     altitude: "",
     altitudeUnit: "",
+    machineryList: [], // persistir lista temporal aquí
   };
+
+  // Datos estáticos de ejemplo para el modo de confirmación
+  const getConfirmModeData = () => ({
+    identificationNumber: requestToEdit?.client?.idNumber || "900123456",
+    customer: "1", // ID del cliente (estático)
+    customerName: requestToEdit?.client?.name || "Empresa Agrícola S.A.",
+    customerPhone: "+57 310 456 7821",
+    customerEmail: "contacto@empresaagricola.com",
+    requestDetails: "Servicio de mantenimiento preventivo y correctivo de maquinaria agrícola en terreno de cultivo de banano",
+    scheduledStartDate: "2025-02-15",
+    endDate: "2025-02-20",
+    paymentMethod: "2", // Crédito
+    paymentStatus: "1", // Pendiente
+    amountPaid: "0",
+    amountToBePaid: "8500000",
+    amountPaidCurrency: "COP",
+    amountToBePaidCurrency: "COP",
+    requestedMachinery: "Tractor para banano - CAT12381238109",
+    requestedOperator: "Juan Pérez",
+    country: "48", // Colombia
+    department: "73", // Tolima
+    city: "268", // Espinal
+    placeName: "Finca La Esperanza - Vereda El Cocal",
+    latitude: "4.1530",
+    longitude: "-74.8830",
+    area: "15.5",
+    areaUnit: "ha",
+    soilType: "1", // Arcilloso
+    humidityLevel: "42",
+    altitude: "420",
+    altitudeUnit: "m",
+  });
 
   const methods = useForm({
     defaultValues,
-    mode: "onTouched", 
-    shouldFocusError: false, // Evitar que enfoque automáticamente errores de pasos futuros
+    mode: "onTouched",
+    shouldFocusError: false,
   });
-
   const { reset } = methods;
 
-  // Cuando se abre el modal en preregister o register los campos estan vacios
+  // cachear options en el padre para que no se vuelvan a fetch al montar/desmontar
+  const [machineryOptions, setMachineryOptions] = useState([]);
+  const [operatorOptions, setOperatorOptions] = useState([]);
+  const [currencies, setCurrencies] = useState([]);
+
+  // estados para options de Step3 (elevados al padre)
+  const [countriesList, setCountriesList] = useState([]);
+  const [areaUnits, setAreaUnits] = useState([]);
+  const [altitudeUnits, setAltitudeUnits] = useState([]);
+  const [soilTypes, setSoilTypes] = useState([]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const machs = await getActiveMachineries();
+        const ops = await getActiveTechnicians();
+        const cur = await getActiveCurrencyUnits();
+        const countries = await getCountries();
+        const areas = await getAreaUnits();
+        const altitudes = await getAltitudeUnits();
+        //const soils = await getSoilTypes();
+
+        if (!mounted) return;
+        setMachineryOptions(Array.isArray(machs?.data) ? machs.data : (Array.isArray(machs) ? machs : []));
+        setOperatorOptions(Array.isArray(ops?.data) ? ops.data : (Array.isArray(ops) ? ops : []));
+        const currencyArray = Array.isArray(cur?.data) ? cur.data : (Array.isArray(cur) ? cur : []);
+        setCurrencies(currencyArray);
+        setCountriesList(Array.isArray(countries) ? countries : (Array.isArray(countries?.data) ? countries.data : []));
+        setAreaUnits(Array.isArray(areas) ? areas : (Array.isArray(areas?.data) ? areas.data : []));
+        setAltitudeUnits(Array.isArray(altitudes) ? altitudes : (Array.isArray(altitudes?.data) ? altitudes.data : []));
+        //setSoilTypes(Array.isArray(soils) ? soils : (Array.isArray(soils?.data) ? soils.data : []));
+        // opcional: set default currency in form if exist
+        if (currencyArray.length > 0) {
+          methods.setValue("amountPaidCurrency", currencyArray[0].symbol);
+          methods.setValue("amountToBePaidCurrency", currencyArray[0].symbol);
+        }
+      } catch (err) {
+        console.error("Error cargando opciones", err);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [isOpen]); // fetch cuando se abra el modal
+
+  const fetchStates = async (countryCode) => {
+    try {
+      const res = await getStates(countryCode);
+      return Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []);
+    } catch (err) {
+      console.error("Error fetchStates:", err);
+      return [];
+    }
+  };
+
+  const fetchCities = async (countryCode, stateCode) => {
+    try {
+      const res = await getCities(countryCode, stateCode);
+      return Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []);
+    } catch (err) {
+      console.error("Error fetchCities:", err);
+      return [];
+    }
+  };
+
+  // Cuando se abre el modal, configurar valores según el modo
   useEffect(() => {
     if (isOpen && (mode === "preregister" || mode === "register")) {
       reset(defaultValues);
@@ -137,7 +236,17 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
   }
 
   const handleSubmitForm = async (formData) => {
-    // Construir el payload para preregistro
+    // Modo confirmación: solo simular confirmación sin enviar al backend
+    if (mode === "confirm") {
+      console.log("Datos de confirmación (estáticos):", formData);
+      setModalMessage("Solicitud confirmada exitosamente. La solicitud pasó a estado 'Pendiente'.");
+      setSuccessOpen(true);
+      reset();
+      if (onSuccess) onSuccess();
+      return;
+    }
+
+    // Construir el payload para preregistro/registro
     const payload = {
       customer: formData.customer,
       request_detail: formData.requestDetails,
@@ -170,9 +279,29 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
         setModalMessage(formatBackendErrors(error.response.data.errors) || "Error al crear el preregistro.");
         setErrorOpen(true);
       }
-      
+
       // Puedes mostrar un mensaje de éxito o cerrar el modal
       if (onSuccess) onSuccess();
+    } else if (mode === "register"){
+      payload.fuelPrediction = fuelPrediction;
+      payload.paymentMethod = formData.paymentMethod;
+      payload.paymentStatus = formData.paymentStatus;
+      payload.amountPaid = formData.amountPaid;
+      payload.amountToBePaid = formData.amountToBePaid;
+      payload.amountPaidCurrency = formData.amountPaidCurrency;
+      payload.amountToBePaidCurrency = formData.amountToBePaidCurrency;
+      payload.requestedMachinery = formData.requestedMachinery;
+      payload.requestedOperator = formData.requestedOperator;
+      payload.availableMachinery = formData.availableMachinery;
+      payload.availableOperator = formData.availableOperator;
+      payload.machineryList = formData.machineryList;
+
+      // Aquí iría la lógica para enviar el payload al backend
+      console.log("Payload para registro:", payload);
+      reset();
+      setFuelPrediction(null);
+    }else{
+      console.log("Modo desconocido:", mode);
     }
   };
 
@@ -276,7 +405,6 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
               
               // Solo permitir submit en el último paso
               if (step !== steps.length - 1) {
-                console.log('Submit bloqueado en paso:', step + 1);
                 return;
               }
               
@@ -293,7 +421,13 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
             {/* Header */}
             <div className="flex justify-between items-center mb-4 sm:mb-6 md:mb-8">
               <h2 className="text-lg sm:text-xl md:text-theme-xl font-theme-semibold text-primary">
-                {isEditMode ? "Editar Solicitud de Servicio" : mode === "preregister" ? "Preregistro de Solicitud de Servicio" : "Nueva Solicitud de Servicio"}
+                {mode === "confirm"
+                  ? "Confirmar Solicitud de Servicio"
+                  : isEditMode
+                    ? "Editar Solicitud de Servicio"
+                    : mode === "preregister"
+                      ? "Preregistro de Solicitud de Servicio"
+                      : "Nueva Solicitud de Servicio"}
               </h2>
               <button type="button" onClick={onClose} className="text-secondary hover:text-primary">
                 <FiX size={18} />
@@ -304,8 +438,26 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
             {/* Step Content */}
             <div style={{ minHeight: "300px" }} className="sm:min-h-[400px]">
               {step === 0 && <Step1ClientInfo />}
-              {step === 1 && <Step2RequestInfo mode={mode}/>}
-              {step === 2 && <Step3LocationConditions />}
+              {step === 1 && (
+                <Step2RequestInfo
+                  mode={mode}
+                  // pasar options y handlers como props para evitar remount resets
+                  machineryOptions={machineryOptions}
+                  operatorOptions={operatorOptions}
+                  currencies={currencies}
+                  setFuelPrediction={setFuelPrediction}
+                  fuelPrediction={fuelPrediction}
+                />
+              )}
+              {step === 2 && (
+                <Step3LocationConditions
+                  countriesList={countriesList}
+                  areaUnits={areaUnits}
+                  altitudeUnits={altitudeUnits}
+                  fetchStates={fetchStates}
+                  fetchCities={fetchCities}
+                />
+              )}
             </div>
             {/* Navigation */}
             <div className="flex flex-row justify-between items-center mt-6 sm:mt-theme-xl pt-4 sm:pt-theme-lg">
@@ -330,10 +482,10 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
               ) : (
                 <button
                   type="submit"
-                  aria-label="Save Button"
+                  aria-label={mode === "confirm" ? "Confirm Button" : "Save Button"}
                   className="btn-theme btn-primary w-auto"
                 >
-                  Guardar
+                  {mode === "confirm" ? "Confirmar" : "Guardar"}
                 </button>
               )}
             </div>
