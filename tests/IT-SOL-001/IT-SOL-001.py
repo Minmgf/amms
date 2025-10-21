@@ -55,7 +55,7 @@ def create_driver():
     chrome_options.add_argument('--disable-dev-shm-usage')
     chrome_options.add_argument('--start-maximized')
     
-    chromedriver_path = PROJECT_ROOT / 'tests' / 'chromedriver' / 'driver.exe'
+    chromedriver_path = PROJECT_ROOT / 'chromedriver.exe'
     service = Service(str(chromedriver_path))
     
     driver = webdriver.Chrome(service=service, options=chrome_options)
