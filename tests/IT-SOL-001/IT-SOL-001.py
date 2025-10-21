@@ -6,6 +6,7 @@ Este script automatiza el flujo completo de creación de solicitudes en el siste
 import os
 import sys
 import time
+import random
 from datetime import datetime, timedelta
 from pathlib import Path
 from selenium import webdriver
@@ -311,9 +312,24 @@ class RequestManagementTest:
             self.log(f"Descripción ingresada: {description_text}")
             time.sleep(2)
             
-            # Calcular fechas (duración de ~15 días)
-            start_date = (datetime.now() + timedelta(days=7)).strftime("%d/%m/%Y")
-            end_date = (datetime.now() + timedelta(days=22)).strftime("%d/%m/%Y")
+            # Generar fechas aleatorias del año 2026
+            # Fecha de inicio: día aleatorio entre enero y marzo de 2026
+            start_day = random.randint(1, 28)  # Evitar problemas con febrero
+            start_month = random.randint(1, 3)  # Enero, febrero o marzo
+            start_date_obj = datetime(2026, start_month, start_day)
+            
+            # Fecha de finalización: 15-30 días después de la fecha de inicio
+            duration_days = random.randint(15, 30)
+            end_date_obj = start_date_obj + timedelta(days=duration_days)
+            
+            # Formatear fechas
+            start_date = start_date_obj.strftime("%d/%m/%Y")
+            end_date = end_date_obj.strftime("%d/%m/%Y")
+            
+            self.log(f"Fechas generadas aleatoriamente para 2026:")
+            self.log(f"  - Inicio: {start_date}")
+            self.log(f"  - Finalización: {end_date}")
+            self.log(f"  - Duración: {duration_days} días")
             
             # Fecha de inicio programada
             start_date_input = self.wait.until(
@@ -321,7 +337,7 @@ class RequestManagementTest:
             )
             start_date_input.clear()
             start_date_input.send_keys(start_date)
-            self.log(f"Fecha de inicio programada: {start_date}")
+            self.log(f"Fecha de inicio programada ingresada: {start_date}")
             time.sleep(2)
             
             # Fecha de finalización
@@ -330,7 +346,7 @@ class RequestManagementTest:
             )
             end_date_input.clear()
             end_date_input.send_keys(end_date)
-            self.log(f"Fecha de finalización: {end_date}")
+            self.log(f"Fecha de finalización ingresada: {end_date}")
             time.sleep(2)
             
             # Hacer clic en el botón Siguiente
@@ -463,30 +479,6 @@ class RequestManagementTest:
             self.log("Área ingresada: 25 ha")
             time.sleep(1)
             
-            # Tipo de suelo
-            soil_type_select = Select(self.wait.until(
-                EC.presence_of_element_located((By.XPATH, "//select[@name='soilType']"))
-            ))
-            soil_type_select.select_by_visible_text("Arcilloso")
-            self.log("Tipo de suelo seleccionado: Arcilloso")
-            time.sleep(1)
-            
-            # Humedad (% debe estar entre 0-100)
-            humidity_input = self.wait.until(
-                EC.presence_of_element_located((By.XPATH, "//input[@placeholder='Ej: 60']"))
-            )
-            humidity_input.clear()
-            # Clamp del valor de humedad a 0-100
-            hum_value = int(HUMIDITY)
-            if hum_value < 0:
-                hum_value = 0
-            if hum_value > 100:
-                self.log(f"Valor de HUMIDITY ({HUMIDITY}) mayor a 100 - será recortado a 100", "WARNING")
-                hum_value = 100
-            humidity_input.send_keys(str(hum_value))
-            self.log(f"Humedad ingresada: {hum_value}%")
-            time.sleep(1)
-            
             # Unidad de altitud
             altitude_unit_select = Select(self.wait.until(
                 EC.presence_of_element_located((By.XPATH, "//select[@name='altitudeUnit']"))
@@ -495,13 +487,13 @@ class RequestManagementTest:
             self.log("Unidad de altitud seleccionada: m")
             time.sleep(1)
             
-            # Área de cultivo
-            cultivation_area_input = self.wait.until(
+            # Altitud
+            altitude_input = self.wait.until(
                 EC.presence_of_element_located((By.XPATH, "//input[@placeholder='Ej: 10.000000']"))
             )
-            cultivation_area_input.clear()
-            cultivation_area_input.send_keys("15.500000")
-            self.log("Área de cultivo ingresada: 15.500000")
+            altitude_input.clear()
+            altitude_input.send_keys("1500.000000")
+            self.log("Altitud ingresada: 1500.000000 m")
             time.sleep(2)
             
             self.log_success("Paso 3 completado exitosamente")
