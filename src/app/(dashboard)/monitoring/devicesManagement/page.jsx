@@ -4,6 +4,7 @@ import { FiSearch, FiFilter, FiEye, FiEdit2, FiTrash2, FiPlus, FiX } from "react
 import { FaCalendar, FaCheckCircle } from "react-icons/fa";
 import { SuccessModal, ErrorModal, ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
 import FilterModal from "@/app/components/shared/FilterModal";
+import RegisterDevice from "@/app/components/monitoring/RegisterEditDevice";
 import { useTheme } from "@/contexts/ThemeContext";
 
 import TableList from "@/app/components/shared/TableList";
@@ -21,6 +22,24 @@ const page = () => {
       operationalStatus: 1,
       statusName: "Active",
       registerDate: "2025-10-18",
+      monitoringParameters: {
+        ignitionStatus: true,
+        movementStatus: true,
+        currentSpeed: false,
+        gpsLocation: true,
+        gsmSignal: true,
+        revolutions: true,
+        engineTemperature: true,
+        engineLoad: true,
+        oilLevel: true,
+        fuelLevel: true,
+        fuelUsed: false,
+        instantFuelConsumption: true,
+        obdErrors: true,
+        totalOdometer: true,
+        tripOdometer: false,
+        eventsGForce: true,
+      }
     },
     {
       id: 2,
@@ -29,6 +48,24 @@ const page = () => {
       operationalStatus: 2,
       statusName: "Inactive",
       registerDate: "2025-09-12",
+      monitoringParameters: {
+        ignitionStatus: true,
+        movementStatus: true,
+        currentSpeed: true,
+        gpsLocation: true,
+        gsmSignal: false,
+        revolutions: false,
+        engineTemperature: false,
+        engineLoad: false,
+        oilLevel: false,
+        fuelLevel: true,
+        fuelUsed: true,
+        instantFuelConsumption: false,
+        obdErrors: false,
+        totalOdometer: true,
+        tripOdometer: true,
+        eventsGForce: true,
+      }
     },
     {
       id: 3,
@@ -37,6 +74,24 @@ const page = () => {
       operationalStatus: 1,
       statusName: "Active",
       registerDate: "2025-08-05",
+      monitoringParameters: {
+        ignitionStatus: false,
+        movementStatus: false,
+        currentSpeed: false,
+        gpsLocation: false,
+        gsmSignal: false,
+        revolutions: false,
+        engineTemperature: false,
+        engineLoad: false,
+        oilLevel: false,
+        fuelLevel: false,
+        fuelUsed: false,
+        instantFuelConsumption: false,
+        obdErrors: false,
+        totalOdometer: false,
+        tripOdometer: false,
+        eventsGForce: false,
+      }
     },
   ]);
 
@@ -131,6 +186,36 @@ const page = () => {
     setIsDeviceFormModalOpen(false);
     setSelectedDevice(null);
     setDeviceFormMode("add");
+  };
+
+  const handleDeviceRegistrationSuccess = (deviceData) => {
+    if (deviceFormMode === "edit") {
+      // Actualizar dispositivo existente
+      setData(prevData =>
+        prevData.map(device =>
+          device.id === selectedDevice.id
+            ? { ...device, ...deviceData, id: device.id }
+            : device
+        )
+      );
+      setModalTitle("Actualización Exitosa");
+      setModalMessage("El dispositivo ha sido actualizado exitosamente.");
+    } else {
+      // Agregar nuevo dispositivo
+      const newDevice = {
+        id: data.length + 1,
+        deviceName: deviceData.deviceName,
+        imei: deviceData.imei,
+        operationalStatus: 1,
+        statusName: "Active",
+        registerDate: new Date().toISOString().split('T')[0],
+        monitoringParameters: deviceData.monitoringParameters
+      };
+      setData([...data, newDevice]);
+      setModalTitle("Registro Exitoso");
+      setModalMessage("El dispositivo ha sido registrado exitosamente.");
+    }
+    setSuccessOpen(true);
   };
 
   const handleOpenDeleteConfirm = useCallback(
@@ -262,7 +347,7 @@ const page = () => {
         header: "Acciones",
         cell: (info) => {
           return (
-            <div className="flex space-x-2">
+            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               <button
                 aria-label="Edit Button"
                 onClick={() =>
@@ -489,6 +574,14 @@ const page = () => {
         onClose={() => setErrorOpen(false)}
         title={modalTitle || "Error"}
         message={modalMessage}
+      />
+
+      {/* Modal de Registro/Edición de Dispositivo */}
+      <RegisterDevice
+        isOpen={isDeviceFormModalOpen}
+        onClose={handleCloseDeviceFormModal}
+        onSuccess={handleDeviceRegistrationSuccess}
+        deviceToEdit={deviceFormMode === "edit" ? selectedDevice : null}
       />
     </>
   );

@@ -11,7 +11,6 @@ import { SuccessModal, ConfirmModal } from '@/app/components/shared/SuccessError
 import CompleteRequestModal from '@/app/components/request/CompleteRequestModal';
 import GenerateInvoiceModal from '@/app/components/request/invoice/multistepform/GenerateInvoiceModal';
 import MultiStepFormModal from "@/app/components/request/requestsManagement/multistepForm/MultiStepFormModal";
-import ValidatePreRequestModal from "@/app/components/request/requestsManagement/multistepForm/ValidatePreRequestModal";
 import { getGestionServicesList } from '@/services/serviceService';
 import { authorization } from "@/services/billingService";
 import PermissionGuard from '@/app/(auth)/PermissionGuard';
@@ -34,12 +33,10 @@ const RequestsManagementPage = () => {
   // Estados de modales
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
-  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [requestToCancel, setRequestToCancel] = useState(null);
-  const [requestToConfirm, setRequestToConfirm] = useState(null);
   const [completeModalOpen, setCompleteModalOpen] = useState(false);
-  const [validatePreRequestModalOpen, setValidatePreRequestModalOpen] = useState(false);
   const [GenerateInvoiceModalOpen, setGenerateInvoiceModalOpen] = useState(false);
+  const [confirmFormModalOpen, setConfirmFormModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [selectedRequestForComplete, setSelectedRequestForComplete] = useState(null);
@@ -261,14 +258,13 @@ const RequestsManagementPage = () => {
 
   // Funciones de acciones
   const handleViewDetails = (requestCode) => {
-    console.log('🔍 handleViewDetails - Código de solicitud:', requestCode);
     // El código de la solicitud (ej: SOL-2025-0001) se usa directamente
     setSelectedRequestId(requestCode);
     setDetailsModalOpen(true);
   };
 
   const handleEditRequest = (requestId) => {
-    console.log('Editar solicitud:', requestId);
+    // TODO: Implementar edición de solicitud
   };
 
   const handleCancelRequest = (requestId) => {
@@ -283,25 +279,21 @@ const RequestsManagementPage = () => {
     setSuccessModalOpen(true);
     // Recargar la lista de solicitudes desde el API
     loadRequests();
-    console.log('Solicitud cancelada:', requestCode);
   };
 
   const handleConfirmRequest = (requestId) => {
     const request = requestsData.find(r => r.id === requestId);
-    setRequestToConfirm(request);
-    setConfirmModalOpen(true);
     setSelectedRequest(request);
-    setValidatePreRequestModalOpen(true);
+    setMode('confirm');
+    setConfirmFormModalOpen(true);
   };
 
-  const handleValidatePreRequestSuccess = () => {
-    setValidatePreRequestModalOpen(false);
-    setSuccessMessage(`Solicitud validada exitosamente. La solicitud pasó a estado "Pendiente".`);
+  const handleConfirmRequestSuccess = () => {
+    setConfirmFormModalOpen(false);
+    setSuccessMessage(`Solicitud confirmada exitosamente. La solicitud pasó a estado "Pendiente".`);
     setSuccessModalOpen(true);
-    console.log('Abriendo formulario de confirmación para:', requestToConfirm?.requestCode);
     // Recargar la lista de solicitudes desde el API
     loadRequests();
-    console.log('Pre-solicitud validada:', selectedRequest?.requestCode);
   };
 
   const handleCompleteRequest = (requestId) => {
@@ -315,16 +307,15 @@ const RequestsManagementPage = () => {
     setSuccessModalOpen(true);
     // Recargar la lista de solicitudes desde el API
     loadRequests();
-    console.log('Solicitud completada:', requestCode);
   };
 
   const handleRegisterInvoice = (requestId) => {
     setGenerateInvoiceModalOpen(true);
-    console.log('Registrar factura:', requestId);
+    // TODO: Implementar registro de factura
   };
 
   const handleDownloadInvoice = (requestId) => {
-    console.log('Descargar factura:', requestId);
+    // TODO: Implementar descarga de factura
   };
 
   const handleNewPreRequest = () => {
@@ -338,7 +329,7 @@ const RequestsManagementPage = () => {
   };
 
   const handleGenerateReport = () => {
-    console.log('Generar reporte');
+    // TODO: Implementar generación de reporte
   };
 
   // Componente de acciones dinámicas con hover
@@ -783,11 +774,20 @@ const RequestsManagementPage = () => {
         </div>
       </FilterModal>
 
-      {/* Modal de Formulario de Solicitud (Pre-registro y Registro) */}
+      {/* Modal de Formulario de Solicitud (Pre-registro, Registro y Confirmación) */}
       <MultiStepFormModal
         isOpen={isRequestModalOpen}
         onClose={() => setIsRequestModalOpen(false)}
         mode={mode}
+      />
+
+      {/* Modal de Confirmación de Pre-Solicitud */}
+      <MultiStepFormModal
+        isOpen={confirmFormModalOpen}
+        onClose={() => setConfirmFormModalOpen(false)}
+        mode={mode}
+        requestToEdit={selectedRequest}
+        onSuccess={handleConfirmRequestSuccess}
       />
 
       {/* Modal de Cancelar Solicitud */}
@@ -804,14 +804,6 @@ const RequestsManagementPage = () => {
         onClose={() => setCompleteModalOpen(false)}
         request={selectedRequestForComplete}
         onSuccess={handleCompleteSuccess}
-      />
-
-      {/* Modal de Validar Pre-Solicitud */}
-      <ValidatePreRequestModal
-        isOpen={validatePreRequestModalOpen}
-        onClose={() => setValidatePreRequestModalOpen(false)}
-        request={selectedRequest}
-        onSuccess={handleValidatePreRequestSuccess}
       />
 
       {/* Modal de Éxito */}

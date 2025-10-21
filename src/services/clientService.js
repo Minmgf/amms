@@ -46,7 +46,7 @@ export const getClientDetail = async (clientId) => {
 // Obtener historial de solicitudes del cliente (HU-CLI-003)
 export const getClientRequestHistory = async (clientId) => {
     try {
-        const { data } = await apiMain.get(`/service_requests/list-by-customer`, {
+        const { data } = await apiMain.get(`/service_requests/list-by-customer/`, {
             params: { customer_id: clientId }
         });
         
