@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { FiX } from "react-icons/fi";
 import Step1ClientInformation from "./Step1ClientInformation";
@@ -7,10 +7,17 @@ import Step2InvoiceInformation from "./Step2InvoiceInformation";
 import Step3InvoiceLine from "./Step3InvoiceLine";
 import Step4TotalTaxes from "./Step4TotalTaxes";
 import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
+import { getCountries } from "@/services/locationService";
+import { getMunicipalities, getUnitsMeasurement } from "@/services/billingService";
+import { getTaxRegimens } from "@/services/clientService";
 
-const GenerateInvoiceModal = ({ isOpen, onClose, onSuccess }) => {
+const GenerateInvoiceModal = ({ isOpen, onClose, onSuccess, billingToken }) => {
     const [currentStep, setCurrentStep] = useState(1);
     const [completedSteps, setCompletedSteps] = useState([]);
+    const [phoneCodes, setPhoneCodes] = useState([]);
+    const [municipalities, setMunicipalities] = useState([]);
+    const [taxRegime, setTaxRegime] = useState([]);
+    const [unitsMeasurement, setUnitsMeasurement] = useState([]);
 
     const methods = useForm({
         mode: "onChange",
@@ -47,6 +54,42 @@ const GenerateInvoiceModal = ({ isOpen, onClose, onSuccess }) => {
             amountPayable: 0,
         },
     });
+
+    //Carga de información para los selects
+    useEffect(() => {
+        const fetchSelects = async () => {
+            try {
+                // Cargar países
+                const phone_codes = await getCountries();
+                setPhoneCodes(phone_codes);
+                await getTaxRegimensData();
+
+                // Cargar municipios
+                if (billingToken) {
+                    const municipalities_data = await getMunicipalities(billingToken, "");
+                    if (municipalities_data?.data) {
+                        setMunicipalities(municipalities_data.data);
+                    } else if (Array.isArray(municipalities_data)) {
+                        setMunicipalities(municipalities_data);
+                    }
+
+                    const units_data = await getUnitsMeasurement(billingToken, "");
+                    if (units_data?.data) {
+                        setUnitsMeasurement(units_data.data);
+                    } else if (Array.isArray(units_data)) {
+                        setUnitsMeasurement(units_data);
+                    }
+                }
+            } catch (error) {
+                console.error("Error loading selects:", error);
+                setPhoneCodes([]);
+                setMunicipalities([]);
+            }
+        };
+        if (isOpen && billingToken) {
+            fetchSelects();
+        }
+    }, [isOpen, billingToken]);
 
     // Modales de éxito y error
     const [successOpen, setSuccessOpen] = useState(false);
@@ -99,10 +142,6 @@ const GenerateInvoiceModal = ({ isOpen, onClose, onSuccess }) => {
                 return false;
             }
 
-            if (!line.description || line.description.trim() === "") {
-                return false;
-            }
-
             // Validar que no sean negativos
             const amount = parseFloat(line.amount);
             const taxPercent = parseFloat(line.taxPercent);
@@ -131,6 +170,15 @@ const GenerateInvoiceModal = ({ isOpen, onClose, onSuccess }) => {
         }
 
         return true;
+    };
+
+    const getTaxRegimensData = async () => {
+        try {
+            const response = await getTaxRegimens();
+            setTaxRegime(response.data);
+        } catch (error) {
+            console.error("Error cargando regímenes tributarios:", error);
+        }
     };
 
     const handleNext = async () => {
@@ -211,7 +259,7 @@ const GenerateInvoiceModal = ({ isOpen, onClose, onSuccess }) => {
     return (
         <>
             <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-                <div className="bg-background rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden">
+                <div className="bg-background rounded-xl shadow-2xl w-full max-w-4xl h-[95vh] flex flex-col">
                     {/* Header */}
                     <div className="flex items-center justify-between p-6 border-b border-gray-200">
                         <h2 className="text-xl font-bold text-primary">Generar Factura</h2>
@@ -225,7 +273,7 @@ const GenerateInvoiceModal = ({ isOpen, onClose, onSuccess }) => {
                     </div>
 
                     {/* Stepper */}
-                    <div className="px-6 pt-6 pb-4">
+                    <div className="px-6 pt-6 pb-4 flex-shrink-0">
                         <div className="flex items-center justify-between relative">
                             {steps.map((step, index) => (
                                 <React.Fragment key={step.number}>
@@ -281,22 +329,22 @@ const GenerateInvoiceModal = ({ isOpen, onClose, onSuccess }) => {
 
                     {/* Content */}
                     <FormProvider {...methods}>
-                        <form className="p-6 overflow-y-auto max-h-[calc(95vh-280px)]">
-                            {currentStep === 1 && <Step1ClientInformation />}
+                        <form className="p-6 overflow-y-auto flex-1">
+                            {currentStep === 1 && <Step1ClientInformation phoneCodes={phoneCodes} municipalities={municipalities} taxRegimens={taxRegime} />}
                             {currentStep === 2 && <Step2InvoiceInformation />}
-                            {currentStep === 3 && <Step3InvoiceLine />}
+                            {currentStep === 3 && <Step3InvoiceLine unitsMeasurement = {unitsMeasurement} />}
                             {currentStep === 4 && <Step4TotalTaxes />}
                         </form>
                     </FormProvider>
 
                     {/* Footer Navigation */}
-                    <div className="flex justify-end gap-165 p-6 border-t border-gray-200">
+                    <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4 p-6 border-t border-gray-200 flex-shrink-0">
                         {currentStep > 1 && (
                             <button
                                 type="button"
                                 onClick={handlePrevious}
                                 aria-label="Previous Step Button"
-                                className={`px-8 py-2 rounded-lg font-semibold transition-all ${currentStep === 1
+                                className={`px-6 sm:px-8 py-2 rounded-lg font-semibold transition-all w-full sm:w-auto ${currentStep === 1
                                     ? "btn-theme btn-secondary cursor-not-allowed"
                                     : "btn-theme btn-secondary text-white hover:bg-gray-600"
                                     }`}
@@ -309,7 +357,7 @@ const GenerateInvoiceModal = ({ isOpen, onClose, onSuccess }) => {
                                 type="button"
                                 onClick={handleNext}
                                 aria-label="Next Step Button"
-                                className="btn-theme btn-primary w-auto transition-all"
+                                className="btn-theme btn-primary w-full sm:w-auto transition-all px-6 sm:px-8 py-2"
                             >
                                 Siguiente
                             </button>
@@ -318,7 +366,7 @@ const GenerateInvoiceModal = ({ isOpen, onClose, onSuccess }) => {
                                 type="button"
                                 onClick={handleGenerate}
                                 aria-label="Generate Invoice Button"
-                                className="btn-theme btn-primary w-auto transition-all"
+                                className="btn-theme btn-primary w-full sm:w-auto transition-all px-6 sm:px-8 py-2"
                             >
                                 Generar
                             </button>
