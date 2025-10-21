@@ -35,3 +35,15 @@ export const getRequestDetails = async (requestId) => {
     const { data } = await apiMain.get(`/service_requests/${requestId}/details/`);
     return data;
 }
+
+/**
+ * Completa una solicitud
+ * @param {string} requestId - El código de la solicitud a completar
+ * @param {object} payload - Objeto con las observaciones de finalización
+ * @param {string} payload.completion_cancellation_observations - Observaciones obligatorias (máx 500 caracteres)
+ * @returns {Promise} Respuesta de la API
+ */
+export const completeRequest = async (requestId, payload) => {
+    const { data } = await apiMain.post(`/service_requests/${requestId}/complete/`, payload);
+    return data;
+}
