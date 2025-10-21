@@ -1,12 +1,17 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useForm, FormProvider, set } from "react-hook-form";
+import React, { useState, useEffect } from "react";
+import { useForm, FormProvider } from "react-hook-form";
 import Step1ClientInfo from "./Step1ClientInfo";
 import Step2RequestInfo from "./Step2RequestInfo";
 import Step3LocationConditions from "./Step3LocationConditions";
+// import de servicios
+import { getCountries, getStates, getCities } from "@/services/locationService";
+import { getAreaUnits, getAltitudeUnits, getSoilTypes } from "@/services/requestService";
 import { createPreRegister } from "@/services/requestService";
 import { FiX } from "react-icons/fi";
 import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
+// importa tus servicios reales para obtener options
+import { getActiveMachineries, getActiveTechnicians, getActiveCurrencyUnits } from "@/services/maintenanceService";
 
 export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mode, onSuccess }) {
   const isEditMode = !!requestToEdit;
@@ -21,6 +26,7 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
     { id: 2, name: "Información de la Solicitud" },
     { id: 3, name: "Condiciones de Ubicación y Terreno" },
   ];
+  const [fuelPrediction, setFuelPrediction] = useState(null);
 
   const defaultValues = {
     customer: "",
@@ -33,10 +39,6 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
     amountToBePaid: "",
     amountPaidCurrency: "",
     amountToBePaidCurrency: "",
-    requestedMachinery: "",
-    requestedOperator: "",
-    availableMachinery: "",
-    availableOperator: "",
     department: "",
     city: "",
     country: "",
@@ -49,6 +51,7 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
     humidityLevel: "",
     altitude: "",
     altitudeUnit: "",
+    machineryList: [], // persistir lista temporal aquí
   };
 
   // Datos estáticos de ejemplo para el modo de confirmación
@@ -85,28 +88,83 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
 
   const methods = useForm({
     defaultValues,
-    mode: "onTouched", 
-    shouldFocusError: false, // Evitar que enfoque automáticamente errores de pasos futuros
+    mode: "onTouched",
+    shouldFocusError: false,
   });
-
   const { reset } = methods;
+
+  // cachear options en el padre para que no se vuelvan a fetch al montar/desmontar
+  const [machineryOptions, setMachineryOptions] = useState([]);
+  const [operatorOptions, setOperatorOptions] = useState([]);
+  const [currencies, setCurrencies] = useState([]);
+
+  // estados para options de Step3 (elevados al padre)
+  const [countriesList, setCountriesList] = useState([]);
+  const [areaUnits, setAreaUnits] = useState([]);
+  const [altitudeUnits, setAltitudeUnits] = useState([]);
+  const [soilTypes, setSoilTypes] = useState([]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const machs = await getActiveMachineries();
+        const ops = await getActiveTechnicians();
+        const cur = await getActiveCurrencyUnits();
+        const countries = await getCountries();
+        const areas = await getAreaUnits();
+        const altitudes = await getAltitudeUnits();
+        //const soils = await getSoilTypes();
+
+        if (!mounted) return;
+        setMachineryOptions(Array.isArray(machs?.data) ? machs.data : (Array.isArray(machs) ? machs : []));
+        setOperatorOptions(Array.isArray(ops?.data) ? ops.data : (Array.isArray(ops) ? ops : []));
+        const currencyArray = Array.isArray(cur?.data) ? cur.data : (Array.isArray(cur) ? cur : []);
+        setCurrencies(currencyArray);
+        setCountriesList(Array.isArray(countries) ? countries : (Array.isArray(countries?.data) ? countries.data : []));
+        setAreaUnits(Array.isArray(areas) ? areas : (Array.isArray(areas?.data) ? areas.data : []));
+        setAltitudeUnits(Array.isArray(altitudes) ? altitudes : (Array.isArray(altitudes?.data) ? altitudes.data : []));
+        //setSoilTypes(Array.isArray(soils) ? soils : (Array.isArray(soils?.data) ? soils.data : []));
+        // opcional: set default currency in form if exist
+        if (currencyArray.length > 0) {
+          methods.setValue("amountPaidCurrency", currencyArray[0].symbol);
+          methods.setValue("amountToBePaidCurrency", currencyArray[0].symbol);
+        }
+      } catch (err) {
+        console.error("Error cargando opciones", err);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [isOpen]); // fetch cuando se abra el modal
+
+  const fetchStates = async (countryCode) => {
+    try {
+      const res = await getStates(countryCode);
+      return Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []);
+    } catch (err) {
+      console.error("Error fetchStates:", err);
+      return [];
+    }
+  };
+
+  const fetchCities = async (countryCode, stateCode) => {
+    try {
+      const res = await getCities(countryCode, stateCode);
+      return Array.isArray(res) ? res : (Array.isArray(res?.data) ? res.data : []);
+    } catch (err) {
+      console.error("Error fetchCities:", err);
+      return [];
+    }
+  };
 
   // Cuando se abre el modal, configurar valores según el modo
   useEffect(() => {
-    if (isOpen) {
-      if (mode === "confirm" && requestToEdit) {
-        // Modo confirmación: precargar datos estáticos
-        reset(getConfirmModeData());
-        setStep(0);
-        setCompletedSteps([]);
-      } else if (mode === "preregister" || mode === "register") {
-        // Modo registro/preregistro: campos vacíos
-        reset(defaultValues);
-        setStep(0);
-        setCompletedSteps([]);
-      }
+    if (isOpen && (mode === "preregister" || mode === "register")) {
+      reset(defaultValues);
+      setStep(0);
+      setCompletedSteps([]);
     }
-  }, [isOpen, mode]);
+  }, [isOpen]);
 
   const nextStep = async (e) => {
     if (e) {
@@ -224,6 +282,26 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
 
       // Puedes mostrar un mensaje de éxito o cerrar el modal
       if (onSuccess) onSuccess();
+    } else if (mode === "register"){
+      payload.fuelPrediction = fuelPrediction;
+      payload.paymentMethod = formData.paymentMethod;
+      payload.paymentStatus = formData.paymentStatus;
+      payload.amountPaid = formData.amountPaid;
+      payload.amountToBePaid = formData.amountToBePaid;
+      payload.amountPaidCurrency = formData.amountPaidCurrency;
+      payload.amountToBePaidCurrency = formData.amountToBePaidCurrency;
+      payload.requestedMachinery = formData.requestedMachinery;
+      payload.requestedOperator = formData.requestedOperator;
+      payload.availableMachinery = formData.availableMachinery;
+      payload.availableOperator = formData.availableOperator;
+      payload.machineryList = formData.machineryList;
+
+      // Aquí iría la lógica para enviar el payload al backend
+      console.log("Payload para registro:", payload);
+      reset();
+      setFuelPrediction(null);
+    }else{
+      console.log("Modo desconocido:", mode);
     }
   };
 
@@ -327,7 +405,6 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
               
               // Solo permitir submit en el último paso
               if (step !== steps.length - 1) {
-                console.log('Submit bloqueado en paso:', step + 1);
                 return;
               }
               
@@ -361,8 +438,26 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
             {/* Step Content */}
             <div style={{ minHeight: "300px" }} className="sm:min-h-[400px]">
               {step === 0 && <Step1ClientInfo />}
-              {step === 1 && <Step2RequestInfo mode={mode}/>}
-              {step === 2 && <Step3LocationConditions />}
+              {step === 1 && (
+                <Step2RequestInfo
+                  mode={mode}
+                  // pasar options y handlers como props para evitar remount resets
+                  machineryOptions={machineryOptions}
+                  operatorOptions={operatorOptions}
+                  currencies={currencies}
+                  setFuelPrediction={setFuelPrediction}
+                  fuelPrediction={fuelPrediction}
+                />
+              )}
+              {step === 2 && (
+                <Step3LocationConditions
+                  countriesList={countriesList}
+                  areaUnits={areaUnits}
+                  altitudeUnits={altitudeUnits}
+                  fetchStates={fetchStates}
+                  fetchCities={fetchCities}
+                />
+              )}
             </div>
             {/* Navigation */}
             <div className="flex flex-row justify-between items-center mt-6 sm:mt-theme-xl pt-4 sm:pt-theme-lg">

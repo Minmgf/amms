@@ -12,6 +12,7 @@ import CompleteRequestModal from '@/app/components/request/CompleteRequestModal'
 import GenerateInvoiceModal from '@/app/components/request/invoice/multistepform/GenerateInvoiceModal';
 import MultiStepFormModal from "@/app/components/request/requestsManagement/multistepForm/MultiStepFormModal";
 import { getGestionServicesList } from '@/services/serviceService';
+import { authorization } from "@/services/billingService";
 import PermissionGuard from '@/app/(auth)/PermissionGuard';
 
 const RequestsManagementPage = () => {
@@ -43,7 +44,8 @@ const RequestsManagementPage = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [mode, setMode] = useState('preregister'); // 'preregister' o 'register'
-
+  const [billingToken, setBillingToken] = useState("");
+  
   // Función para cargar solicitudes desde el API
   const loadRequests = async () => {
     try {
@@ -70,6 +72,16 @@ const RequestsManagementPage = () => {
         }));
 
         setRequestsData(mappedData);
+
+        const getTokenBilling = async () => {
+              try {
+                const response = await authorization();
+                setBillingToken(response.access_token);
+              } catch (error) {
+                console.error("Error en inicialización:", error);
+              }
+            };
+            getTokenBilling();
       }
     } catch (error) {
       console.error('Error al cargar solicitudes:', error);
@@ -821,6 +833,7 @@ const RequestsManagementPage = () => {
         isOpen={GenerateInvoiceModalOpen}
         onClose={() => setGenerateInvoiceModalOpen(false)}
         request={selectedRequest}
+        billingToken={billingToken}
       />
     </div>
   );
