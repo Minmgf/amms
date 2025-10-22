@@ -1,17 +1,17 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { useForm, FormProvider } from "react-hook-form";
+import { useForm, FormProvider, get } from "react-hook-form";
 import Step1ClientInfo from "./Step1ClientInfo";
 import Step2RequestInfo from "./Step2RequestInfo";
 import Step3LocationConditions from "./Step3LocationConditions";
 // import de servicios
 import { getCountries, getStates, getCities } from "@/services/locationService";
-import { getAreaUnits, getAltitudeUnits, getSoilTypes } from "@/services/requestService";
-import { createPreRegister } from "@/services/requestService";
+import { getAreaUnits, getAltitudeUnits, getSoilTypes, getActiveWorkers, getImplementTypes, getTextureTypes, getPaymentMethods, getPaymentStatus } from "@/services/requestService";
+import { createPreRegister, createRequest } from "@/services/requestService";
 import { FiX } from "react-icons/fi";
 import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
 // importa tus servicios reales para obtener options
-import { getActiveMachineries, getActiveTechnicians, getActiveCurrencyUnits } from "@/services/maintenanceService";
+import { getActiveMachineries, getActiveCurrencyUnits } from "@/services/maintenanceService";
 
 export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mode, onSuccess }) {
   const isEditMode = !!requestToEdit;
@@ -26,7 +26,7 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
     { id: 2, name: "Información de la Solicitud" },
     { id: 3, name: "Condiciones de Ubicación y Terreno" },
   ];
-  const [fuelPrediction, setFuelPrediction] = useState(null);
+  const [fuelPrediction, setFuelPrediction] = useState({});
 
   const defaultValues = {
     customer: "",
@@ -103,18 +103,26 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
   const [areaUnits, setAreaUnits] = useState([]);
   const [altitudeUnits, setAltitudeUnits] = useState([]);
   const [soilTypes, setSoilTypes] = useState([]);
+  const [implementTypes, setImplementTypes] = useState([]);
+  const [textureTypes, setTextureTypes] = useState([]);
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [paymentStatuses, setPaymentStatuses] = useState([]);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
         const machs = await getActiveMachineries();
-        const ops = await getActiveTechnicians();
+        const ops = await getActiveWorkers();
         const cur = await getActiveCurrencyUnits();
         const countries = await getCountries();
         const areas = await getAreaUnits();
         const altitudes = await getAltitudeUnits();
-        //const soils = await getSoilTypes();
+        const soils = await getSoilTypes();
+        const implement = await getImplementTypes();
+        const texture = await getTextureTypes();
+        const payMethods = await getPaymentMethods();
+        const payStatus = await getPaymentStatus();
 
         if (!mounted) return;
         setMachineryOptions(Array.isArray(machs?.data) ? machs.data : (Array.isArray(machs) ? machs : []));
@@ -124,7 +132,11 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
         setCountriesList(Array.isArray(countries) ? countries : (Array.isArray(countries?.data) ? countries.data : []));
         setAreaUnits(Array.isArray(areas) ? areas : (Array.isArray(areas?.data) ? areas.data : []));
         setAltitudeUnits(Array.isArray(altitudes) ? altitudes : (Array.isArray(altitudes?.data) ? altitudes.data : []));
-        //setSoilTypes(Array.isArray(soils) ? soils : (Array.isArray(soils?.data) ? soils.data : []));
+        setSoilTypes(Array.isArray(soils) ? soils : (Array.isArray(soils?.data) ? soils.data : []));
+        setImplementTypes(Array.isArray(implement) ? implement : (Array.isArray(implement?.data) ? implement.data : []));
+        setTextureTypes(Array.isArray(texture) ? texture : (Array.isArray(texture?.data) ? texture.data : []));
+        setPaymentMethods(Array.isArray(payMethods) ? payMethods : (Array.isArray(payMethods?.data) ? payMethods.data : []));
+        setPaymentStatuses(Array.isArray(payStatus) ? payStatus : (Array.isArray(payStatus?.data) ? payStatus.data : []));
         // opcional: set default currency in form if exist
         if (currencyArray.length > 0) {
           methods.setValue("amountPaidCurrency", currencyArray[0].symbol);
@@ -188,12 +200,6 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
         "placeName",
         "latitude",
         "longitude",
-        "area",
-        "areaUnit",
-        "soilType",
-        "humidityLevel",
-        "altitude",
-        "altitudeUnit",
       ];
     }
 
@@ -261,8 +267,6 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
         longitude: parseFloat(formData.longitude),
         area: formData.area,
         area_unit: formData.areaUnit,
-        soil_type: formData.soilType,
-        humidity_level: formData.humidityLevel,
         altitude: parseFloat(formData.altitude),
         altitude_unit: formData.altitudeUnit,
       }
@@ -274,35 +278,62 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
         setModalMessage(response.message || "Preregistro creado exitosamente.");
         setSuccessOpen(true);
         reset();
+        onSuccess();
       } catch (error) {
         console.log(error);
         setModalMessage(formatBackendErrors(error.response.data.errors) || "Error al crear el preregistro.");
         setErrorOpen(true);
       }
-
-      // Puedes mostrar un mensaje de éxito o cerrar el modal
-      if (onSuccess) onSuccess();
     } else if (mode === "register"){
-      payload.fuelPrediction = fuelPrediction;
-      payload.paymentMethod = formData.paymentMethod;
-      payload.paymentStatus = formData.paymentStatus;
-      payload.amountPaid = formData.amountPaid;
-      payload.amountToBePaid = formData.amountToBePaid;
-      payload.amountPaidCurrency = formData.amountPaidCurrency;
-      payload.amountToBePaidCurrency = formData.amountToBePaidCurrency;
-      payload.requestedMachinery = formData.requestedMachinery;
-      payload.requestedOperator = formData.requestedOperator;
-      payload.availableMachinery = formData.availableMachinery;
-      payload.availableOperator = formData.availableOperator;
-      payload.machineryList = formData.machineryList;
+      // completar campos de pago y montos
+      payload.payment_method = formData.paymentMethod || null;
+      payload.payment_status = formData.paymentStatus !== "" && formData.paymentStatus != null
+        ? (isNaN(Number(formData.paymentStatus)) ? formData.paymentStatus : Number(formData.paymentStatus))
+        : null;
+      payload.amount_paid = formData.amountPaid !== "" ? Number(formData.amountPaid) : null;
+      payload.currency_unit_amount_paid = formData.amountPaidCurrency;
+      payload.amount_to_pay = formData.amountToBePaid !== "" ? Number(formData.amountToBePaid) : null;
+      payload.currency_unit_amount_to_pay = formData.amountToBePaidCurrency;
 
-      // Aquí iría la lógica para enviar el payload al backend
+      // mapear machineryList -> machinery_users
+      const machineryList = formData.machineryList || [];
+      const machinery_users = machineryList.map((item, idx) => {
+        const machineryId = item.machinery.id_machinery || {};
+        const userId = item.operator.id || {};
+        const prediction = fuelPrediction[idx] || {};
+
+        return {
+          machinery_id: machineryId,
+          user_id: userId,
+          soil_type: prediction.soilType ?? null,
+          texture: prediction.texture ?? null,
+          humidity_level: prediction.humidity ?? null,
+          implementation: prediction.implementation ?? null,
+          depth: prediction.workDepth ?? null,
+          slope: prediction.slope ?? null,
+          work_duration: prediction.estimatedHours ?? null
+        };
+      });
+
+      payload.machinery_users = machinery_users;
+
+      // Aquí puedes enviar payload al servicio correspondiente (ejemplo console.log)
       console.log("Payload para registro:", payload);
-      reset();
-      setFuelPrediction(null);
+      try{
+        const response = await createRequest(payload);
+        setModalMessage(response.message || "Solicitud creada exitosamente.");
+        setSuccessOpen(true);
+        reset();
+        setFuelPrediction(null);
+        onSuccess();
+      } catch (error) {
+        console.log(error);
+        setModalMessage(formatBackendErrors(error.response.data.errors) || "Error al crear la solicitud.");
+        setErrorOpen(true);        
+      }
     }else{
       console.log("Modo desconocido:", mode);
-    }
+    }    
   };
 
   // Step Indicator
@@ -445,6 +476,11 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
                   machineryOptions={machineryOptions}
                   operatorOptions={operatorOptions}
                   currencies={currencies}
+                  soilTypes={soilTypes}
+                  implementTypes={implementTypes}
+                  textureTypes={textureTypes}
+                  paymentMethods={paymentMethods}
+                  paymentStatuses={paymentStatuses}
                   setFuelPrediction={setFuelPrediction}
                   fuelPrediction={fuelPrediction}
                 />
