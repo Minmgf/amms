@@ -54,8 +54,29 @@ export const getServiceDetail = async (serviceId) => {
 
 // Actualizar servicio
 export const updateService = async (serviceId, serviceData) => {
-  const { data } = await apiMain.put(`/services/${serviceId}/update/`, serviceData);
-  return data;
+  try {
+    console.log(`Llamando a API: /services/${serviceId}/update/ con datos:`, serviceData);
+    
+    // Intentar primero con PUT
+    let response;
+    try {
+      response = await apiMain.put(`/services/${serviceId}/update/`, serviceData);
+    } catch (putError) {
+      console.log("PUT falló, intentando con PATCH:", putError.response?.status);
+      if (putError.response?.status === 405) {
+        response = await apiMain.patch(`/services/${serviceId}/update/`, serviceData);
+      } else {
+        throw putError;
+      }
+    }
+    
+    console.log("Respuesta de actualización de servicio:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error al actualizar servicio:", error);
+    console.error("Respuesta de error:", error.response?.data);
+    throw error;
+  }
 };
 
 // Eliminar servicio (placeholder para futura implementación)

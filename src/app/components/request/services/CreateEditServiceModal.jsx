@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { FiX, FiSave } from "react-icons/fi";
-import { createService, getServiceTypes, getCurrencyUnits } from "@/services/serviceService";
+import { createService, updateService, getServiceTypes, getCurrencyUnits } from "@/services/serviceService";
 
 const getAuthToken = () => {
   let token = localStorage.getItem("token");
@@ -62,9 +62,17 @@ export default function CreateEditServiceModal({
   useEffect(() => {
     if (isOpen) {
       loadInitialData();
-      resetForm();
     }
   }, [isOpen]);
+
+  // Cargar datos del servicio cuando cambie el modo o los datos
+  useEffect(() => {
+    if (isOpen && mode === "edit" && serviceData) {
+      loadServiceData();
+    } else if (isOpen && mode === "create") {
+      resetForm();
+    }
+  }, [isOpen, mode, serviceData]);
 
   const loadInitialData = async () => {
     setLoadingData(true);
@@ -80,15 +88,20 @@ export default function CreateEditServiceModal({
     ];
     
     const defaultCurrencyUnits = [
-      { id: 17, name: "Pesos Colombianos", code: "COP", symbol: "$" },
-      { id: 18, name: "Dólares Americanos", code: "USD", symbol: "$" },
-      { id: 19, name: "Euros", code: "EUR", symbol: "€" },
       { id: 20, name: "Unidad", code: "UND", symbol: "UND" },
-      { id: 21, name: "Metro", code: "M", symbol: "m" }
+      { id: 22, name: "Por Hora", code: "HR", symbol: "hr" },
+      { id: 23, name: "Por Servicio", code: "SRV", symbol: "servicio" },
+      { id: 21, name: "Metro", code: "M", symbol: "m" },
+      { id: 24, name: "Por Día", code: "DIA", symbol: "día" }
     ];
     
+    // Cargar datos por defecto inmediatamente
+    setServiceTypes(defaultServiceTypes);
+    setCurrencyUnits(defaultCurrencyUnits);
+    console.log("Datos por defecto cargados inmediatamente");
+    
     try {
-      // Intentar cargar datos de la API
+      // Intentar cargar datos de la API en segundo plano
       const [typesData, unitsData] = await Promise.all([
         getServiceTypes(),
         getCurrencyUnits()
@@ -102,19 +115,50 @@ export default function CreateEditServiceModal({
       const units = Array.isArray(unitsData) ? unitsData : 
                     (unitsData?.data && Array.isArray(unitsData.data)) ? unitsData.data : [];
       
-      // Usar datos de API si están disponibles, si no usar por defecto
-      setServiceTypes(types.length > 0 ? types : defaultServiceTypes);
-      setCurrencyUnits(units.length > 0 ? units : defaultCurrencyUnits);
+      // Solo actualizar si se obtuvieron datos de la API
+      if (types.length > 0) {
+        setServiceTypes(types);
+        console.log("Tipos de servicios actualizados desde API:", types);
+      }
       
-      console.log("Tipos de servicios cargados:", types.length > 0 ? types : defaultServiceTypes);
-      console.log("Unidades de moneda cargadas:", units.length > 0 ? units : defaultCurrencyUnits);
+      if (units.length > 0) {
+        setCurrencyUnits(units);
+        console.log("Unidades de moneda actualizadas desde API:", units);
+      }
       
     } catch (error) {
-      console.log("Error al cargar datos de API, usando datos por defecto:", error);
-      setServiceTypes(defaultServiceTypes);
-      setCurrencyUnits(defaultCurrencyUnits);
+      console.log("Error al cargar datos de API, manteniendo datos por defecto:", error);
     } finally {
       setLoadingData(false);
+    }
+  };
+
+  const loadServiceData = () => {
+    if (serviceData) {
+      console.log("Cargando datos del servicio completo:", serviceData);
+      console.log("Campos disponibles:", Object.keys(serviceData));
+      
+      // Verificar específicamente el campo de unidad de medida
+      console.log("Valor price_unit_id:", serviceData.price_unit_id);
+      console.log("Valor price_unit:", serviceData.price_unit);
+      console.log("Valor unit_id:", serviceData.unit_id);
+      console.log("Valor currency_unit:", serviceData.currency_unit);
+      
+      // Mapear los diferentes posibles nombres de campos de la API
+      const mappedData = {
+        service_name: serviceData.service_name || serviceData.name || "",
+        description: serviceData.description || "",
+        service_type: String(serviceData.service_type_id || serviceData.service_type || ""),
+        base_price: String(serviceData.base_price || ""),
+        price_unit: String(serviceData.price_unit_id || serviceData.price_unit || serviceData.unit_id || serviceData.currency_unit || ""),
+        applicable_tax: String(serviceData.applicable_tax || ""),
+        tax_rate: String(serviceData.tax_rate || ""),
+        is_vat_exempt: Boolean(serviceData.is_vat_exempt),
+      };
+      
+      setFormData(mappedData);
+      console.log("Datos mapeados para el formulario:", mappedData);
+      console.log("price_unit final asignado:", mappedData.price_unit);
     }
   };
 
@@ -218,7 +262,7 @@ export default function CreateEditServiceModal({
     setErrors({});
 
     try {
-      const serviceData = {
+      const submitData = {
         service_name: formData.service_name.trim(),
         description: formData.description?.trim() || "Servicio sin descripción específica",
         service_type: parseInt(formData.service_type),
@@ -229,14 +273,26 @@ export default function CreateEditServiceModal({
         is_vat_exempt: Boolean(formData.is_vat_exempt)
       };
 
-      console.log("Creando servicio con datos:", serviceData);
+      let response;
+      const serviceId = serviceData?.id || serviceData?.id_service || serviceData?.service_id;
+      const isEditMode = mode === 'edit' && serviceId;
       
-      const response = await createService(serviceData);
+      if (isEditMode) {
+        // Modo actualización
+        console.log("Actualizando servicio con ID:", serviceId, "datos:", submitData);
+        response = await updateService(serviceId, submitData);
+        console.log("Servicio actualizado exitosamente:", response);
+      } else {
+        // Modo creación
+        console.log("Creando servicio con datos:", submitData);
+        response = await createService(submitData);
+        console.log("Servicio creado exitosamente:", response);
+      }
       
-      console.log("Servicio creado exitosamente:", response);
-      
-      // Llamar al callback para recargar los datos
-      if (onCreated) {
+      // Llamar al callback apropiado para recargar los datos
+      if (isEditMode && onUpdated) {
+        onUpdated();
+      } else if (!isEditMode && onCreated) {
         onCreated();
       }
       
@@ -244,19 +300,40 @@ export default function CreateEditServiceModal({
       onClose();
       
     } catch (error) {
-      console.error("Error al crear el servicio:", error);
+      const action = mode === 'edit' ? "actualizar" : "crear";
+      console.error(`Error al ${action} el servicio:`, error);
       
-      const apiMsg = error?.response?.data?.message || "Error al crear el servicio.";
-      const fieldErrs = error?.response?.data?.errors;
-      const extra = fieldErrs
-        ? Object.entries(fieldErrs)
-            .map(([k, v]) => `• ${k}: ${Array.isArray(v) ? v.join(", ") : v}`)
-            .join("\n")
-        : "";
+      // Manejar diferentes tipos de errores
+      let errorMessage = `Error al ${action} el servicio.`;
       
-      setErrors({
-        general: [apiMsg, extra].filter(Boolean).join("\n")
-      });
+      if (error.response) {
+        const { status, data } = error.response;
+        console.log("Error response:", { status, data });
+        
+        if (status === 405) {
+          errorMessage = `Método no permitido. El servidor no acepta ${action} servicios en este endpoint.`;
+        } else if (status === 404) {
+          errorMessage = mode === 'edit' ? "Servicio no encontrado." : "Endpoint no encontrado.";
+        } else if (status === 400) {
+          errorMessage = data?.message || "Datos inválidos enviados al servidor.";
+        } else if (status === 401) {
+          errorMessage = "No tienes autorización para realizar esta acción.";
+        } else {
+          errorMessage = data?.message || `Error del servidor (${status}).`;
+        }
+        
+        // Manejar errores de campo específicos
+        if (data?.errors) {
+          const fieldErrors = Object.entries(data.errors)
+            .map(([field, messages]) => `• ${field}: ${Array.isArray(messages) ? messages.join(", ") : messages}`)
+            .join("\n");
+          errorMessage += fieldErrors ? `\n\nErrores específicos:\n${fieldErrors}` : "";
+        }
+      } else if (error.request) {
+        errorMessage = "No se pudo conectar con el servidor. Verifica tu conexión a internet.";
+      }
+      
+      setErrors({ general: errorMessage });
     } finally {
       setLoading(false);
     }
@@ -313,7 +390,7 @@ export default function CreateEditServiceModal({
                   type="text"
                   id="service_id"
                   name="service_id"
-                  value="SVC-2024-0012"
+                  value={mode === "edit" ? (serviceData?.id || serviceData?.id_service || serviceData?.service_id || "N/A") : "Se generará automáticamente"}
                   className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg text-gray-600 cursor-not-allowed"
                   placeholder="Se generará automáticamente"
                   aria-label="ID del servicio generado automáticamente"
