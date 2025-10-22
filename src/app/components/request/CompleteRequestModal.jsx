@@ -21,26 +21,6 @@ const CompleteRequestModal = ({ isOpen, onClose, request, onSuccess }) => {
   if (!request) return null;
 
   const handleConfirm = async () => {
-    // Validar campos obligatorios
-    if (!endDate || !endTime) {
-      alert("Por favor, ingrese la fecha y hora de finalización");
-      return;
-    }
-
-    // Validar que la fecha no sea futura
-    const selectedDateTime = new Date(`${endDate}T${endTime}`);
-    const now = new Date();
-    if (selectedDateTime > now) {
-      alert("La fecha y hora de finalización no puede ser futura");
-      return;
-    }
-
-    // Validar longitud de observaciones
-    if (observations.length > 500) {
-      alert("Las observaciones no pueden exceder los 500 caracteres");
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
@@ -63,7 +43,6 @@ const CompleteRequestModal = ({ isOpen, onClose, request, onSuccess }) => {
         onSuccess(request.requestCode);
       }
     } catch (error) {
-      console.error("Error al completar solicitud:", error);
       alert("Error al completar la solicitud. Por favor, intente de nuevo.");
     } finally {
       setIsSubmitting(false);
@@ -112,7 +91,7 @@ const CompleteRequestModal = ({ isOpen, onClose, request, onSuccess }) => {
               {/* Fecha de finalización */}
               <div>
                 <label className="block text-sm font-medium text-primary mb-2">
-                  <FaCalendarAlt className="inline mr-2 text-blue-500" />
+                  <FaCalendarAlt className="inline mr-2 text-accent" />
                   Fecha de Finalización <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -120,7 +99,7 @@ const CompleteRequestModal = ({ isOpen, onClose, request, onSuccess }) => {
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   max={maxDate}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-background text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
                   aria-label="Fecha de finalización"
                 />
               </div>
@@ -128,14 +107,14 @@ const CompleteRequestModal = ({ isOpen, onClose, request, onSuccess }) => {
               {/* Hora de finalización */}
               <div>
                 <label className="block text-sm font-medium text-primary mb-2">
-                  <FaClock className="inline mr-2 text-blue-500" />
+                  <FaClock className="inline mr-2 text-accent" />
                   Hora de Finalización <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="time"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-background text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
                   aria-label="Hora de finalización"
                 />
               </div>
@@ -152,14 +131,14 @@ const CompleteRequestModal = ({ isOpen, onClose, request, onSuccess }) => {
                 placeholder="Ingrese observaciones sobre la realización de la solicitud..."
                 maxLength={500}
                 rows={6}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-background text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent resize-none transition-colors"
                 aria-label="Observaciones"
               />
               <div className="flex justify-between items-center mt-2">
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-secondary">
                   Campo opcional. Máximo 500 caracteres.
                 </p>
-                <p className={`text-xs font-medium ${remainingChars < 50 ? 'text-red-600' : 'text-gray-500'}`}>
+                <p className={`text-xs font-medium ${remainingChars < 50 ? 'text-red-600' : 'text-secondary'}`}>
                   {remainingChars}/500 caracteres
                 </p>
               </div>
@@ -179,7 +158,7 @@ const CompleteRequestModal = ({ isOpen, onClose, request, onSuccess }) => {
             <button
               onClick={handleConfirm}
               disabled={isSubmitting || !endDate || !endTime}
-              className="flex-1 px-6 py-3 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="Confirmar completar solicitud"
             >
               {isSubmitting ? "Procesando..." : "Confirmar"}
