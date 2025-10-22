@@ -258,12 +258,14 @@ const RequestsManagementPage = () => {
 
   // Funciones de acciones
   const handleViewDetails = (requestCode) => {
+    console.log('🔍 handleViewDetails - Código de solicitud:', requestCode);
     // El código de la solicitud (ej: SOL-2025-0001) se usa directamente
     setSelectedRequestId(requestCode);
     setDetailsModalOpen(true);
   };
 
   const handleEditRequest = (requestId) => {
+    console.log('Editar solicitud:', requestId);
     setMode('edit');
     setIsRequestModalOpen(true);
   };
@@ -280,6 +282,7 @@ const RequestsManagementPage = () => {
     setSuccessModalOpen(true);
     // Recargar la lista de solicitudes desde el API
     loadRequests();
+    console.log('Solicitud cancelada:', requestCode);
   };
 
   const handleConfirmRequest = (requestId) => {
@@ -293,8 +296,10 @@ const RequestsManagementPage = () => {
     setConfirmFormModalOpen(false);
     setSuccessMessage(`Solicitud confirmada exitosamente. La solicitud pasó a estado "Pendiente".`);
     setSuccessModalOpen(true);
+    console.log('Abriendo formulario de confirmación para:', requestToConfirm?.requestCode);
     // Recargar la lista de solicitudes desde el API
     loadRequests();
+    console.log('Pre-solicitud validada:', selectedRequest?.requestCode);
   };
 
   const handleCompleteRequest = (requestId) => {
@@ -308,15 +313,16 @@ const RequestsManagementPage = () => {
     setSuccessModalOpen(true);
     // Recargar la lista de solicitudes desde el API
     loadRequests();
+    console.log('Solicitud completada:', requestCode);
   };
 
   const handleRegisterInvoice = (requestId) => {
     setGenerateInvoiceModalOpen(true);
-    // TODO: Implementar registro de factura
+    console.log('Registrar factura:', requestId);
   };
 
   const handleDownloadInvoice = (requestId) => {
-    // TODO: Implementar descarga de factura
+    console.log('Descargar factura:', requestId);
   };
 
   const handleNewPreRequest = () => {
@@ -330,7 +336,7 @@ const RequestsManagementPage = () => {
   };
 
   const handleGenerateReport = () => {
-    // TODO: Implementar generación de reporte
+    console.log('Generar reporte');
   };
 
   // Componente de acciones dinámicas con hover

@@ -4,8 +4,8 @@ import FilterModal from "@/app/components/shared/FilterModal";
 import ServiceFilterFields from "@/app/components/request/services/ServiceFilterFields";
 import CreateEditServiceModal from "@/app/components/request/services/CreateEditServiceModal";
 import { getServiceColumns } from "@/app/components/request/services/serviceColumns";
-import { ConfirmModal, ErrorModal, SuccessModal } from "@/app/components/shared/SuccessErrorModal";
-import { getServicesList, deleteService } from "@/services/serviceService";
+import { ConfirmModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
+import { getServicesList } from "@/services/serviceService";
 import React, { useState, useMemo, useEffect } from "react";
 import { CiFilter } from "react-icons/ci";
 import { FaPlus, FaTimes } from "react-icons/fa";
@@ -45,9 +45,7 @@ const ServicesView = () => {
   const [isCreateServiceModalOpen, setIsCreateServiceModalOpen] = useState(false);
   const [isEditServiceModalOpen, setIsEditServiceModalOpen] = useState(false);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
-  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [selectedService, setSelectedService] = useState(null);
 
@@ -216,23 +214,13 @@ const ServicesView = () => {
     if (!selectedService) return;
 
     try {
-      const response = await deleteService(selectedService.id);
-      
-      if (response.success) {
-        // Eliminación exitosa - remover servicio de la lista
-        setServicesData((prevData) =>
-          prevData.filter((service) => service.id !== selectedService.id)
-        );
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
-        // Mostrar modal de éxito
-        setSuccessMessage(response.message || "Servicio eliminado correctamente.");
-        setIsSuccessModalOpen(true);
-      }
-    } catch (error) {
-      setErrorMessage(
-        error.response?.data?.message ||
-        "Error al eliminar el servicio. Por favor, intente nuevamente."
+      setServicesData((prevData) =>
+        prevData.filter((service) => service.id !== selectedService.id)
       );
+    } catch (error) {
+      setErrorMessage("Error al eliminar el servicio. Por favor, intente nuevamente.");
       setIsErrorModalOpen(true);
     } finally {
       setSelectedService(null);
@@ -360,14 +348,6 @@ const ServicesView = () => {
           uniqueUnits={uniqueUnits}
         />
       </FilterModal>
-
-      {/* Modal de éxito */}
-      <SuccessModal
-        isOpen={isSuccessModalOpen}
-        onClose={() => setIsSuccessModalOpen(false)}
-        title="Éxito"
-        message={successMessage}
-      />
 
       {/* Modal de error */}
       <ErrorModal
