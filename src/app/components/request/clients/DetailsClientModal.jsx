@@ -6,6 +6,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import TableList from "../../shared/TableList";
 import FilterModal from "../../shared/FilterModal";
 import { getClientDetail, getClientRequestHistory, getClientStatuses, getRequestStatuses, getBillingStatuses } from "@/services/clientService";
+import { getMunicipalities, authorization } from "@/services/billingService";
 
 /**
  * DetailsClientModal Component
@@ -27,6 +28,10 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
   const [requestHistory, setRequestHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  
+  // Estados para ubicación (municipio)
+  const [municipalityName, setMunicipalityName] = useState(null);
+  const [billingToken, setBillingToken] = useState(null);
 
   // Estados parametrizables (vendrán del endpoint)
   const [clientStatuses, setClientStatuses] = useState([]);
@@ -47,6 +52,22 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
   const getClientId = () => {
     return client?.id_customer || client?.id;
   };
+
+  // Cargar token de facturación cuando se abre el modal
+  useEffect(() => {
+    const loadBillingToken = async () => {
+      try {
+        const response = await authorization();
+        setBillingToken(response.access_token);
+      } catch (error) {
+        console.error('Error cargando token de facturación:', error);
+      }
+    };
+
+    if (isOpen) {
+      loadBillingToken();
+    }
+  }, [isOpen]);
 
   // Cargar datos del cliente cuando se abre el modal
   useEffect(() => {
@@ -73,6 +94,30 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
       // Error silencioso
     }
   };
+
+  // Cargar nombre del municipio cuando se tienen los datos del cliente
+  useEffect(() => {
+    const loadMunicipalityName = async () => {
+      if (!clientData?.id_municipality || !billingToken) return;
+      
+      try {
+        const response = await getMunicipalities(billingToken);
+        const municipalities = response.data || response;
+        
+        // Buscar el municipio por ID
+        const municipality = municipalities.find(m => m.id === clientData.id_municipality);
+        
+        if (municipality) {
+          // Formato: "Nombre (Departamento)"
+          setMunicipalityName(`${municipality.name} (${municipality.department})`);
+        }
+      } catch (error) {
+        console.error('Error cargando municipio:', error);
+      }
+    };
+
+    loadMunicipalityName();
+  }, [clientData, billingToken]);
 
   // Auto-dismiss error after 5 seconds
   useEffect(() => {
@@ -121,6 +166,31 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
   };
 
 
+  // Formatear número de teléfono
+  const formatPhoneNumber = (phone) => {
+    if (!phone) return "N/A";
+    
+    // Convertir a string y limpiar espacios
+    const cleanPhone = String(phone).replace(/\s+/g, '');
+    
+    // Si el número comienza con 57 (indicativo de Colombia) y tiene 12 dígitos
+    if (cleanPhone.startsWith('57') && cleanPhone.length === 12) {
+      const countryCode = cleanPhone.substring(0, 2); // 57
+      const part1 = cleanPhone.substring(2, 5); // 310
+      const part2 = cleanPhone.substring(5, 8); // 235
+      const part3 = cleanPhone.substring(8, 12); // 5419
+      return `+${countryCode} ${part1} ${part2} ${part3}`;
+    }
+    
+    // Si ya tiene formato con +, devolverlo tal cual
+    if (cleanPhone.startsWith('+')) {
+      return phone;
+    }
+    
+    // Retornar el número sin modificar
+    return phone;
+  };
+
   // Funciones para obtener información por ID
   const getStatusById = (id, statusArray) => {
     return (
@@ -155,11 +225,8 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
   };
 
   // Obtener el régimen tributario
-  const getTaxRegimeDisplay = (taxRegime, personType) => {
-    if (personType === 2 || personType === "Persona Jurídica") {
-      return "Régimen Ordinario - Persona Jurídica";
-    }
-    return taxRegime === 1 ? "Régimen Simplificado" : "Régimen Ordinario";
+  const getTaxRegimeDisplay = (taxRegimeName) => {
+    return taxRegimeName || "N/A";
   };
 
   // Filtrar datos
@@ -301,8 +368,12 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
 
   // Formatear región/ciudad
   const getRegionCity = () => {
-    // TODO: Obtener el nombre del municipio desde un endpoint o catálogo
-    return displayData.region_city || "N/A";
+    // Si no hay id_municipality, mostrar N/A
+    if (!displayData.id_municipality) {
+      return "N/A";
+    }
+    // Si hay id pero aún no se ha cargado el nombre, mostrar el ID temporalmente
+    return municipalityName || `ID: ${displayData.id_municipality}`;
   };
 
   return (
@@ -414,7 +485,7 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
                       Régimen tributario
                     </span>
                     <div className="font-theme-medium text-primary mt-1">
-                      {getTaxRegimeDisplay(displayData.tax_regime, displayData.person_type_id)}
+                      {getTaxRegimeDisplay(displayData.tax_regime_name)}
                     </div>
                   </div>
 
@@ -444,7 +515,7 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
                       Nombre comercial
                     </span>
                     <div className="font-theme-medium text-primary mt-1">
-                      {displayData.business_name || "N/A"}
+                      {displayData.bussiness_name || "N/A"}
                     </div>
                   </div>
 
@@ -480,7 +551,7 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
                       Teléfono
                     </span>
                     <div className="font-theme-medium text-primary mt-1">
-                      {displayData.phone || "N/A"}
+                      {formatPhoneNumber(displayData.phone)}
                     </div>
                   </div>
                 </div>
