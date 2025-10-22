@@ -50,3 +50,14 @@ export const getTaxTypes = async (token) => {
 
   return data;
 };
+
+//Función para obtener unidades de medida
+export const getUnitsMeasurement = async (token) => {
+  const { data } = await apiBilling.get("/v1/measurement-units", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return data;
+};

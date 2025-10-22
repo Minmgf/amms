@@ -3,6 +3,7 @@ import { useFormContext } from "react-hook-form";
 import { FiUserPlus } from "react-icons/fi";
 import AddClientModal from "@/app/components/request/clients/AddClientModal";
 import { getClientByIdentification } from "@/services/requestService";
+import {ErrorModal} from "@/app/components/shared/SuccessErrorModal";
 
 export default function Step1ClientInfo() {
   const { register, formState: { errors }, setValue, watch } = useFormContext();
@@ -10,6 +11,8 @@ export default function Step1ClientInfo() {
   const [clientData, setClientData] = useState(null);
   const [checking, setChecking] = useState(false);
   const [showAddClientModal, setShowAddClientModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [message, setMessage] = useState("");
 
   // Buscar cliente por número de identificación
   const handleSearch = async () => {
@@ -20,7 +23,12 @@ export default function Step1ClientInfo() {
       setClientData(response);
       setValue("customer", response.id_customer || "");
     } catch {
+      setMessage("No se encontró un cliente con el número de identificación proporcionado.");
+      setShowErrorModal(true);
       setClientData(null);
+      //no permitir cambiar de paso si no se encuentra el cliente
+      setValue("customer", "");
+      setValue("identificationNumber", "");
     } finally {
       setChecking(false);
     }
@@ -114,6 +122,12 @@ export default function Step1ClientInfo() {
         mode="create"
         onClose={() => setShowAddClientModal(false)}
         onSuccess={() => setShowAddClientModal(false)}
+      />
+      <ErrorModal
+        isOpen={showErrorModal}
+        onClose={() => setShowErrorModal(false)}
+        message={message}
+        title="Usuario no encontrado"
       />
     </>
   );
