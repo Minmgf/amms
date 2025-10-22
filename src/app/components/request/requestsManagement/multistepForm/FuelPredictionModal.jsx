@@ -1,23 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-export default function FuelPredictionModal({ isOpen, onClose, onSave, formData }) {
-  const implementationOptions = [
-    { value: "", label: "Seleccione..." },
-    { value: "Arado Vertedera", label: "Arado Vertedera" },
-    { value: "Arado Disco", label: "Arado Disco" },
-  ];
-  const soilTypes = [
-    { value: "", label: "Seleccione..." },
-    { value: "sandy", label: "Arenoso" },
-    { value: "loam", label: "Franco" },
-    { value: "clay", label: "Arcilloso" }
-  ];
-  const textureOptions = [
-    { value: "", label: "Seleccione..." },
-    { value: "fine", label: "Fina" },
-    { value: "medium", label: "Media" },
-    { value: "coarse", label: "Gruesa" }
-  ];
+export default function FuelPredictionModal({ isOpen, onClose, onSave, formData, soilTypes, implementTypes, textureTypes }) {
 
   const initialState = {
     implementation: "",
@@ -101,9 +84,8 @@ export default function FuelPredictionModal({ isOpen, onClose, onSave, formData 
               className="parametrization-input w-full"
               aria-label="Seleccionar implementación"
             >
-              {implementationOptions.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
+              <option value="">Seleccione...</option>
+              {implementTypes.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
             </select>
             {errors.implementation && <div className="text-red-600 text-xs mt-1">{errors.implementation}</div>}
           </div>
@@ -146,7 +128,8 @@ export default function FuelPredictionModal({ isOpen, onClose, onSave, formData 
               className="parametrization-input w-full"
               aria-label="Seleccionar tipo de suelo"
             >
-              {soilTypes.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              <option value="">Seleccione...</option>
+              {soilTypes.map(opt => <option key={opt.id} value={opt.id}>{opt.surface}</option>)}
             </select>
             {errors.soilType && <div className="text-red-600 text-xs mt-1">{errors.soilType}</div>}
           </div>
@@ -159,7 +142,8 @@ export default function FuelPredictionModal({ isOpen, onClose, onSave, formData 
               className="parametrization-input w-full"
               aria-label="Seleccionar textura"
             >
-              {textureOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              <option value="">Seleccione...</option>
+              {textureTypes.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
             </select>
           </div>
 

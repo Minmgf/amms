@@ -208,9 +208,7 @@ export default function Step3LocationConditions({ countriesList = [], areaUnits 
           <label className="block text-theme-sm text-secondary mb-1">Área</label>
           <div className="flex gap-2">
             <select
-              {...register("areaUnit",{
-                required: "La unidad de área es obligatoria",
-              })}
+              {...register("areaUnit")}
               className="parametrization-input"
               aria-label="Unidad de area"
             >
@@ -222,9 +220,7 @@ export default function Step3LocationConditions({ countriesList = [], areaUnits 
               ))}
             </select>
             <input
-              {...register("area",{
-                required: "El área es obligatoria",
-              })}
+              {...register("area")}
               className="parametrization-input"
               placeholder="Ej: 10"
               aria-label="Area"
@@ -244,9 +240,7 @@ export default function Step3LocationConditions({ countriesList = [], areaUnits 
           <label className="block text-theme-sm text-secondary mb-1">Altitud</label>
           <div className="flex gap-2">
             <select
-              {...register("altitudeUnit",{
-                required: "La unidad de altitud es obligatoria",
-              })}
+              {...register("altitudeUnit")}
               className="parametrization-input"
               aria-label="Unidad de altitud"
             >
@@ -259,7 +253,6 @@ export default function Step3LocationConditions({ countriesList = [], areaUnits 
             </select>
             <input
               {...register("altitude",{
-                required: "La altitud es obligatoria",
                 valueAsNumber: true,
               })}
               className="parametrization-input"
