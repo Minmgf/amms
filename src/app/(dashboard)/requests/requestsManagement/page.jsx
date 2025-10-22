@@ -264,7 +264,8 @@ const RequestsManagementPage = () => {
   };
 
   const handleEditRequest = (requestId) => {
-    // TODO: Implementar edición de solicitud
+    setMode('edit');
+    setIsRequestModalOpen(true);
   };
 
   const handleCancelRequest = (requestId) => {
@@ -361,7 +362,7 @@ const RequestsManagementPage = () => {
         )}
 
         {/* Editar - solo para pendientes */}
-        {request.requestStatusId === 2 && (
+        {request.requestStatusId === 20 && (
           <button
             onClick={() => handleEditRequest(request.id)}
             className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 hover:border-green-500 hover:text-green-600 text-green-600"
@@ -372,7 +373,7 @@ const RequestsManagementPage = () => {
         )}
 
         {/* Cancelar - solo para pendientes */}
-        {request.requestStatusId === 2 && (
+        {request.requestStatusId === 20 && (
           <PermissionGuard permission={153}>
             <button
               onClick={() => handleCancelRequest(request.id)}
@@ -779,6 +780,7 @@ const RequestsManagementPage = () => {
         isOpen={isRequestModalOpen}
         onClose={() => setIsRequestModalOpen(false)}
         mode={mode}
+        onSuccess={loadRequests}
       />
 
       {/* Modal de Confirmación de Pre-Solicitud */}
