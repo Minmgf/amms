@@ -71,3 +71,11 @@ export const getRequestDetails = async (requestId) => {
     const { data } = await apiMain.get(`/service_requests/${requestId}/details/`);
     return data;
 }
+
+// Cancelar una solicitud
+export const cancelRequest = async (requestId, observations) => {
+    const { data } = await apiMain.post(`/service_requests/${requestId}/cancel/`, {
+        completion_cancellation_observations: observations
+    });
+    return data;
+}

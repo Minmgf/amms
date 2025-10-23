@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { FaSearch, FaFilter, FaPlus, FaCalendarAlt, FaFileDownload, FaFileInvoice } from 'react-icons/fa';
 import { FiEdit3, FiX, FiCheck, FiEye } from 'react-icons/fi';
 import Calendar from '@/app/components/scheduledMaintenance/Calendar';
@@ -78,13 +78,12 @@ const RequestsManagementPage = () => {
                 const response = await authorization();
                 setBillingToken(response.access_token);
               } catch (error) {
-                console.error("Error en inicialización:", error);
+                // Error en la autorización de facturación
               }
             };
             getTokenBilling();
       }
     } catch (error) {
-      console.error('Error al cargar solicitudes:', error);
       // En caso de error, mantener datos vacíos
       setRequestsData([]);
     } finally {
@@ -258,31 +257,40 @@ const RequestsManagementPage = () => {
 
   // Funciones de acciones
   const handleViewDetails = (requestCode) => {
-    console.log('🔍 handleViewDetails - Código de solicitud:', requestCode);
-    // El código de la solicitud (ej: SOL-2025-0001) se usa directamente
     setSelectedRequestId(requestCode);
     setDetailsModalOpen(true);
   };
 
   const handleEditRequest = (requestId) => {
-    console.log('Editar solicitud:', requestId);
     setMode('edit');
     setIsRequestModalOpen(true);
   };
 
-  const handleCancelRequest = (requestId) => {
-    const request = requestsData.find(r => r.id === requestId);
+  const handleCancelRequest = useCallback((requestId) => {
+    setRequestsData(currentData => {
+      const request = currentData.find(r => r.id === requestId);
+      
+      if (!request) {
+        const requestByCode = currentData.find(r => r.requestCode === requestId);
+        if (requestByCode) {
+          setRequestToCancel(requestByCode);
+          setSelectedRequest(requestByCode);
+          setCancelModalOpen(true);
+          return currentData;
+        }
+      }
+      
     setRequestToCancel(request);
     setSelectedRequest(request);
     setCancelModalOpen(true);
-  };
+      return currentData;
+    });
+  }, []);
 
   const handleCancelSuccess = (requestCode) => {
     setSuccessMessage(`Solicitud cancelada exitosamente. Código: ${requestCode}`);
     setSuccessModalOpen(true);
-    // Recargar la lista de solicitudes desde el API
     loadRequests();
-    console.log('Solicitud cancelada:', requestCode);
   };
 
   const handleConfirmRequest = (requestId) => {
@@ -296,10 +304,7 @@ const RequestsManagementPage = () => {
     setConfirmFormModalOpen(false);
     setSuccessMessage(`Solicitud confirmada exitosamente. La solicitud pasó a estado "Pendiente".`);
     setSuccessModalOpen(true);
-    console.log('Abriendo formulario de confirmación para:', requestToConfirm?.requestCode);
-    // Recargar la lista de solicitudes desde el API
     loadRequests();
-    console.log('Pre-solicitud validada:', selectedRequest?.requestCode);
   };
 
   const handleCompleteRequest = (requestId) => {
@@ -311,18 +316,15 @@ const RequestsManagementPage = () => {
   const handleCompleteSuccess = (requestCode) => {
     setSuccessMessage(`Solicitud completada exitosamente. Código: ${requestCode}`);
     setSuccessModalOpen(true);
-    // Recargar la lista de solicitudes desde el API
     loadRequests();
-    console.log('Solicitud completada:', requestCode);
   };
 
   const handleRegisterInvoice = (requestId) => {
     setGenerateInvoiceModalOpen(true);
-    console.log('Registrar factura:', requestId);
   };
 
   const handleDownloadInvoice = (requestId) => {
-    console.log('Descargar factura:', requestId);
+    // TODO: Implementar descarga de factura
   };
 
   const handleNewPreRequest = () => {
@@ -336,7 +338,7 @@ const RequestsManagementPage = () => {
   };
 
   const handleGenerateReport = () => {
-    console.log('Generar reporte');
+    // TODO: Implementar generación de reporte
   };
 
   // Componente de acciones dinámicas con hover
