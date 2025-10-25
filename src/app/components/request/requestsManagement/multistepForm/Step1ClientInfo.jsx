@@ -5,14 +5,16 @@ import AddClientModal from "@/app/components/request/clients/AddClientModal";
 import { getClientByIdentification } from "@/services/requestService";
 import {ErrorModal} from "@/app/components/shared/SuccessErrorModal";
 
-export default function Step1ClientInfo() {
+export default function Step1ClientInfo({ mode = "preregister" }) {
   const { register, formState: { errors }, setValue, watch } = useFormContext();
   const identificationNumber = watch("identificationNumber");
+  const customerId = watch("customer");
   const [clientData, setClientData] = useState(null);
   const [checking, setChecking] = useState(false);
   const [showAddClientModal, setShowAddClientModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [message, setMessage] = useState("");
+  const isConfirmMode = mode === 'confirm';
 
   // Buscar cliente por número de identificación
   const handleSearch = async () => {
@@ -37,15 +39,22 @@ export default function Step1ClientInfo() {
   // Buscar automáticamente cuando el número cambia y tiene longitud suficiente
   // (puedes ajustar la longitud mínima)
   React.useEffect(() => {
-    if (identificationNumber && identificationNumber.length >= 7) {
+    if (identificationNumber && identificationNumber.length >= 7 && !isConfirmMode) {
       const timeoutId = setTimeout(() => {
         handleSearch();
       }, 500);
       return () => clearTimeout(timeoutId);
-    } else {
+    } else if (!isConfirmMode) {
       setClientData(null);
     }
-  }, [identificationNumber]);
+  }, [identificationNumber, isConfirmMode]);
+
+  // En modo confirmación, cargar el cliente automáticamente cuando cambie el customerId
+  React.useEffect(() => {
+    if (isConfirmMode && identificationNumber && !clientData) {
+      handleSearch();
+    }
+  }, [isConfirmMode, identificationNumber, customerId]);
 
   return (
     <>
@@ -55,6 +64,7 @@ export default function Step1ClientInfo() {
       <div className="mb-6">
         <label className="block text-theme-sm text-secondary mb-1">
           Número de identificación
+          {isConfirmMode && <span className="text-xs ml-2 italic">(Precargado - Solo lectura)</span>}
         </label>
         <div className="flex gap-2 items-center">
           <div className="flex-1">
@@ -66,6 +76,8 @@ export default function Step1ClientInfo() {
               className="parametrization-input"
               placeholder="Ingrese número de identificación"
               aria-label="Número de identificación"
+              disabled={isConfirmMode}
+              readOnly={isConfirmMode}
             />
             {errors.identificationNumber && (
               <span className="text-theme-xs mt-1 block" style={{ color: 'var(--color-error)' }}>
@@ -73,22 +85,34 @@ export default function Step1ClientInfo() {
               </span>
             )}
           </div>          
-          <button
-            type="button"
-            className="btn-theme btn-secondary flex items-center gap-2"
-            onClick={() => setShowAddClientModal(true)}
-            aria-label="Añadir nuevo cliente"
-          >
-            <FiUserPlus className="w-5 h-5" />
-            Añadir nuevo cliente
-          </button>
+          {!isConfirmMode && (
+            <button
+              type="button"
+              className="btn-theme btn-secondary flex items-center gap-2"
+              onClick={() => setShowAddClientModal(true)}
+              aria-label="Añadir nuevo cliente"
+            >
+              <FiUserPlus className="w-5 h-5" />
+              Añadir nuevo cliente
+            </button>
+          )}
         </div>
         {checking && (
           <span className="text-theme-xs text-secondary mt-2 block">Buscando cliente...</span>
         )}
+        {isConfirmMode && (
+          <span className="text-theme-xs text-secondary mt-2 block">
+            Los datos del cliente están precargados desde la presolicitud.
+          </span>
+        )}
       </div>
       {clientData && (
-        <div className="bg-surface rounded-theme-lg p-theme-md mb-4">
+        <div className={`rounded-theme-lg p-theme-md mb-4 ${isConfirmMode ? 'bg-blue-50 border border-blue-200' : 'bg-surface'}`}>
+          {isConfirmMode && (
+            <div className="mb-3 pb-2 border-b border-blue-300">
+              <h4 className="font-theme-semibold text-blue-800">Información del Cliente (Precargada)</h4>
+            </div>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <span className="text-theme-sm text-secondary">Tipo de cliente:</span>

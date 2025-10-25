@@ -498,7 +498,7 @@ const ClientsView = () => {
               <PermissionGuard permission={134}>
                 <button
                   onClick={() => handleView(client)}
-                  className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600 text-gray-700"
+                  className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600 text-gray-700 cursor-pointer"
                   title="Ver detalles"
                 >
                   <FaEye className="w-3 h-3" /> Detalles
@@ -507,7 +507,7 @@ const ClientsView = () => {
               <PermissionGuard permission={137}>
                 <button
                   onClick={() => handleEdit(client)}
-                  className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
+                  className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700 cursor-pointer"
                   title="Editar cliente"
                 >
                   <FaPen className="w-3 h-3" /> Editar
@@ -516,7 +516,7 @@ const ClientsView = () => {
               <PermissionGuard permission={138}>
                 <button
                   onClick={() => handleDelete(client)}
-                  className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-red-500 hover:text-red-600 text-gray-700"
+                  className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-red-500 hover:text-red-600 text-gray-700 cursor-pointer"
                   title="Eliminar cliente"
                 >
                   <FaTrash className="w-3 h-3" /> Eliminar

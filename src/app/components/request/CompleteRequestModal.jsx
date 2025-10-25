@@ -1,167 +1,203 @@
 "use client";
 import React, { useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { FaTimes, FaCalendarAlt, FaClock } from "react-icons/fa";
+import { FaTimes, FaCheckCircle, FaExclamationTriangle } from "react-icons/fa";
+import { completeRequest } from "@/services/requestService";
 
 /**
  * Modal para completar una solicitud
- * Permite ingresar fecha, hora de finalización y observaciones
+ * Permite ingresar observaciones obligatorias de finalización
+ * La fecha, hora y usuario se registran automáticamente en el backend
  * 
  * @param {boolean} isOpen - Estado de apertura del modal
  * @param {function} onClose - Función para cerrar el modal
- * @param {object} request - Objeto de la solicitud a completar
+ * @param {object} request - Objeto de la solicitud a completar (requiere requestCode o id)
  * @param {function} onSuccess - Callback al completar exitosamente
  */
 const CompleteRequestModal = ({ isOpen, onClose, request, onSuccess }) => {
-  const [endDate, setEndDate] = useState("");
-  const [endTime, setEndTime] = useState("");
   const [observations, setObservations] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   if (!request) return null;
 
   const handleConfirm = async () => {
+    // Validar que las observaciones no estén vacías
+    if (!observations.trim()) {
+      setError("Las observaciones son obligatorias");
+      return;
+    }
+
     setIsSubmitting(true);
+    setError("");
 
     try {
-      // TODO: Aquí iría la llamada al API para completar la solicitud
-      // const response = await completeRequest(request.id, { endDate, endTime, observations });
+      const requestId = request.requestCode || request.id;
+      console.log('🔄 Completando solicitud:', requestId);
+      
+      const response = await completeRequest(requestId, observations.trim());
+      
+      console.log('✅ Solicitud completada:', response);
 
-      // Simular llamada API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
+      // Resetear el formulario
+      setObservations("");
+      
       // Cerrar el modal
       onClose();
 
-      // Resetear el formulario
-      setEndDate("");
-      setEndTime("");
-      setObservations("");
-
       // Llamar al callback de éxito con el código de la solicitud
       if (onSuccess) {
-        onSuccess(request.requestCode);
+        onSuccess(response.id_request || requestId);
       }
     } catch (error) {
-      alert("Error al completar la solicitud. Por favor, intente de nuevo.");
+      console.error('❌ Error al completar solicitud:', error);
+      
+      // Manejar errores del backend
+      if (error.response?.data?.errors) {
+        const errors = error.response.data.errors;
+        if (errors.non_field_errors) {
+          setError(errors.non_field_errors.join(' '));
+        } else if (errors.completion_cancellation_observations) {
+          setError(errors.completion_cancellation_observations.join(' '));
+        } else {
+          setError('Error al completar la solicitud. Por favor, intente nuevamente.');
+        }
+      } else if (error.response?.data?.message) {
+        setError(error.response.data.message);
+      } else if (error.response?.status === 403) {
+        setError('No tiene permisos para completar solicitudes');
+      } else if (error.response?.status === 404) {
+        setError('Solicitud no encontrada');
+      } else {
+        setError('Error al completar la solicitud. Por favor, intente nuevamente.');
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleClose = () => {
-    setEndDate("");
-    setEndTime("");
     setObservations("");
+    setError("");
     onClose();
   };
 
   const remainingChars = 500 - observations.length;
 
-  // Obtener fecha y hora actual en formato para los inputs
-  const now = new Date();
-  const maxDate = now.toISOString().split('T')[0];
-  const maxTime = now.toTimeString().slice(0, 5);
-
   return (
     <Dialog.Root open={isOpen} onOpenChange={handleClose}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/60 z-[60]" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] bg-background rounded-xl shadow-2xl w-full max-w-lg">
+        <Dialog.Overlay className="modal-overlay" />
+        <Dialog.Content className="modal-theme fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] w-full max-w-lg">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <Dialog.Title className="text-2xl font-bold text-primary">
+          <div className="flex items-center justify-between p-6 border-b border-primary">
+            <Dialog.Title className="text-theme-2xl font-theme-bold text-primary">
               Completar Solicitud
             </Dialog.Title>
             <Dialog.Close asChild>
               <button
                 aria-label="Cerrar modal"
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
+                className="p-2 hover:bg-hover rounded-full transition-colors cursor-pointer"
                 onClick={handleClose}
               >
-                <FaTimes className="w-5 h-5 text-gray-500" />
+                <FaTimes className="w-5 h-5 text-secondary" />
               </button>
             </Dialog.Close>
           </div>
 
           {/* Content */}
           <div className="p-6">
-            {/* Campos de fecha y hora */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              {/* Fecha de finalización */}
-              <div>
-                <label className="block text-sm font-medium text-primary mb-2">
-                  <FaCalendarAlt className="inline mr-2 text-accent" />
-                  Fecha de Finalización <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  max={maxDate}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-background text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
-                  aria-label="Fecha de finalización"
-                />
-              </div>
-
-              {/* Hora de finalización */}
-              <div>
-                <label className="block text-sm font-medium text-primary mb-2">
-                  <FaClock className="inline mr-2 text-accent" />
-                  Hora de Finalización <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="time"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-background text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-colors"
-                  aria-label="Hora de finalización"
-                />
+            {/* Información sobre el registro automático */}
+            <div className="mb-4 p-4 bg-surface border border-primary rounded-theme-lg">
+              <div className="flex items-start gap-3">
+                <FaCheckCircle className="text-accent mt-0.5 flex-shrink-0" size={20} />
+                <div className="text-theme-sm">
+                  <p className="font-theme-semibold mb-1 text-primary">Información automática</p>
+                  <p className="text-secondary">La fecha, hora y usuario de finalización se registrarán automáticamente al completar la solicitud.</p>
+                </div>
               </div>
             </div>
 
-            {/* Campo de observaciones */}
+            {/* Información de la solicitud */}
+            {request && (
+              <div className="mb-4 p-3 card-secondary rounded-theme-lg">
+                <p className="text-theme-sm text-secondary">
+                  <span className="font-theme-semibold text-primary">Solicitud:</span> {request.requestCode || request.id}
+                </p>
+                <p className="text-theme-sm text-secondary">
+                  <span className="font-theme-semibold text-primary">Cliente:</span> {request.client?.name || 'N/A'}
+                </p>
+              </div>
+            )}
+
+            {/* Campo de observaciones OBLIGATORIO */}
             <div className="mb-2">
-              <label className="block text-sm font-medium text-primary mb-3">
-                Observaciones
+              <label className="block text-theme-sm font-theme-medium text-primary mb-3">
+                Observaciones de Finalización <span className="text-error">*</span>
               </label>
               <textarea
                 value={observations}
-                onChange={(e) => setObservations(e.target.value)}
-                placeholder="Ingrese observaciones sobre la realización de la solicitud..."
+                onChange={(e) => {
+                  setObservations(e.target.value);
+                  setError(""); // Limpiar error al escribir
+                }}
+                placeholder="Describa el trabajo realizado, resultados obtenidos y cualquier observación relevante sobre la finalización del servicio..."
                 maxLength={500}
-                rows={6}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-background text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent resize-none transition-colors"
-                aria-label="Observaciones"
+                rows={7}
+                className={`parametrization-input resize-none ${
+                  error ? 'border-error' : ''
+                }`}
+                aria-label="Observaciones de finalización"
+                disabled={isSubmitting}
               />
               <div className="flex justify-between items-center mt-2">
-                <p className="text-xs text-secondary">
-                  Campo opcional. Máximo 500 caracteres.
+                <p className="text-theme-xs text-error font-theme-medium">
+                  Campo obligatorio. Mínimo 1 carácter, máximo 500.
                 </p>
-                <p className={`text-xs font-medium ${remainingChars < 50 ? 'text-red-600' : 'text-secondary'}`}>
+                <p className={`text-theme-xs font-theme-medium ${remainingChars < 50 ? 'text-error' : 'text-secondary'}`}>
                   {remainingChars}/500 caracteres
                 </p>
               </div>
             </div>
+
+            {/* Mensaje de error */}
+            {error && (
+              <div className="mt-4 p-3 bg-surface border border-error rounded-theme-lg">
+                <div className="flex items-start gap-2">
+                  <FaExclamationTriangle className="text-error mt-0.5 flex-shrink-0" />
+                  <p className="text-theme-sm text-error">{error}</p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Footer con botones */}
-          <div className="flex gap-3 p-6 border-t border-gray-200">
+          <div className="flex gap-3 p-6 border-t border-primary">
             <button
               onClick={handleClose}
               disabled={isSubmitting}
-              className="flex-1 px-6 py-3 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-theme btn-secondary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="Cancelar"
             >
               Cancelar
             </button>
             <button
               onClick={handleConfirm}
-              disabled={isSubmitting || !endDate || !endTime}
-              className="flex-1 px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Confirmar completar solicitud"
+              disabled={isSubmitting || !observations.trim()}
+              className="btn-theme btn-success flex-1 disabled:opacity-50 disabled:cursor-not-allowed gap-2"
+              aria-label="Completar solicitud"
             >
-              {isSubmitting ? "Procesando..." : "Confirmar"}
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Completando...
+                </>
+              ) : (
+                <>
+                  <FaCheckCircle />
+                  Completar Solicitud
+                </>
+              )}
             </button>
           </div>
         </Dialog.Content>

@@ -123,7 +123,7 @@ export const getServiceColumns = (handleEdit, handleDelete) => [
           <PermissionGuard permission={141}>
             <button
               onClick={() => handleEdit(service)}
-              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700 cursor-pointer"
               title="Editar servicio"
               aria-label="Editar servicio"
             >
@@ -133,7 +133,7 @@ export const getServiceColumns = (handleEdit, handleDelete) => [
           <PermissionGuard permission={144}>
             <button
               onClick={() => handleDelete(service)}
-              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-red-500 hover:text-red-600 text-gray-700"
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-red-500 hover:text-red-600 text-gray-700 cursor-pointer"
               title="Eliminar servicio"
               aria-label="Eliminar servicio"
             >
