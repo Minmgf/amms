@@ -5,7 +5,7 @@ import ServiceFilterFields from "@/app/components/request/services/ServiceFilter
 import CreateEditServiceModal from "@/app/components/request/services/CreateEditServiceModal";
 import { getServiceColumns } from "@/app/components/request/services/serviceColumns";
 import { ConfirmModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
-import { getServicesList } from "@/services/serviceService";
+import { getServicesList, deleteService } from "@/services/serviceService";
 import React, { useState, useMemo, useEffect } from "react";
 import { CiFilter } from "react-icons/ci";
 import { FaPlus, FaTimes } from "react-icons/fa";
@@ -214,13 +214,17 @@ const ServicesView = () => {
     if (!selectedService) return;
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
+      await deleteService(selectedService.id);
+      
+      // Actualizar la lista de servicios después de eliminar
       setServicesData((prevData) =>
         prevData.filter((service) => service.id !== selectedService.id)
       );
     } catch (error) {
-      setErrorMessage("Error al eliminar el servicio. Por favor, intente nuevamente.");
+      setErrorMessage(
+        error.response?.data?.message ||
+        "Error al eliminar el servicio. Por favor, intente nuevamente."
+      );
       setIsErrorModalOpen(true);
     } finally {
       setSelectedService(null);
