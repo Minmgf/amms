@@ -48,9 +48,11 @@ const RequestsManagementPage = () => {
   
   // Función para cargar solicitudes desde el API
   const loadRequests = async () => {
+    console.log('🔄 loadRequests: Iniciando carga de solicitudes...');
     try {
       setLoading(true);
       const response = await getGestionServicesList();
+      console.log('📥 Solicitudes recibidas del API:', response);
 
       if (response.success && response.results) {
         // Mapear datos del API a la estructura del componente
@@ -71,7 +73,10 @@ const RequestsManagementPage = () => {
           hasInvoice: item.payment_status_id !== null // Asumimos que tiene factura si tiene estado de pago
         }));
 
+        console.log('📊 Datos mapeados (mappedData.length):', mappedData.length);
+        console.log('📋 IDs de las solicitudes:', mappedData.map(r => ({ id: r.id, requestCode: r.requestCode })));
         setRequestsData(mappedData);
+        console.log('✅ setRequestsData ejecutado con', mappedData.length, 'solicitudes');
 
         const getTokenBilling = async () => {
               try {
@@ -93,6 +98,7 @@ const RequestsManagementPage = () => {
 
   // Cargar solicitudes al montar el componente
   useEffect(() => {
+    console.log('🎬 Componente montado, llamando loadRequests...');
     loadRequests();
   }, []);
 
@@ -293,22 +299,21 @@ const RequestsManagementPage = () => {
     loadRequests();
   };
 
-  const handleConfirmRequest = (requestId) => {
-    const request = requestsData.find(r => r.id === requestId);
+  const handleConfirmRequest = (request) => {
+    console.log('🎯 handleConfirmRequest - request:', request);
     setSelectedRequest(request);
     setMode('confirm');
     setConfirmFormModalOpen(true);
   };
 
-  const handleConfirmRequestSuccess = () => {
+  const handleConfirmRequestSuccess = async () => {
     setConfirmFormModalOpen(false);
     setSuccessMessage(`Solicitud confirmada exitosamente. La solicitud pasó a estado "Pendiente".`);
     setSuccessModalOpen(true);
-    loadRequests();
+    await loadRequests();
   };
 
-  const handleCompleteRequest = (requestId) => {
-    const request = requestsData.find(r => r.id === requestId);
+  const handleCompleteRequest = (request) => {
     setSelectedRequestForComplete(request);
     setCompleteModalOpen(true);
   };
@@ -337,6 +342,12 @@ const RequestsManagementPage = () => {
     setIsRequestModalOpen(true);
   };
 
+  const handleRequestModalSuccess = async () => {
+    console.log('✅ Pre-solicitud/Solicitud creada, recargando lista...');
+    await loadRequests();
+    console.log('✅ Lista recargada exitosamente');
+  };
+
   const handleGenerateReport = () => {
     // TODO: Implementar generación de reporte
   };
@@ -360,7 +371,7 @@ const RequestsManagementPage = () => {
         {(request.requestStatusId === 1 || request.requestStatusId === 19) && (
           <PermissionGuard permission={150}>
             <button
-              onClick={() => handleConfirmRequest(request.id)}
+              onClick={() => handleConfirmRequest(request)}
               className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-blue-300 hover:border-blue-500 hover:text-blue-600 text-blue-600"
               title="Confirmar solicitud"
             >
@@ -393,11 +404,11 @@ const RequestsManagementPage = () => {
           </PermissionGuard>
         )}
 
-        {/* Completar - solo para pendientes */}
-        {request.requestStatusId === 2 && (
+        {/* Completar - solo para solicitudes en proceso (estado 21) */}
+        {request.requestStatusId === 21 && (
           <PermissionGuard permission={152}>
             <button
-              onClick={() => handleCompleteRequest(request.id)}
+              onClick={() => handleCompleteRequest(request)}
               className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 hover:border-green-500 hover:text-green-600 text-green-600"
               title="Completar solicitud"
             >
@@ -788,7 +799,7 @@ const RequestsManagementPage = () => {
         isOpen={isRequestModalOpen}
         onClose={() => setIsRequestModalOpen(false)}
         mode={mode}
-        onSuccess={loadRequests}
+        onSuccess={handleRequestModalSuccess}
       />
 
       {/* Modal de Confirmación de Pre-Solicitud */}

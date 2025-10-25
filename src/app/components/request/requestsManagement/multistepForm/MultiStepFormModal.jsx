@@ -1,17 +1,17 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { useForm, FormProvider, get } from "react-hook-form";
+import { useForm, FormProvider } from "react-hook-form";
 import Step1ClientInfo from "./Step1ClientInfo";
 import Step2RequestInfo from "./Step2RequestInfo";
 import Step3LocationConditions from "./Step3LocationConditions";
 // import de servicios
 import { getCountries, getStates, getCities } from "@/services/locationService";
-import { getAreaUnits, getAltitudeUnits, getSoilTypes, getActiveWorkers, getImplementTypes, getTextureTypes, getPaymentMethods, getPaymentStatus } from "@/services/requestService";
-import { createPreRegister, createRequest } from "@/services/requestService";
+import { getAreaUnits, getAltitudeUnits, getSoilTypes, getActiveWorkers, getImplementTypes, getTextureTypes, getPaymentMethods, getPaymentStatus, getCurrencyUnits } from "@/services/requestService";
+import { createPreRegister, createRequest, getRequestDetails, confirmRequest } from "@/services/requestService";
 import { FiX } from "react-icons/fi";
 import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
 // importa tus servicios reales para obtener options
-import { getActiveMachineries, getActiveCurrencyUnits } from "@/services/maintenanceService";
+import { getActiveMachineries } from "@/services/maintenanceService";
 
 export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mode, onSuccess }) {
   const isEditMode = !!requestToEdit;
@@ -27,6 +27,7 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
     { id: 3, name: "Condiciones de Ubicación y Terreno" },
   ];
   const [fuelPrediction, setFuelPrediction] = useState({});
+  const [loadingRequestData, setLoadingRequestData] = useState(false);
 
   const defaultValues = {
     customer: "",
@@ -114,7 +115,7 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
       try {
         const machs = await getActiveMachineries();
         const ops = await getActiveWorkers();
-        const cur = await getActiveCurrencyUnits();
+        const cur = await getCurrencyUnits();
         const countries = await getCountries();
         const areas = await getAreaUnits();
         const altitudes = await getAltitudeUnits();
@@ -138,9 +139,9 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
         setPaymentMethods(Array.isArray(payMethods) ? payMethods : (Array.isArray(payMethods?.data) ? payMethods.data : []));
         setPaymentStatuses(Array.isArray(payStatus) ? payStatus : (Array.isArray(payStatus?.data) ? payStatus.data : []));
         // opcional: set default currency in form if exist
-        if (currencyArray.length > 0) {
-          methods.setValue("amountPaidCurrency", currencyArray[0].symbol);
-          methods.setValue("amountToBePaidCurrency", currencyArray[0].symbol);
+        if (currencyArray.length > 0 && mode !== 'confirm') {
+          methods.setValue("amountPaidCurrency", currencyArray[0].id);
+          methods.setValue("amountToBePaidCurrency", currencyArray[0].id);
         }
       } catch (err) {
         console.error("Error cargando opciones", err);
@@ -177,6 +178,82 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
       setCompletedSteps([]);
     }
   }, [isOpen]);
+
+  // Cargar datos de la solicitud cuando está en modo confirm
+  useEffect(() => {
+    if (isOpen && mode === 'confirm' && requestToEdit) {
+      const loadRequestData = async () => {
+        setLoadingRequestData(true);
+        try {
+          // Obtener el ID de la solicitud desde requestToEdit
+          const requestId = requestToEdit.requestCode || requestToEdit.id;
+          console.log('📥 Cargando datos de solicitud:', requestId);
+          
+          const requestData = await getRequestDetails(requestId);
+          console.log('✅ Datos de solicitud obtenidos:', requestData);
+
+          // Mapear los datos del API a los valores del formulario
+          const mappedValues = {
+            // Step 1 - Cliente
+            identificationNumber: requestData.customer_document_number?.toString() || "",
+            customer: requestData.customer_id || "",
+            
+            // Step 2 - Información de solicitud
+            requestDetails: requestData.request_detail || "",
+            scheduledStartDate: requestData.scheduled_start_date || "",
+            endDate: requestData.scheduled_end_date || "",
+            paymentMethod: requestData.payment_method_code || "",
+            paymentStatus: requestData.payment_status_id || "",
+            amountPaid: requestData.amount_paid || "",
+            amountToBePaid: requestData.amount_to_pay || "",
+            amountPaidCurrency: requestData.currency_unit_amount_paid_id || "",
+            amountToBePaidCurrency: requestData.currency_unit_amount_to_pay_id || "",
+            
+            // Step 3 - Ubicación
+            country: requestData.request_location?.country || "",
+            department: requestData.request_location?.department || "",
+            city: requestData.request_location?.city_id || "",
+            placeName: requestData.request_location?.place_name || "",
+            latitude: requestData.request_location?.latitude?.toString() || "",
+            longitude: requestData.request_location?.longitude?.toString() || "",
+            area: requestData.request_location?.area?.toString() || "",
+            areaUnit: requestData.request_location?.area_unit_id || "",
+            altitude: requestData.request_location?.altitude?.toString() || "",
+            altitudeUnit: requestData.request_location?.altitude_unit_id || "",
+            
+            // Maquinaria y operarios
+            machineryList: (requestData.request_machinery_user || []).map(item => ({
+              machinery: { 
+                id_machinery: item.machinery_id,
+                name: item.machinery_name || "Maquinaria"
+              },
+              operator: { 
+                id: item.user_id,
+                name: item.user_name || "Operario"
+              }
+            }))
+          };
+
+          // Aplicar todos los valores al formulario
+          Object.entries(mappedValues).forEach(([key, value]) => {
+            methods.setValue(key, value);
+          });
+
+          setStep(0);
+          setCompletedSteps([]);
+          console.log('✅ Formulario precargado con datos de la solicitud');
+        } catch (error) {
+          console.error('❌ Error cargando datos de solicitud:', error);
+          setModalMessage("Error al cargar los datos de la solicitud. Por favor, intente nuevamente.");
+          setErrorOpen(true);
+        } finally {
+          setLoadingRequestData(false);
+        }
+      };
+
+      loadRequestData();
+    }
+  }, [isOpen, mode, requestToEdit]);
 
   const nextStep = async (e) => {
     if (e) {
@@ -242,13 +319,70 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
   }
 
   const handleSubmitForm = async (formData) => {
-    // Modo confirmación: solo simular confirmación sin enviar al backend
+    // Modo confirmación: enviar datos al endpoint de confirmar solicitud
     if (mode === "confirm") {
-      console.log("Datos de confirmación (estáticos):", formData);
-      setModalMessage("Solicitud confirmada exitosamente. La solicitud pasó a estado 'Pendiente'.");
-      setSuccessOpen(true);
-      reset();
-      if (onSuccess) onSuccess();
+      console.log("🔄 Confirmando solicitud con datos:", formData);
+      
+      const requestId = requestToEdit?.requestCode || requestToEdit?.id;
+      
+      // Construir payload según la estructura requerida por el API
+      const payload = {
+        customer: formData.customer,
+        request_detail: formData.requestDetails,
+        scheduled_start_date: formData.scheduledStartDate,
+        scheduled_end_date: formData.endDate,
+        payment_method: formData.paymentMethod || null,
+        payment_status: formData.paymentStatus || null,
+        amount_paid: formData.amountPaid ? Number(formData.amountPaid) : null,
+        currency_unit_amount_paid: formData.amountPaidCurrency || null,
+        amount_to_pay: formData.amountToBePaid ? Number(formData.amountToBePaid) : null,
+        currency_unit_amount_to_pay: formData.amountToBePaidCurrency || null,
+        location: {
+          country: formData.country,
+          department: formData.department,
+          city_id: formData.city,
+          place_name: formData.placeName,
+          latitude: parseFloat(formData.latitude),
+          longitude: parseFloat(formData.longitude),
+          area: formData.area ? Number(formData.area) : null,
+          area_unit: formData.areaUnit || null,
+          altitude: formData.altitude ? Number(formData.altitude) : null,
+          altitude_unit: formData.altitudeUnit || null
+        },
+        machinery_users: (formData.machineryList || []).map((item, idx) => {
+          const prediction = fuelPrediction[idx] || {};
+          return {
+            machinery_id: item.machinery?.id_machinery || null,
+            user_id: item.operator?.id || null,
+            soil_type: prediction.soilType ?? null,
+            texture: prediction.texture ?? null,
+            humidity_level: prediction.humidity ?? null,
+            implementation: prediction.implementation ?? null,
+            depth: prediction.workDepth ?? null,
+            slope: prediction.slope ?? null,
+            work_duration: prediction.estimatedHours ?? null
+          };
+        })
+      };
+
+      console.log('📤 Payload para confirmar solicitud:', payload);
+
+      try {
+        const response = await confirmRequest(requestId, payload);
+        console.log('✅ Solicitud confirmada exitosamente:', response);
+        setModalMessage(response.message || "Solicitud confirmada exitosamente. La solicitud pasó a estado 'Pendiente'.");
+        setSuccessOpen(true);
+        reset();
+        setFuelPrediction({});
+        if (onSuccess) onSuccess();
+      } catch (error) {
+        console.error('❌ Error confirmando solicitud:', error);
+        const errorMessage = error.response?.data?.errors 
+          ? formatBackendErrors(error.response.data.errors)
+          : error.response?.data?.message || "Error al confirmar la solicitud. Por favor, intente nuevamente.";
+        setModalMessage(errorMessage);
+        setErrorOpen(true);
+      }
       return;
     }
 
@@ -468,31 +602,42 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
             <StepIndicator steps={steps} currentStep={step} />
             {/* Step Content */}
             <div style={{ minHeight: "300px" }} className="sm:min-h-[400px]">
-              {step === 0 && <Step1ClientInfo />}
-              {step === 1 && (
-                <Step2RequestInfo
-                  mode={mode}
-                  // pasar options y handlers como props para evitar remount resets
-                  machineryOptions={machineryOptions}
-                  operatorOptions={operatorOptions}
-                  currencies={currencies}
-                  soilTypes={soilTypes}
-                  implementTypes={implementTypes}
-                  textureTypes={textureTypes}
-                  paymentMethods={paymentMethods}
-                  paymentStatuses={paymentStatuses}
-                  setFuelPrediction={setFuelPrediction}
-                  fuelPrediction={fuelPrediction}
-                />
-              )}
-              {step === 2 && (
-                <Step3LocationConditions
-                  countriesList={countriesList}
-                  areaUnits={areaUnits}
-                  altitudeUnits={altitudeUnits}
-                  fetchStates={fetchStates}
-                  fetchCities={fetchCities}
-                />
+              {loadingRequestData ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto mb-4"></div>
+                    <p className="text-secondary">Cargando datos de la solicitud...</p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {step === 0 && <Step1ClientInfo mode={mode} />}
+                  {step === 1 && (
+                    <Step2RequestInfo
+                      mode={mode}
+                      // pasar options y handlers como props para evitar remount resets
+                      machineryOptions={machineryOptions}
+                      operatorOptions={operatorOptions}
+                      currencies={currencies}
+                      soilTypes={soilTypes}
+                      implementTypes={implementTypes}
+                      textureTypes={textureTypes}
+                      paymentMethods={paymentMethods}
+                      paymentStatuses={paymentStatuses}
+                      setFuelPrediction={setFuelPrediction}
+                      fuelPrediction={fuelPrediction}
+                    />
+                  )}
+                  {step === 2 && (
+                    <Step3LocationConditions
+                      countriesList={countriesList}
+                      areaUnits={areaUnits}
+                      altitudeUnits={altitudeUnits}
+                      fetchStates={fetchStates}
+                      fetchCities={fetchCities}
+                    />
+                  )}
+                </>
               )}
             </div>
             {/* Navigation */}
