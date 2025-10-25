@@ -1,110 +1,27 @@
 "use client";
-import { useEffect, useMemo, useState, useCallback } from "react";
-import { FiSearch, FiFilter, FiEye, FiEdit2, FiTrash2, FiPlus, FiX } from "react-icons/fi";
+import { useEffect, useMemo, useState } from "react";
+import { FiSearch, FiFilter, FiEdit2, FiTrash2, FiPlus, FiX } from "react-icons/fi";
 import { FaCalendar, FaCheckCircle } from "react-icons/fa";
 import { SuccessModal, ErrorModal, ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
 import FilterModal from "@/app/components/shared/FilterModal";
 import RegisterDevice from "@/app/components/monitoring/RegisterEditDevice";
 import { useTheme } from "@/contexts/ThemeContext";
-
 import TableList from "@/app/components/shared/TableList";
 import { createColumnHelper } from "@tanstack/react-table";
 import React from "react";
+import { getDevicesList, deleteDevice, toggleDeviceStatus } from "@/services/deviceService";
 
 const page = () => {
   useTheme();
   const [globalFilter, setGlobalFilter] = useState("");
-  const [data, setData] = useState([
-    {
-      id: 1,
-      deviceName: "AgroLink-001",
-      imei: "357984562034378",
-      operationalStatus: 1,
-      statusName: "Active",
-      registerDate: "2025-10-18",
-      monitoringParameters: {
-        ignitionStatus: true,
-        movementStatus: true,
-        currentSpeed: false,
-        gpsLocation: true,
-        gsmSignal: true,
-        revolutions: true,
-        engineTemperature: true,
-        engineLoad: true,
-        oilLevel: true,
-        fuelLevel: true,
-        fuelUsed: false,
-        instantFuelConsumption: true,
-        obdErrors: true,
-        totalOdometer: true,
-        tripOdometer: false,
-        eventsGForce: true,
-      }
-    },
-    {
-      id: 2,
-      deviceName: "JiLink-Tractor-05",
-      imei: "864578902346677",
-      operationalStatus: 2,
-      statusName: "Inactive",
-      registerDate: "2025-09-12",
-      monitoringParameters: {
-        ignitionStatus: true,
-        movementStatus: true,
-        currentSpeed: true,
-        gpsLocation: true,
-        gsmSignal: false,
-        revolutions: false,
-        engineTemperature: false,
-        engineLoad: false,
-        oilLevel: false,
-        fuelLevel: true,
-        fuelUsed: true,
-        instantFuelConsumption: false,
-        obdErrors: false,
-        totalOdometer: true,
-        tripOdometer: true,
-        eventsGForce: true,
-      }
-    },
-    {
-      id: 3,
-      deviceName: "FarmTech-012",
-      imei: "123456789012345",
-      operationalStatus: 1,
-      statusName: "Active",
-      registerDate: "2025-08-05",
-      monitoringParameters: {
-        ignitionStatus: false,
-        movementStatus: false,
-        currentSpeed: false,
-        gpsLocation: false,
-        gsmSignal: false,
-        revolutions: false,
-        engineTemperature: false,
-        engineLoad: false,
-        oilLevel: false,
-        fuelLevel: false,
-        fuelUsed: false,
-        instantFuelConsumption: false,
-        obdErrors: false,
-        totalOdometer: false,
-        tripOdometer: false,
-        eventsGForce: false,
-      }
-    },
-  ]);
+  const [data, setData] = useState([]);
 
   // Estados para el DeviceFormModal (Agregar/Editar Dispositivo)
   const [isDeviceFormModalOpen, setIsDeviceFormModalOpen] = useState(false);
   const [deviceFormMode, setDeviceFormMode] = useState("add");
   const [selectedDevice, setSelectedDevice] = useState(null);
 
-  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
-  const [successOpen, setSuccessOpen] = useState(false);
-  const [errorOpen, setErrorOpen] = useState(false);
   const [filterModalOpen, setFilterModalOpen] = useState(false);
-
   const [modalMessage, setModalMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -114,15 +31,45 @@ const page = () => {
   const [endDateFilter, setEndDateFilter] = useState("");
   const [filteredData, setFilteredData] = useState([]);
 
-  const [pendingDelete, setPendingDelete] = useState(null);
-  const [confirmMessage, setConfirmMessage] = useState("");
+  // Estado de modales de eliminar y confirmar 
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [isConfirmDeactivateOpen, setIsConfirmDeactivateOpen] = useState(false);
+  const [isConfirmActivateOpen, setIsConfirmActivateOpen] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
+  const [error, setError] = useState(null);
 
-  // Aplicar filtros cuando cambien los datos o los filtros
+  // Listar dispositivos registrados
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  // Aplicar filtros cada vez que cambian los filtros o los datos cargados
   useEffect(() => {
     applyFilters();
   }, [data, statusFilter, startDateFilter, endDateFilter]);
+
+  //Función para obtener el listado de dispositivos registrados
+  const loadInitialData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await getDevicesList();
+      if (response) {
+        setData(response);
+      } else {
+        setError("No se pudieron cargar los Dispositivos.");
+        setData([]);
+      }
+    } catch (err) {
+      console.error("Error loading devices:", err);
+      setError("Error al conectar con el servidor.");
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Función para aplicar filtros
   const applyFilters = () => {
@@ -131,21 +78,26 @@ const page = () => {
     // Filtro por estado
     if (statusFilter) {
       filtered = filtered.filter(
-        (device) => device.operationalStatus === parseInt(statusFilter)
+        (device) => device.status_id === parseInt(statusFilter)
       );
     }
 
     // Filtro por rango de fechas
     if (startDateFilter) {
-      filtered = filtered.filter(
-        (device) => device.registerDate >= startDateFilter
-      );
+      filtered = filtered.filter((device) => {
+        const deviceDate = new Date(device.registration_date);
+        const startDate = new Date(startDateFilter);
+        return deviceDate >= startDate;
+      });
     }
 
     if (endDateFilter) {
-      filtered = filtered.filter(
-        (device) => device.registerDate <= endDateFilter
-      );
+      filtered = filtered.filter((device) => {
+        const deviceDate = new Date(device.registration_date);
+        const endDate = new Date(endDateFilter);
+        endDate.setDate(endDate.getDate() + 1);
+        return deviceDate < endDate;
+      });
     }
 
     setFilteredData(filtered);
@@ -154,8 +106,8 @@ const page = () => {
   // Obtener estados únicos para el select
   const uniqueStatuses = useMemo(() => {
     const statuses = data.map((device) => ({
-      id: device.operationalStatus,
-      name: device.statusName,
+      id: device.status_id,
+      name: device.status_name,
     }));
     const uniqueMap = new Map(statuses.map((s) => [s.id, s]));
     return Array.from(uniqueMap.values());
@@ -215,157 +167,190 @@ const page = () => {
       setModalTitle("Registro Exitoso");
       setModalMessage("El dispositivo ha sido registrado exitosamente.");
     }
-    setSuccessOpen(true);
+    setIsSuccessModalOpen(true);
   };
 
-  const handleOpenDeleteConfirm = useCallback(
-    (deviceId) => {
-      const device = data.find((d) => d.id === deviceId);
-      setPendingDelete(deviceId);
-      setConfirmMessage(
-        `¿Está seguro que desea eliminar el dispositivo "${device?.deviceName}"?`
-      );
-      setConfirmModalOpen(true);
-    },
-    [data]
-  );
+  const handleOpenDeleteConfirm = (device) => {
+    setSelectedDevice(device);
+    setIsConfirmDeleteOpen(true);
+  };
 
-  const handleConfirmDelete = useCallback(() => {
-    if (!pendingDelete) return;
+  const handleConfirmDelete = async () => {
+    setIsConfirmDeleteOpen(false);
 
-    setLoading(true);
-    setConfirmModalOpen(false);
+    if (!selectedDevice) return;
 
     try {
-      // Simulación: verificar si el dispositivo tiene asociaciones
-      const device = data.find((d) => d.id === pendingDelete);
-      const hasAssociations = device?.id === 1 || device?.id === 3; // Simular que dispositivos 1 y 3 tienen asociaciones
+      const response = await deleteDevice(selectedDevice.id_device);
 
-      if (hasAssociations) {
-        // El dispositivo tiene asociaciones, no se puede eliminar
+      if (response.success) {
+        await loadInitialData();
+        setModalTitle("Exito");
+        setModalMessage(response.message || "El dispositivo ha sido eliminado exitosamente.");
+        setIsSuccessModalOpen(true);
+        setSelectedDevice(null);
+      }
+    } catch (error) {
+      if (error?.response?.data?.code === 400 || error?.response?.data?.code === 409) {
         setModalTitle("Dispositivo con Asociaciones");
+        const backendMessage = error?.response?.data?.message;
         setModalMessage(
-          `El dispositivo "${device?.deviceName}" está asociado con maquinarias u otros registros y no puede ser eliminado. ¿Desea desactivarlo en su lugar? Esto lo ocultará de futuros formularios.`
+          `${backendMessage} ¿Desea desactivarlo en su lugar? Esto lo ocultará de futuros formularios.`
         );
         setIsConfirmDeactivateOpen(true);
-        setLoading(false);
-        return;
+      } else {
+        setModalTitle("Error");
+        setModalMessage(
+          error?.response?.data?.message ||
+          "Ocurrió un error al eliminar el dispositivo. Por favor, inténtelo de nuevo."
+        );
+        setIsErrorModalOpen(true);
+        setSelectedDevice(null);
       }
-
-      // Si no tiene asociaciones, eliminar directamente
-      setData(data.filter((device) => device.id !== pendingDelete));
-      setModalTitle("Eliminación Exitosa");
-      setModalMessage("El dispositivo ha sido eliminado exitosamente.");
-      setSuccessOpen(true);
-    } catch (error) {
-      setModalTitle("Error");
-      setModalMessage(
-        error?.response?.data?.detail ?? "Error al eliminar el dispositivo"
-      );
-      setErrorOpen(true);
-    } finally {
-      setLoading(false);
-      setPendingDelete(null);
     }
-  }, [pendingDelete, data]);
+  };
 
-  const handleCancelDelete = useCallback(() => {
-    setConfirmModalOpen(false);
-    setPendingDelete(null);
-    setConfirmMessage("");
-  }, []);
+  // Función para abrir confirmación de activación
+  const handleOpenActivateConfirm = (device) => {
+    setSelectedDevice(device);
+    setIsConfirmActivateOpen(true);
+  };
 
-  // Handler para confirmar la desactivación
-  const handleConfirmDeactivate = useCallback(() => {
-
-    setIsConfirmDeactivateOpen(false);
-    setLoading(true);
+  // Confirmar activación
+  const handleConfirmActivate = async () => {
+    setIsConfirmActivateOpen(false);
+    
+    if (!selectedDevice) return;
 
     try {
-      // Actualizar el estado del dispositivo a inactivo
-      setData(prevData =>
-        prevData.map(device =>
-          device.id === pendingDelete
-            ? {
-              ...device,
-              operationalStatus: 2,
-              statusName: "Inactive"
-            }
-            : device
-        )
-      );
+      const response = await toggleDeviceStatus(selectedDevice.id_device);      
+      setModalTitle("Éxito");
+      setModalMessage(response.message || "El dispositivo ha sido activado exitosamente.");
+      setIsSuccessModalOpen(true);
+      await loadInitialData();
 
-      setModalTitle("Estado Actualizado");
-      setModalMessage("El dispositivo ha sido desactivado exitosamente.");
-      setSuccessOpen(true);
     } catch (error) {
       setModalTitle("Error");
       setModalMessage(
-        error?.response?.data?.detail ?? "Error al desactivar el dispositivo"
+        error?.response?.data?.message ||
+        "Ocurrió un error al activar el dispositivo. Por favor, inténtelo de nuevo."
       );
-      setErrorOpen(true);
+      setIsErrorModalOpen(true);
     } finally {
-      setLoading(false);
-      setPendingDelete(null);
+      setSelectedDevice(null);
     }
-  }, [pendingDelete]);
+  };
+
+  const handleCancelDelete = () => {
+    setIsConfirmDeleteOpen(false);
+    setSelectedDevice(null);
+  };
+
+  // Handler para confirmar la desactivación
+  const handleConfirmDeactivate = async () => {
+    setIsConfirmDeactivateOpen(false);
+    
+    if (!selectedDevice) return;
+
+    try {
+      const response = await toggleDeviceStatus(selectedDevice.id_device);      
+      setModalTitle("Éxito");
+      setModalMessage(response.message || "El dispositivo ha sido desactivado exitosamente.");
+      setIsSuccessModalOpen(true);
+      await loadInitialData();
+    } catch (error) {
+      setModalTitle("Error");
+      setModalMessage(
+        error?.response?.data?.message ||
+        "Ocurrió un error al desactivar el dispositivo. Por favor, inténtelo de nuevo."
+      );
+      setIsErrorModalOpen(true);
+    } finally {
+      setSelectedDevice(null);
+    }
+  };
+
+  // Calcular el mensaje de confirmación de eliminación dinámicamente
+  const deleteConfirmMessage = useMemo(() => {
+    if (!selectedDevice) return "";
+    return `¿Está seguro que desea eliminar el dispositivo "${selectedDevice?.name}"?`;
+  }, [selectedDevice]);
+
+  // Calcular mensaje de confirmación de activación
+  const activateConfirmMessage = useMemo(() => {
+    if (!selectedDevice) return "";
+    return `¿Está seguro que desea activar el dispositivo "${selectedDevice?.name}"?`;
+  }, [selectedDevice]);
 
   const columnHelper = createColumnHelper();
 
   const columns = useMemo(
     () => [
-      columnHelper.accessor("deviceName", {
+      columnHelper.accessor("name", {
         header: "Nombre del Dispositivo",
         cell: (info) => <div className="text-primary">{info.getValue()}</div>,
       }),
-      columnHelper.accessor("imei", {
+      columnHelper.accessor("IMEI", {
         header: "IMEI",
         cell: (info) => <div className="text-secondary">{info.getValue()}</div>,
       }),
-      columnHelper.accessor("operationalStatus", {
+      columnHelper.accessor("status_id", {
         header: "Estado Operativo",
         cell: (info) => {
-          const statusId = info.getValue();
-          const statusName = info.row.original.statusName;
+          const status_id = info.getValue();
+          const status_name = info.row.original.status_name;
           return (
             <span
-              className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${statusId === 1
+              className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${status_id === 1
                 ? "bg-green-100 text-green-800"
                 : "bg-pink-100 text-pink-800"
                 }`}
             >
-              {statusName}
+              {status_name}
             </span>
           );
         },
       }),
-      columnHelper.accessor("registerDate", {
+      columnHelper.accessor("registration_date", {
         header: "Fecha de Registro",
-        cell: (info) => <div className="text-secondary">{info.getValue()}</div>,
+        cell: (info) => <div className="text-secondary">{formatDate(info.getValue())}</div>,
       }),
-      columnHelper.accessor("id", {
+      columnHelper.accessor("id_device", {
         header: "Acciones",
         cell: (info) => {
+          const device = info.row.original;
+          const isActive = device.status_id === 1;
+
           return (
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               <button
                 aria-label="Edit Button"
-                onClick={() =>
-                  handleOpenDeviceFormModal("edit", info.getValue())
-                }
+                onClick={() => handleOpenDeviceFormModal("edit", info.getValue())}
                 className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
                 title="Editar dispositivo"
               >
                 <FiEdit2 className="w-3 h-3" /> Editar
               </button>
-              <button
-                aria-label="Delete Button"
-                onClick={() => handleOpenDeleteConfirm(info.getValue())}
-                className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-red-500 hover:text-red-600 text-gray-700"
-                title="Eliminar Dispositivo"
-              >
-                <FiTrash2 className="w-3 h-3" /> Eliminar
-              </button>
+
+              {isActive ? (
+                <button
+                  aria-label="Delete Button"
+                  onClick={() => handleOpenDeleteConfirm(device)}
+                  className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-red-500 hover:text-red-600 text-gray-700"
+                  title="Eliminar Dispositivo"
+                >
+                  <FiTrash2 className="w-3 h-3" /> Eliminar
+                </button>
+              ) : (
+                <button
+                  aria-label="Activate Button"
+                  onClick={() => handleOpenActivateConfirm(device)}
+                  className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
+                  title="Activar Dispositivo"
+                >
+                  <FaCheckCircle className="w-3 h-3" /> Activar
+                </button>
+              )}
             </div>
           );
         },
@@ -384,19 +369,27 @@ const page = () => {
       const searchTerm = globalFilter.toLowerCase();
       finalData = finalData.filter(
         (device) =>
-          device.deviceName.toLowerCase().includes(searchTerm) ||
-          device.imei.toLowerCase().includes(searchTerm)
+          device.name?.toLowerCase().includes(searchTerm) ||
+          String(device.IMEI)?.toLowerCase().includes(searchTerm)
+
       );
     }
 
     return finalData;
   }, [data, filteredData, statusFilter, startDateFilter, endDateFilter, globalFilter]);
 
-
   // Contar filtros activos
   const activeFiltersCount = [statusFilter, startDateFilter, endDateFilter].filter(
     Boolean
   ).length;
+
+  //Formatear Fecha
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    // Toma solo la parte de la fecha antes de la "T"
+    const [year, month, day] = dateString.split("T")[0].split("-");
+    return `${year}/${month}/${day}`;
+  };
 
   return (
     <>
@@ -438,9 +431,10 @@ const page = () => {
                 : ""
                 }`}
               onClick={() => setFilterModalOpen(true)}
+              aria-label="Filter Button"
             >
               <FiFilter className="filter-icon w-4 h-4" />
-              <span className="text-sm">Filtrar</span>
+              <span className="text-sm">Filtrar Por</span>
               {activeFiltersCount > 0 && (
                 <span className="ml-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
                   {activeFiltersCount}
@@ -459,6 +453,7 @@ const page = () => {
 
             <button
               onClick={() => handleOpenDeviceFormModal("add")}
+              aria-label="Add Device Button"
               className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit bg-black text-white hover:bg-gray-800"
             >
               <FiPlus className="w-4 h-4" />
@@ -538,13 +533,31 @@ const page = () => {
 
       {/* Modal de confirmación para eliminar */}
       <ConfirmModal
-        isOpen={confirmModalOpen}
+        isOpen={isConfirmDeleteOpen}
         onClose={handleCancelDelete}
         onConfirm={handleConfirmDelete}
         title="Confirmar Eliminación"
-        message={confirmMessage}
+        message={deleteConfirmMessage}
         confirmText="Eliminar"
         cancelText="Cancelar"
+        confirmColor="btn-primary"
+        cancelColor="btn-error"
+      />
+
+      {/* Modal de confirmación para activar */}
+      <ConfirmModal
+        isOpen={isConfirmActivateOpen}
+        onClose={() => {
+          setIsConfirmActivateOpen(false);
+          setSelectedDevice(null);
+        }}
+        onConfirm={handleConfirmActivate}
+        title="Confirmar Activación"
+        message={activateConfirmMessage}
+        confirmText="Activar"
+        cancelText="Cancelar"
+        confirmColor="btn-primary"
+        cancelColor="btn-error"
       />
 
       {/* Modal de confirmación para desactivar */}
@@ -552,26 +565,26 @@ const page = () => {
         isOpen={isConfirmDeactivateOpen}
         onClose={() => {
           setIsConfirmDeactivateOpen(false);
-          setPendingDelete(null);
+          setSelectedDevice(null);
         }}
         onConfirm={handleConfirmDeactivate}
         title={modalTitle}
         message={modalMessage}
         confirmText="Desactivar"
         cancelText="Cancelar"
-        confirmColor="btn-success"
+        confirmColor="btn-primary"
         cancelColor="btn-error"
       />
 
       <SuccessModal
-        isOpen={successOpen}
-        onClose={() => setSuccessOpen(false)}
+        isOpen={isSuccessModalOpen}
+        onClose={() => setIsSuccessModalOpen(false)}
         title={modalTitle || "Éxito"}
         message={modalMessage}
       />
       <ErrorModal
-        isOpen={errorOpen}
-        onClose={() => setErrorOpen(false)}
+        isOpen={isErrorModalOpen}
+        onClose={() => setIsErrorModalOpen(false)}
         title={modalTitle || "Error"}
         message={modalMessage}
       />
