@@ -56,6 +56,7 @@ export default function CreateEditServiceModal({
   const [showConfirm, setShowConfirm] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [specificErrorMsg, setSpecificErrorMsg] = useState("");
 
   // Cargar datos del API al abrir el modal
   useEffect(() => {
@@ -189,6 +190,7 @@ export default function CreateEditServiceModal({
     setShowConfirm(false);
     setSuccessMsg('');
     setErrorMsg('');
+    setSpecificErrorMsg('');
     onClose?.();
   };
 
@@ -323,16 +325,35 @@ export default function CreateEditServiceModal({
         // Manejar errores de campo específicos
         if (data?.errors) {
           const fieldErrors = Object.entries(data.errors)
-            .map(
-              ([field, messages]) =>
-                `• ${field}: ${
-                  Array.isArray(messages) ? messages.join(", ") : messages
-                }`
-            )
-            .join("\n");
-          errorMessage += fieldErrors
-            ? `\n\nErrores específicos:\n${fieldErrors}`
-            : "";
+            .map(([field, messages]) => {
+              // Manejar diferentes estructuras de error
+              let errorText = "";
+              
+              if (Array.isArray(messages)) {
+                errorText = messages.join(", ");
+              } else if (typeof messages === "object" && messages !== null) {
+                // Caso: {"service_name": {"service_name": "mensaje"}}
+                if (messages[field]) {
+                  errorText = messages[field];
+                } else {
+                  // Extraer el primer valor del objeto
+                  const firstKey = Object.keys(messages)[0];
+                  errorText = messages[firstKey] || JSON.stringify(messages);
+                }
+              } else if (typeof messages === "string") {
+                errorText = messages;
+              } else {
+                errorText = String(messages);
+              }
+              
+              return errorText;
+            })
+            .join(" ");
+          
+          // Guardar el mensaje específico por separado
+          if (fieldErrors.trim()) {
+            setSpecificErrorMsg(fieldErrors);
+          }
         }
       } else if (error.request) {
         errorMessage =
@@ -803,7 +824,14 @@ export default function CreateEditServiceModal({
         isOpen={showError}
         onClose={() => setShowError(false)}
         title={<span className="parametrization-text">Error</span>}
-        message={<span className="parametrization-text">{errorMsg}</span>}
+        message={
+          <span className="parametrization-text">
+            {errorMsg}
+            {specificErrorMsg && (
+              <span className="font-bold"> {specificErrorMsg}</span>
+            )}
+          </span>
+        }
       />
     </div>
   );
