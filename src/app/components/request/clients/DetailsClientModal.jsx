@@ -201,24 +201,27 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
 
   const getStatusColorById = (id, type = "request") => {
     if (type === "request") {
+      // IDs del endpoint /sigma/main/statues/list/7/
       switch (id) {
-        case 13: return "bg-green-100 text-green-800";
-        case 14: return "bg-blue-100 text-blue-800";
-        case 15: return "bg-red-100 text-red-800";
-        case 16: return "bg-yellow-100 text-yellow-800";
+        case 19: return "bg-gray-100 text-gray-800"; // Pre-solicitud
+        case 20: return "bg-yellow-100 text-yellow-800"; // Pendiente
+        case 21: return "bg-blue-100 text-blue-800"; // En Proceso
+        case 22: return "bg-green-100 text-green-800"; // Finalizada
+        case 23: return "bg-red-100 text-red-800"; // Cancelada
         default: return "bg-gray-100 text-gray-800";
       }
     } else if (type === "billing") {
+      // IDs del endpoint /sigma/main/statues/list/6/
       switch (id) {
-        case 17: return "bg-green-100 text-green-800";
-        case 18: return "bg-yellow-100 text-yellow-800";
-        case 19: return "bg-red-100 text-red-800";
+        case 16: return "bg-yellow-100 text-yellow-800"; // Pendiente
+        case 17: return "bg-blue-100 text-blue-800"; // Parcial
+        case 18: return "bg-green-100 text-green-800"; // Pagado
         default: return "bg-gray-100 text-gray-800";
       }
     } else if (type === "client") {
       switch (id) {
-        case 1: return "bg-green-100 text-green-800";
-        case 2: return "bg-red-100 text-red-800";
+        case 1: return "bg-green-100 text-green-800"; // Activo
+        case 2: return "bg-red-100 text-red-800"; // Inactivo
         default: return "bg-gray-100 text-gray-800";
       }
     }
@@ -297,13 +300,33 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
             );
           }
 
+          // Estados de pago (endpoint /sigma/main/statues/list/6/)
+          // 16: Pendiente, 17: Parcial, 18: Pagado
+          if (statusId === 16) {
+            return (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                {statusName || "N/A"}
+              </span>
+            );
+          }
+          if (statusId === 17) {
+            return (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                {statusName || "N/A"}
+              </span>
+            );
+          }
+          if (statusId === 18) {
+            return (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                {statusName || "N/A"}
+              </span>
+            );
+          }
+
+          // Estado desconocido
           return (
-            <span
-              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColorById(
-                statusId,
-                "billing"
-              )}`}
-            >
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
               {statusName || "N/A"}
             </span>
           );
@@ -316,13 +339,47 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
           const statusId = row.getValue("request_status_id");
           const statusName = row.original.request_status_name;
 
+          // Estados de solicitud (endpoint /sigma/main/statues/list/7/)
+          // 19: Pre-solicitud, 20: Pendiente, 21: En Proceso, 22: Finalizada, 23: Cancelada
+          if (statusId === 19) {
+            return (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                {statusName || "N/A"}
+              </span>
+            );
+          }
+          if (statusId === 20) {
+            return (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                {statusName || "N/A"}
+              </span>
+            );
+          }
+          if (statusId === 21) {
+            return (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                {statusName || "N/A"}
+              </span>
+            );
+          }
+          if (statusId === 22) {
+            return (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                {statusName || "N/A"}
+              </span>
+            );
+          }
+          if (statusId === 23) {
+            return (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                {statusName || "N/A"}
+              </span>
+            );
+          }
+
+          // Estado desconocido
           return (
-            <span
-              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColorById(
-                statusId,
-                "request"
-              )}`}
-            >
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
               {statusName || "N/A"}
             </span>
           );
@@ -333,8 +390,8 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
         header: "Acciones",
         cell: ({ row }) => {
           const request = row.original;
-          // TODO: Ajustar cuando esté disponible el campo invoice_url y el ID correcto del estado "Pagada"
-          const canDownload = request.invoice_url && request.payment_status_id === 17;
+          // El estado "Pagado" tiene id_statues: 18 según el endpoint /sigma/main/statues/list/6/
+          const canDownload = request.invoice_url && request.payment_status_id === 18;
 
           return (
             <div className="flex items-center justify-center gap-2">
@@ -431,11 +488,20 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
                   <h3 className="font-theme-semibold text-theme-base text-primary">
                     Datos personales y de contacto
                   </h3>
-                  <span className={`inline-flex w-fit items-center px-3 py-1 rounded-full text-sm font-medium ${
-                    getStatusColorById(displayData.customer_statues_id, "client")
-                  }`}>
-                    {displayData.customer_statues_name || "Activo"}
-                  </span>
+                  {/* Estado del cliente: 1=Activo, 2=Inactivo */}
+                  {displayData.customer_statues_id === 1 ? (
+                    <span className="inline-flex w-fit items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                      {displayData.customer_statues_name || "Activo"}
+                    </span>
+                  ) : displayData.customer_statues_id === 2 ? (
+                    <span className="inline-flex w-fit items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                      {displayData.customer_statues_name || "Inactivo"}
+                    </span>
+                  ) : (
+                    <span className="inline-flex w-fit items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                      {displayData.customer_statues_name || "Desconocido"}
+                    </span>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8">
