@@ -11,6 +11,7 @@ import { SuccessModal, ConfirmModal } from '@/app/components/shared/SuccessError
 import CompleteRequestModal from '@/app/components/request/CompleteRequestModal';
 import GenerateInvoiceModal from '@/app/components/request/invoice/multistepform/GenerateInvoiceModal';
 import MultiStepFormModal from "@/app/components/request/requestsManagement/multistepForm/MultiStepFormModal";
+import GenerateReportModal from '@/app/components/request/GenerateReportModal';
 import { getGestionServicesList } from '@/services/serviceService';
 import { authorization } from "@/services/billingService";
 import PermissionGuard from '@/app/(auth)/PermissionGuard';
@@ -45,6 +46,7 @@ const RequestsManagementPage = () => {
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [mode, setMode] = useState('preregister'); // 'preregister' o 'register'
   const [billingToken, setBillingToken] = useState("");
+  const [reportModalOpen, setReportModalOpen] = useState(false);
   
   // Función para cargar solicitudes desde el API
   const loadRequests = async () => {
@@ -349,7 +351,7 @@ const RequestsManagementPage = () => {
   };
 
   const handleGenerateReport = () => {
-    // TODO: Implementar generación de reporte
+    setReportModalOpen(true);
   };
 
   // Componente de acciones dinámicas con hover
@@ -629,13 +631,15 @@ const RequestsManagementPage = () => {
           </PermissionGuard>
 
           {/* Generar Reporte */}
-          <button
-            onClick={handleGenerateReport}
-            className="w-full parametrization-filter-button flex items-center justify-center space-x-2 px-4 py-2 transition-colors"
-          >
-            <FaFileDownload className="w-4 h-4" />
-            <span className="text-sm">Generar reporte</span>
-          </button>
+          <PermissionGuard permission={163}>
+            <button
+              onClick={handleGenerateReport}
+              className="w-full parametrization-filter-button flex items-center justify-center space-x-2 px-4 py-2 transition-colors"
+            >
+              <FaFileDownload className="w-4 h-4" />
+              <span className="text-sm">Generar reporte</span>
+            </button>
+          </PermissionGuard>
         </div>
 
         {/* Indicador de filtros activos */}
@@ -851,6 +855,12 @@ const RequestsManagementPage = () => {
         onClose={() => setGenerateInvoiceModalOpen(false)}
         request={selectedRequest}
         billingToken={billingToken}
+      />
+
+      {/* Modal de Generar Reporte */}
+      <GenerateReportModal
+        isOpen={reportModalOpen}
+        onClose={() => setReportModalOpen(false)}
       />
     </div>
   );

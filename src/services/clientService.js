@@ -78,13 +78,13 @@ export const getClientStatuses = async () => {
 
 // Obtener estados de solicitudes
 export const getRequestStatuses = async () => {
-    const { data } = await apiMain.get("/statues/list/4/");
+    const { data } = await apiMain.get("/statues/list/7/");
     return { data };
 };
 
 // Obtener estados de facturación
 export const getBillingStatuses = async () => {
-    const { data } = await apiMain.get("/statues/list/5/");
+    const { data } = await apiMain.get("/statues/list/6/");
     return { data };
 };
 
