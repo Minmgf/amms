@@ -42,27 +42,26 @@ const GenerateReportModal = ({ isOpen, onClose }) => {
   const loadInitialData = async () => {
     setIsLoadingData(true);
     try {
-      // Cargar clientes activos
+      // Cargar clientes - API devuelve {success: true, data: Array}
       const clientsResponse = await getClientsList();
-      if (clientsResponse.success && clientsResponse.results) {
-        // Filtrar solo clientes activos
-        const activeClients = clientsResponse.results.filter(client => client.is_active);
+      if (clientsResponse.success && clientsResponse.data) {
+        const activeClients = clientsResponse.data.filter(client => client.customer_statues_id === 1);
         setClients(activeClients);
       }
 
-      // Cargar estados de solicitudes (categoría 7)
+      // Cargar estados de solicitudes (categoría 7) - API devuelve Array directamente
       const statusesResponse = await getStatuesByCategory(7);
-      if (statusesResponse.success && statusesResponse.data) {
-        setRequestStatuses(statusesResponse.data);
+      if (Array.isArray(statusesResponse)) {
+        setRequestStatuses(statusesResponse);
       }
 
-      // Cargar métodos de pago
+      // Cargar métodos de pago - API devuelve {success: true, data: Array}
       const paymentMethodsResponse = await getPaymentMethods();
-      if (paymentMethodsResponse.success && paymentMethodsResponse.results) {
-        setPaymentMethods(paymentMethodsResponse.results);
+      if (paymentMethodsResponse.success && paymentMethodsResponse.data) {
+        setPaymentMethods(paymentMethodsResponse.data);
       }
     } catch (error) {
-      console.error("Error al cargar datos iniciales:", error);
+      // Silenciar errores de carga de filtros opcionales
     } finally {
       setIsLoadingData(false);
     }
@@ -276,7 +275,7 @@ const GenerateReportModal = ({ isOpen, onClose }) => {
                     {/* Cliente */}
                     <div>
                       <label className="block text-sm font-medium text-primary mb-2">
-                        Cliente
+                        Documento del Cliente
                       </label>
                       <select
                         value={customerId}
@@ -285,7 +284,7 @@ const GenerateReportModal = ({ isOpen, onClose }) => {
                       >
                         <option value="">Todos los clientes</option>
                         {clients.map((client) => (
-                          <option key={client.id} value={client.id}>
+                          <option key={client.id_customer} value={client.id_customer}>
                             {client.legal_entity_name} - {client.document_number}
                           </option>
                         ))}
@@ -295,7 +294,7 @@ const GenerateReportModal = ({ isOpen, onClose }) => {
                     {/* Estado de solicitud */}
                     <div>
                       <label className="block text-sm font-medium text-primary mb-2">
-                        Estado de Solicitud
+                        Estado de la Solicitud
                       </label>
                       <select
                         value={requestStatus}
@@ -304,7 +303,7 @@ const GenerateReportModal = ({ isOpen, onClose }) => {
                       >
                         <option value="">Todos los estados</option>
                         {requestStatuses.map((status) => (
-                          <option key={status.id} value={status.id}>
+                          <option key={status.id_statues} value={status.id_statues}>
                             {status.name}
                           </option>
                         ))}
@@ -323,7 +322,7 @@ const GenerateReportModal = ({ isOpen, onClose }) => {
                       >
                         <option value="">Todas las modalidades</option>
                         {paymentMethods.map((method) => (
-                          <option key={method.id} value={method.code}>
+                          <option key={method.id_payment_method} value={method.code}>
                             {method.name}
                           </option>
                         ))}

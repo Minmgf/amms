@@ -91,7 +91,7 @@ export const generateServiceRequestsReport = async (filters = {}) => {
     if (filters.scheduled_start_date_from) params.append('scheduled_start_date_from', filters.scheduled_start_date_from);
     if (filters.scheduled_start_date_to) params.append('scheduled_start_date_to', filters.scheduled_start_date_to);
 
-    const response = await apiMain.get(`/service_requests/generate-report/?${params.toString()}`, {
+    const response = await apiMain.get(`/service_requests/generate-report?${params.toString()}`, {
       responseType: 'blob', // Importante para archivos
     });
 
