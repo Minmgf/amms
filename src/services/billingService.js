@@ -61,3 +61,16 @@ export const getUnitsMeasurement = async (token) => {
 
   return data;
 };
+
+// Función para obtener lista de impuestos
+export const getTributesNames = async (token) => {
+  const { data } = await apiBilling.get("/v1/tributes/products?name=", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return data;
+};
+
+

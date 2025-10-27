@@ -48,6 +48,12 @@ export const getPaymentMethods = async () => {
     return data;
 }
 
+// Obtener unidades de moneda activas
+export const getCurrencyUnits = async () => {
+    const { data } = await apiMain.get("/units/active/10/");
+    return data;
+}
+
 // Crear preregistro
 export const createPreRegister = async (payload) => {
     const { data } = await apiMain.post("/service_requests/create_pre_request/", payload);
@@ -78,4 +84,36 @@ export const cancelRequest = async (requestId, observations) => {
         completion_cancellation_observations: observations
     });
     return data;
-}
+};
+
+// Confirmar una solicitud (convertir presolicitud a solicitud pendiente)
+export const confirmRequest = async (requestId, requestData) => {
+    console.log('📤 Enviando confirmación - requestId:', requestId);
+    console.log('📦 Payload:', requestData);
+    try {
+        const { data } = await apiMain.patch(`/service_requests/${requestId}/confirm/`, requestData);
+        console.log('✅ Respuesta exitosa:', data);
+        return data;
+    } catch (error) {
+        console.error('❌ Error en confirmRequest:', error);
+        console.error('📋 Error response:', error.response);
+        throw error;
+    }
+};
+
+// Completar una solicitud (cambiar estado de En proceso a Finalizada)
+export const completeRequest = async (requestId, observations) => {
+    console.log('📤 Completando solicitud - requestId:', requestId);
+    console.log('📦 Observaciones:', observations);
+    try {
+        const { data } = await apiMain.post(`/service_requests/${requestId}/complete/`, {
+            completion_cancellation_observations: observations
+        });
+        console.log('✅ Solicitud completada exitosamente:', data);
+        return data;
+    } catch (error) {
+        console.error('❌ Error en completeRequest:', error);
+        console.error('📋 Error response:', error.response);
+        throw error;
+    }
+};
