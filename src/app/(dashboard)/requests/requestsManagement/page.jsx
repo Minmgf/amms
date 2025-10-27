@@ -81,14 +81,14 @@ const RequestsManagementPage = () => {
         console.log('✅ setRequestsData ejecutado con', mappedData.length, 'solicitudes');
 
         const getTokenBilling = async () => {
-              try {
-                const response = await authorization();
-                setBillingToken(response.access_token);
-              } catch (error) {
-                // Error en la autorización de facturación
-              }
-            };
-            getTokenBilling();
+          try {
+            const response = await authorization();
+            setBillingToken(response.access_token);
+          } catch (error) {
+            // Error en la autorización de facturación
+          }
+        };
+        getTokenBilling();
       }
     } catch (error) {
       // En caso de error, mantener datos vacíos
@@ -226,14 +226,14 @@ const RequestsManagementPage = () => {
       registration_date: "2025-09-28T10:45:00",
       scheduled_date: `${request.scheduledDate}T07:30:00`,
       completion_date: request.completionDate ? `${request.completionDate}T16:00:00` : null,
-      
+
       // Client information
       client_name: request.client.name,
       client_document_type: request.client.idNumber.includes('900') ? "NIT" : "CC",
       client_document_number: request.client.idNumber,
       client_email: "contacto@" + request.client.name.toLowerCase().replace(/\s+/g, '') + ".com",
       client_phone: "+57 310 456 7821",
-      
+
       // Machinery
       machinery: [
         {
@@ -242,7 +242,7 @@ const RequestsManagementPage = () => {
           operator: "Juan Pérez"
         }
       ],
-      
+
       // Location
       location_country: "Colombia",
       location_department: "Tolima",
@@ -254,7 +254,7 @@ const RequestsManagementPage = () => {
       location_soil_type: "Clay loam",
       location_humidity: 42,
       location_altitude: 420,
-      
+
       // Billing
       billing_total_amount: 8500.00,
       billing_amount_paid: request.paymentStatusId === 3 ? 8500.00 : request.paymentStatusId === 2 ? 4000.00 : 0,
@@ -277,7 +277,7 @@ const RequestsManagementPage = () => {
   const handleCancelRequest = useCallback((requestId) => {
     setRequestsData(currentData => {
       const request = currentData.find(r => r.id === requestId);
-      
+
       if (!request) {
         const requestByCode = currentData.find(r => r.requestCode === requestId);
         if (requestByCode) {
@@ -287,10 +287,10 @@ const RequestsManagementPage = () => {
           return currentData;
         }
       }
-      
-    setRequestToCancel(request);
-    setSelectedRequest(request);
-    setCancelModalOpen(true);
+
+      setRequestToCancel(request);
+      setSelectedRequest(request);
+      setCancelModalOpen(true);
       return currentData;
     });
   }, []);
@@ -384,13 +384,15 @@ const RequestsManagementPage = () => {
 
         {/* Editar - solo para pendientes */}
         {request.requestStatusId === 20 && (
-          <button
-            onClick={() => handleEditRequest(request.id)}
-            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 hover:border-green-500 hover:text-green-600 text-green-600"
-            title="Editar solicitud"
-          >
-            <FiEdit3 className="w-3 h-3" /> Editar
-          </button>
+          <PermissionGuard permission={155}>
+            <button
+              onClick={() => handleEditRequest(request.id)}
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 hover:border-green-500 hover:text-green-600 text-green-600"
+              title="Editar solicitud"
+            >
+              <FiEdit3 className="w-3 h-3" /> Editar
+            </button>
+          </PermissionGuard>
         )}
 
         {/* Cancelar - solo para pendientes */}
@@ -848,7 +850,7 @@ const RequestsManagementPage = () => {
         }}
         requestId={selectedRequestId}
       />
-      
+
       {/* Modal de Generar Factura */}
       <GenerateInvoiceModal
         isOpen={GenerateInvoiceModalOpen}
