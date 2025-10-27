@@ -37,12 +37,14 @@ export const getActiveWorkers = async () => {
 }
 
 // Obtener estados de pago
+// Retorna: [{ id_statues: 16, name: "Pendiente" }, { id_statues: 17, name: "Parcial" }, { id_statues: 18, name: "Pagado" }]
 export const getPaymentStatus = async () => {
     const { data } = await apiMain.get("/statues/list/6/");
     return data;
 }
 
 // Obtener metodos de pago
+// Retorna: [{ code: "10", name: "Efectivo" }, { code: "42", name: "Consignación" }, ...]
 export const getPaymentMethods = async () => {
     const { data } = await apiMain.get("/payment_methods/");
     return data;
