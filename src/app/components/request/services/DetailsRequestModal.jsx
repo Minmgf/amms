@@ -126,9 +126,9 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
 
   const getPaymentStatusColorById = (id) => {
     switch (id) {
-      case 15: return "bg-yellow-100 text-yellow-800"; // Pendiente
-      case 17: return "bg-orange-100 text-orange-800"; // Pago parcial
-      case 16: return "bg-green-100 text-green-800"; // Pagado
+      case 16: return "bg-yellow-100 text-yellow-800"; // Pendiente
+      case 17: return "bg-orange-100 text-orange-800"; // Parcial
+      case 18: return "bg-green-100 text-green-800"; // Pagado
       default: return "bg-gray-100 text-gray-800";
     }
   };

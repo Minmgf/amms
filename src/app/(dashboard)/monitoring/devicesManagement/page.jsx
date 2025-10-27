@@ -10,6 +10,7 @@ import TableList from "@/app/components/shared/TableList";
 import { createColumnHelper } from "@tanstack/react-table";
 import React from "react";
 import { getDevicesList, deleteDevice, toggleDeviceStatus } from "@/services/deviceService";
+import PermissionGuard from "@/app/(auth)/PermissionGuard";
 
 const page = () => {
   useTheme();
@@ -219,11 +220,11 @@ const page = () => {
   // Confirmar activación
   const handleConfirmActivate = async () => {
     setIsConfirmActivateOpen(false);
-    
+
     if (!selectedDevice) return;
 
     try {
-      const response = await toggleDeviceStatus(selectedDevice.id_device);      
+      const response = await toggleDeviceStatus(selectedDevice.id_device);
       setModalTitle("Éxito");
       setModalMessage(response.message || "El dispositivo ha sido activado exitosamente.");
       setIsSuccessModalOpen(true);
@@ -249,11 +250,11 @@ const page = () => {
   // Handler para confirmar la desactivación
   const handleConfirmDeactivate = async () => {
     setIsConfirmDeactivateOpen(false);
-    
+
     if (!selectedDevice) return;
 
     try {
-      const response = await toggleDeviceStatus(selectedDevice.id_device);      
+      const response = await toggleDeviceStatus(selectedDevice.id_device);
       setModalTitle("Éxito");
       setModalMessage(response.message || "El dispositivo ha sido desactivado exitosamente.");
       setIsSuccessModalOpen(true);
@@ -323,33 +324,38 @@ const page = () => {
 
           return (
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              <button
-                aria-label="Edit Button"
-                onClick={() => handleOpenDeviceFormModal("edit", info.getValue())}
-                className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
-                title="Editar dispositivo"
-              >
-                <FiEdit2 className="w-3 h-3" /> Editar
-              </button>
-
-              {isActive ? (
+              <PermissionGuard permission={114}>
                 <button
-                  aria-label="Delete Button"
-                  onClick={() => handleOpenDeleteConfirm(device)}
-                  className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-red-500 hover:text-red-600 text-gray-700"
-                  title="Eliminar Dispositivo"
-                >
-                  <FiTrash2 className="w-3 h-3" /> Eliminar
-                </button>
-              ) : (
-                <button
-                  aria-label="Activate Button"
-                  onClick={() => handleOpenActivateConfirm(device)}
+                  aria-label="Edit Button"
+                  onClick={() => handleOpenDeviceFormModal("edit", info.getValue())}
                   className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
-                  title="Activar Dispositivo"
+                  title="Editar dispositivo"
                 >
-                  <FaCheckCircle className="w-3 h-3" /> Activar
+                  <FiEdit2 className="w-3 h-3" /> Editar
                 </button>
+              </PermissionGuard>
+              {isActive ? (
+                <PermissionGuard permission={162}>
+                  <button
+                    aria-label="Delete Button"
+                    onClick={() => handleOpenDeleteConfirm(device)}
+                    className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-red-500 hover:text-red-600 text-gray-700"
+                    title="Eliminar Dispositivo"
+                  >
+                    <FiTrash2 className="w-3 h-3" /> Eliminar
+                  </button>
+                </PermissionGuard>
+              ) : (
+                <PermissionGuard permission={115}>
+                  <button
+                    aria-label="Activate Button"
+                    onClick={() => handleOpenActivateConfirm(device)}
+                    className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
+                    title="Activar Dispositivo"
+                  >
+                    <FaCheckCircle className="w-3 h-3" /> Activar
+                  </button>
+                </PermissionGuard>
               )}
             </div>
           );
@@ -450,25 +456,28 @@ const page = () => {
                 <FiX className="w-3 h-3" /> Limpiar filtros
               </button>
             )}
-
-            <button
-              onClick={() => handleOpenDeviceFormModal("add")}
-              aria-label="Add Device Button"
-              className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit bg-black text-white hover:bg-gray-800"
-            >
-              <FiPlus className="w-4 h-4" />
-              <span className="text-sm">Nuevo Dispositivo</span>
-            </button>
+            <PermissionGuard permission={113}>
+              <button
+                onClick={() => handleOpenDeviceFormModal("add")}
+                aria-label="Add Device Button"
+                className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit bg-black text-white hover:bg-gray-800"
+              >
+                <FiPlus className="w-4 h-4" />
+                <span className="text-sm">Nuevo Dispositivo</span>
+              </button>
+            </PermissionGuard>
           </div>
 
           {/* Table */}
-          <TableList
-            columns={columns}
-            data={displayData}
-            loading={loading}
-            globalFilter={globalFilter}
-            onGlobalFilterChange={setGlobalFilter}
-          />
+          <PermissionGuard permission={112}>
+            <TableList
+              columns={columns}
+              data={displayData}
+              loading={loading}
+              globalFilter={globalFilter}
+              onGlobalFilterChange={setGlobalFilter}
+            />
+          </PermissionGuard>
         </div>
       </div>
 
