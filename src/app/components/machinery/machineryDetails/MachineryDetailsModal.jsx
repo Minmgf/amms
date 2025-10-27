@@ -14,7 +14,7 @@ import {
   getTrackerInfo,
   getSpecificTechnicalSheet,
   getMachineryDocs,
-  getPeriodicMaintenance,
+  getPeriodicMaintenancesById,
 } from "@/services/machineryService";
 import { getMachineryTracker } from "@/services/machineryService";
 
@@ -135,7 +135,7 @@ export default function MachineryDetailsModal({
       });
 
     // Mantenimientos periodicos
-    getPeriodicMaintenance(selectedMachine.id_machinery)
+    getPeriodicMaintenancesById(selectedMachine.id_machinery)
       .then((res) => {
         setPeriodicMaintenances(Array.isArray(res) ? res : []);
       })
@@ -219,11 +219,12 @@ export default function MachineryDetailsModal({
         <div className="hidden md:block p-6">
           {/* --- TABS --- */}
           <div className="flex justify-center border-b border-primary mb-6">
-            {["general", "tech", "docs"].map((key, idx) => {
+            {["general", "tech", "docs", "thresholds"].map((key, idx) => {
               const labels = [
                 "Ficha General",
                 "Especificaciones Técnicas",
                 "Documentos y Mantenimiento",
+                "Umbrales de Tolerancia",
               ];
               const label = labels[idx];
               return (
@@ -610,6 +611,191 @@ export default function MachineryDetailsModal({
                 No existe ficha técnica específica registrada.
               </div>
             )}
+
+          {/* === Umbrales de Tolerancia (DESKTOP) === */}
+          {activeTab === "thresholds" && (
+            <div className="space-y-6">
+              {/* Mechanical and Motion Parameters */}
+              <div className="border rounded-xl p-4 border-primary">
+                <h3 className="font-semibold text-lg mb-4 text-primary">
+                  Mechanical and Motion Parameters
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Parameter</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Range (Min - Max)</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Unit</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Threshold action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-gray-100">
+                        <td className="py-2 px-3 text-gray-600">Current speed</td>
+                        <td className="py-2 px-3 text-gray-900">0 - 90</td>
+                        <td className="py-2 px-3 text-gray-600">km/h</td>
+                        <td className="py-2 px-3 text-gray-600">Alert only</td>
+                      </tr>
+                      <tr className="border-b border-gray-100">
+                        <td className="py-2 px-3 text-gray-600">Parameter</td>
+                        <td className="py-2 px-3 text-gray-900">Range (Min - Max)</td>
+                        <td className="py-2 px-3 text-gray-600">Unit</td>
+                        <td className="py-2 px-3 text-gray-600">Threshold action</td>
+                      </tr>
+                      <tr className="border-b border-gray-100">
+                        <td className="py-2 px-3 text-gray-600">Parameter</td>
+                        <td className="py-2 px-3 text-gray-900">Range (Min - Max)</td>
+                        <td className="py-2 px-3 text-gray-600">Unit</td>
+                        <td className="py-2 px-3 text-gray-600">Threshold action</td>
+                      </tr>
+                      <tr className="border-b border-gray-100">
+                        <td className="py-2 px-3 text-gray-600">Engine temperature</td>
+                        <td className="py-2 px-3 text-gray-900">0 - 68</td>
+                        <td className="py-2 px-3 text-gray-600">°C</td>
+                        <td className="py-2 px-3 text-gray-600">Automatic request only</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Fluids Levels and Consumption */}
+              <div className="border rounded-xl p-4 border-primary">
+                <h3 className="font-semibold text-lg mb-4 text-primary">
+                  Fluids Levels and Consumption
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Parameter</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Range (Min - Max)</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Unit</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Threshold action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-gray-100">
+                        <td className="py-2 px-3 text-gray-600">Oil level</td>
+                        <td className="py-2 px-3 text-gray-900">0 - 50</td>
+                        <td className="py-2 px-3 text-gray-600">L</td>
+                        <td className="py-2 px-3 text-gray-600">Alert only</td>
+                      </tr>
+                      <tr className="border-b border-gray-100">
+                        <td className="py-2 px-3 text-gray-600">Parameter</td>
+                        <td className="py-2 px-3 text-gray-900">Range (Min - Max)</td>
+                        <td className="py-2 px-3 text-gray-600">Unit</td>
+                        <td className="py-2 px-3 text-gray-600">Threshold action</td>
+                      </tr>
+                      <tr className="border-b border-gray-100">
+                        <td className="py-2 px-3 text-gray-600">Fuel Level (DPS)</td>
+                        <td className="py-2 px-3 text-gray-900">0 - 25,000</td>
+                        <td className="py-2 px-3 text-gray-600">L</td>
+                        <td className="py-2 px-3 text-gray-600">Automatic request only</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Faults and Events - Two separate tables */}
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Faults */}
+                <div className="border rounded-xl p-4 border-primary">
+                  <h3 className="font-semibold text-lg mb-4 text-primary">
+                    Faults
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          <th className="text-left py-2 px-3 font-semibold text-gray-700">Fault OBD Code - Name</th>
+                          <th className="text-left py-2 px-3 font-semibold text-gray-700">Threshold action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-b border-gray-100">
+                          <td className="py-2 px-3 text-gray-600">Fault OBD Code - Name</td>
+                          <td className="py-2 px-3 text-gray-600">Alert only</td>
+                        </tr>
+                        <tr className="border-b border-gray-100">
+                          <td className="py-2 px-3 text-gray-600">Fault OBD Code - Name</td>
+                          <td className="py-2 px-3 text-gray-600">Both</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Events */}
+                <div className="border rounded-xl p-4 border-primary">
+                  <h3 className="font-semibold text-lg mb-4 text-primary">
+                    Events
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          <th className="text-left py-2 px-3 font-semibold text-gray-700">Event type</th>
+                          <th className="text-left py-2 px-3 font-semibold text-gray-700">Value</th>
+                          <th className="text-left py-2 px-3 font-semibold text-gray-700">Unit</th>
+                          <th className="text-left py-2 px-3 font-semibold text-gray-700">Threshold action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-b border-gray-100">
+                          <td className="py-2 px-3 text-gray-600">Braking</td>
+                          <td className="py-2 px-3 text-gray-900">233</td>
+                          <td className="py-2 px-3 text-gray-600">G/s</td>
+                          <td className="py-2 px-3 text-gray-600">Both</td>
+                        </tr>
+                        <tr className="border-b border-gray-100">
+                          <td className="py-2 px-3 text-gray-600">Curve</td>
+                          <td className="py-2 px-3 text-gray-900">233</td>
+                          <td className="py-2 px-3 text-gray-600">G/s</td>
+                          <td className="py-2 px-3 text-gray-600">Both</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              {/* Distance Parameters */}
+              <div className="border rounded-xl p-4 border-primary">
+                <h3 className="font-semibold text-lg mb-4 text-primary">
+                  Distance Parameters
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Parameter</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Range (Min - Max)</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Unit</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Threshold action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-gray-100">
+                        <td className="py-2 px-3 text-gray-600">Total odometer</td>
+                        <td className="py-2 px-3 text-gray-900">0 - 10,234</td>
+                        <td className="py-2 px-3 text-gray-600">m</td>
+                        <td className="py-2 px-3 text-gray-600">Alert only</td>
+                      </tr>
+                      <tr className="border-b border-gray-100">
+                        <td className="py-2 px-3 text-gray-600">Trip odometer</td>
+                        <td className="py-2 px-3 text-gray-900">0 - 10,234</td>
+                        <td className="py-2 px-3 text-gray-600">m</td>
+                        <td className="py-2 px-3 text-gray-600">Both</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* === Documentos y Mantenimiento (DESKTOP) === */}
           {activeTab === "docs" && (
