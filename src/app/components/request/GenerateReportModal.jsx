@@ -57,7 +57,9 @@ const GenerateReportModal = ({ isOpen, onClose }) => {
 
       // Cargar métodos de pago - API devuelve {success: true, data: Array}
       const paymentMethodsResponse = await getPaymentMethods();
+      console.log("Payment Methods Response:", paymentMethodsResponse);
       if (paymentMethodsResponse.success && paymentMethodsResponse.data) {
+        console.log("Payment Methods Data:", paymentMethodsResponse.data);
         setPaymentMethods(paymentMethodsResponse.data);
       }
     } catch (error) {
@@ -112,6 +114,8 @@ const GenerateReportModal = ({ isOpen, onClose }) => {
       if (paymentMethod) filters.payment_method = paymentMethod;
       if (scheduledStartDateFrom) filters.scheduled_start_date_from = scheduledStartDateFrom;
       if (scheduledStartDateTo) filters.scheduled_start_date_to = scheduledStartDateTo;
+
+      console.log("Filters being sent:", filters);
 
       const response = await generateServiceRequestsReport(filters);
 
@@ -322,7 +326,7 @@ const GenerateReportModal = ({ isOpen, onClose }) => {
                       >
                         <option value="">Todas las modalidades</option>
                         {paymentMethods.map((method) => (
-                          <option key={method.id_payment_method} value={method.code}>
+                          <option key={method.code} value={method.code}>
                             {method.name}
                           </option>
                         ))}

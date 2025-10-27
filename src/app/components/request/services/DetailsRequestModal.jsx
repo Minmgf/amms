@@ -34,6 +34,8 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
   });
 
   // Estados parametrizables (sincronizados con el backend)
+  // IMPORTANTE: Los IDs son fijos y vienen del backend, los nombres pueden cambiar
+  // Estados de solicitud - Endpoint: /statues/list/[category]
   const [requestStatuses] = useState([
     { id_statues: 19, name: "Presolicitud", description: "Solicitud en estado inicial" },
     { id_statues: 20, name: "Pendiente", description: "Solicitud pendiente de aprobación" },
@@ -43,63 +45,75 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
     { id_statues: 23, name: "Cancelada", description: "Solicitud cancelada" },
   ]);
 
+  // Estados de pago - Endpoint: /statues/list/6/
   const [paymentStatuses] = useState([
-    { id_statues: 15, name: "Pendiente", description: "Pago pendiente" },
-    { id_statues: 17, name: "Pago Parcial", description: "Pago parcial realizado" },
-    { id_statues: 16, name: "Pagado", description: "Pago completado" },
+    { id_statues: 16, name: "Pendiente", description: "Pago en estado pendiente" },
+    { id_statues: 17, name: "Parcial", description: "Pago en estado parcial" },
+    { id_statues: 18, name: "Pagado", description: "Pago en estado pagado" },
   ]);
 
+  // Métodos de pago - Endpoint: /payment_methods/
+  // NOTA: Los métodos de pago usan 'code' en lugar de 'id'
   const [paymentMethods] = useState([
-    { id: "1", name: "Medio de pago no definido", description: "Método no especificado" },
-    { id: "2", name: "Contado", description: "Pago al contado" },
-    { id: "3", name: "Crédito", description: "Pago a crédito" },
-    { id: "4", name: "Anticipado", description: "Pago anticipado" },
-    { id: "5", name: "Por cuotas", description: "Pago en cuotas" },
+    { code: "1", name: "Medio de pago no definido" },
+    { code: "10", name: "Efectivo" },
+    { code: "42", name: "Consignación" },
+    { code: "20", name: "Cheque" },
+    { code: "47", name: "Transferencia" },
+    { code: "71", name: "Bonos" },
+    { code: "72", name: "Vales" },
+    { code: "49", name: "Tarjeta Débito" },
+    { code: "48", name: "Tarjeta Crédito" },
+    { code: "ZZZ", name: "Otro*" },
   ]);
 
   // Mock data - Datos de prueba de la solicitud
   // TODO: Estos datos vendrán del prop 'request' cuando se integre con el endpoint real
   const mockRequestData = {
-    request_code: "EXCO01-2025",
-    status_id: 3, // En ejecución
-    detail: "Example",
-    registration_date: "2025-09-28T10:45:00",
-    scheduled_date: "2025-10-12T07:30:00",
+    request_code: "SOL-2025-0023",
+    status_id: 20, // Pendiente
+    detail: "prueba solicitud completar solicitud",
+    registration_date: null,
+    scheduled_start_date: "2025-10-27",
+    scheduled_end_date: "2025-10-28",
     completion_date: null,
     
     // Client information
-    client_name: "AgroCampos S.A.S.",
-    client_document_type: "NIT",
-    client_document_number: "901.457.236-5",
-    client_email: "contacto@agrocampos.com",
-    client_phone: "+57 310 456 7821",
+    client_name: "Juan Camilo Barranco Tejada",
+    client_document_type: "Cédula de ciudadanía",
+    client_document_number: "1003828562",
+    client_email: "camilomchis1@gmail.com",
+    client_phone: "3222695895",
     
     // Machinery
     machinery: [
       {
-        name: "Tractor para banano",
-        serial_number: "CAT12381238109",
-        operator: "Juan Pérez"
+        name: "Maquinaria BF770-5914111",
+        serial_number: "BF770-5914111",
+        image: null,
+        operator: "Juan Andres Veru Sarmiento"
       }
     ],
     
     // Location
-    location_country: "Colombia",
-    location_department: "Tolima",
-    location_municipality: "Espinal",
-    location_place_name: "Finca La Esperanza",
-    location_latitude: -12312,
-    location_longitude: 813,
-    location_area: 15,
-    location_soil_type: "Clay loam",
-    location_humidity: 42,
-    location_altitude: 420,
+    location_country: "CO",
+    location_department: "HUI",
+    location_municipality: 143894,
+    location_place_name: "Finca camilito",
+    location_latitude: 40.0,
+    location_longitude: 40.0,
+    location_area: 200.0,
+    location_area_unit: "m²",
+    location_altitude: 1234.0,
+    location_altitude_unit: "m",
     
     // Billing
-    billing_total_amount: 8500.00,
-    billing_amount_paid: 4000.00,
-    payment_status_id: 2, // Pago parcial
-    payment_method_id: 2, // Crédito
+    billing_total_amount: 50000.00,
+    billing_currency: "COP",
+    billing_amount_paid: 50000.00,
+    billing_currency_paid: "COP",
+    payment_status_id: 18, // Pagado
+    payment_method_id: "10", // Efectivo
   };
 
   // Cargar detalles de la solicitud cuando se proporciona requestId
@@ -180,10 +194,11 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
 
   // Función para obtener información por ID
   const getStatusById = (id, statusArray) => {
-    return (
-      statusArray.find((s) => s.id_statues === id) ||
-      statusArray.find((s) => s.id === id)
-    );
+    return statusArray.find((s) => s.id_statues === id);
+  };
+
+  const getPaymentMethodByCode = (code) => {
+    return paymentMethods.find((m) => m.code === code);
   };
 
   // Función para obtener colores por ID (basada en ID, no en nombre)
@@ -202,9 +217,9 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
 
   const getPaymentStatusColorById = (id) => {
     switch (id) {
-      case 15: return "bg-yellow-100 text-yellow-800"; // Pendiente
-      case 17: return "bg-orange-100 text-orange-800"; // Pago parcial
-      case 16: return "bg-green-100 text-green-800"; // Pagado
+      case 16: return "bg-yellow-100 text-yellow-800"; // Pendiente
+      case 17: return "bg-orange-100 text-orange-800"; // Parcial
+      case 18: return "bg-green-100 text-green-800"; // Pagado
       default: return "bg-gray-100 text-gray-800";
     }
   };
@@ -348,7 +363,7 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
   // Obtener información de estados
   const requestStatus = getStatusById(mappedData.status_id, requestStatuses);
   const paymentStatus = getStatusById(mappedData.payment_status_id, paymentStatuses);
-  const paymentMethod = getStatusById(mappedData.payment_method_id, paymentMethods);
+  const paymentMethod = getPaymentMethodByCode(mappedData.payment_method_id);
 
   return (
     <div

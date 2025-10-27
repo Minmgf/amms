@@ -91,7 +91,14 @@ export const generateServiceRequestsReport = async (filters = {}) => {
     if (filters.scheduled_start_date_from) params.append('scheduled_start_date_from', filters.scheduled_start_date_from);
     if (filters.scheduled_start_date_to) params.append('scheduled_start_date_to', filters.scheduled_start_date_to);
 
-    const response = await apiMain.get(`/service_requests/generate-report?${params.toString()}`, {
+    const queryString = params.toString();
+    const url = queryString 
+      ? `/service_requests/generate-report/?${queryString}`
+      : '/service_requests/generate-report/';
+    
+    console.log('Requesting report from:', url);
+
+    const response = await apiMain.get(url, {
       responseType: 'blob', // Importante para archivos
     });
 
