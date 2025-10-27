@@ -33,20 +33,10 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
   const [municipalityName, setMunicipalityName] = useState(null);
   const [billingToken, setBillingToken] = useState(null);
 
-  // Estados parametrizables (vendrán del endpoint)
+  // Estados parametrizables (vienen del endpoint)
   const [clientStatuses, setClientStatuses] = useState([]);
   const [requestStatuses, setRequestStatuses] = useState([]);
   const [billingStatuses, setBillingStatuses] = useState([]);
-  const [personTypes] = useState([
-    { id: 1, name: "Natural", description: "Persona natural" },
-    { id: 2, name: "Jurídica", description: "Persona jurídica" },
-  ]);
-  const [identificationType] = useState([
-    { id: 1, code: "CC", name: "Cédula de Ciudadanía" },
-    { id: 2, code: "NIT", name: "Número de Identificación Tributaria" },
-    { id: 3, code: "CE", name: "Cédula de Extranjería" },
-    { id: 4, code: "PAS", name: "Pasaporte" },
-  ]);
 
   // Obtener el ID del cliente (soporta tanto 'id' como 'id_customer')
   const getClientId = () => {

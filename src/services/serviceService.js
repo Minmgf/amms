@@ -75,3 +75,36 @@ export const getGestionServicesList = async () => {
   const { data } = await apiMain.get("/service_requests/list/");
   return data;
 };
+
+// Generar reporte de solicitudes de servicio
+export const generateServiceRequestsReport = async (filters = {}) => {
+  try {
+    const params = new URLSearchParams();
+    
+    // Agregar filtros solo si tienen valor
+    if (filters.report_format) params.append('report_format', filters.report_format);
+    if (filters.customer_id) params.append('customer_id', filters.customer_id);
+    if (filters.request_status) params.append('request_status', filters.request_status);
+    if (filters.date_from) params.append('date_from', filters.date_from);
+    if (filters.date_to) params.append('date_to', filters.date_to);
+    if (filters.payment_method) params.append('payment_method', filters.payment_method);
+    if (filters.scheduled_start_date_from) params.append('scheduled_start_date_from', filters.scheduled_start_date_from);
+    if (filters.scheduled_start_date_to) params.append('scheduled_start_date_to', filters.scheduled_start_date_to);
+
+    const queryString = params.toString();
+    const url = queryString 
+      ? `/service_requests/generate-report/?${queryString}`
+      : '/service_requests/generate-report/';
+    
+    console.log('Requesting report from:', url);
+
+    const response = await apiMain.get(url, {
+      responseType: 'blob', // Importante para archivos
+    });
+
+    return response;
+  } catch (error) {
+    console.error("Error al generar reporte:", error);
+    throw error;
+  }
+};
