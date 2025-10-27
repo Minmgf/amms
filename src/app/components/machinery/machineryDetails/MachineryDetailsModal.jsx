@@ -615,146 +615,146 @@ export default function MachineryDetailsModal({
           {/* === Umbrales de Tolerancia (DESKTOP) === */}
           {activeTab === "thresholds" && (
             <div className="space-y-6">
-              {/* Mechanical and Motion Parameters */}
+              {/* Parámetros Mecánicos y de Movimiento */}
               <div className="border rounded-xl p-4 border-primary">
                 <h3 className="font-semibold text-lg mb-4 text-primary">
-                  Mechanical and Motion Parameters
+                  Parámetros Mecánicos y de Movimiento
                 </h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-200">
-                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Parameter</th>
-                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Range (Min - Max)</th>
-                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Unit</th>
-                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Threshold action</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Parámetro</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Rango (Mín - Máx)</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Unidad</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Acción de umbral</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr className="border-b border-gray-100">
-                        <td className="py-2 px-3 text-gray-600">Current speed</td>
+                        <td className="py-2 px-3 text-gray-600">Velocidad actual</td>
                         <td className="py-2 px-3 text-gray-900">0 - 90</td>
                         <td className="py-2 px-3 text-gray-600">km/h</td>
-                        <td className="py-2 px-3 text-gray-600">Alert only</td>
+                        <td className="py-2 px-3 text-gray-600">Solo alerta</td>
                       </tr>
                       <tr className="border-b border-gray-100">
-                        <td className="py-2 px-3 text-gray-600">Parameter</td>
-                        <td className="py-2 px-3 text-gray-900">Range (Min - Max)</td>
-                        <td className="py-2 px-3 text-gray-600">Unit</td>
-                        <td className="py-2 px-3 text-gray-600">Threshold action</td>
+                        <td className="py-2 px-3 text-gray-600">Parámetro</td>
+                        <td className="py-2 px-3 text-gray-900">Rango (Mín - Máx)</td>
+                        <td className="py-2 px-3 text-gray-600">Unidad</td>
+                        <td className="py-2 px-3 text-gray-600">Acción de umbral</td>
                       </tr>
                       <tr className="border-b border-gray-100">
-                        <td className="py-2 px-3 text-gray-600">Parameter</td>
-                        <td className="py-2 px-3 text-gray-900">Range (Min - Max)</td>
-                        <td className="py-2 px-3 text-gray-600">Unit</td>
-                        <td className="py-2 px-3 text-gray-600">Threshold action</td>
+                        <td className="py-2 px-3 text-gray-600">Parámetro</td>
+                        <td className="py-2 px-3 text-gray-900">Rango (Mín - Máx)</td>
+                        <td className="py-2 px-3 text-gray-600">Unidad</td>
+                        <td className="py-2 px-3 text-gray-600">Acción de umbral</td>
                       </tr>
                       <tr className="border-b border-gray-100">
-                        <td className="py-2 px-3 text-gray-600">Engine temperature</td>
+                        <td className="py-2 px-3 text-gray-600">Temperatura del motor</td>
                         <td className="py-2 px-3 text-gray-900">0 - 68</td>
                         <td className="py-2 px-3 text-gray-600">°C</td>
-                        <td className="py-2 px-3 text-gray-600">Automatic request only</td>
+                        <td className="py-2 px-3 text-gray-600">Solo solicitud automática</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
               </div>
 
-              {/* Fluids Levels and Consumption */}
+              {/* Niveles de Fluidos y Consumo */}
               <div className="border rounded-xl p-4 border-primary">
                 <h3 className="font-semibold text-lg mb-4 text-primary">
-                  Fluids Levels and Consumption
+                  Niveles de Fluidos y Consumo
                 </h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-200">
-                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Parameter</th>
-                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Range (Min - Max)</th>
-                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Unit</th>
-                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Threshold action</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Parámetro</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Rango (Mín - Máx)</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Unidad</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Acción de umbral</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr className="border-b border-gray-100">
-                        <td className="py-2 px-3 text-gray-600">Oil level</td>
+                        <td className="py-2 px-3 text-gray-600">Nivel de aceite</td>
                         <td className="py-2 px-3 text-gray-900">0 - 50</td>
                         <td className="py-2 px-3 text-gray-600">L</td>
-                        <td className="py-2 px-3 text-gray-600">Alert only</td>
+                        <td className="py-2 px-3 text-gray-600">Solo alerta</td>
                       </tr>
                       <tr className="border-b border-gray-100">
-                        <td className="py-2 px-3 text-gray-600">Parameter</td>
-                        <td className="py-2 px-3 text-gray-900">Range (Min - Max)</td>
-                        <td className="py-2 px-3 text-gray-600">Unit</td>
-                        <td className="py-2 px-3 text-gray-600">Threshold action</td>
+                        <td className="py-2 px-3 text-gray-600">Parámetro</td>
+                        <td className="py-2 px-3 text-gray-900">Rango (Mín - Máx)</td>
+                        <td className="py-2 px-3 text-gray-600">Unidad</td>
+                        <td className="py-2 px-3 text-gray-600">Acción de umbral</td>
                       </tr>
                       <tr className="border-b border-gray-100">
-                        <td className="py-2 px-3 text-gray-600">Fuel Level (DPS)</td>
+                        <td className="py-2 px-3 text-gray-600">Nivel de combustible (DPS)</td>
                         <td className="py-2 px-3 text-gray-900">0 - 25,000</td>
                         <td className="py-2 px-3 text-gray-600">L</td>
-                        <td className="py-2 px-3 text-gray-600">Automatic request only</td>
+                        <td className="py-2 px-3 text-gray-600">Solo solicitud automática</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
               </div>
 
-              {/* Faults and Events - Two separate tables */}
+              {/* Fallas y Eventos - Dos tablas separadas */}
               <div className="grid md:grid-cols-2 gap-6">
-                {/* Faults */}
+                {/* Fallas */}
                 <div className="border rounded-xl p-4 border-primary">
                   <h3 className="font-semibold text-lg mb-4 text-primary">
-                    Faults
+                    Fallas
                   </h3>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-gray-200">
-                          <th className="text-left py-2 px-3 font-semibold text-gray-700">Fault OBD Code - Name</th>
-                          <th className="text-left py-2 px-3 font-semibold text-gray-700">Threshold action</th>
+                          <th className="text-left py-2 px-3 font-semibold text-gray-700">Código OBD de falla - Nombre</th>
+                          <th className="text-left py-2 px-3 font-semibold text-gray-700">Acción de umbral</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr className="border-b border-gray-100">
-                          <td className="py-2 px-3 text-gray-600">Fault OBD Code - Name</td>
-                          <td className="py-2 px-3 text-gray-600">Alert only</td>
+                          <td className="py-2 px-3 text-gray-600">Código OBD de falla - Nombre</td>
+                          <td className="py-2 px-3 text-gray-600">Solo alerta</td>
                         </tr>
                         <tr className="border-b border-gray-100">
-                          <td className="py-2 px-3 text-gray-600">Fault OBD Code - Name</td>
-                          <td className="py-2 px-3 text-gray-600">Both</td>
+                          <td className="py-2 px-3 text-gray-600">Código OBD de falla - Nombre</td>
+                          <td className="py-2 px-3 text-gray-600">Ambos</td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
                 </div>
 
-                {/* Events */}
+                {/* Eventos */}
                 <div className="border rounded-xl p-4 border-primary">
                   <h3 className="font-semibold text-lg mb-4 text-primary">
-                    Events
+                    Eventos
                   </h3>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-gray-200">
-                          <th className="text-left py-2 px-3 font-semibold text-gray-700">Event type</th>
-                          <th className="text-left py-2 px-3 font-semibold text-gray-700">Value</th>
-                          <th className="text-left py-2 px-3 font-semibold text-gray-700">Unit</th>
-                          <th className="text-left py-2 px-3 font-semibold text-gray-700">Threshold action</th>
+                          <th className="text-left py-2 px-3 font-semibold text-gray-700">Tipo de evento</th>
+                          <th className="text-left py-2 px-3 font-semibold text-gray-700">Valor</th>
+                          <th className="text-left py-2 px-3 font-semibold text-gray-700">Unidad</th>
+                          <th className="text-left py-2 px-3 font-semibold text-gray-700">Acción de umbral</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr className="border-b border-gray-100">
-                          <td className="py-2 px-3 text-gray-600">Braking</td>
+                          <td className="py-2 px-3 text-gray-600">Frenado</td>
                           <td className="py-2 px-3 text-gray-900">233</td>
                           <td className="py-2 px-3 text-gray-600">G/s</td>
-                          <td className="py-2 px-3 text-gray-600">Both</td>
+                          <td className="py-2 px-3 text-gray-600">Ambos</td>
                         </tr>
                         <tr className="border-b border-gray-100">
-                          <td className="py-2 px-3 text-gray-600">Curve</td>
+                          <td className="py-2 px-3 text-gray-600">Curva</td>
                           <td className="py-2 px-3 text-gray-900">233</td>
                           <td className="py-2 px-3 text-gray-600">G/s</td>
-                          <td className="py-2 px-3 text-gray-600">Both</td>
+                          <td className="py-2 px-3 text-gray-600">Ambos</td>
                         </tr>
                       </tbody>
                     </table>
@@ -762,33 +762,33 @@ export default function MachineryDetailsModal({
                 </div>
               </div>
 
-              {/* Distance Parameters */}
+              {/* Parámetros de Distancia */}
               <div className="border rounded-xl p-4 border-primary">
                 <h3 className="font-semibold text-lg mb-4 text-primary">
-                  Distance Parameters
+                  Parámetros de Distancia
                 </h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-200">
-                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Parameter</th>
-                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Range (Min - Max)</th>
-                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Unit</th>
-                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Threshold action</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Parámetro</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Rango (Mín - Máx)</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Unidad</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Acción de umbral</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr className="border-b border-gray-100">
-                        <td className="py-2 px-3 text-gray-600">Total odometer</td>
+                        <td className="py-2 px-3 text-gray-600">Odómetro total</td>
                         <td className="py-2 px-3 text-gray-900">0 - 10,234</td>
                         <td className="py-2 px-3 text-gray-600">m</td>
-                        <td className="py-2 px-3 text-gray-600">Alert only</td>
+                        <td className="py-2 px-3 text-gray-600">Solo alerta</td>
                       </tr>
                       <tr className="border-b border-gray-100">
-                        <td className="py-2 px-3 text-gray-600">Trip odometer</td>
+                        <td className="py-2 px-3 text-gray-600">Odómetro de viaje</td>
                         <td className="py-2 px-3 text-gray-900">0 - 10,234</td>
                         <td className="py-2 px-3 text-gray-600">m</td>
-                        <td className="py-2 px-3 text-gray-600">Both</td>
+                        <td className="py-2 px-3 text-gray-600">Ambos</td>
                       </tr>
                     </tbody>
                   </table>
