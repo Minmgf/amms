@@ -52,13 +52,9 @@ const RequestsManagementPage = () => {
   const loadRequests = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Cargando solicitudes desde API...');
       const response = await getGestionServicesList();
-      console.log('📋 Respuesta de API:', response);
 
-      if (response && response.success && response.results) {
-        console.log('✅ Datos recibidos:', response.results.length, 'solicitudes');
-        
+      if (response.success && response.results) {
         // Mapear datos del API a la estructura del componente
         const mappedData = response.results.map((item, index) => ({
           id: item.code || `temp-${index}`, // Usar code como ID único
@@ -77,8 +73,6 @@ const RequestsManagementPage = () => {
           hasInvoice: item.payment_status_id !== null // Asumimos que tiene factura si tiene estado de pago
         }));
 
-        console.log('📊 Datos mapeados:', mappedData.length, 'solicitudes');
-        console.log('📄 Primera solicitud:', mappedData[0]);
         setRequestsData(mappedData);
 
         const getTokenBilling = async () => {
@@ -86,16 +80,13 @@ const RequestsManagementPage = () => {
             const response = await authorization();
             setBillingToken(response.access_token);
           } catch (error) {
-            console.warn('⚠️ Error en autorización de facturación:', error);
+            // Error en la autorización de facturación
           }
         };
         getTokenBilling();
-      } else {
-        console.warn('⚠️ Respuesta del API no tiene el formato esperado:', response);
-        setRequestsData([]);
       }
     } catch (error) {
-      console.error('❌ Error cargando solicitudes:', error);
+      // En caso de error, mantener datos vacíos
       setRequestsData([]);
     } finally {
       setLoading(false);
