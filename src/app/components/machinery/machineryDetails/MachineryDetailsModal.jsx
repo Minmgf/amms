@@ -14,7 +14,7 @@ import {
   getTrackerInfo,
   getSpecificTechnicalSheet,
   getMachineryDocs,
-  getPeriodicMaintenance,
+  getPeriodicMaintenancesById,
 } from "@/services/machineryService";
 import { getMachineryTracker } from "@/services/machineryService";
 
@@ -135,7 +135,7 @@ export default function MachineryDetailsModal({
       });
 
     // Mantenimientos periodicos
-    getPeriodicMaintenance(selectedMachine.id_machinery)
+    getPeriodicMaintenancesById(selectedMachine.id_machinery)
       .then((res) => {
         setPeriodicMaintenances(Array.isArray(res) ? res : []);
       })
@@ -219,11 +219,12 @@ export default function MachineryDetailsModal({
         <div className="hidden md:block p-6">
           {/* --- TABS --- */}
           <div className="flex justify-center border-b border-primary mb-6">
-            {["general", "tech", "docs"].map((key, idx) => {
+            {["general", "tech", "docs", "thresholds"].map((key, idx) => {
               const labels = [
                 "Ficha General",
                 "Especificaciones Técnicas",
                 "Documentos y Mantenimiento",
+                "Umbrales de Tolerancia",
               ];
               const label = labels[idx];
               return (
@@ -610,6 +611,191 @@ export default function MachineryDetailsModal({
                 No existe ficha técnica específica registrada.
               </div>
             )}
+
+          {/* === Umbrales de Tolerancia (DESKTOP) === */}
+          {activeTab === "thresholds" && (
+            <div className="space-y-6">
+              {/* Parámetros Mecánicos y de Movimiento */}
+              <div className="border rounded-xl p-4 border-primary">
+                <h3 className="font-semibold text-lg mb-4 text-primary">
+                  Parámetros Mecánicos y de Movimiento
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Parámetro</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Rango (Mín - Máx)</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Unidad</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Acción de umbral</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-gray-100">
+                        <td className="py-2 px-3 text-gray-600">Velocidad actual</td>
+                        <td className="py-2 px-3 text-gray-900">0 - 90</td>
+                        <td className="py-2 px-3 text-gray-600">km/h</td>
+                        <td className="py-2 px-3 text-gray-600">Solo alerta</td>
+                      </tr>
+                      <tr className="border-b border-gray-100">
+                        <td className="py-2 px-3 text-gray-600">Parámetro</td>
+                        <td className="py-2 px-3 text-gray-900">Rango (Mín - Máx)</td>
+                        <td className="py-2 px-3 text-gray-600">Unidad</td>
+                        <td className="py-2 px-3 text-gray-600">Acción de umbral</td>
+                      </tr>
+                      <tr className="border-b border-gray-100">
+                        <td className="py-2 px-3 text-gray-600">Parámetro</td>
+                        <td className="py-2 px-3 text-gray-900">Rango (Mín - Máx)</td>
+                        <td className="py-2 px-3 text-gray-600">Unidad</td>
+                        <td className="py-2 px-3 text-gray-600">Acción de umbral</td>
+                      </tr>
+                      <tr className="border-b border-gray-100">
+                        <td className="py-2 px-3 text-gray-600">Temperatura del motor</td>
+                        <td className="py-2 px-3 text-gray-900">0 - 68</td>
+                        <td className="py-2 px-3 text-gray-600">°C</td>
+                        <td className="py-2 px-3 text-gray-600">Solo solicitud automática</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Niveles de Fluidos y Consumo */}
+              <div className="border rounded-xl p-4 border-primary">
+                <h3 className="font-semibold text-lg mb-4 text-primary">
+                  Niveles de Fluidos y Consumo
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Parámetro</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Rango (Mín - Máx)</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Unidad</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Acción de umbral</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-gray-100">
+                        <td className="py-2 px-3 text-gray-600">Nivel de aceite</td>
+                        <td className="py-2 px-3 text-gray-900">0 - 50</td>
+                        <td className="py-2 px-3 text-gray-600">L</td>
+                        <td className="py-2 px-3 text-gray-600">Solo alerta</td>
+                      </tr>
+                      <tr className="border-b border-gray-100">
+                        <td className="py-2 px-3 text-gray-600">Parámetro</td>
+                        <td className="py-2 px-3 text-gray-900">Rango (Mín - Máx)</td>
+                        <td className="py-2 px-3 text-gray-600">Unidad</td>
+                        <td className="py-2 px-3 text-gray-600">Acción de umbral</td>
+                      </tr>
+                      <tr className="border-b border-gray-100">
+                        <td className="py-2 px-3 text-gray-600">Nivel de combustible (DPS)</td>
+                        <td className="py-2 px-3 text-gray-900">0 - 25,000</td>
+                        <td className="py-2 px-3 text-gray-600">L</td>
+                        <td className="py-2 px-3 text-gray-600">Solo solicitud automática</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Fallas y Eventos - Dos tablas separadas */}
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Fallas */}
+                <div className="border rounded-xl p-4 border-primary">
+                  <h3 className="font-semibold text-lg mb-4 text-primary">
+                    Fallas
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          <th className="text-left py-2 px-3 font-semibold text-gray-700">Código OBD de falla - Nombre</th>
+                          <th className="text-left py-2 px-3 font-semibold text-gray-700">Acción de umbral</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-b border-gray-100">
+                          <td className="py-2 px-3 text-gray-600">Código OBD de falla - Nombre</td>
+                          <td className="py-2 px-3 text-gray-600">Solo alerta</td>
+                        </tr>
+                        <tr className="border-b border-gray-100">
+                          <td className="py-2 px-3 text-gray-600">Código OBD de falla - Nombre</td>
+                          <td className="py-2 px-3 text-gray-600">Ambos</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Eventos */}
+                <div className="border rounded-xl p-4 border-primary">
+                  <h3 className="font-semibold text-lg mb-4 text-primary">
+                    Eventos
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          <th className="text-left py-2 px-3 font-semibold text-gray-700">Tipo de evento</th>
+                          <th className="text-left py-2 px-3 font-semibold text-gray-700">Valor</th>
+                          <th className="text-left py-2 px-3 font-semibold text-gray-700">Unidad</th>
+                          <th className="text-left py-2 px-3 font-semibold text-gray-700">Acción de umbral</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-b border-gray-100">
+                          <td className="py-2 px-3 text-gray-600">Frenado</td>
+                          <td className="py-2 px-3 text-gray-900">233</td>
+                          <td className="py-2 px-3 text-gray-600">G/s</td>
+                          <td className="py-2 px-3 text-gray-600">Ambos</td>
+                        </tr>
+                        <tr className="border-b border-gray-100">
+                          <td className="py-2 px-3 text-gray-600">Curva</td>
+                          <td className="py-2 px-3 text-gray-900">233</td>
+                          <td className="py-2 px-3 text-gray-600">G/s</td>
+                          <td className="py-2 px-3 text-gray-600">Ambos</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              {/* Parámetros de Distancia */}
+              <div className="border rounded-xl p-4 border-primary">
+                <h3 className="font-semibold text-lg mb-4 text-primary">
+                  Parámetros de Distancia
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Parámetro</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Rango (Mín - Máx)</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Unidad</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Acción de umbral</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-gray-100">
+                        <td className="py-2 px-3 text-gray-600">Odómetro total</td>
+                        <td className="py-2 px-3 text-gray-900">0 - 10,234</td>
+                        <td className="py-2 px-3 text-gray-600">m</td>
+                        <td className="py-2 px-3 text-gray-600">Solo alerta</td>
+                      </tr>
+                      <tr className="border-b border-gray-100">
+                        <td className="py-2 px-3 text-gray-600">Odómetro de viaje</td>
+                        <td className="py-2 px-3 text-gray-900">0 - 10,234</td>
+                        <td className="py-2 px-3 text-gray-600">m</td>
+                        <td className="py-2 px-3 text-gray-600">Ambos</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* === Documentos y Mantenimiento (DESKTOP) === */}
           {activeTab === "docs" && (
