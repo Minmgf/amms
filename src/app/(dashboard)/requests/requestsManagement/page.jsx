@@ -50,11 +50,9 @@ const RequestsManagementPage = () => {
   
   // Función para cargar solicitudes desde el API
   const loadRequests = async () => {
-    console.log('🔄 loadRequests: Iniciando carga de solicitudes...');
     try {
       setLoading(true);
       const response = await getGestionServicesList();
-      console.log('📥 Solicitudes recibidas del API:', response);
 
       if (response.success && response.results) {
         // Mapear datos del API a la estructura del componente
@@ -75,10 +73,7 @@ const RequestsManagementPage = () => {
           hasInvoice: item.payment_status_id !== null // Asumimos que tiene factura si tiene estado de pago
         }));
 
-        console.log('📊 Datos mapeados (mappedData.length):', mappedData.length);
-        console.log('📋 IDs de las solicitudes:', mappedData.map(r => ({ id: r.id, requestCode: r.requestCode })));
         setRequestsData(mappedData);
-        console.log('✅ setRequestsData ejecutado con', mappedData.length, 'solicitudes');
 
         const getTokenBilling = async () => {
           try {
@@ -100,7 +95,6 @@ const RequestsManagementPage = () => {
 
   // Cargar solicitudes al montar el componente
   useEffect(() => {
-    console.log('🎬 Componente montado, llamando loadRequests...');
     loadRequests();
   }, []);
 
@@ -270,8 +264,15 @@ const RequestsManagementPage = () => {
   };
 
   const handleEditRequest = (requestId) => {
-    setMode('edit');
-    setIsRequestModalOpen(true);
+    const request = requestsData.find(r => r.id === requestId);
+    
+    if (request) {
+      setSelectedRequest(request);
+      setMode('edit');
+      setIsRequestModalOpen(true);
+    } else {
+      console.error('❌ No se encontró la solicitud para editar:', requestId);
+    }
   };
 
   const handleCancelRequest = useCallback((requestId) => {
@@ -302,7 +303,6 @@ const RequestsManagementPage = () => {
   };
 
   const handleConfirmRequest = (request) => {
-    console.log('🎯 handleConfirmRequest - request:', request);
     setSelectedRequest(request);
     setMode('confirm');
     setConfirmFormModalOpen(true);
@@ -345,9 +345,7 @@ const RequestsManagementPage = () => {
   };
 
   const handleRequestModalSuccess = async () => {
-    console.log('✅ Pre-solicitud/Solicitud creada, recargando lista...');
     await loadRequests();
-    console.log('✅ Lista recargada exitosamente');
   };
 
   const handleGenerateReport = () => {
@@ -800,11 +798,15 @@ const RequestsManagementPage = () => {
         </div>
       </FilterModal>
 
-      {/* Modal de Formulario de Solicitud (Pre-registro, Registro y Confirmación) */}
+      {/* Modal de Formulario de Solicitud (Pre-registro, Registro y Edición) */}
       <MultiStepFormModal
         isOpen={isRequestModalOpen}
-        onClose={() => setIsRequestModalOpen(false)}
+        onClose={() => {
+          setIsRequestModalOpen(false);
+          setSelectedRequest(null);
+        }}
         mode={mode}
+        requestToEdit={mode === 'edit' ? selectedRequest : null}
         onSuccess={handleRequestModalSuccess}
       />
 

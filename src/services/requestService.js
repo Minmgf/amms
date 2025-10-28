@@ -74,6 +74,12 @@ export const getClientByIdentification = async (identification) => {
     return data;
 }
 
+// Buscar cliente por número de documento (nuevo endpoint para edición)
+export const searchCustomerByDocument = async (documentNumber) => {
+    const { data } = await apiMain.get(`/customers/search_by_document/?document_number=${documentNumber}`);
+    return data;
+}
+
 // Obtener detalles completos de una solicitud (HU-SOL-004)
 export const getRequestDetails = async (requestId) => {
     const { data } = await apiMain.get(`/service_requests/${requestId}/details/`);
@@ -115,6 +121,21 @@ export const completeRequest = async (requestId, observations) => {
         return data;
     } catch (error) {
         console.error('❌ Error en completeRequest:', error);
+        console.error('📋 Error response:', error.response);
+        throw error;
+    }
+};
+
+// Actualizar una solicitud existente (HU-SOL-005)
+export const updateRequest = async (requestId, requestData) => {
+    console.log('📤 Actualizando solicitud - requestId:', requestId);
+    console.log('📦 Payload:', requestData);
+    try {
+        const { data } = await apiMain.patch(`/service_requests/${requestId}/update_request/`, requestData);
+        console.log('✅ Solicitud actualizada exitosamente:', data);
+        return data;
+    } catch (error) {
+        console.error('❌ Error en updateRequest:', error);
         console.error('📋 Error response:', error.response);
         throw error;
     }
