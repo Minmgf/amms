@@ -129,7 +129,7 @@ export default function Step1ClientInfo({ mode = "preregister", customerData = n
                 {isEditMode ? 'Información del Cliente (Edición)' : 'Información del Cliente (Precargada)'}
               </h4>
               {isEditMode && (
-                <p className="text-xs text-blue-600 mt-1">
+                <p className="text-xs text-accent mt-1">
                   Solo el teléfono y email pueden ser modificados
                 </p>
               )}

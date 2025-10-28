@@ -54,6 +54,8 @@ const RequestsManagementPage = () => {
       setLoading(true);
       const response = await getGestionServicesList();
 
+      
+
       if (response.success && response.results) {
         // Mapear datos del API a la estructura del componente
         const mappedData = response.results.map((item, index) => ({
@@ -269,6 +271,8 @@ const RequestsManagementPage = () => {
     
     const request = requestsData.find(r => r.id === requestId);
     console.log('📄 Request found for edit:', request);
+
+    debugger
     
     if (request) {
       // Verificar que tiene los datos mínimos necesarios
@@ -373,11 +377,11 @@ const RequestsManagementPage = () => {
 
   // Componente de acciones dinámicas con hover
   const ActionsCell = ({ request }) => {
-    console.log('🔍 ActionsCell - request:', { 
-      id: request.id, 
-      requestCode: request.requestCode, 
-      statusId: request.requestStatusId 
-    });
+    // console.log('🔍 ActionsCell - request:', { 
+    //   id: request.id, 
+    //   requestCode: request.requestCode, 
+    //   statusId: request.requestStatusId 
+    // });
     
     return (
       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">

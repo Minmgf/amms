@@ -205,14 +205,15 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
         try {
           // Obtener el ID de la solicitud desde requestToEdit
           const requestId = requestToEdit.requestCode || requestToEdit.id;
-          console.log(`📥 Cargando datos de solicitud para modo ${mode}:`, requestId);
           
           if (!requestId) {
             throw new Error('No se encontró ID de solicitud válido');
           }
           
           const requestData = await getRequestDetails(requestId);
-          console.log('✅ Datos de solicitud obtenidos:', requestData);
+
+
+          debugger
 
           // Mapear los datos del API a los valores del formulario
           const mappedValues = {
@@ -249,11 +250,11 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
             // Maquinaria y operarios
             machineryList: (requestData.request_machinery_user || []).map(item => ({
               machinery: { 
-                id_machinery: item.machinery_id,
+                id_machinery: item.id_machinery,  // Corregido: usar id_machinery en vez de machinery_id
                 name: item.machinery_name || "Maquinaria"
               },
               operator: { 
-                id: item.user_id,
+                id: item.id_user,  // Corregido: usar id_user en vez de user_id
                 name: item.user_name || "Operario"
               }
             }))
@@ -274,7 +275,6 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
             try {
               const customerInfo = await searchCustomerByDocument(requestData.customer_document_number);
               setCustomerData(customerInfo);
-              console.log('✅ Información del cliente cargada:', customerInfo);
             } catch (error) {
               console.warn('⚠️ No se pudo cargar información adicional del cliente:', error);
             }
@@ -282,7 +282,6 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
 
           setStep(0);
           setCompletedSteps([]);
-          console.log(`✅ Formulario precargado con datos para modo ${mode}`);
         } catch (error) {
           console.error(`❌ Error cargando datos de solicitud para modo ${mode}:`, error);
           setModalMessage(`Error al cargar los datos de la solicitud. Por favor, intente nuevamente.`);
@@ -375,13 +374,10 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
   }
 
   const handleSubmitForm = async (formData) => {
-    console.log('🚀 handleSubmitForm - modo:', mode);
-    console.log('📋 requestToEdit:', requestToEdit);
     
     // Modo edición: actualizar solicitud existente
     if (mode === "edit") {
       const requestId = requestToEdit?.requestCode || requestToEdit?.id;
-      console.log('📝 Actualizando solicitud ID:', requestId);
       
       if (!requestId) {
         setModalMessage("Error: No se pudo identificar la solicitud a editar.");
