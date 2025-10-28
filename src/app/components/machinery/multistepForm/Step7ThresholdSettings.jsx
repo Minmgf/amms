@@ -36,7 +36,7 @@ function SectionHeader({ title, sectionKey, isExpanded, toggleSection }) {
     );
 }
 
-export default function Step7ThresholdSettings({ requestTypes = [] }) {
+export default function Step7ThresholdSettings({ machineryId, maintenanceTypeList = [] }) {
     const { register, setValue } = useFormContext();
 
     const [expandedSections, setExpandedSections] = useState({
@@ -54,16 +54,16 @@ export default function Step7ThresholdSettings({ requestTypes = [] }) {
     });
 
     // Estado local para los rangos
-    const [currentSpeedRange, setCurrentSpeedRange] = useState([0, 150]);
-    const [rpmRange, setRpmRange] = useState([0, 8000]);
-    const [engineTempRange, setEngineTempRange] = useState([-60, 68]);
-    const [engineLoadRange, setEngineLoadRange] = useState([0, 50]);
-    const [oilLevelRange, setOilLevelRange] = useState([0, 50]);
-    const [fuelLevelRange, setFuelLevelRange] = useState([0, 50]);
-    const [fuelUsedGpsRange, setFuelUsedGpsRange] = useState([0, 2294967]);
-    const [instantFuelConsumptionRange, setInstantFuelConsumptionRange] = useState([0, 16000]);
-    const [totalOdometerRange, setTotalOdometerRange] = useState([0, 1073741823.5]);
-    const [tripOdometerRange, setTripOdometerRange] = useState([0, 1073741823.5]);
+    const [currentSpeedRange, setCurrentSpeedRange] = useState([0, 350]);
+    const [rpmRange, setRpmRange] = useState([0, 16384]);
+    const [engineTempRange, setEngineTempRange] = useState([-60, 127]);
+    const [engineLoadRange, setEngineLoadRange] = useState([0, 100]);
+    const [oilLevelRange, setOilLevelRange] = useState([0, 100]);
+    const [fuelLevelRange, setFuelLevelRange] = useState([0, 100]);
+    const [fuelUsedGpsRange, setFuelUsedGpsRange] = useState([0, 4294967]);
+    const [instantFuelConsumptionRange, setInstantFuelConsumptionRange] = useState([0, 32767]);
+    const [totalOdometerRange, setTotalOdometerRange] = useState([0, 2147483647]);
+    const [tripOdometerRange, setTripOdometerRange] = useState([0, 2147483647]);
 
     const handleRangeChange = (name, value) => {
         setValue(`thresholds.${name}Min`, value[0]);
@@ -137,15 +137,15 @@ export default function Step7ThresholdSettings({ requestTypes = [] }) {
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
                                     <select {...register("requestType.currentSpeed")} className="parametrization-input w-32" aria-label="Tipo de solicitud para velocidad actual">
-                                        <option value="">Seleccionar solicitud</option>
-                                        {requestTypes.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
+                                        <option value="">Seleccione...</option>
+                                        {maintenanceTypeList.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
                                     </select>
                                 </div>
                             </div>
                             <Slider
                                 range
                                 min={0}
-                                max={150}
+                                max={350}
                                 value={currentSpeedRange}
                                 onChange={value => handleRangeChange("currentSpeed", value)}
                                 allowCross={false}
@@ -184,7 +184,7 @@ export default function Step7ThresholdSettings({ requestTypes = [] }) {
                                         }}
                                         onBlur={(e) => {
                                             const val = e.target.value === '' ? 0 : Number(e.target.value);
-                                            const newMax = Math.min(150, Math.max(val, currentSpeedRange[0]));
+                                            const newMax = Math.min(350, Math.max(val, currentSpeedRange[0]));
                                             setCurrentSpeedRange([currentSpeedRange[0], newMax]);
                                             setValue("thresholds.currentSpeedMax", newMax);
                                         }}
@@ -209,15 +209,15 @@ export default function Step7ThresholdSettings({ requestTypes = [] }) {
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
                                     <select {...register("requestType.rpm")} className="parametrization-input w-32" aria-label="Tipo de solicitud para revoluciones">
-                                        <option value="">Seleccionar solicitud</option>
-                                        {requestTypes.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
+                                        <option value="">Seleccione...</option>
+                                        {maintenanceTypeList.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
                                     </select>
                                 </div>
                             </div>
                             <Slider
                                 range
                                 min={0}
-                                max={8000}
+                                max={16384}
                                 value={rpmRange}
                                 onChange={value => handleRangeChange("rpm", value)}
                                 allowCross={false}
@@ -256,7 +256,7 @@ export default function Step7ThresholdSettings({ requestTypes = [] }) {
                                         }}
                                         onBlur={(e) => {
                                             const val = Number(e.target.value);
-                                            const newMax = Math.min(8000, Math.max(val, rpmRange[0]));
+                                            const newMax = Math.min(16384, Math.max(val, rpmRange[0]));
                                             setRpmRange([rpmRange[0], newMax]);
                                             setValue("thresholds.rpmMax", newMax);
                                         }}
@@ -281,15 +281,15 @@ export default function Step7ThresholdSettings({ requestTypes = [] }) {
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
                                     <select {...register("requestType.engineTemp")} className="parametrization-input w-32" aria-label="Tipo de solicitud para temperatura del motor">
-                                        <option value="">Seleccionar solicitud</option>
-                                        {requestTypes.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
+                                        <option value="">Seleccione...</option>
+                                        {maintenanceTypeList.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
                                     </select>
                                 </div>
                             </div>
                             <Slider
                                 range
                                 min={-60}
-                                max={68}
+                                max={127}
                                 value={engineTempRange}
                                 onChange={value => handleRangeChange("engineTemp", value)}
                                 allowCross={false}
@@ -328,7 +328,7 @@ export default function Step7ThresholdSettings({ requestTypes = [] }) {
                                         }}
                                         onBlur={(e) => {
                                             const val = Number(e.target.value);
-                                            const newMax = Math.min(68, Math.max(val, engineTempRange[0]));
+                                            const newMax = Math.min(127, Math.max(val, engineTempRange[0]));
                                             setEngineTempRange([engineTempRange[0], newMax]);
                                             setValue("thresholds.engineTempMax", newMax);
                                         }}
@@ -353,15 +353,15 @@ export default function Step7ThresholdSettings({ requestTypes = [] }) {
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
                                     <select {...register("requestType.engineLoad")} className="parametrization-input w-32" aria-label="Tipo de solicitud para carga del motor">
-                                        <option value="">Seleccionar solicitud</option>
-                                        {requestTypes.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
+                                        <option value="">Seleccione...</option>
+                                        {maintenanceTypeList.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
                                     </select>
                                 </div>
                             </div>
                             <Slider
                                 range
                                 min={0}
-                                max={50}
+                                max={100}
                                 value={engineLoadRange}
                                 onChange={value => handleRangeChange("engineLoad", value)}
                                 allowCross={false}
@@ -400,7 +400,7 @@ export default function Step7ThresholdSettings({ requestTypes = [] }) {
                                         }}
                                         onBlur={(e) => {
                                             const val = Number(e.target.value);
-                                            const newMax = Math.min(50, Math.max(val, engineLoadRange[0]));
+                                            const newMax = Math.min(100, Math.max(val, engineLoadRange[0]));
                                             setEngineLoadRange([engineLoadRange[0], newMax]);
                                             setValue("thresholds.engineLoadMax", newMax);
                                         }}
@@ -439,15 +439,15 @@ export default function Step7ThresholdSettings({ requestTypes = [] }) {
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
                                     <select {...register("requestType.oilLevel")} className="parametrization-input w-32" aria-label="Tipo de solicitud para nivel de aceite">
-                                        <option value="">Seleccionar solicitud</option>
-                                        {requestTypes.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
+                                        <option value="">Seleccione...</option>
+                                        {maintenanceTypeList.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
                                     </select>
                                 </div>
                             </div>
                             <Slider
                                 range
                                 min={0}
-                                max={50}
+                                max={100}
                                 value={oilLevelRange}
                                 onChange={value => handleRangeChange("oilLevel", value)}
                                 allowCross={false}
@@ -486,7 +486,7 @@ export default function Step7ThresholdSettings({ requestTypes = [] }) {
                                         }}
                                         onBlur={(e) => {
                                             const val = Number(e.target.value);
-                                            const newMax = Math.min(50, Math.max(val, oilLevelRange[0]));
+                                            const newMax = Math.min(100, Math.max(val, oilLevelRange[0]));
                                             setOilLevelRange([oilLevelRange[0], newMax]);
                                             setValue("thresholds.oilLevelMax", newMax);
                                         }}
@@ -511,15 +511,15 @@ export default function Step7ThresholdSettings({ requestTypes = [] }) {
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
                                     <select {...register("requestType.fuelLevel")} className="parametrization-input w-32" aria-label="Tipo de solicitud para nivel de combustible">
-                                        <option value="">Seleccionar solicitud</option>
-                                        {requestTypes.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
+                                        <option value="">Seleccione...</option>
+                                        {maintenanceTypeList.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
                                     </select>
                                 </div>
                             </div>
                             <Slider
                                 range
                                 min={0}
-                                max={50}
+                                max={100}
                                 value={fuelLevelRange}
                                 onChange={value => handleRangeChange("fuelLevel", value)}
                                 allowCross={false}
@@ -558,7 +558,7 @@ export default function Step7ThresholdSettings({ requestTypes = [] }) {
                                         }}
                                         onBlur={(e) => {
                                             const val = Number(e.target.value);
-                                            const newMax = Math.min(50, Math.max(val, fuelLevelRange[0]));
+                                            const newMax = Math.min(100, Math.max(val, fuelLevelRange[0]));
                                             setFuelLevelRange([fuelLevelRange[0], newMax]);
                                             setValue("thresholds.fuelLevelMax", newMax);
                                         }}
@@ -583,15 +583,15 @@ export default function Step7ThresholdSettings({ requestTypes = [] }) {
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
                                     <select {...register("requestType.fuelUsedGps")} className="parametrization-input w-32" aria-label="Tipo de solicitud para combustible usado">
-                                        <option value="">Seleccionar solicitud</option>
-                                        {requestTypes.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
+                                        <option value="">Seleccione...</option>
+                                        {maintenanceTypeList.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
                                     </select>
                                 </div>
                             </div>
                             <Slider
                                 range
                                 min={0}
-                                max={2294967}
+                                max={4294967}
                                 value={fuelUsedGpsRange}
                                 onChange={value => handleRangeChange("fuelUsedGps", value)}
                                 allowCross={false}
@@ -630,7 +630,7 @@ export default function Step7ThresholdSettings({ requestTypes = [] }) {
                                         }}
                                         onBlur={(e) => {
                                             const val = Number(e.target.value);
-                                            const newMax = Math.min(2294967, Math.max(val, fuelUsedGpsRange[0]));
+                                            const newMax = Math.min(4294967, Math.max(val, fuelUsedGpsRange[0]));
                                             setFuelUsedGpsRange([fuelUsedGpsRange[0], newMax]);
                                             setValue("thresholds.fuelUsedGpsMax", newMax);
                                         }}
@@ -655,15 +655,15 @@ export default function Step7ThresholdSettings({ requestTypes = [] }) {
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
                                     <select {...register("requestType.instantFuelConsumption")} className="parametrization-input w-32" aria-label="Tipo de solicitud para consumo instantáneo">
-                                        <option value="">Seleccionar solicitud</option>
-                                        {requestTypes.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
+                                        <option value="">Seleccione...</option>
+                                        {maintenanceTypeList.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
                                     </select>
                                 </div>
                             </div>
                             <Slider
                                 range
                                 min={0}
-                                max={16000}
+                                max={32767}
                                 value={instantFuelConsumptionRange}
                                 onChange={value => handleRangeChange("instantFuelConsumption", value)}
                                 allowCross={false}
@@ -702,7 +702,7 @@ export default function Step7ThresholdSettings({ requestTypes = [] }) {
                                         }}
                                         onBlur={(e) => {
                                             const val = Number(e.target.value);
-                                            const newMax = Math.min(16000, Math.max(val, instantFuelConsumptionRange[0]));
+                                            const newMax = Math.min(32767, Math.max(val, instantFuelConsumptionRange[0]));
                                             setInstantFuelConsumptionRange([instantFuelConsumptionRange[0], newMax]);
                                             setValue("thresholds.instantFuelConsumptionMax", newMax);
                                         }}
@@ -741,15 +741,15 @@ export default function Step7ThresholdSettings({ requestTypes = [] }) {
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
                                     <select {...register("requestType.totalOdometer")} className="parametrization-input w-32" aria-label="Tipo de solicitud para odómetro total">
-                                        <option value="">Seleccionar solicitud</option>
-                                        {requestTypes.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
+                                        <option value="">Seleccione...</option>
+                                        {maintenanceTypeList.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
                                     </select>
                                 </div>
                             </div>
                             <Slider
                                 range
                                 min={0}
-                                max={1073741823.5}
+                                max={2147483647}
                                 step={0.1}
                                 value={totalOdometerRange}
                                 onChange={value => handleRangeChange("totalOdometer", value)}
@@ -790,7 +790,7 @@ export default function Step7ThresholdSettings({ requestTypes = [] }) {
                                         }}
                                         onBlur={(e) => {
                                             const val = Number(e.target.value);
-                                            const newMax = Math.min(1073741823.5, Math.max(val, totalOdometerRange[0]));
+                                            const newMax = Math.min(2147483647, Math.max(val, totalOdometerRange[0]));
                                             setTotalOdometerRange([totalOdometerRange[0], newMax]);
                                             setValue("thresholds.totalOdometerMax", newMax);
                                         }}
@@ -816,15 +816,15 @@ export default function Step7ThresholdSettings({ requestTypes = [] }) {
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
                                     <select {...register("requestType.tripOdometer")} className="parametrization-input w-32" aria-label="Tipo de solicitud para odómetro de viaje">
-                                        <option value="">Seleccionar solicitud</option>
-                                        {requestTypes.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
+                                        <option value="">Seleccione...</option>
+                                        {maintenanceTypeList.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
                                     </select>
                                 </div>
                             </div>
                             <Slider
                                 range
                                 min={0}
-                                max={1073741823.5}
+                                max={2147483647}
                                 step={0.1}
                                 value={tripOdometerRange}
                                 onChange={value => handleRangeChange("tripOdometer", value)}
@@ -865,7 +865,7 @@ export default function Step7ThresholdSettings({ requestTypes = [] }) {
                                         }}
                                         onBlur={(e) => {
                                             const val = Number(e.target.value);
-                                            const newMax = Math.min(1073741823.5, Math.max(val, tripOdometerRange[0]));
+                                            const newMax = Math.min(2147483647, Math.max(val, tripOdometerRange[0]));
                                             setTripOdometerRange([tripOdometerRange[0], newMax]);
                                             setValue("thresholds.tripOdometerMax", newMax);
                                         }}
@@ -908,8 +908,8 @@ export default function Step7ThresholdSettings({ requestTypes = [] }) {
                                             <span className="text-theme-sm">Solicitud automática</span>
                                         </label>
                                         <select {...register(`requestType.obd.${code}`)} className="parametrization-input" aria-label={`Tipo de solicitud para código ${code}`}>
-                                            <option value="">Seleccionar solicitud</option>
-                                            {requestTypes.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
+                                            <option value="">Seleccione...</option>
+                                            {maintenanceTypeList.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
                                         </select>
                                     </div>
                                 ))}
@@ -945,8 +945,13 @@ export default function Step7ThresholdSettings({ requestTypes = [] }) {
                                                         <span className="text-theme-sm">Umbral:</span>
                                                         <input 
                                                             type="number" 
-                                                            placeholder="150" 
-                                                            {...register(`thresholds.event.${key}`)} 
+                                                            placeholder="0" 
+                                                            min="0"
+                                                            max="255"
+                                                            {...register(`thresholds.event.${key}`, {
+                                                                min: 0,
+                                                                max: 255
+                                                            })} 
                                                             className="parametrization-input w-20"
                                                             aria-label={`Umbral para ${label}`}
                                                         />
@@ -964,8 +969,8 @@ export default function Step7ThresholdSettings({ requestTypes = [] }) {
                                                     </label>
                                                 </div>
                                                 <select {...register(`requestType.event.${key}`)} className="parametrization-input w-full" aria-label={`Tipo de solicitud para evento de ${label}`}>
-                                                    <option value="">Seleccionar solicitud</option>
-                                                    {requestTypes.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
+                                                    <option value="">Seleccione...</option>
+                                                    {maintenanceTypeList.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
                                                 </select>
                                             </div>
                                         )}

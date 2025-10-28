@@ -261,29 +261,29 @@ export default function MultiStepFormModal({
     // Thresholds (Min/Max values)
     thresholds: {
       currentSpeedMin: 0,
-      currentSpeedMax: 150,
+      currentSpeedMax: 350,
       rpmMin: 0,
-      rpmMax: 8000,
+      rpmMax: 16384,
       engineTempMin: -60,
-      engineTempMax: 68,
+      engineTempMax: 127,
       engineLoadMin: 0,
-      engineLoadMax: 50,
+      engineLoadMax: 100,
       oilLevelMin: 0,
-      oilLevelMax: 50,
+      oilLevelMax: 100,
       fuelLevelMin: 0,
-      fuelLevelMax: 50,
+      fuelLevelMax: 100,
       fuelUsedGpsMin: 0,
-      fuelUsedGpsMax: 2294967,
+      fuelUsedGpsMax: 4294967,
       instantFuelConsumptionMin: 0,
-      instantFuelConsumptionMax: 16000,
+      instantFuelConsumptionMax: 32767,
       totalOdometerMin: 0,
-      totalOdometerMax: 1073741823.5,
+      totalOdometerMax: 2147483647,
       tripOdometerMin: 0,
-      tripOdometerMax: 1073741823.5,
+      tripOdometerMax: 2147483647,
       event: {
-        Acceleration: 150,
-        Braking: 150,
-        Curve: 150,
+        Acceleration: 0,
+        Braking: 0,
+        Curve: 0,
       },
     },
   };
@@ -1971,7 +1971,11 @@ export default function MultiStepFormModal({
                 />
               )}
               {step === 5 && <Step6UploadDocs machineryId={machineryId} />}
-              {step === 6 && <Step7ThresholdSettings machineryId={machineryId} />}
+              {step === 6 && (
+                <Step7ThresholdSettings 
+                  machineryId={machineryId} 
+                  maintenanceTypeList={maintenanceTypeList}                
+                />)}
             </div>
 
             {/* Navigation */}
