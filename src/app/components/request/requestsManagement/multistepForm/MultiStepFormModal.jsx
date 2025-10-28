@@ -189,18 +189,27 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
       reset(defaultValues);
       setStep(0);
       setCompletedSteps([]);
+      setCustomerData(null);
+      setFuelPrediction({});
     }
-  }, [isOpen]);
+  }, [isOpen, mode]);
 
   // Cargar datos de la solicitud cuando está en modo confirm o edit
   useEffect(() => {
     if (isOpen && (mode === 'confirm' || mode === 'edit') && requestToEdit) {
       const loadRequestData = async () => {
         setLoadingRequestData(true);
+        setCustomerData(null); // Limpiar datos anteriores
+        setFuelPrediction({}); // Limpiar predicciones anteriores
+        
         try {
           // Obtener el ID de la solicitud desde requestToEdit
           const requestId = requestToEdit.requestCode || requestToEdit.id;
           console.log(`📥 Cargando datos de solicitud para modo ${mode}:`, requestId);
+          
+          if (!requestId) {
+            throw new Error('No se encontró ID de solicitud válido');
+          }
           
           const requestData = await getRequestDetails(requestId);
           console.log('✅ Datos de solicitud obtenidos:', requestData);
@@ -255,6 +264,11 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
             methods.setValue(key, value);
           });
 
+          // Forzar trigger de validación después de cargar datos
+          setTimeout(() => {
+            methods.trigger();
+          }, 100);
+
           // En modo edición, también cargar información completa del cliente
           if (mode === 'edit' && requestData.customer_document_number) {
             try {
@@ -281,6 +295,22 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
       loadRequestData();
     }
   }, [isOpen, mode, requestToEdit]);
+
+  // Efecto de limpieza cuando se cierra el modal
+  useEffect(() => {
+    if (!isOpen) {
+      // Limpiar estados cuando se cierra el modal
+      setStep(0);
+      setCompletedSteps([]);
+      setCustomerData(null);
+      setFuelPrediction({});
+      setLoadingRequestData(false);
+      setCustomerSearchError('');
+      setModalMessage('');
+      setSuccessOpen(false);
+      setErrorOpen(false);
+    }
+  }, [isOpen]);
 
   const nextStep = async (e) => {
     if (e) {
@@ -345,9 +375,19 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
   }
 
   const handleSubmitForm = async (formData) => {
+    console.log('🚀 handleSubmitForm - modo:', mode);
+    console.log('📋 requestToEdit:', requestToEdit);
+    
     // Modo edición: actualizar solicitud existente
     if (mode === "edit") {
       const requestId = requestToEdit?.requestCode || requestToEdit?.id;
+      console.log('📝 Actualizando solicitud ID:', requestId);
+      
+      if (!requestId) {
+        setModalMessage("Error: No se pudo identificar la solicitud a editar.");
+        setErrorOpen(true);
+        return;
+      }
       
       // Construir payload según la estructura requerida por el API de actualización
       const payload = {
