@@ -7,6 +7,7 @@ import Step3SpecificData from "./Step3SpecificData";
 import Step4UsageInfo from "./Step4UsageInfo";
 import Step5Maintenance from "./Step5Maintenance";
 import Step6UploadDocs from "./Step6UploadDocs";
+import Step7ThresholdSettings from "./Step7ThresholdSettings";
 import { getCountries, getStates, getCities } from "@/services/locationService";
 import { useTheme } from "@/contexts/ThemeContext";
 import { FiX } from "react-icons/fi";
@@ -198,6 +199,93 @@ export default function MultiStepFormModal({
     // Step 6 - Documentation
     documentName: "",
     file: "",
+
+    // Step 7 - Threshold Settings
+    // Alerts
+    alerts: {
+      currentSpeed: false,
+      rpm: false,
+      engineTemp: false,
+      engineLoad: false,
+      oilLevel: false,
+      fuelLevel: false,
+      fuelUsedGps: false,
+      instantFuelConsumption: false,
+      totalOdometer: false,
+      tripOdometer: false,
+      obd: {},
+      event: {
+        Acceleration: false,
+        Braking: false,
+        Curve: false,
+      },
+    },
+    // Auto Request
+    autoRequest: {
+      currentSpeed: false,
+      rpm: false,
+      engineTemp: false,
+      engineLoad: false,
+      oilLevel: false,
+      fuelLevel: false,
+      fuelUsedGps: false,
+      instantFuelConsumption: false,
+      totalOdometer: false,
+      tripOdometer: false,
+      obd: {},
+      event: {
+        Acceleration: false,
+        Braking: false,
+        Curve: false,
+      },
+    },
+    // Request Types
+    requestType: {
+      currentSpeed: "",
+      rpm: "",
+      engineTemp: "",
+      engineLoad: "",
+      oilLevel: "",
+      fuelLevel: "",
+      fuelUsedGps: "",
+      instantFuelConsumption: "",
+      totalOdometer: "",
+      tripOdometer: "",
+      obd: {},
+      event: {
+        Acceleration: "",
+        Braking: "",
+        Curve: "",
+      },
+    },
+    // Thresholds (Min/Max values)
+    thresholds: {
+      currentSpeedMin: 0,
+      currentSpeedMax: 350,
+      rpmMin: 0,
+      rpmMax: 16384,
+      engineTempMin: -60,
+      engineTempMax: 127,
+      engineLoadMin: 0,
+      engineLoadMax: 100,
+      oilLevelMin: 0,
+      oilLevelMax: 100,
+      fuelLevelMin: 0,
+      fuelLevelMax: 100,
+      fuelUsedGpsMin: 0,
+      fuelUsedGpsMax: 4294967,
+      instantFuelConsumptionMin: 0,
+      instantFuelConsumptionMax: 32767,
+      totalOdometerMin: 0,
+      totalOdometerMax: 2147483647,
+      tripOdometerMin: 0,
+      tripOdometerMax: 2147483647,
+      event: {
+        Acceleration: 0,
+        Braking: 0,
+        Curve: 0,
+      },
+    },
   };
 
   const methods = useForm({
@@ -597,6 +685,7 @@ export default function MultiStepFormModal({
     { id: 4, name: "Información de uso" },
     { id: 5, name: "Mantenimiento periódico" },
     { id: 6, name: "Subir documentación" },
+    { id: 7, name: "Configuración de umbrales" },
   ];
 
   // Función para validar el paso 1
@@ -1477,6 +1566,7 @@ export default function MultiStepFormModal({
   };
 
   const nextStep = async () => {
+    /*
     if (step === 0) {
       // Validar paso 1 antes de enviar
       if (!validateStep1()) {
@@ -1506,6 +1596,7 @@ export default function MultiStepFormModal({
       const currentData = methods.getValues();
       submitStep4(currentData);
     } else {
+      */
       // Para los otros pasos, avanzar normalmente
       setStep((s) => {
         const newStep = Math.min(s + 1, steps.length - 1);
@@ -1514,7 +1605,7 @@ export default function MultiStepFormModal({
         }
         return newStep;
       });
-    }
+    //}
   };
 
   const prevStep = () => setStep((s) => Math.max(s - 1, 0));
@@ -1880,6 +1971,11 @@ export default function MultiStepFormModal({
                 />
               )}
               {step === 5 && <Step6UploadDocs machineryId={machineryId} />}
+              {step === 6 && (
+                <Step7ThresholdSettings 
+                  machineryId={machineryId} 
+                  maintenanceTypeList={maintenanceTypeList}                
+                />)}
             </div>
 
             {/* Navigation */}
