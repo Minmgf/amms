@@ -49,7 +49,7 @@ export default function Step1ClientInfo({ mode = "preregister", customerData = n
   // Buscar automáticamente cuando el número cambia y tiene longitud suficiente
   // (puedes ajustar la longitud mínima)
   React.useEffect(() => {
-    if (identificationNumber && identificationNumber.length >= 7 && !isConfirmMode && !isEditMode) {
+    if (identificationNumber && !isConfirmMode && !isEditMode) {
       const timeoutId = setTimeout(() => {
         handleSearch();
       }, 500);
