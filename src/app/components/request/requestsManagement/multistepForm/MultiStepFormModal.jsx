@@ -7,14 +7,14 @@ import Step3LocationConditions from "./Step3LocationConditions";
 // import de servicios
 import { getCountries, getStates, getCities } from "@/services/locationService";
 import { getAreaUnits, getAltitudeUnits, getSoilTypes, getActiveWorkers, getImplementTypes, getTextureTypes, getPaymentMethods, getPaymentStatus, getCurrencyUnits } from "@/services/requestService";
-import { createPreRegister, createRequest, getRequestDetails, confirmRequest } from "@/services/requestService";
+import { createPreRegister, createRequest, getRequestDetails, confirmRequest, updateRequest, getClientByIdentification } from "@/services/requestService";
 import { FiX } from "react-icons/fi";
 import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
 // importa tus servicios reales para obtener options
 import { getActiveMachineries } from "@/services/maintenanceService";
 
 export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mode, onSuccess }) {
-  const isEditMode = !!requestToEdit;
+  const isEditMode = mode === 'edit';
   const isConfirmMode = mode === 'confirm';
   const [successOpen, setSuccessOpen] = useState(false);
   const [errorOpen, setErrorOpen] = useState(false);
@@ -28,9 +28,18 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
   ];
   const [fuelPrediction, setFuelPrediction] = useState({});
   const [loadingRequestData, setLoadingRequestData] = useState(false);
+  const [customerData, setCustomerData] = useState(null);
+  const [customerSearchError, setCustomerSearchError] = useState('');
 
   const defaultValues = {
+    // Step 1 - Cliente
+    identificationNumber: "",
     customer: "",
+    customerName: "",
+    customerPhone: "",
+    customerEmail: "",
+    
+    // Step 2 - Solicitud
     requestDetails: "",
     scheduledStartDate: "",
     endDate: "",
@@ -40,6 +49,8 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
     amountToBePaid: "",
     amountPaidCurrency: "",
     amountToBePaidCurrency: "",
+    
+    // Step 3 - Ubicación
     department: "",
     city: "",
     country: "",
@@ -52,6 +63,8 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
     humidityLevel: "",
     altitude: "",
     altitudeUnit: "",
+    
+    // Maquinaria
     machineryList: [], // persistir lista temporal aquí
   };
 
@@ -176,27 +189,37 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
       reset(defaultValues);
       setStep(0);
       setCompletedSteps([]);
+      setCustomerData(null);
+      setFuelPrediction({});
     }
-  }, [isOpen]);
+  }, [isOpen, mode]);
 
-  // Cargar datos de la solicitud cuando está en modo confirm
+  // Cargar datos de la solicitud cuando está en modo confirm o edit
   useEffect(() => {
-    if (isOpen && mode === 'confirm' && requestToEdit) {
+    if (isOpen && (mode === 'confirm' || mode === 'edit') && requestToEdit) {
       const loadRequestData = async () => {
         setLoadingRequestData(true);
+        setCustomerData(null); // Limpiar datos anteriores
+        setFuelPrediction({}); // Limpiar predicciones anteriores
+        
         try {
           // Obtener el ID de la solicitud desde requestToEdit
           const requestId = requestToEdit.requestCode || requestToEdit.id;
-          console.log('📥 Cargando datos de solicitud:', requestId);
+          
+          if (!requestId) {
+            throw new Error('No se encontró ID de solicitud válido');
+          }
           
           const requestData = await getRequestDetails(requestId);
-          console.log('✅ Datos de solicitud obtenidos:', requestData);
 
           // Mapear los datos del API a los valores del formulario
           const mappedValues = {
             // Step 1 - Cliente
             identificationNumber: requestData.customer_document_number?.toString() || "",
             customer: requestData.customer_id || "",
+            customerName: requestData.customer_name || "",
+            customerPhone: requestData.customer_phone || "",
+            customerEmail: requestData.customer_email || "",
             
             // Step 2 - Información de solicitud
             requestDetails: requestData.request_detail || "",
@@ -221,17 +244,23 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
             altitude: requestData.request_location?.altitude?.toString() || "",
             altitudeUnit: requestData.request_location?.altitude_unit_id || "",
             
-            // Maquinaria y operarios
-            machineryList: (requestData.request_machinery_user || []).map(item => ({
-              machinery: { 
-                id_machinery: item.machinery_id,
-                name: item.machinery_name || "Maquinaria"
-              },
-              operator: { 
-                id: item.user_id,
-                name: item.user_name || "Operario"
-              }
-            }))
+            // Maquinaria y operarios - buscar nombre real desde machineryOptions
+            machineryList: (requestData.request_machinery_user || []).map(item => {
+              // Buscar la maquinaria en machineryOptions para obtener el nombre real
+              const machineryInfo = machineryOptions.find(m => m.id_machinery === item.id_machinery);
+              
+              return {
+                machinery: { 
+                  id_machinery: item.id_machinery,
+                  machinery_name: machineryInfo?.machinery_name || item.serial_number || "Maquinaria",
+                  serial_number: item.serial_number || ""
+                },
+                operator: { 
+                  id: item.id_user,
+                  name: item.user_name || "Operario"
+                }
+              };
+            })
           };
 
           // Aplicar todos los valores al formulario
@@ -239,12 +268,43 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
             methods.setValue(key, value);
           });
 
+          // Precargar datos de predicción de combustible desde el detallado
+          const predictionData = {};
+          (requestData.request_machinery_user || []).forEach((item, idx) => {
+            if (item.soil_type_id || item.implementation_id || item.humidity_level !== null) {
+              predictionData[idx] = {
+                soilType: item.soil_type_id || "",
+                texture: item.texture_id || "",
+                humidity: item.humidity_level ?? "",
+                implementation: item.implementation_id || "",
+                workDepth: item.depth ?? "",
+                slope: item.slope ?? "",
+                estimatedHours: item.work_duration ?? ""
+              };
+            }
+          });
+          setFuelPrediction(predictionData);
+
+          // Forzar trigger de validación después de cargar datos
+          setTimeout(() => {
+            methods.trigger();
+          }, 100);
+
+          // En modo edición, también cargar información completa del cliente
+          if (mode === 'edit' && requestData.customer_document_number) {
+            try {
+              const customerInfo = await getClientByIdentification(requestData.customer_document_number);
+              setCustomerData(customerInfo);
+            } catch (error) {
+              console.warn('⚠️ No se pudo cargar información adicional del cliente:', error);
+            }
+          }
+
           setStep(0);
           setCompletedSteps([]);
-          console.log('✅ Formulario precargado con datos de la solicitud');
         } catch (error) {
-          console.error('❌ Error cargando datos de solicitud:', error);
-          setModalMessage("Error al cargar los datos de la solicitud. Por favor, intente nuevamente.");
+          console.error(`❌ Error cargando datos de solicitud para modo ${mode}:`, error);
+          setModalMessage(`Error al cargar los datos de la solicitud. Por favor, intente nuevamente.`);
           setErrorOpen(true);
         } finally {
           setLoadingRequestData(false);
@@ -254,6 +314,22 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
       loadRequestData();
     }
   }, [isOpen, mode, requestToEdit]);
+
+  // Efecto de limpieza cuando se cierra el modal
+  useEffect(() => {
+    if (!isOpen) {
+      // Limpiar estados cuando se cierra el modal
+      setStep(0);
+      setCompletedSteps([]);
+      setCustomerData(null);
+      setFuelPrediction({});
+      setLoadingRequestData(false);
+      setCustomerSearchError('');
+      setModalMessage('');
+      setSuccessOpen(false);
+      setErrorOpen(false);
+    }
+  }, [isOpen]);
 
   const nextStep = async (e) => {
     if (e) {
@@ -284,7 +360,6 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
     valid = await methods.trigger(fieldsToValidate);
 
     if (!valid) {
-      console.log('Validación fallida en paso:', step + 1);
       return;
     }
 
@@ -318,65 +393,94 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
     return messages.join("\n");
   }
 
+  // Función helper para construir el payload unificado (register, confirm, edit)
+  const buildRequestPayload = (formData) => {
+    return {
+      customer: formData.customer,
+      customer_phone: formData.customerPhone || null,
+      customer_email: formData.customerEmail || null,
+      request_detail: formData.requestDetails,
+      scheduled_start_date: formData.scheduledStartDate,
+      scheduled_end_date: formData.endDate,
+      payment_method: formData.paymentMethod || null,
+      payment_status: formData.paymentStatus || null,
+      amount_paid: formData.amountPaid ? Number(formData.amountPaid) : null,
+      currency_unit_amount_paid: formData.amountPaidCurrency || null,
+      amount_to_pay: formData.amountToBePaid ? Number(formData.amountToBePaid) : null,
+      currency_unit_amount_to_pay: formData.amountToBePaidCurrency || null,
+      location: {
+        country: formData.country,
+        department: formData.department,
+        city_id: formData.city,
+        place_name: formData.placeName,
+        latitude: parseFloat(formData.latitude),
+        longitude: parseFloat(formData.longitude),
+        area: formData.area ? Number(formData.area) : null,
+        area_unit: formData.areaUnit || null,
+        altitude: formData.altitude ? Number(formData.altitude) : null,
+        altitude_unit: formData.altitudeUnit || null
+      },
+      machinery_users: (formData.machineryList || []).map((item, idx) => {
+        const prediction = fuelPrediction[idx] || {};
+        return {
+          machinery_id: item.machinery?.id_machinery || null,
+          user_id: item.operator?.id || null,
+          soil_type: prediction.soilType ?? null,
+          texture: prediction.texture ?? null,
+          humidity_level: prediction.humidity ?? null,
+          implementation: prediction.implementation ?? null,
+          depth: prediction.workDepth ?? null,
+          slope: prediction.slope ?? null,
+          work_duration: prediction.estimatedHours ?? null
+        };
+      })
+    };
+  };
+
   const handleSubmitForm = async (formData) => {
-    // Modo confirmación: enviar datos al endpoint de confirmar solicitud
-    if (mode === "confirm") {
-      console.log("🔄 Confirmando solicitud con datos:", formData);
-      
+    
+    // Modo edición: actualizar solicitud existente
+    if (mode === "edit") {
       const requestId = requestToEdit?.requestCode || requestToEdit?.id;
       
-      // Construir payload según la estructura requerida por el API
-      const payload = {
-        customer: formData.customer,
-        request_detail: formData.requestDetails,
-        scheduled_start_date: formData.scheduledStartDate,
-        scheduled_end_date: formData.endDate,
-        payment_method: formData.paymentMethod || null,
-        payment_status: formData.paymentStatus || null,
-        amount_paid: formData.amountPaid ? Number(formData.amountPaid) : null,
-        currency_unit_amount_paid: formData.amountPaidCurrency || null,
-        amount_to_pay: formData.amountToBePaid ? Number(formData.amountToBePaid) : null,
-        currency_unit_amount_to_pay: formData.amountToBePaidCurrency || null,
-        location: {
-          country: formData.country,
-          department: formData.department,
-          city_id: formData.city,
-          place_name: formData.placeName,
-          latitude: parseFloat(formData.latitude),
-          longitude: parseFloat(formData.longitude),
-          area: formData.area ? Number(formData.area) : null,
-          area_unit: formData.areaUnit || null,
-          altitude: formData.altitude ? Number(formData.altitude) : null,
-          altitude_unit: formData.altitudeUnit || null
-        },
-        machinery_users: (formData.machineryList || []).map((item, idx) => {
-          const prediction = fuelPrediction[idx] || {};
-          return {
-            machinery_id: item.machinery?.id_machinery || null,
-            user_id: item.operator?.id || null,
-            soil_type: prediction.soilType ?? null,
-            texture: prediction.texture ?? null,
-            humidity_level: prediction.humidity ?? null,
-            implementation: prediction.implementation ?? null,
-            depth: prediction.workDepth ?? null,
-            slope: prediction.slope ?? null,
-            work_duration: prediction.estimatedHours ?? null
-          };
-        })
-      };
+      if (!requestId) {
+        setModalMessage("Error: No se pudo identificar la solicitud a editar.");
+        setErrorOpen(true);
+        return;
+      }
+      
+      const payload = buildRequestPayload(formData);
 
-      console.log('📤 Payload para confirmar solicitud:', payload);
+      try {
+        const response = await updateRequest(requestId, payload);
+        setModalMessage(response.message || "Solicitud actualizada exitosamente.");
+        setSuccessOpen(true);
+        reset();
+        setFuelPrediction({});
+        setCustomerData(null);
+      } catch (error) {
+        const errorMessage = error.response?.data?.errors 
+          ? formatBackendErrors(error.response.data.errors)
+          : error.response?.data?.message || "Error al actualizar la solicitud. Por favor, intente nuevamente.";
+        setModalMessage(errorMessage);
+        setErrorOpen(true);
+      }
+      return;
+    }
+
+    // Modo confirmación: enviar datos al endpoint de confirmar solicitud
+    if (mode === "confirm") {
+      const requestId = requestToEdit?.requestCode || requestToEdit?.id;
+      
+      const payload = buildRequestPayload(formData);
 
       try {
         const response = await confirmRequest(requestId, payload);
-        console.log('✅ Solicitud confirmada exitosamente:', response);
         setModalMessage(response.message || "Solicitud confirmada exitosamente. La solicitud pasó a estado 'Pendiente'.");
         setSuccessOpen(true);
         reset();
         setFuelPrediction({});
-        if (onSuccess) onSuccess();
       } catch (error) {
-        console.error('❌ Error confirmando solicitud:', error);
         const errorMessage = error.response?.data?.errors 
           ? formatBackendErrors(error.response.data.errors)
           : error.response?.data?.message || "Error al confirmar la solicitud. Por favor, intente nuevamente.";
@@ -412,60 +516,24 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
         setModalMessage(response.message || "Preregistro creado exitosamente.");
         setSuccessOpen(true);
         reset();
-        onSuccess();
       } catch (error) {
-        console.log(error);
         setModalMessage(formatBackendErrors(error.response.data.errors) || "Error al crear el preregistro.");
         setErrorOpen(true);
       }
     } else if (mode === "register"){
-      // completar campos de pago y montos
-      payload.payment_method = formData.paymentMethod || null;
-      payload.payment_status = formData.paymentStatus !== "" && formData.paymentStatus != null
-        ? (isNaN(Number(formData.paymentStatus)) ? formData.paymentStatus : Number(formData.paymentStatus))
-        : null;
-      payload.amount_paid = formData.amountPaid !== "" ? Number(formData.amountPaid) : null;
-      payload.currency_unit_amount_paid = formData.amountPaidCurrency;
-      payload.amount_to_pay = formData.amountToBePaid !== "" ? Number(formData.amountToBePaid) : null;
-      payload.currency_unit_amount_to_pay = formData.amountToBePaidCurrency;
+      const payload = buildRequestPayload(formData);
 
-      // mapear machineryList -> machinery_users
-      const machineryList = formData.machineryList || [];
-      const machinery_users = machineryList.map((item, idx) => {
-        const machineryId = item.machinery.id_machinery || {};
-        const userId = item.operator.id || {};
-        const prediction = fuelPrediction[idx] || {};
-
-        return {
-          machinery_id: machineryId,
-          user_id: userId,
-          soil_type: prediction.soilType ?? null,
-          texture: prediction.texture ?? null,
-          humidity_level: prediction.humidity ?? null,
-          implementation: prediction.implementation ?? null,
-          depth: prediction.workDepth ?? null,
-          slope: prediction.slope ?? null,
-          work_duration: prediction.estimatedHours ?? null
-        };
-      });
-
-      payload.machinery_users = machinery_users;
-
-      // Aquí puedes enviar payload al servicio correspondiente (ejemplo console.log)
-      console.log("Payload para registro:", payload);
       try{
         const response = await createRequest(payload);
         setModalMessage(response.message || "Solicitud creada exitosamente.");
         setSuccessOpen(true);
         reset();
-        setFuelPrediction(null);
-        onSuccess();
+        setFuelPrediction({});
       } catch (error) {
-        console.log(error);
         setModalMessage(formatBackendErrors(error.response.data.errors) || "Error al crear la solicitud.");
         setErrorOpen(true);        
       }
-    }else{
+    } else {
       console.log("Modo desconocido:", mode);
     }    
   };
@@ -588,8 +656,8 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
               <h2 className="text-lg sm:text-xl md:text-theme-xl font-theme-semibold text-primary">
                 {mode === "confirm"
                   ? "Confirmar Solicitud de Servicio"
-                  : isEditMode
-                    ? "Editar Solicitud de Servicio"
+                  : mode === "edit"
+                    ? "Actualizar Solicitud de Servicio"
                     : mode === "preregister"
                       ? "Preregistro de Solicitud de Servicio"
                       : "Nueva Solicitud de Servicio"}
@@ -611,7 +679,7 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
                 </div>
               ) : (
                 <>
-                  {step === 0 && <Step1ClientInfo mode={mode} />}
+                  {step === 0 && <Step1ClientInfo mode={mode} customerData={customerData} setCustomerData={setCustomerData} />}
                   {step === 1 && (
                     <Step2RequestInfo
                       mode={mode}
@@ -663,10 +731,10 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
               ) : (
                 <button
                   type="submit"
-                  aria-label={mode === "confirm" ? "Confirm Button" : "Save Button"}
+                  aria-label={mode === "confirm" ? "Confirm Button" : mode === "edit" ? "Update Button" : "Save Button"}
                   className="btn-theme btn-primary w-auto"
                 >
-                  {mode === "confirm" ? "Confirmar" : "Guardar"}
+                  {mode === "confirm" ? "Confirmar" : mode === "edit" ? "Actualizar" : "Guardar"}
                 </button>
               )}
             </div>
@@ -678,6 +746,7 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
         onClose={() => {
           setSuccessOpen(false);
           onClose();
+          if (onSuccess) onSuccess();
         }}
         title="Éxito"
         message={modalMessage}

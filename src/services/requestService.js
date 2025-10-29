@@ -119,3 +119,18 @@ export const completeRequest = async (requestId, observations) => {
         throw error;
     }
 };
+
+// Actualizar una solicitud existente (HU-SOL-005)
+export const updateRequest = async (requestId, requestData) => {
+    console.log('📤 Actualizando solicitud - requestId:', requestId);
+    console.log('📦 Payload:', requestData);
+    try {
+        const { data } = await apiMain.patch(`/service_requests/${requestId}/update_request/`, requestData);
+        console.log('✅ Solicitud actualizada exitosamente:', data);
+        return data;
+    } catch (error) {
+        console.error('❌ Error en updateRequest:', error);
+        console.error('📋 Error response:', error.response);
+        throw error;
+    }
+};
