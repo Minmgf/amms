@@ -265,35 +265,10 @@ const RequestsManagementPage = () => {
     setDetailsModalOpen(true);
   };
 
-  const handleEditRequest = (requestId) => {
-    console.log('🎯 handleEditRequest - requestId:', requestId);
-    console.log('📋 requestsData length:', requestsData.length);
-    
-    const request = requestsData.find(r => r.id === requestId);
-    console.log('📄 Request found for edit:', request);
-    
-    if (request) {
-      // Verificar que tiene los datos mínimos necesarios
-      if (!request.requestCode && !request.id) {
-        console.error('❌ La solicitud no tiene ID válido:', request);
-        return;
-      }
-      
-      // Limpiar estado anterior antes de abrir modal
-      setSelectedRequest(null);
-      setMode('');
-      
-      // Usar setTimeout para asegurar que el estado se actualice
-      setTimeout(() => {
-        setSelectedRequest(request);
-        setMode('edit');
-        setIsRequestModalOpen(true);
-        console.log('✅ Modal de edición abierto para solicitud:', request.requestCode || request.id);
-      }, 50);
-    } else {
-      console.error('❌ No se encontró la solicitud para editar:', requestId);
-      console.log('📊 IDs disponibles:', requestsData.map(r => ({ id: r.id, requestCode: r.requestCode })));
-    }
+  const handleEditRequest = (request) => {
+    setSelectedRequest(request);
+    setMode('edit');
+    setIsRequestModalOpen(true);
   };
 
   const handleCancelRequest = useCallback((requestId) => {
@@ -412,8 +387,7 @@ const RequestsManagementPage = () => {
           <PermissionGuard permission={155}>
             <button
               onClick={() => {
-                console.log('👆 Botón editar clickeado para:', request.id);
-                handleEditRequest(request.id);
+                handleEditRequest(request);
               }}
               className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 hover:border-green-500 hover:text-green-600 text-green-600"
               title="Editar solicitud"
