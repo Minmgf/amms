@@ -74,12 +74,6 @@ export const getClientByIdentification = async (identification) => {
     return data;
 }
 
-// Buscar cliente por número de documento (nuevo endpoint para edición)
-export const searchCustomerByDocument = async (documentNumber) => {
-    const { data } = await apiMain.get(`/customers/search_by_document/?document_number=${documentNumber}`);
-    return data;
-}
-
 // Obtener detalles completos de una solicitud (HU-SOL-004)
 export const getRequestDetails = async (requestId) => {
     const { data } = await apiMain.get(`/service_requests/${requestId}/details/`);

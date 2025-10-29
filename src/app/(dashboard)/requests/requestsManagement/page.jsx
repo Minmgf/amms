@@ -271,8 +271,6 @@ const RequestsManagementPage = () => {
     
     const request = requestsData.find(r => r.id === requestId);
     console.log('📄 Request found for edit:', request);
-
-    debugger
     
     if (request) {
       // Verificar que tiene los datos mínimos necesarios

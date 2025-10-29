@@ -7,7 +7,7 @@ import Step3LocationConditions from "./Step3LocationConditions";
 // import de servicios
 import { getCountries, getStates, getCities } from "@/services/locationService";
 import { getAreaUnits, getAltitudeUnits, getSoilTypes, getActiveWorkers, getImplementTypes, getTextureTypes, getPaymentMethods, getPaymentStatus, getCurrencyUnits } from "@/services/requestService";
-import { createPreRegister, createRequest, getRequestDetails, confirmRequest, updateRequest, searchCustomerByDocument } from "@/services/requestService";
+import { createPreRegister, createRequest, getRequestDetails, confirmRequest, updateRequest, getClientByIdentification } from "@/services/requestService";
 import { FiX } from "react-icons/fi";
 import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
 // importa tus servicios reales para obtener options
@@ -212,9 +212,6 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
           
           const requestData = await getRequestDetails(requestId);
 
-
-          debugger
-
           // Mapear los datos del API a los valores del formulario
           const mappedValues = {
             // Step 1 - Cliente
@@ -247,23 +244,46 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
             altitude: requestData.request_location?.altitude?.toString() || "",
             altitudeUnit: requestData.request_location?.altitude_unit_id || "",
             
-            // Maquinaria y operarios
-            machineryList: (requestData.request_machinery_user || []).map(item => ({
-              machinery: { 
-                id_machinery: item.id_machinery,  // Corregido: usar id_machinery en vez de machinery_id
-                name: item.machinery_name || "Maquinaria"
-              },
-              operator: { 
-                id: item.id_user,  // Corregido: usar id_user en vez de user_id
-                name: item.user_name || "Operario"
-              }
-            }))
+            // Maquinaria y operarios - buscar nombre real desde machineryOptions
+            machineryList: (requestData.request_machinery_user || []).map(item => {
+              // Buscar la maquinaria en machineryOptions para obtener el nombre real
+              const machineryInfo = machineryOptions.find(m => m.id_machinery === item.id_machinery);
+              
+              return {
+                machinery: { 
+                  id_machinery: item.id_machinery,
+                  machinery_name: machineryInfo?.machinery_name || item.serial_number || "Maquinaria",
+                  serial_number: item.serial_number || ""
+                },
+                operator: { 
+                  id: item.id_user,
+                  name: item.user_name || "Operario"
+                }
+              };
+            })
           };
 
           // Aplicar todos los valores al formulario
           Object.entries(mappedValues).forEach(([key, value]) => {
             methods.setValue(key, value);
           });
+
+          // Precargar datos de predicción de combustible desde el detallado
+          const predictionData = {};
+          (requestData.request_machinery_user || []).forEach((item, idx) => {
+            if (item.soil_type_id || item.implementation_id || item.humidity_level !== null) {
+              predictionData[idx] = {
+                soilType: item.soil_type_id || "",
+                texture: item.texture_id || "",
+                humidity: item.humidity_level ?? "",
+                implementation: item.implementation_id || "",
+                workDepth: item.depth ?? "",
+                slope: item.slope ?? "",
+                estimatedHours: item.work_duration ?? ""
+              };
+            }
+          });
+          setFuelPrediction(predictionData);
 
           // Forzar trigger de validación después de cargar datos
           setTimeout(() => {
@@ -273,7 +293,7 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
           // En modo edición, también cargar información completa del cliente
           if (mode === 'edit' && requestData.customer_document_number) {
             try {
-              const customerInfo = await searchCustomerByDocument(requestData.customer_document_number);
+              const customerInfo = await getClientByIdentification(requestData.customer_document_number);
               setCustomerData(customerInfo);
             } catch (error) {
               console.warn('⚠️ No se pudo cargar información adicional del cliente:', error);
@@ -373,6 +393,50 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
     return messages.join("\n");
   }
 
+  // Función helper para construir el payload unificado (register, confirm, edit)
+  const buildRequestPayload = (formData) => {
+    return {
+      customer: formData.customer,
+      customer_phone: formData.customerPhone || null,
+      customer_email: formData.customerEmail || null,
+      request_detail: formData.requestDetails,
+      scheduled_start_date: formData.scheduledStartDate,
+      scheduled_end_date: formData.endDate,
+      payment_method: formData.paymentMethod || null,
+      payment_status: formData.paymentStatus || null,
+      amount_paid: formData.amountPaid ? Number(formData.amountPaid) : null,
+      currency_unit_amount_paid: formData.amountPaidCurrency || null,
+      amount_to_pay: formData.amountToBePaid ? Number(formData.amountToBePaid) : null,
+      currency_unit_amount_to_pay: formData.amountToBePaidCurrency || null,
+      location: {
+        country: formData.country,
+        department: formData.department,
+        city_id: formData.city,
+        place_name: formData.placeName,
+        latitude: parseFloat(formData.latitude),
+        longitude: parseFloat(formData.longitude),
+        area: formData.area ? Number(formData.area) : null,
+        area_unit: formData.areaUnit || null,
+        altitude: formData.altitude ? Number(formData.altitude) : null,
+        altitude_unit: formData.altitudeUnit || null
+      },
+      machinery_users: (formData.machineryList || []).map((item, idx) => {
+        const prediction = fuelPrediction[idx] || {};
+        return {
+          machinery_id: item.machinery?.id_machinery || null,
+          user_id: item.operator?.id || null,
+          soil_type: prediction.soilType ?? null,
+          texture: prediction.texture ?? null,
+          humidity_level: prediction.humidity ?? null,
+          implementation: prediction.implementation ?? null,
+          depth: prediction.workDepth ?? null,
+          slope: prediction.slope ?? null,
+          work_duration: prediction.estimatedHours ?? null
+        };
+      })
+    };
+  };
+
   const handleSubmitForm = async (formData) => {
     
     // Modo edición: actualizar solicitud existente
@@ -385,45 +449,7 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
         return;
       }
       
-      // Construir payload según la estructura requerida por el API de actualización
-      const payload = {
-        customer: formData.customer,
-        request_detail: formData.requestDetails,
-        scheduled_start_date: formData.scheduledStartDate,
-        scheduled_end_date: formData.endDate,
-        payment_method: formData.paymentMethod || null,
-        payment_status: formData.paymentStatus || null,
-        amount_paid: formData.amountPaid ? Number(formData.amountPaid) : null,
-        currency_unit_amount_paid: formData.amountPaidCurrency || null,
-        amount_to_pay: formData.amountToBePaid ? Number(formData.amountToBePaid) : null,
-        currency_unit_amount_to_pay: formData.amountToBePaidCurrency || null,
-        location: {
-          country: formData.country,
-          department: formData.department,
-          city_id: formData.city,
-          place_name: formData.placeName,
-          latitude: parseFloat(formData.latitude),
-          longitude: parseFloat(formData.longitude),
-          area: formData.area ? Number(formData.area) : null,
-          area_unit: formData.areaUnit || null,
-          altitude: formData.altitude ? Number(formData.altitude) : null,
-          altitude_unit: formData.altitudeUnit || null
-        },
-        machinery_users: (formData.machineryList || []).map((item, idx) => {
-          const prediction = fuelPrediction[idx] || {};
-          return {
-            machinery_id: item.machinery?.id_machinery || null,
-            user_id: item.operator?.id || null,
-            soil_type: prediction.soilType ?? null,
-            texture: prediction.texture ?? null,
-            humidity_level: prediction.humidity ?? null,
-            implementation: prediction.implementation ?? null,
-            depth: prediction.workDepth ?? null,
-            slope: prediction.slope ?? null,
-            work_duration: prediction.estimatedHours ?? null
-          };
-        })
-      };
+      const payload = buildRequestPayload(formData);
 
       try {
         const response = await updateRequest(requestId, payload);
@@ -432,7 +458,6 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
         reset();
         setFuelPrediction({});
         setCustomerData(null);
-        if (onSuccess) onSuccess();
       } catch (error) {
         const errorMessage = error.response?.data?.errors 
           ? formatBackendErrors(error.response.data.errors)
@@ -447,45 +472,7 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
     if (mode === "confirm") {
       const requestId = requestToEdit?.requestCode || requestToEdit?.id;
       
-      // Construir payload según la estructura requerida por el API
-      const payload = {
-        customer: formData.customer,
-        request_detail: formData.requestDetails,
-        scheduled_start_date: formData.scheduledStartDate,
-        scheduled_end_date: formData.endDate,
-        payment_method: formData.paymentMethod || null,
-        payment_status: formData.paymentStatus || null,
-        amount_paid: formData.amountPaid ? Number(formData.amountPaid) : null,
-        currency_unit_amount_paid: formData.amountPaidCurrency || null,
-        amount_to_pay: formData.amountToBePaid ? Number(formData.amountToBePaid) : null,
-        currency_unit_amount_to_pay: formData.amountToBePaidCurrency || null,
-        location: {
-          country: formData.country,
-          department: formData.department,
-          city_id: formData.city,
-          place_name: formData.placeName,
-          latitude: parseFloat(formData.latitude),
-          longitude: parseFloat(formData.longitude),
-          area: formData.area ? Number(formData.area) : null,
-          area_unit: formData.areaUnit || null,
-          altitude: formData.altitude ? Number(formData.altitude) : null,
-          altitude_unit: formData.altitudeUnit || null
-        },
-        machinery_users: (formData.machineryList || []).map((item, idx) => {
-          const prediction = fuelPrediction[idx] || {};
-          return {
-            machinery_id: item.machinery?.id_machinery || null,
-            user_id: item.operator?.id || null,
-            soil_type: prediction.soilType ?? null,
-            texture: prediction.texture ?? null,
-            humidity_level: prediction.humidity ?? null,
-            implementation: prediction.implementation ?? null,
-            depth: prediction.workDepth ?? null,
-            slope: prediction.slope ?? null,
-            work_duration: prediction.estimatedHours ?? null
-          };
-        })
-      };
+      const payload = buildRequestPayload(formData);
 
       try {
         const response = await confirmRequest(requestId, payload);
@@ -493,7 +480,6 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
         setSuccessOpen(true);
         reset();
         setFuelPrediction({});
-        if (onSuccess) onSuccess();
       } catch (error) {
         const errorMessage = error.response?.data?.errors 
           ? formatBackendErrors(error.response.data.errors)
@@ -530,56 +516,24 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
         setModalMessage(response.message || "Preregistro creado exitosamente.");
         setSuccessOpen(true);
         reset();
-        onSuccess();
       } catch (error) {
         setModalMessage(formatBackendErrors(error.response.data.errors) || "Error al crear el preregistro.");
         setErrorOpen(true);
       }
     } else if (mode === "register"){
-      // completar campos de pago y montos
-      payload.payment_method = formData.paymentMethod || null;
-      payload.payment_status = formData.paymentStatus !== "" && formData.paymentStatus != null
-        ? (isNaN(Number(formData.paymentStatus)) ? formData.paymentStatus : Number(formData.paymentStatus))
-        : null;
-      payload.amount_paid = formData.amountPaid !== "" ? Number(formData.amountPaid) : null;
-      payload.currency_unit_amount_paid = formData.amountPaidCurrency;
-      payload.amount_to_pay = formData.amountToBePaid !== "" ? Number(formData.amountToBePaid) : null;
-      payload.currency_unit_amount_to_pay = formData.amountToBePaidCurrency;
-
-      // mapear machineryList -> machinery_users
-      const machineryList = formData.machineryList || [];
-      const machinery_users = machineryList.map((item, idx) => {
-        const machineryId = item.machinery.id_machinery || {};
-        const userId = item.operator.id || {};
-        const prediction = fuelPrediction[idx] || {};
-
-        return {
-          machinery_id: machineryId,
-          user_id: userId,
-          soil_type: prediction.soilType ?? null,
-          texture: prediction.texture ?? null,
-          humidity_level: prediction.humidity ?? null,
-          implementation: prediction.implementation ?? null,
-          depth: prediction.workDepth ?? null,
-          slope: prediction.slope ?? null,
-          work_duration: prediction.estimatedHours ?? null
-        };
-      });
-
-      payload.machinery_users = machinery_users;
+      const payload = buildRequestPayload(formData);
 
       try{
         const response = await createRequest(payload);
         setModalMessage(response.message || "Solicitud creada exitosamente.");
         setSuccessOpen(true);
         reset();
-        setFuelPrediction(null);
-        onSuccess();
+        setFuelPrediction({});
       } catch (error) {
         setModalMessage(formatBackendErrors(error.response.data.errors) || "Error al crear la solicitud.");
         setErrorOpen(true);        
       }
-    }else{
+    } else {
       console.log("Modo desconocido:", mode);
     }    
   };
@@ -792,6 +746,7 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
         onClose={() => {
           setSuccessOpen(false);
           onClose();
+          if (onSuccess) onSuccess();
         }}
         title="Éxito"
         message={modalMessage}
