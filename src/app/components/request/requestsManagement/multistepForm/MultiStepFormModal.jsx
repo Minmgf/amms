@@ -123,6 +123,9 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
   const [paymentStatuses, setPaymentStatuses] = useState([]);
 
   useEffect(() => {
+    // Solo cargar opciones cuando el modal esté abierto
+    if (!isOpen) return;
+
     let mounted = true;
     (async () => {
       try {
@@ -161,7 +164,7 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
       }
     })();
     return () => { mounted = false; };
-  }, [isOpen]); // fetch cuando se abra el modal
+  }, [isOpen]); // fetch solo cuando se abra el modal
 
   const fetchStates = async (countryCode) => {
     try {
