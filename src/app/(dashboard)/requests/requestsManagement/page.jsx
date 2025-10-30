@@ -11,7 +11,7 @@ import { SuccessModal, ConfirmModal } from '@/app/components/shared/SuccessError
 import CompleteRequestModal from '@/app/components/request/CompleteRequestModal';
 import GenerateInvoiceModal from '@/app/components/request/invoice/multistepform/GenerateInvoiceModal';
 import MultiStepFormModal from "@/app/components/request/requestsManagement/multistepForm/MultiStepFormModal";
-import GenerateReportModal from '@/app/components/request/requestsManagement/GenerateReportModal';
+import GenerateReportModal from '@/app/components/request/GenerateReportModal';
 import { getGestionServicesList } from '@/services/serviceService';
 import { authorization } from "@/services/billingService";
 import PermissionGuard from '@/app/(auth)/PermissionGuard';
