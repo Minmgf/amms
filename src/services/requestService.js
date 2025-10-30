@@ -104,13 +104,29 @@ export const confirmRequest = async (requestId, requestData) => {
 };
 
 // Completar una solicitud (cambiar estado de En proceso a Finalizada)
-export const completeRequest = async (requestId, observations) => {
+export const completeRequest = async (requestId, requestData) => {
     console.log('📤 Completando solicitud - requestId:', requestId);
-    console.log('📦 Observaciones:', observations);
+    
+    // Soportar formato antiguo (solo string) y nuevo formato (objeto)
+    let payload;
+    if (typeof requestData === 'string') {
+        // Formato antiguo: solo observaciones
+        payload = {
+            completion_cancellation_observations: requestData
+        };
+    } else {
+        // Formato nuevo: objeto con observaciones y fechas
+        payload = {
+            completion_cancellation_observations: requestData.observations,
+            actual_start_date: requestData.startDate,
+            actual_end_date: requestData.endDate
+        };
+    }
+    
+    console.log('📦 Payload:', payload);
+    
     try {
-        const { data } = await apiMain.post(`/service_requests/${requestId}/complete/`, {
-            completion_cancellation_observations: observations
-        });
+        const { data } = await apiMain.post(`/service_requests/${requestId}/complete/`, payload);
         console.log('✅ Solicitud completada exitosamente:', data);
         return data;
     } catch (error) {
