@@ -69,13 +69,6 @@ export default function Step7ThresholdSettings({
         faultsEvents: false,
     });
 
-    // Estado para los eventos expandidos
-    const [expandedEvents, setExpandedEvents] = useState({
-        Acceleration: false,
-        Braking: false,
-        Curve: false,
-    });
-
     // Estados para búsqueda de códigos OBD
     const [obdSearchCode, setObdSearchCode] = useState("");
     const [isSearchingObd, setIsSearchingObd] = useState(false);
@@ -253,13 +246,6 @@ export default function Step7ThresholdSettings({
         setExpandedSections((prev) => ({
             ...prev,
             [section]: !prev[section],
-        }));
-    };
-
-    const toggleEvent = (eventKey) => {
-        setExpandedEvents((prev) => ({
-            ...prev,
-            [eventKey]: !prev[eventKey],
         }));
     };
 

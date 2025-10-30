@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useForm, FormProvider, get } from "react-hook-form";
+import { useForm, FormProvider } from "react-hook-form";
 import Step1GeneralData from "./Step1GeneralData";
 import Step2TrackerData from "./Step2TrackerData";
 import Step3SpecificData from "./Step3SpecificData";
@@ -1759,7 +1759,20 @@ export default function MultiStepFormModal({
     try {
       setIsSubmittingStep(true);
 
-      // Construir el payload para el paso 7
+      // 1. GET datos actuales de threshold si existen
+      let existingThresholdData = null;
+      if (machineryId) {
+        try {
+          const response = await getThresholdSettingsByMachinery(machineryId);
+          if (response.success && response.data) {
+            existingThresholdData = response.data;
+          }
+        } catch (error) {
+          existingThresholdData = null;
+        }
+      }
+
+      // 2. Construir el payload para el paso 7
       const thresholdPayload = {
         id_machinery: machineryId,
         tolerance_thresholds: [],
@@ -1785,9 +1798,9 @@ export default function MultiStepFormModal({
             alert_enabled: alert || false
           };
           
-          // En modo edición, agregar el id si existe
-          if (isEditMode && loadedThresholdData?.tolerance_thresholds) {
-            const existing = loadedThresholdData.tolerance_thresholds.find(
+          // Si existen datos previos, agregar el id
+          if (existingThresholdData?.tolerance_thresholds) {
+            const existing = existingThresholdData.tolerance_thresholds.find(
               t => t.id_parameter === parameterId
             );
             if (existing?.id) {
@@ -1839,9 +1852,9 @@ export default function MultiStepFormModal({
                 id_maintenance: requestType ? Number(requestType) : null
               };
               
-              // En modo edición, agregar el id si existe
-              if (isEditMode && loadedThresholdData?.obd_fault_machinery) {
-                const existing = loadedThresholdData.obd_fault_machinery.find(
+              // Si existen datos previos, agregar el id
+              if (existingThresholdData?.obd_fault_machinery) {
+                const existing = existingThresholdData.obd_fault_machinery.find(
                   o => o.id_obd_fault === obdFault.id
                 );
                 if (existing?.id) {
@@ -1879,9 +1892,9 @@ export default function MultiStepFormModal({
               id_maintenance: requestType ? Number(requestType) : null
             };
             
-            // En modo edición, agregar el id si existe
-            if (isEditMode && loadedThresholdData?.event_type_machinery) {
-              const existing = loadedThresholdData.event_type_machinery.find(
+            // Si existen datos previos, agregar el id
+            if (existingThresholdData?.event_type_machinery) {
+              const existing = existingThresholdData.event_type_machinery.find(
                 e => e.id_event_type === Number(eventId)
               );
               if (existing?.id) {
@@ -1901,10 +1914,12 @@ export default function MultiStepFormModal({
         thresholdPayload.event_type_machinery.length > 0;
 
       if (hasData) {
-        // Usar updateThresholdSetting en modo edición, registerThresholdSetting en modo creación
-        if (isEditMode) {
+        // 3. POST o PUT según corresponda
+        if (existingThresholdData) {
+          // Si existen datos, actualizar
           await updateThresholdSetting(machineryId, thresholdPayload);
         } else {
+          // Si no existen datos, crear nuevos
           await registerThresholdSetting(thresholdPayload);
         }
       }
