@@ -1673,7 +1673,6 @@ export default function MultiStepFormModal({
   };
 
   const nextStep = async () => {
-    /*
     if (step === 0) {
       // Validar paso 1 antes de enviar
       if (!validateStep1()) {
@@ -1703,7 +1702,6 @@ export default function MultiStepFormModal({
       const currentData = methods.getValues();
       submitStep4(currentData);
     } else {
-      */
       // Para los otros pasos, avanzar normalmente
       setStep((s) => {
         const newStep = Math.min(s + 1, steps.length - 1);
@@ -1712,7 +1710,7 @@ export default function MultiStepFormModal({
         }
         return newStep;
       });
-    //}
+    }
   };
 
   const prevStep = () => setStep((s) => Math.max(s - 1, 0));

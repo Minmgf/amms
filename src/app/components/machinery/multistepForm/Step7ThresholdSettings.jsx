@@ -46,7 +46,7 @@ export default function Step7ThresholdSettings({
     isEditMode,
     loadedThresholdData
 }) {
-    const { register, setValue, watch } = useFormContext();
+    const { register, setValue, watch, formState: { errors } } = useFormContext();
     
     // Watch individual para cada checkbox de autoRequest
     const watchAutoRequestCurrentSpeed = watch('autoRequest.currentSpeed');
@@ -348,11 +348,21 @@ export default function Step7ThresholdSettings({
                                         <input type="checkbox" {...register("autoRequest.currentSpeed")} aria-label="Solicitud automática para velocidad actual" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
-                                    {watchAutoRequestCurrentSpeed && (
-                                        <select {...register("requestType.currentSpeed", { required: watchAutoRequestCurrentSpeed })} className="parametrization-input w-32" aria-label="Tipo de solicitud para velocidad actual">
-                                            <option value="">Seleccione...</option>
-                                            {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
-                                        </select>
+                                    {watchAutoRequestCurrentSpeed === true && (
+                                        <div className="flex flex-col">
+                                            <select {...register("requestType.currentSpeed", { required: "Este campo es obligatorio" })} className="parametrization-input w-32" aria-label="Tipo de solicitud para velocidad actual">
+                                                <option value="">Seleccione...</option>
+                                                {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
+                                            </select>
+                                            {errors.requestType?.currentSpeed && (
+                                                <span
+                                                    className="text-theme-xs mt-1 block"
+                                                    style={{ color: 'var(--color-error)' }}
+                                                >
+                                                    {errors.requestType.currentSpeed.message}
+                                                </span>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -422,11 +432,18 @@ export default function Step7ThresholdSettings({
                                         <input type="checkbox" {...register("autoRequest.rpm")} aria-label="Solicitud automática para revoluciones" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
-                                    {watchAutoRequestRpm && (
-                                        <select {...register("requestType.rpm", { required: watchAutoRequestRpm })} className="parametrization-input w-32" aria-label="Tipo de solicitud para revoluciones">
-                                            <option value="">Seleccione...</option>
-                                            {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
-                                        </select>
+                                    {watchAutoRequestRpm === true && (
+                                        <div className="flex flex-col">
+                                            <select {...register("requestType.rpm", { required: "Este campo es obligatorio" })} className="parametrization-input w-32" aria-label="Tipo de solicitud para revoluciones">
+                                                <option value="">Seleccione...</option>
+                                                {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
+                                            </select>
+                                            {errors.requestType?.rpm && (
+                                                <span className="text-theme-xs mt-1 block" style={{ color: 'var(--color-error)' }}>
+                                                    {errors.requestType.rpm.message}
+                                                </span>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -496,11 +513,18 @@ export default function Step7ThresholdSettings({
                                         <input type="checkbox" {...register("autoRequest.engineTemp")} aria-label="Solicitud automática para temperatura del motor" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
-                                    {watchAutoRequestEngineTemp && (
-                                        <select {...register("requestType.engineTemp", { required: watchAutoRequestEngineTemp })} className="parametrization-input w-32" aria-label="Tipo de solicitud para temperatura del motor">
-                                            <option value="">Seleccione...</option>
-                                            {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
-                                        </select>
+                                    {watchAutoRequestEngineTemp === true && (
+                                        <div className="flex flex-col">
+                                            <select {...register("requestType.engineTemp", { required: "Este campo es obligatorio" })} className="parametrization-input w-32" aria-label="Tipo de solicitud para temperatura del motor">
+                                                <option value="">Seleccione...</option>
+                                                {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
+                                            </select>
+                                            {errors.requestType?.engineTemp && (
+                                                <span className="text-theme-xs mt-1 block" style={{ color: 'var(--color-error)' }}>
+                                                    {errors.requestType.engineTemp.message}
+                                                </span>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -570,11 +594,18 @@ export default function Step7ThresholdSettings({
                                         <input type="checkbox" {...register("autoRequest.engineLoad")} aria-label="Solicitud automática para carga del motor" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
-                                    {watchAutoRequestEngineLoad && (
-                                        <select {...register("requestType.engineLoad", { required: watchAutoRequestEngineLoad })} className="parametrization-input w-32" aria-label="Tipo de solicitud para carga del motor">
-                                            <option value="">Seleccione...</option>
-                                            {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
-                                        </select>
+                                    {watchAutoRequestEngineLoad === true && (
+                                        <div className="flex flex-col">
+                                            <select {...register("requestType.engineLoad", { required: "Este campo es obligatorio" })} className="parametrization-input w-32" aria-label="Tipo de solicitud para carga del motor">
+                                                <option value="">Seleccione...</option>
+                                                {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
+                                            </select>
+                                            {errors.requestType?.engineLoad && (
+                                                <span className="text-theme-xs mt-1 block" style={{ color: 'var(--color-error)' }}>
+                                                    {errors.requestType.engineLoad.message}
+                                                </span>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -658,11 +689,18 @@ export default function Step7ThresholdSettings({
                                         <input type="checkbox" {...register("autoRequest.oilLevel")} aria-label="Solicitud automática para nivel de aceite" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
-                                    {watchAutoRequestOilLevel && (
-                                        <select {...register("requestType.oilLevel", { required: watchAutoRequestOilLevel })} className="parametrization-input w-32" aria-label="Tipo de solicitud para nivel de aceite">
-                                            <option value="">Seleccione...</option>
-                                            {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
-                                        </select>
+                                    {watchAutoRequestOilLevel === true && (
+                                        <div className="flex flex-col">
+                                            <select {...register("requestType.oilLevel", { required: "Este campo es obligatorio" })} className="parametrization-input w-32" aria-label="Tipo de solicitud para nivel de aceite">
+                                                <option value="">Seleccione...</option>
+                                                {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
+                                            </select>
+                                            {errors.requestType?.oilLevel && (
+                                                <span className="text-theme-xs mt-1 block" style={{ color: 'var(--color-error)' }}>
+                                                    {errors.requestType.oilLevel.message}
+                                                </span>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -732,11 +770,18 @@ export default function Step7ThresholdSettings({
                                         <input type="checkbox" {...register("autoRequest.fuelLevel")} aria-label="Solicitud automática para nivel de combustible" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
-                                    {watchAutoRequestFuelLevel && (
-                                        <select {...register("requestType.fuelLevel", { required: watchAutoRequestFuelLevel })} className="parametrization-input w-32" aria-label="Tipo de solicitud para nivel de combustible">
-                                            <option value="">Seleccione...</option>
-                                            {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
-                                        </select>
+                                    {watchAutoRequestFuelLevel === true && (
+                                        <div className="flex flex-col">
+                                            <select {...register("requestType.fuelLevel", { required: "Este campo es obligatorio" })} className="parametrization-input w-32" aria-label="Tipo de solicitud para nivel de combustible">
+                                                <option value="">Seleccione...</option>
+                                                {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
+                                            </select>
+                                            {errors.requestType?.fuelLevel && (
+                                                <span className="text-theme-xs mt-1 block" style={{ color: 'var(--color-error)' }}>
+                                                    {errors.requestType.fuelLevel.message}
+                                                </span>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -806,11 +851,18 @@ export default function Step7ThresholdSettings({
                                         <input type="checkbox" {...register("autoRequest.fuelUsedGps")} aria-label="Solicitud automática para combustible usado" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
-                                    {watchAutoRequestFuelUsedGps && (
-                                        <select {...register("requestType.fuelUsedGps", { required: watchAutoRequestFuelUsedGps })} className="parametrization-input w-32" aria-label="Tipo de solicitud para combustible usado">
-                                            <option value="">Seleccione...</option>
-                                            {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
-                                        </select>
+                                    {watchAutoRequestFuelUsedGps === true && (
+                                        <div className="flex flex-col">
+                                            <select {...register("requestType.fuelUsedGps", { required: "Este campo es obligatorio" })} className="parametrization-input w-32" aria-label="Tipo de solicitud para combustible usado">
+                                                <option value="">Seleccione...</option>
+                                                {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
+                                            </select>
+                                            {errors.requestType?.fuelUsedGps && (
+                                                <span className="text-theme-xs mt-1 block" style={{ color: 'var(--color-error)' }}>
+                                                    {errors.requestType.fuelUsedGps.message}
+                                                </span>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -880,11 +932,18 @@ export default function Step7ThresholdSettings({
                                         <input type="checkbox" {...register("autoRequest.instantFuelConsumption")} aria-label="Solicitud automática para consumo instantáneo" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
-                                    {watchAutoRequestInstantFuelConsumption && (
-                                        <select {...register("requestType.instantFuelConsumption", { required: watchAutoRequestInstantFuelConsumption })} className="parametrization-input w-32" aria-label="Tipo de solicitud para consumo instantáneo">
-                                            <option value="">Seleccione...</option>
-                                            {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
-                                        </select>
+                                    {watchAutoRequestInstantFuelConsumption === true && (
+                                        <div className="flex flex-col">
+                                            <select {...register("requestType.instantFuelConsumption", { required: "Este campo es obligatorio" })} className="parametrization-input w-32" aria-label="Tipo de solicitud para consumo instantáneo">
+                                                <option value="">Seleccione...</option>
+                                                {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
+                                            </select>
+                                            {errors.requestType?.instantFuelConsumption && (
+                                                <span className="text-theme-xs mt-1 block" style={{ color: 'var(--color-error)' }}>
+                                                    {errors.requestType.instantFuelConsumption.message}
+                                                </span>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -968,11 +1027,18 @@ export default function Step7ThresholdSettings({
                                         <input type="checkbox" {...register("autoRequest.totalOdometer")} aria-label="Solicitud automática para odómetro total" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
-                                    {watchAutoRequestTotalOdometer && (
-                                        <select {...register("requestType.totalOdometer", { required: watchAutoRequestTotalOdometer })} className="parametrization-input w-32" aria-label="Tipo de solicitud para odómetro total">
-                                            <option value="">Seleccione...</option>
-                                            {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
-                                        </select>
+                                    {watchAutoRequestTotalOdometer === true && (
+                                        <div className="flex flex-col">
+                                            <select {...register("requestType.totalOdometer", { required: "Este campo es obligatorio" })} className="parametrization-input w-32" aria-label="Tipo de solicitud para odómetro total">
+                                                <option value="">Seleccione...</option>
+                                                {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
+                                            </select>
+                                            {errors.requestType?.totalOdometer && (
+                                                <span className="text-theme-xs mt-1 block" style={{ color: 'var(--color-error)' }}>
+                                                    {errors.requestType.totalOdometer.message}
+                                                </span>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -1045,11 +1111,18 @@ export default function Step7ThresholdSettings({
                                         <input type="checkbox" {...register("autoRequest.tripOdometer")} aria-label="Solicitud automática para odómetro de viaje" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
-                                    {watchAutoRequestTripOdometer && (
-                                        <select {...register("requestType.tripOdometer", { required: watchAutoRequestTripOdometer })} className="parametrization-input w-32" aria-label="Tipo de solicitud para odómetro de viaje">
-                                            <option value="">Seleccione...</option>
-                                            {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
-                                        </select>
+                                    {watchAutoRequestTripOdometer === true && (
+                                        <div className="flex flex-col">
+                                            <select {...register("requestType.tripOdometer", { required: "Este campo es obligatorio" })} className="parametrization-input w-32" aria-label="Tipo de solicitud para odómetro de viaje">
+                                                <option value="">Seleccione...</option>
+                                                {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
+                                            </select>
+                                            {errors.requestType?.tripOdometer && (
+                                                <span className="text-theme-xs mt-1 block" style={{ color: 'var(--color-error)' }}>
+                                                    {errors.requestType.tripOdometer.message}
+                                                </span>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -1143,7 +1216,7 @@ export default function Step7ThresholdSettings({
                                                 handleSearchObd();
                                             }
                                         }}
-                                        placeholder="Ingrese código OBD (ej: P0087)" 
+                                        placeholder="Ingrese código OBD (ej: P0001)" 
                                         className="parametrization-input flex-1" 
                                         aria-label="Buscar códigos de falla OBD"
                                         disabled={isSearchingObd}
@@ -1177,11 +1250,18 @@ export default function Step7ThresholdSettings({
                                                 <input type="checkbox" {...register(`autoRequest.obd.${code}`)} aria-label={`Solicitud automática para código ${code}`} />
                                                 <span className="text-theme-sm">Solicitud automática</span>
                                             </label>
-                                            {watchAutoRequestObd?.[code] && (
-                                                <select {...register(`requestType.obd.${code}`, { required: watchAutoRequestObd?.[code] })} className="parametrization-input" aria-label={`Tipo de solicitud para código ${code}`}>
-                                                    <option value="">Seleccione...</option>
-                                                    {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
-                                                </select>
+                                            {watchAutoRequestObd?.[code] === true && (
+                                                <div className="flex flex-col">
+                                                    <select {...register(`requestType.obd.${code}`, { required: "Este campo es obligatorio" })} className="parametrization-input" aria-label={`Tipo de solicitud para código ${code}`}>
+                                                        <option value="">Seleccione...</option>
+                                                        {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
+                                                    </select>
+                                                    {errors.requestType?.obd?.[code] && (
+                                                        <span className="text-theme-xs mt-1 block" style={{ color: 'var(--color-error)' }}>
+                                                            {errors.requestType.obd[code].message}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             )}
                                             <button
                                                 type="button"
@@ -1257,11 +1337,18 @@ export default function Step7ThresholdSettings({
                                                             <span className="text-theme-xs">Solicitud automática</span>
                                                         </label>
                                                     </div>
-                                                    {watchAutoRequestEvent?.[event.id_event_type] && (
-                                                        <select {...register(`requestType.event.${event.id_event_type}`, { required: watchAutoRequestEvent?.[event.id_event_type] })} className="parametrization-input w-full" aria-label={`Tipo de solicitud para evento de ${event.name}`}>
-                                                            <option value="">Seleccione...</option>
-                                                            {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
-                                                        </select>
+                                                    {watchAutoRequestEvent?.[event.id_event_type] === true && (
+                                                        <div className="flex flex-col w-full">
+                                                            <select {...register(`requestType.event.${event.id_event_type}`, { required: "Este campo es obligatorio" })} className="parametrization-input w-full" aria-label={`Tipo de solicitud para evento de ${event.name}`}>
+                                                                <option value="">Seleccione...</option>
+                                                                {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
+                                                            </select>
+                                                            {errors.requestType?.event?.[event.id_event_type] && (
+                                                                <span className="text-theme-xs mt-1 block" style={{ color: 'var(--color-error)' }}>
+                                                                    {errors.requestType.event[event.id_event_type].message}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     )}
                                                 </div>
                                             )}
