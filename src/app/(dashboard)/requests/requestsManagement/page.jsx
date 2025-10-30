@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { FaSearch, FaFilter, FaPlus, FaCalendarAlt, FaFileDownload, FaFileInvoice } from 'react-icons/fa';
 import { FiEdit3, FiX, FiCheck, FiEye } from 'react-icons/fi';
 import Calendar from '@/app/components/scheduledMaintenance/Calendar';
@@ -11,6 +11,7 @@ import { SuccessModal, ConfirmModal } from '@/app/components/shared/SuccessError
 import CompleteRequestModal from '@/app/components/request/CompleteRequestModal';
 import GenerateInvoiceModal from '@/app/components/request/invoice/multistepform/GenerateInvoiceModal';
 import MultiStepFormModal from "@/app/components/request/requestsManagement/multistepForm/MultiStepFormModal";
+import GenerateReportModal from '@/app/components/request/GenerateReportModal';
 import { getGestionServicesList } from '@/services/serviceService';
 import { authorization } from "@/services/billingService";
 import PermissionGuard from '@/app/(auth)/PermissionGuard';
@@ -45,12 +46,15 @@ const RequestsManagementPage = () => {
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [mode, setMode] = useState('preregister'); // 'preregister' o 'register'
   const [billingToken, setBillingToken] = useState("");
+  const [reportModalOpen, setReportModalOpen] = useState(false);
   
   // Función para cargar solicitudes desde el API
   const loadRequests = async () => {
     try {
       setLoading(true);
       const response = await getGestionServicesList();
+
+      
 
       if (response.success && response.results) {
         // Mapear datos del API a la estructura del componente
@@ -74,17 +78,16 @@ const RequestsManagementPage = () => {
         setRequestsData(mappedData);
 
         const getTokenBilling = async () => {
-              try {
-                const response = await authorization();
-                setBillingToken(response.access_token);
-              } catch (error) {
-                console.error("Error en inicialización:", error);
-              }
-            };
-            getTokenBilling();
+          try {
+            const response = await authorization();
+            setBillingToken(response.access_token);
+          } catch (error) {
+            // Error en la autorización de facturación
+          }
+        };
+        getTokenBilling();
       }
     } catch (error) {
-      console.error('Error al cargar solicitudes:', error);
       // En caso de error, mantener datos vacíos
       setRequestsData([]);
     } finally {
@@ -219,14 +222,14 @@ const RequestsManagementPage = () => {
       registration_date: "2025-09-28T10:45:00",
       scheduled_date: `${request.scheduledDate}T07:30:00`,
       completion_date: request.completionDate ? `${request.completionDate}T16:00:00` : null,
-      
+
       // Client information
       client_name: request.client.name,
       client_document_type: request.client.idNumber.includes('900') ? "NIT" : "CC",
       client_document_number: request.client.idNumber,
       client_email: "contacto@" + request.client.name.toLowerCase().replace(/\s+/g, '') + ".com",
       client_phone: "+57 310 456 7821",
-      
+
       // Machinery
       machinery: [
         {
@@ -235,7 +238,7 @@ const RequestsManagementPage = () => {
           operator: "Juan Pérez"
         }
       ],
-      
+
       // Location
       location_country: "Colombia",
       location_department: "Tolima",
@@ -247,7 +250,7 @@ const RequestsManagementPage = () => {
       location_soil_type: "Clay loam",
       location_humidity: 42,
       location_altitude: 420,
-      
+
       // Billing
       billing_total_amount: 8500.00,
       billing_amount_paid: request.paymentStatusId === 3 ? 8500.00 : request.paymentStatusId === 2 ? 4000.00 : 0,
@@ -258,49 +261,57 @@ const RequestsManagementPage = () => {
 
   // Funciones de acciones
   const handleViewDetails = (requestCode) => {
-    console.log('🔍 handleViewDetails - Código de solicitud:', requestCode);
-    // El código de la solicitud (ej: SOL-2025-0001) se usa directamente
     setSelectedRequestId(requestCode);
     setDetailsModalOpen(true);
   };
 
-  const handleEditRequest = (requestId) => {
-    console.log('Editar solicitud:', requestId);
+  const handleEditRequest = (request) => {
+    setSelectedRequest(request);
+    setMode('edit');
+    setIsRequestModalOpen(true);
   };
 
-  const handleCancelRequest = (requestId) => {
-    const request = requestsData.find(r => r.id === requestId);
-    setRequestToCancel(request);
-    setSelectedRequest(request);
-    setCancelModalOpen(true);
-  };
+  const handleCancelRequest = useCallback((requestId) => {
+    setRequestsData(currentData => {
+      const request = currentData.find(r => r.id === requestId);
+
+      if (!request) {
+        const requestByCode = currentData.find(r => r.requestCode === requestId);
+        if (requestByCode) {
+          setRequestToCancel(requestByCode);
+          setSelectedRequest(requestByCode);
+          setCancelModalOpen(true);
+          return currentData;
+        }
+      }
+
+      setRequestToCancel(request);
+      setSelectedRequest(request);
+      setCancelModalOpen(true);
+      return currentData;
+    });
+  }, []);
 
   const handleCancelSuccess = (requestCode) => {
     setSuccessMessage(`Solicitud cancelada exitosamente. Código: ${requestCode}`);
     setSuccessModalOpen(true);
-    // Recargar la lista de solicitudes desde el API
     loadRequests();
-    console.log('Solicitud cancelada:', requestCode);
   };
 
-  const handleConfirmRequest = (requestId) => {
-    const request = requestsData.find(r => r.id === requestId);
+  const handleConfirmRequest = (request) => {
     setSelectedRequest(request);
     setMode('confirm');
     setConfirmFormModalOpen(true);
   };
 
-  const handleConfirmRequestSuccess = () => {
+  const handleConfirmRequestSuccess = async () => {
     setConfirmFormModalOpen(false);
     setSuccessMessage(`Solicitud confirmada exitosamente. La solicitud pasó a estado "Pendiente".`);
     setSuccessModalOpen(true);
-    // Recargar la lista de solicitudes desde el API
-    loadRequests();
-    console.log('Solicitud confirmada:', selectedRequest?.requestCode);
+    await loadRequests();
   };
 
-  const handleCompleteRequest = (requestId) => {
-    const request = requestsData.find(r => r.id === requestId);
+  const handleCompleteRequest = (request) => {
     setSelectedRequestForComplete(request);
     setCompleteModalOpen(true);
   };
@@ -308,18 +319,15 @@ const RequestsManagementPage = () => {
   const handleCompleteSuccess = (requestCode) => {
     setSuccessMessage(`Solicitud completada exitosamente. Código: ${requestCode}`);
     setSuccessModalOpen(true);
-    // Recargar la lista de solicitudes desde el API
     loadRequests();
-    console.log('Solicitud completada:', requestCode);
   };
 
   const handleRegisterInvoice = (requestId) => {
     setGenerateInvoiceModalOpen(true);
-    console.log('Registrar factura:', requestId);
   };
 
   const handleDownloadInvoice = (requestId) => {
-    console.log('Descargar factura:', requestId);
+    // TODO: Implementar descarga de factura
   };
 
   const handleNewPreRequest = () => {
@@ -332,12 +340,22 @@ const RequestsManagementPage = () => {
     setIsRequestModalOpen(true);
   };
 
+  const handleRequestModalSuccess = async () => {
+    await loadRequests();
+  };
+
   const handleGenerateReport = () => {
-    console.log('Generar reporte');
+    setReportModalOpen(true);
   };
 
   // Componente de acciones dinámicas con hover
   const ActionsCell = ({ request }) => {
+    // console.log('🔍 ActionsCell - request:', { 
+    //   id: request.id, 
+    //   requestCode: request.requestCode, 
+    //   statusId: request.requestStatusId 
+    // });
+    
     return (
       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
         {/* Detalles - siempre disponible */}
@@ -355,7 +373,7 @@ const RequestsManagementPage = () => {
         {(request.requestStatusId === 1 || request.requestStatusId === 19) && (
           <PermissionGuard permission={150}>
             <button
-              onClick={() => handleConfirmRequest(request.id)}
+              onClick={() => handleConfirmRequest(request)}
               className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-blue-300 hover:border-blue-500 hover:text-blue-600 text-blue-600"
               title="Confirmar solicitud"
             >
@@ -365,18 +383,22 @@ const RequestsManagementPage = () => {
         )}
 
         {/* Editar - solo para pendientes */}
-        {request.requestStatusId === 2 && (
-          <button
-            onClick={() => handleEditRequest(request.id)}
-            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 hover:border-green-500 hover:text-green-600 text-green-600"
-            title="Editar solicitud"
-          >
-            <FiEdit3 className="w-3 h-3" /> Editar
-          </button>
+        {request.requestStatusId === 20 && request.id && (request.requestCode || request.id) && (
+          <PermissionGuard permission={155}>
+            <button
+              onClick={() => {
+                handleEditRequest(request);
+              }}
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 hover:border-green-500 hover:text-green-600 text-green-600"
+              title="Editar solicitud"
+            >
+              <FiEdit3 className="w-3 h-3" /> Editar
+            </button>
+          </PermissionGuard>
         )}
 
         {/* Cancelar - solo para pendientes */}
-        {request.requestStatusId === 2 && (
+        {request.requestStatusId === 20 && (
           <PermissionGuard permission={153}>
             <button
               onClick={() => handleCancelRequest(request.id)}
@@ -388,11 +410,11 @@ const RequestsManagementPage = () => {
           </PermissionGuard>
         )}
 
-        {/* Completar - solo para pendientes */}
-        {request.requestStatusId === 2 && (
+        {/* Completar - solo para solicitudes en proceso (estado 21) */}
+        {request.requestStatusId === 21 && (
           <PermissionGuard permission={152}>
             <button
-              onClick={() => handleCompleteRequest(request.id)}
+              onClick={() => handleCompleteRequest(request)}
               className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 hover:border-green-500 hover:text-green-600 text-green-600"
               title="Completar solicitud"
             >
@@ -613,13 +635,15 @@ const RequestsManagementPage = () => {
           </PermissionGuard>
 
           {/* Generar Reporte */}
-          <button
-            onClick={handleGenerateReport}
-            className="w-full parametrization-filter-button flex items-center justify-center space-x-2 px-4 py-2 transition-colors"
-          >
-            <FaFileDownload className="w-4 h-4" />
-            <span className="text-sm">Generar reporte</span>
-          </button>
+          <PermissionGuard permission={163}>
+            <button
+              onClick={handleGenerateReport}
+              className="w-full parametrization-filter-button flex items-center justify-center space-x-2 px-4 py-2 transition-colors"
+            >
+              <FaFileDownload className="w-4 h-4" />
+              <span className="text-sm">Generar reporte</span>
+            </button>
+          </PermissionGuard>
         </div>
 
         {/* Indicador de filtros activos */}
@@ -778,11 +802,24 @@ const RequestsManagementPage = () => {
         </div>
       </FilterModal>
 
-      {/* Modal de Formulario de Solicitud (Pre-registro, Registro y Confirmación) */}
+      {/* Modal de Formulario de Solicitud (Pre-registro, Registro y Edición) */}
       <MultiStepFormModal
         isOpen={isRequestModalOpen}
-        onClose={() => setIsRequestModalOpen(false)}
+        onClose={() => {
+          console.log('🚪 Cerrando modal de solicitud');
+          setIsRequestModalOpen(false);
+          setSelectedRequest(null);
+          setMode('');
+        }}
         mode={mode}
+        requestToEdit={mode === 'edit' ? selectedRequest : null}
+        onSuccess={() => {
+          console.log('✅ Operación exitosa en modal');
+          setIsRequestModalOpen(false);
+          setSelectedRequest(null);
+          setMode('');
+          handleRequestModalSuccess();
+        }}
       />
 
       {/* Modal de Confirmación de Pre-Solicitud */}
@@ -827,13 +864,19 @@ const RequestsManagementPage = () => {
         }}
         requestId={selectedRequestId}
       />
-      
+
       {/* Modal de Generar Factura */}
       <GenerateInvoiceModal
         isOpen={GenerateInvoiceModalOpen}
         onClose={() => setGenerateInvoiceModalOpen(false)}
         request={selectedRequest}
         billingToken={billingToken}
+      />
+
+      {/* Modal de Generar Reporte */}
+      <GenerateReportModal
+        isOpen={reportModalOpen}
+        onClose={() => setReportModalOpen(false)}
       />
     </div>
   );

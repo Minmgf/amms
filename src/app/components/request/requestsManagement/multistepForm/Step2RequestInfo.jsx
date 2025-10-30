@@ -4,9 +4,21 @@ import { FiEdit2, FiTrash2 } from "react-icons/fi";
 import { BsFillFuelPumpFill } from "react-icons/bs";
 import FuelPredictionModal from "./FuelPredictionModal";
 
-export default function Step2RequestInfo({ mode, machineryOptions = [], operatorOptions = [], currencies = [], setFuelPrediction, fuelPrediction }) {
+export default function Step2RequestInfo({ 
+  mode, 
+  machineryOptions = [], 
+  operatorOptions = [], 
+  currencies = [],
+  soilTypes = [],
+  implementTypes=[],
+  textureTypes=[],
+  paymentMethods=[],
+  paymentStatuses=[],
+  setFuelPrediction, 
+  fuelPrediction 
+}) {
   const { register, setValue, getValues, watch, formState: { errors } } = useFormContext();
-
+  const [selectError, setSelectError] = useState("");
   // leer lista persistida en el form (si está vacía devuelve [])
   const machineryList = watch("machineryList") || [];
 
@@ -17,18 +29,28 @@ export default function Step2RequestInfo({ mode, machineryOptions = [], operator
   const [selectedCurrency, setSelectedCurrency] = useState("");
   // Estados para el modal de predicción de combustible
   const [predictionOpen, setPredictionOpen] = useState(false);
+  const [predictionIdx, setPredictionIdx] = useState(null);
 
   // Sincronizar el select de monedas para que ambos se comporten como uno
   const watchedPaidCurrency = watch("amountPaidCurrency");
   // inicializar / sincronizar desde form o desde props currencies
   React.useEffect(() => {
-    const initial = getValues("amountPaidCurrency") || getValues("amountToBePaidCurrency") || (currencies && currencies[0]?.symbol) || "";
-    if (initial && initial !== selectedCurrency) {
-      setSelectedCurrency(initial);
-      setValue("amountPaidCurrency", initial, { shouldValidate: false, shouldDirty: false });
-      setValue("amountToBePaidCurrency", initial, { shouldValidate: false, shouldDirty: false });
+    // 🔍 DEBUGGER AQUÍ: Ver qué valores tenemos
+
+    
+    // ✅ MEJOR: Usar id_units en vez de symbol
+    const paidCurrency = getValues("amountPaidCurrency");
+    const toBePaidCurrency = getValues("amountToBePaidCurrency");
+    const defaultCurrency = currencies && currencies[0]?.id_units;
+    const initialCurrency = paidCurrency || toBePaidCurrency || defaultCurrency || "";
+    
+    // ✅ Solo actualizar si realmente cambió
+    if (initialCurrency && initialCurrency !== selectedCurrency) {
+      setSelectedCurrency(initialCurrency);
+      setValue("amountPaidCurrency", initialCurrency);
+      setValue("amountToBePaidCurrency", initialCurrency);
     }
-  }, [currencies]); // cuando lleguen las currencies
+  }, [currencies, getValues]); // cuando lleguen las currencies
   
   // Si el formulario cambia el campo (p. ej. edición), reflejarlo
   React.useEffect(() => {
@@ -45,7 +67,11 @@ export default function Step2RequestInfo({ mode, machineryOptions = [], operator
   };
 
   const handleAddMachinery = () => {
-    if (!selectedMachinery || !selectedOperator) return;
+    if (!selectedMachinery || !selectedOperator) {
+      setSelectError("Debes seleccionar maquinaria y operador.");
+      return;
+    }
+    setSelectError(""); // limpia el error si todo está bien
     const machineryObj = machineryOptions.find(m => String(m.id_machinery ?? m.id) === String(selectedMachinery));
     const operatorObj = operatorOptions.find(o => String(o.id_user ?? o.id) === String(selectedOperator));
     if (!machineryObj || !operatorObj) return;
@@ -153,9 +179,9 @@ export default function Step2RequestInfo({ mode, machineryOptions = [], operator
                 aria-label="Método de pago"
               >
                 <option value="">Seleccione...</option>
-                <option value="transferencia">Transferencia</option>
-                <option value="efectivo">Efectivo</option>
-                <option value="tarjeta">Tarjeta</option>
+                {paymentMethods.map(pm => (
+                  <option key={pm.code} value={pm.code}>{pm.name}</option>
+                ))}
               </select>
               {errors.paymentMethod && (
                 <span className="text-theme-xs mt-1 block" style={{ color: 'var(--color-error)' }}>
@@ -171,8 +197,9 @@ export default function Step2RequestInfo({ mode, machineryOptions = [], operator
                 aria-label="Estado de pago"
               >
                 <option value="">Seleccione...</option>
-                <option value="pagado">Pagado</option>
-                <option value="pendiente">Pendiente</option>
+                {paymentStatuses.map(status => (
+                  <option key={status.id_statues} value={status.id_statues}>{status.name}</option>
+                ))}
               </select>
               {errors.paymentStatus && (
                 <span className="text-theme-xs mt-1 block" style={{ color: 'var(--color-error)' }}>
@@ -191,7 +218,7 @@ export default function Step2RequestInfo({ mode, machineryOptions = [], operator
                 >
                   <option value="">Seleccione moneda...</option>
                   {currencies.map(cur => (
-                    <option key={cur.id_units} value={cur.symbol}>{cur.symbol}</option>
+                    <option key={cur.id_units} value={cur.id_units}>{cur.symbol}</option>
                   ))}
                 </select>
                 <input
@@ -219,7 +246,7 @@ export default function Step2RequestInfo({ mode, machineryOptions = [], operator
                 >
                   <option value="">Seleccione moneda...</option>
                   {currencies.map(cur => (
-                    <option key={cur.id_units} value={cur.symbol}>{cur.symbol}</option>
+                    <option key={cur.id_units} value={cur.id_units}>{cur.symbol}</option>
                   ))}
                 </select>
                 <input
@@ -236,7 +263,7 @@ export default function Step2RequestInfo({ mode, machineryOptions = [], operator
                 </span>
               )}
             </div>
-            <div>
+            <div className="col-span-2">
               <label className="block text-theme-sm text-secondary mb-1">Maquinaria disponible</label>
               <div className="flex gap-2">
                 <select
@@ -261,7 +288,7 @@ export default function Step2RequestInfo({ mode, machineryOptions = [], operator
                   <option value="">Seleccione operador...</option>
                   {operatorOptions.map(o => (
                     <option key={o.id} value={o.id}>
-                      {o.name} {o.first_last_name}
+                      {o.name} {o.first_last_name} {o.second_last_name}
                     </option>
                   ))}
                 </select>
@@ -271,7 +298,6 @@ export default function Step2RequestInfo({ mode, machineryOptions = [], operator
                     className="btn-theme btn-primary px-4"
                     onClick={handleAddMachinery}
                     aria-label="Añadir maquinaria y operador"
-                    disabled={!selectedMachinery || !selectedOperator}
                   >
                     Añadir
                   </button>
@@ -287,6 +313,11 @@ export default function Step2RequestInfo({ mode, machineryOptions = [], operator
                   </button>
                 )}
               </div>
+              {selectError && (
+                <span className="text-theme-xs mt-1 block" style={{ color: 'var(--color-error)' }}>
+                  {selectError}
+                </span>
+              )}
             </div>
             {/* Tabla persistida: leer de machineryList (form) */}
             {machineryList.length > 0 && (
@@ -333,7 +364,10 @@ export default function Step2RequestInfo({ mode, machineryOptions = [], operator
                             title="Predicción de combustible"
                             type="button"
                             className="btn-theme btn-secondary ml-2"
-                            onClick={() => {setPredictionOpen(true);}}
+                            onClick={() => {
+                              setPredictionIdx(idx);
+                              setPredictionOpen(true);
+                            }}
                             aria-label="Abrir modal de predicción de combustible"
                           >
                             <BsFillFuelPumpFill />
@@ -349,8 +383,17 @@ export default function Step2RequestInfo({ mode, machineryOptions = [], operator
             <FuelPredictionModal
               isOpen={predictionOpen}
               onClose={() => setPredictionOpen(false)}
-              onSave={data => setFuelPrediction(data)}
-              formData={fuelPrediction}
+              onSave={data => {
+                setFuelPrediction(prev => ({
+                  ...prev,
+                  [predictionIdx]: data
+                }));
+                setPredictionOpen(false);
+              }}
+              formData={fuelPrediction[predictionIdx]}
+              soilTypes={soilTypes}
+              implementTypes={implementTypes}
+              textureTypes={textureTypes}
             />
           </>
         )}

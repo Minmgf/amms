@@ -33,75 +33,6 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
     city: null
   });
 
-  // Estados parametrizables (sincronizados con el backend)
-  const [requestStatuses] = useState([
-    { id_statues: 19, name: "Presolicitud", description: "Solicitud en estado inicial" },
-    { id_statues: 20, name: "Pendiente", description: "Solicitud pendiente de aprobación" },
-    { id_statues: 21, name: "Confirmada", description: "Solicitud confirmada" },
-    { id_statues: 4, name: "En ejecución", description: "Solicitud en proceso" },
-    { id_statues: 22, name: "Finalizada", description: "Solicitud completada" },
-    { id_statues: 23, name: "Cancelada", description: "Solicitud cancelada" },
-  ]);
-
-  const [paymentStatuses] = useState([
-    { id_statues: 15, name: "Pendiente", description: "Pago pendiente" },
-    { id_statues: 17, name: "Pago Parcial", description: "Pago parcial realizado" },
-    { id_statues: 16, name: "Pagado", description: "Pago completado" },
-  ]);
-
-  const [paymentMethods] = useState([
-    { id: "1", name: "Medio de pago no definido", description: "Método no especificado" },
-    { id: "2", name: "Contado", description: "Pago al contado" },
-    { id: "3", name: "Crédito", description: "Pago a crédito" },
-    { id: "4", name: "Anticipado", description: "Pago anticipado" },
-    { id: "5", name: "Por cuotas", description: "Pago en cuotas" },
-  ]);
-
-  // Mock data - Datos de prueba de la solicitud
-  // TODO: Estos datos vendrán del prop 'request' cuando se integre con el endpoint real
-  const mockRequestData = {
-    request_code: "EXCO01-2025",
-    status_id: 3, // En ejecución
-    detail: "Example",
-    registration_date: "2025-09-28T10:45:00",
-    scheduled_date: "2025-10-12T07:30:00",
-    completion_date: null,
-    
-    // Client information
-    client_name: "AgroCampos S.A.S.",
-    client_document_type: "NIT",
-    client_document_number: "901.457.236-5",
-    client_email: "contacto@agrocampos.com",
-    client_phone: "+57 310 456 7821",
-    
-    // Machinery
-    machinery: [
-      {
-        name: "Tractor para banano",
-        serial_number: "CAT12381238109",
-        operator: "Juan Pérez"
-      }
-    ],
-    
-    // Location
-    location_country: "Colombia",
-    location_department: "Tolima",
-    location_municipality: "Espinal",
-    location_place_name: "Finca La Esperanza",
-    location_latitude: -12312,
-    location_longitude: 813,
-    location_area: 15,
-    location_soil_type: "Clay loam",
-    location_humidity: 42,
-    location_altitude: 420,
-    
-    // Billing
-    billing_total_amount: 8500.00,
-    billing_amount_paid: 4000.00,
-    payment_status_id: 2, // Pago parcial
-    payment_method_id: 2, // Crédito
-  };
-
   // Cargar detalles de la solicitud cuando se proporciona requestId
   useEffect(() => {
     const loadRequestDetails = async () => {
@@ -178,13 +109,6 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
     }
   }, [error]);
 
-  // Función para obtener información por ID
-  const getStatusById = (id, statusArray) => {
-    return (
-      statusArray.find((s) => s.id_statues === id) ||
-      statusArray.find((s) => s.id === id)
-    );
-  };
 
   // Función para obtener colores por ID (basada en ID, no en nombre)
   // Los colores están mapeados según el diseño del sistema y sincronizados con el backend
@@ -202,9 +126,9 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
 
   const getPaymentStatusColorById = (id) => {
     switch (id) {
-      case 15: return "bg-yellow-100 text-yellow-800"; // Pendiente
-      case 17: return "bg-orange-100 text-orange-800"; // Pago parcial
-      case 16: return "bg-green-100 text-green-800"; // Pagado
+      case 16: return "bg-yellow-100 text-yellow-800"; // Pendiente
+      case 17: return "bg-orange-100 text-orange-800"; // Parcial
+      case 18: return "bg-green-100 text-green-800"; // Pagado
       default: return "bg-gray-100 text-gray-800";
     }
   };
@@ -249,12 +173,44 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
   };
 
   // Formatear moneda
-  const formatCurrency = (amount) => {
+  const formatCurrency = (amount, currencySymbol = null) => {
     if (!amount && amount !== 0) return "N/A";
+    
+    // Si hay símbolo de moneda del endpoint, usarlo
+    if (currencySymbol) {
+      return `${currencySymbol} ${new Intl.NumberFormat('es-CO').format(amount)}`;
+    }
+    
+    // Si no, usar formato USD por defecto
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD'
     }).format(amount);
+  };
+
+  // Formatear número de teléfono
+  const formatPhoneNumber = (phone) => {
+    if (!phone) return "N/A";
+    
+    // Convertir a string y limpiar espacios
+    const cleanPhone = String(phone).replace(/\s+/g, '');
+    
+    // Si el número comienza con 57 (indicativo de Colombia) y tiene 12 dígitos
+    if (cleanPhone.startsWith('57') && cleanPhone.length === 12) {
+      const countryCode = cleanPhone.substring(0, 2); // 57
+      const part1 = cleanPhone.substring(2, 5); // 310
+      const part2 = cleanPhone.substring(5, 8); // 235
+      const part3 = cleanPhone.substring(8, 12); // 5419
+      return `+${countryCode} ${part1} ${part2} ${part3}`;
+    }
+    
+    // Si ya tiene formato con +, devolverlo tal cual
+    if (cleanPhone.startsWith('+')) {
+      return phone;
+    }
+    
+    // Retornar el número sin modificar
+    return phone;
   };
 
   if (!isOpen) return null;
@@ -275,8 +231,10 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
     completion_user: requestData.completion_cancellation_user_name,
     
     // Información del cliente
-    client_name: requestData.customer_legal_entity_name || 
-                `${requestData.customer_name || ''} ${requestData.customer_first_last_name || ''} ${requestData.customer_second_last_name || ''}`.trim(),
+    client_name: (() => {
+      const fullName = `${requestData.customer_name || ''} ${requestData.customer_first_last_name || ''} ${requestData.customer_second_last_name || ''}`.trim();
+      return fullName || requestData.customer_legal_entity_name || 'N/A';
+    })(),
     client_document_type: requestData.customer_document_type,
     client_document_number: requestData.customer_document_number,
     client_email: requestData.customer_email,
@@ -299,8 +257,6 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
     location_longitude: requestData.request_location?.longitude,
     location_area: requestData.request_location?.area,
     location_area_unit: requestData.request_location?.area_unit_symbol,
-    location_soil_type: requestData.request_location?.soil_type_name,
-    location_humidity: requestData.request_location?.humidity_level,
     location_altitude: requestData.request_location?.altitude,
     location_altitude_unit: requestData.request_location?.altitude_unit_symbol,
     
@@ -308,14 +264,12 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
     billing_total_amount: requestData.amount_to_pay,
     billing_currency: requestData.currency_unit_amount_to_pay_symbol,
     billing_amount_paid: requestData.amount_paid,
+    billing_currency_paid: requestData.currency_unit_amount_paid_symbol,
     payment_status_id: requestData.payment_status_id,
-    payment_method_id: requestData.payment_method_code,
-  } : mockRequestData;
-
-  // Obtener información de estados
-  const requestStatus = getStatusById(mappedData.status_id, requestStatuses);
-  const paymentStatus = getStatusById(mappedData.payment_status_id, paymentStatuses);
-  const paymentMethod = getStatusById(mappedData.payment_method_id, paymentMethods);
+    payment_status_name: requestData.payment_status_name,
+    payment_method_code: requestData.payment_method_code,
+    payment_method_name: requestData.payment_method_name,
+  } : null;
 
   return (
     <div
@@ -362,7 +316,7 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
         )}
 
         {/* Content - Scrollable */}
-        {!loading && (
+        {!loading && mappedData && (
           <div className="overflow-y-auto max-h-[calc(90vh-90px)]">
             <div className="p-4 sm:p-6 space-y-6">
             {/* Cards Container */}
@@ -386,7 +340,7 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
                       getRequestStatusColorById(mappedData.status_id)
                     }`}>
-                      {requestStatus?.name || "N/A"}
+                      {mappedData.status_name || "N/A"}
                     </span>
                   </div>
 
@@ -404,8 +358,8 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
 
                   {/* Scheduled start date */}
                   <div className="flex justify-between items-start">
-                    <span className="text-theme-sm text-secondary">Fecha programada:</span>
-                    <span className="font-theme-medium text-primary text-right">{formatDate(mappedData.scheduled_start_date)}</span>
+                    <span className="text-theme-sm text-secondary">Fecha y hora programada:</span>
+                    <span className="font-theme-medium text-primary text-right">{formatDateTime(mappedData.scheduled_start_date)}</span>
                   </div>
 
                   {/* Completion date */}
@@ -452,7 +406,7 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
                   {/* Phone number */}
                   <div className="flex justify-between items-start">
                     <span className="text-theme-sm text-secondary">Número de teléfono:</span>
-                    <span className="font-theme-medium text-primary text-right">{mappedData.client_phone || "N/A"}</span>
+                    <span className="font-theme-medium text-primary text-right">{formatPhoneNumber(mappedData.client_phone)}</span>
                   </div>
                 </div>
               </div>
@@ -597,13 +551,13 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
                 {/* Total amount */}
                 <div className="flex justify-between items-start">
                   <span className="text-theme-sm text-secondary">Monto total:</span>
-                  <span className="font-theme-medium text-primary text-right">{formatCurrency(mappedData.billing_total_amount)}</span>
+                  <span className="font-theme-medium text-primary text-right">{formatCurrency(mappedData.billing_total_amount, mappedData.billing_currency)}</span>
                 </div>
 
                 {/* Amount paid */}
                 <div className="flex justify-between items-start">
                   <span className="text-theme-sm text-secondary">Monto pagado:</span>
-                  <span className="font-theme-medium text-primary text-right">{formatCurrency(mappedData.billing_amount_paid)}</span>
+                  <span className="font-theme-medium text-primary text-right">{formatCurrency(mappedData.billing_amount_paid, mappedData.billing_currency_paid)}</span>
                 </div>
 
                 {/* Payment status */}
@@ -612,14 +566,14 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
                     getPaymentStatusColorById(mappedData.payment_status_id)
                   }`}>
-                    {paymentStatus?.name || "N/A"}
+                    {mappedData.payment_status_name || "N/A"}
                   </span>
                 </div>
 
                 {/* Payment method */}
                 <div className="flex justify-between items-start">
                   <span className="text-theme-sm text-secondary">Método de pago:</span>
-                  <span className="font-theme-medium text-primary text-right">{paymentMethod?.name || "N/A"}</span>
+                  <span className="font-theme-medium text-primary text-right">{mappedData.payment_method_name || "N/A"}</span>
                 </div>
               </div>
             </div>

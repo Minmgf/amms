@@ -1,23 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-export default function FuelPredictionModal({ isOpen, onClose, onSave, formData }) {
-  const implementationOptions = [
-    { value: "", label: "Seleccione..." },
-    { value: "Arado Vertedera", label: "Arado Vertedera" },
-    { value: "Arado Disco", label: "Arado Disco" },
-  ];
-  const soilTypes = [
-    { value: "", label: "Seleccione..." },
-    { value: "sandy", label: "Arenoso" },
-    { value: "loam", label: "Franco" },
-    { value: "clay", label: "Arcilloso" }
-  ];
-  const textureOptions = [
-    { value: "", label: "Seleccione..." },
-    { value: "fine", label: "Fina" },
-    { value: "medium", label: "Media" },
-    { value: "coarse", label: "Gruesa" }
-  ];
+export default function FuelPredictionModal({ isOpen, onClose, onSave, formData, soilTypes, implementTypes, textureTypes }) {
 
   const initialState = {
     implementation: "",
@@ -45,18 +28,70 @@ export default function FuelPredictionModal({ isOpen, onClose, onSave, formData 
 
   const validate = () => {
     const e = {};
+    
+    // Implementación - obligatorio
     if (!form.implementation) e.implementation = "Seleccione la implementación";
-    if (form.workDepth !== "" && Number(form.workDepth) < 0) e.workDepth = "Debe ser >= 0";
-    if (form.humidity !== "" && (Number(form.humidity) < 0 || Number(form.humidity) > 100)) e.humidity = "Debe estar entre 0 y 100";
+    
+    // Profundidad de trabajo - obligatorio, rango: 0.1 a 0.5 metros
+    if (!form.workDepth || form.workDepth === "") {
+      e.workDepth = "La profundidad de trabajo es obligatoria";
+    } else {
+      const depth = Number(form.workDepth);
+      if (depth < 0.1 || depth > 0.5) {
+        e.workDepth = "Debe estar entre 0.1 y 0.5 metros";
+      }
+    }
+    
+    // Humedad - obligatorio, rango: 0% a 50%
+    if (!form.humidity || form.humidity === "") {
+      e.humidity = "La humedad es obligatoria";
+    } else {
+      const hum = Number(form.humidity);
+      if (hum < 0 || hum > 50) {
+        e.humidity = "Debe estar entre 0% y 50%";
+      }
+    }
+    
+    // Tipo de suelo - obligatorio
     if (!form.soilType) e.soilType = "Seleccione el tipo de suelo";
-    if (form.slope !== "" && (Number(form.slope) < 0)) e.slope = "Debe ser >= 0";
-    if (form.estimatedHours !== "" && (Number(form.estimatedHours) < 0)) e.estimatedHours = "Debe ser >= 0";
+    
+    // Textura - obligatorio
+    if (!form.texture) e.texture = "Seleccione la textura";
+    
+    // Pendiente - obligatorio, rango: 0% a 30%
+    if (!form.slope || form.slope === "") {
+      e.slope = "La pendiente es obligatoria";
+    } else {
+      const slopeVal = Number(form.slope);
+      if (slopeVal < 0 || slopeVal > 30) {
+        e.slope = "Debe estar entre 0% y 30%";
+      }
+    }
+    
+    // Duración estimada - obligatorio, debe ser mayor a 0
+    if (!form.estimatedHours || form.estimatedHours === "") {
+      e.estimatedHours = "La duración estimada es obligatoria";
+    } else {
+      const hours = Number(form.estimatedHours);
+      if (hours <= 0) {
+        e.estimatedHours = "Debe ser mayor a 0 horas";
+      }
+    }
+    
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
   const handleChange = (key, value) => {
     setForm(prev => ({ ...prev, [key]: value }));
+    // Limpiar el error del campo cuando el usuario ingresa un valor
+    if (errors[key]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[key];
+        return newErrors;
+      });
+    }
   };
 
   const handleClean = () => {
@@ -101,9 +136,8 @@ export default function FuelPredictionModal({ isOpen, onClose, onSave, formData 
               className="parametrization-input w-full"
               aria-label="Seleccionar implementación"
             >
-              {implementationOptions.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
+              <option value="">Seleccione...</option>
+              {implementTypes.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
             </select>
             {errors.implementation && <div className="text-red-600 text-xs mt-1">{errors.implementation}</div>}
           </div>
@@ -112,7 +146,9 @@ export default function FuelPredictionModal({ isOpen, onClose, onSave, formData 
             <label className="block text-sm text-gray-700 mb-1">Profundidad de trabajo (metros)</label>
             <input
               type="number"
-              step="any"
+              step="0.01"
+              min="0.1"
+              max="0.5"
               value={form.workDepth}
               onChange={e => handleChange("workDepth", e.target.value)}
               className="parametrization-input w-full"
@@ -126,9 +162,9 @@ export default function FuelPredictionModal({ isOpen, onClose, onSave, formData 
             <label className="block text-sm text-gray-700 mb-1">Humedad (%)</label>
             <input
               type="number"
-              step="any"
+              step="0.1"
               min="0"
-              max="100"
+              max="50"
               value={form.humidity}
               onChange={e => handleChange("humidity", e.target.value)}
               className="parametrization-input w-full"
@@ -146,7 +182,8 @@ export default function FuelPredictionModal({ isOpen, onClose, onSave, formData 
               className="parametrization-input w-full"
               aria-label="Seleccionar tipo de suelo"
             >
-              {soilTypes.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              <option value="">Seleccione...</option>
+              {soilTypes.map(opt => <option key={opt.id} value={opt.id}>{opt.surface}</option>)}
             </select>
             {errors.soilType && <div className="text-red-600 text-xs mt-1">{errors.soilType}</div>}
           </div>
@@ -159,15 +196,19 @@ export default function FuelPredictionModal({ isOpen, onClose, onSave, formData 
               className="parametrization-input w-full"
               aria-label="Seleccionar textura"
             >
-              {textureOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              <option value="">Seleccione...</option>
+              {textureTypes.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
             </select>
+            {errors.texture && <div className="text-red-600 text-xs mt-1">{errors.texture}</div>}
           </div>
 
           <div>
             <label className="block text-sm text-gray-700 mb-1">Pendiente (%)</label>
             <input
               type="number"
-              step="any"
+              step="0.1"
+              min="0"
+              max="30"
               value={form.slope}
               onChange={e => handleChange("slope", e.target.value)}
               className="parametrization-input w-full"
@@ -181,7 +222,8 @@ export default function FuelPredictionModal({ isOpen, onClose, onSave, formData 
             <label className="block text-sm text-gray-700 mb-1">Duración estimada de trabajo (horas)</label>
             <input
               type="number"
-              step="any"
+              step="0.1"
+              min="0.1"
               value={form.estimatedHours}
               onChange={e => handleChange("estimatedHours", e.target.value)}
               className="parametrization-input w-full"
