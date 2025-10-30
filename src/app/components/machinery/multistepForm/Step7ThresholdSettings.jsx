@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useFormContext } from "react-hook-form";
 import { FaChevronDown, FaChevronUp, FaInfoCircle, FaTrash } from "react-icons/fa";
 import Slider from 'rc-slider';
@@ -42,9 +42,25 @@ export default function Step7ThresholdSettings({
     maintenanceTypeList = [], 
     eventTypesList,
     obdSearchResults,
-    setObdSearchResults
+    setObdSearchResults,
+    isEditMode,
+    loadedThresholdData
 }) {
-    const { register, setValue } = useFormContext();
+    const { register, setValue, watch } = useFormContext();
+    
+    // Watch individual para cada checkbox de autoRequest
+    const watchAutoRequestCurrentSpeed = watch('autoRequest.currentSpeed');
+    const watchAutoRequestRpm = watch('autoRequest.rpm');
+    const watchAutoRequestEngineTemp = watch('autoRequest.engineTemp');
+    const watchAutoRequestEngineLoad = watch('autoRequest.engineLoad');
+    const watchAutoRequestOilLevel = watch('autoRequest.oilLevel');
+    const watchAutoRequestFuelLevel = watch('autoRequest.fuelLevel');
+    const watchAutoRequestFuelUsedGps = watch('autoRequest.fuelUsedGps');
+    const watchAutoRequestInstantFuelConsumption = watch('autoRequest.instantFuelConsumption');
+    const watchAutoRequestTotalOdometer = watch('autoRequest.totalOdometer');
+    const watchAutoRequestTripOdometer = watch('autoRequest.tripOdometer');
+    const watchAutoRequestObd = watch('autoRequest.obd');
+    const watchAutoRequestEvent = watch('autoRequest.event');
 
     const [expandedSections, setExpandedSections] = useState({
         mechanicalMotion: true,
@@ -79,6 +95,144 @@ export default function Step7ThresholdSettings({
     const [instantFuelConsumptionRange, setInstantFuelConsumptionRange] = useState([0, 32767]);
     const [totalOdometerRange, setTotalOdometerRange] = useState([0, 2147483647]);
     const [tripOdometerRange, setTripOdometerRange] = useState([0, 2147483647]);
+
+    // useEffect para inicializar los rangos cuando se cargan los datos en modo edición
+    useEffect(() => {
+        if (isEditMode && loadedThresholdData) {
+            // Inicializar rangos de parámetros
+            if (loadedThresholdData.tolerance_thresholds) {
+                loadedThresholdData.tolerance_thresholds.forEach((threshold) => {
+                    const min = threshold.minimum_threshold ?? 0;
+                    const max = threshold.maximum_threshold ?? 0;
+                    
+                    switch(threshold.id_parameter) {
+                        case 3: // currentSpeed
+                            setCurrentSpeedRange([min, max]);
+                            break;
+                        case 6: // rpm
+                            setRpmRange([min, max]);
+                            break;
+                        case 7: // engineTemp
+                            setEngineTempRange([min, max]);
+                            break;
+                        case 8: // engineLoad
+                            setEngineLoadRange([min, max]);
+                            break;
+                        case 9: // oilLevel
+                            setOilLevelRange([min, max]);
+                            break;
+                        case 10: // fuelLevel
+                            setFuelLevelRange([min, max]);
+                            break;
+                        case 11: // fuelUsedGps
+                            setFuelUsedGpsRange([min, max]);
+                            break;
+                        case 12: // instantFuelConsumption
+                            setInstantFuelConsumptionRange([min, max]);
+                            break;
+                        case 14: // totalOdometer
+                            setTotalOdometerRange([min, max]);
+                            break;
+                        case 15: // tripOdometer
+                            setTripOdometerRange([min, max]);
+                            break;
+                    }
+                });
+            }
+            
+            // Inicializar eventos expandidos
+            if (loadedThresholdData.event_type_machinery) {
+                const expandedEvents = {};
+                loadedThresholdData.event_type_machinery.forEach((event) => {
+                    expandedEvents[event.id_event_type] = true;
+                });
+                setExpandedEventsByType(expandedEvents);
+            }
+        }
+    }, [isEditMode, loadedThresholdData]);
+
+    // useEffect para limpiar los valores de requestType cuando autoRequest se desmarca
+    useEffect(() => {
+        if (!watchAutoRequestCurrentSpeed) {
+            setValue('requestType.currentSpeed', '');
+        }
+    }, [watchAutoRequestCurrentSpeed, setValue]);
+
+    useEffect(() => {
+        if (!watchAutoRequestRpm) {
+            setValue('requestType.rpm', '');
+        }
+    }, [watchAutoRequestRpm, setValue]);
+
+    useEffect(() => {
+        if (!watchAutoRequestEngineTemp) {
+            setValue('requestType.engineTemp', '');
+        }
+    }, [watchAutoRequestEngineTemp, setValue]);
+
+    useEffect(() => {
+        if (!watchAutoRequestEngineLoad) {
+            setValue('requestType.engineLoad', '');
+        }
+    }, [watchAutoRequestEngineLoad, setValue]);
+
+    useEffect(() => {
+        if (!watchAutoRequestOilLevel) {
+            setValue('requestType.oilLevel', '');
+        }
+    }, [watchAutoRequestOilLevel, setValue]);
+
+    useEffect(() => {
+        if (!watchAutoRequestFuelLevel) {
+            setValue('requestType.fuelLevel', '');
+        }
+    }, [watchAutoRequestFuelLevel, setValue]);
+
+    useEffect(() => {
+        if (!watchAutoRequestFuelUsedGps) {
+            setValue('requestType.fuelUsedGps', '');
+        }
+    }, [watchAutoRequestFuelUsedGps, setValue]);
+
+    useEffect(() => {
+        if (!watchAutoRequestInstantFuelConsumption) {
+            setValue('requestType.instantFuelConsumption', '');
+        }
+    }, [watchAutoRequestInstantFuelConsumption, setValue]);
+
+    useEffect(() => {
+        if (!watchAutoRequestTotalOdometer) {
+            setValue('requestType.totalOdometer', '');
+        }
+    }, [watchAutoRequestTotalOdometer, setValue]);
+
+    useEffect(() => {
+        if (!watchAutoRequestTripOdometer) {
+            setValue('requestType.tripOdometer', '');
+        }
+    }, [watchAutoRequestTripOdometer, setValue]);
+
+    // Limpiar requestType para OBD codes
+    useEffect(() => {
+        if (watchAutoRequestObd) {
+            Object.keys(watchAutoRequestObd).forEach(code => {
+                if (!watchAutoRequestObd[code]) {
+                    setValue(`requestType.obd.${code}`, '');
+                }
+            });
+        }
+    }, [watchAutoRequestObd, setValue]);
+
+    // Limpiar requestType para eventos
+    useEffect(() => {
+        if (watchAutoRequestEvent) {
+            Object.keys(watchAutoRequestEvent).forEach(eventId => {
+                if (!watchAutoRequestEvent[eventId]) {
+                    setValue(`requestType.event.${eventId}`, '');
+                }
+            });
+        }
+    }, [watchAutoRequestEvent, setValue]);
 
     const handleRangeChange = (name, value) => {
         setValue(`thresholds.${name}Min`, value[0]);
@@ -194,10 +348,12 @@ export default function Step7ThresholdSettings({
                                         <input type="checkbox" {...register("autoRequest.currentSpeed")} aria-label="Solicitud automática para velocidad actual" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
-                                    <select {...register("requestType.currentSpeed")} className="parametrization-input w-32" aria-label="Tipo de solicitud para velocidad actual">
-                                        <option value="">Seleccione...</option>
-                                        {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
-                                    </select>
+                                    {watchAutoRequestCurrentSpeed && (
+                                        <select {...register("requestType.currentSpeed", { required: watchAutoRequestCurrentSpeed })} className="parametrization-input w-32" aria-label="Tipo de solicitud para velocidad actual">
+                                            <option value="">Seleccione...</option>
+                                            {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
+                                        </select>
+                                    )}
                                 </div>
                             </div>
                             <Slider
@@ -266,10 +422,12 @@ export default function Step7ThresholdSettings({
                                         <input type="checkbox" {...register("autoRequest.rpm")} aria-label="Solicitud automática para revoluciones" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
-                                    <select {...register("requestType.rpm")} className="parametrization-input w-32" aria-label="Tipo de solicitud para revoluciones">
-                                        <option value="">Seleccione...</option>
-                                        {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
-                                    </select>
+                                    {watchAutoRequestRpm && (
+                                        <select {...register("requestType.rpm", { required: watchAutoRequestRpm })} className="parametrization-input w-32" aria-label="Tipo de solicitud para revoluciones">
+                                            <option value="">Seleccione...</option>
+                                            {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
+                                        </select>
+                                    )}
                                 </div>
                             </div>
                             <Slider
@@ -338,10 +496,12 @@ export default function Step7ThresholdSettings({
                                         <input type="checkbox" {...register("autoRequest.engineTemp")} aria-label="Solicitud automática para temperatura del motor" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
-                                    <select {...register("requestType.engineTemp")} className="parametrization-input w-32" aria-label="Tipo de solicitud para temperatura del motor">
-                                        <option value="">Seleccione...</option>
-                                        {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
-                                    </select>
+                                    {watchAutoRequestEngineTemp && (
+                                        <select {...register("requestType.engineTemp", { required: watchAutoRequestEngineTemp })} className="parametrization-input w-32" aria-label="Tipo de solicitud para temperatura del motor">
+                                            <option value="">Seleccione...</option>
+                                            {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
+                                        </select>
+                                    )}
                                 </div>
                             </div>
                             <Slider
@@ -410,10 +570,12 @@ export default function Step7ThresholdSettings({
                                         <input type="checkbox" {...register("autoRequest.engineLoad")} aria-label="Solicitud automática para carga del motor" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
-                                    <select {...register("requestType.engineLoad")} className="parametrization-input w-32" aria-label="Tipo de solicitud para carga del motor">
-                                        <option value="">Seleccione...</option>
-                                        {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
-                                    </select>
+                                    {watchAutoRequestEngineLoad && (
+                                        <select {...register("requestType.engineLoad", { required: watchAutoRequestEngineLoad })} className="parametrization-input w-32" aria-label="Tipo de solicitud para carga del motor">
+                                            <option value="">Seleccione...</option>
+                                            {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
+                                        </select>
+                                    )}
                                 </div>
                             </div>
                             <Slider
@@ -496,10 +658,12 @@ export default function Step7ThresholdSettings({
                                         <input type="checkbox" {...register("autoRequest.oilLevel")} aria-label="Solicitud automática para nivel de aceite" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
-                                    <select {...register("requestType.oilLevel")} className="parametrization-input w-32" aria-label="Tipo de solicitud para nivel de aceite">
-                                        <option value="">Seleccione...</option>
-                                        {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
-                                    </select>
+                                    {watchAutoRequestOilLevel && (
+                                        <select {...register("requestType.oilLevel", { required: watchAutoRequestOilLevel })} className="parametrization-input w-32" aria-label="Tipo de solicitud para nivel de aceite">
+                                            <option value="">Seleccione...</option>
+                                            {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
+                                        </select>
+                                    )}
                                 </div>
                             </div>
                             <Slider
@@ -568,10 +732,12 @@ export default function Step7ThresholdSettings({
                                         <input type="checkbox" {...register("autoRequest.fuelLevel")} aria-label="Solicitud automática para nivel de combustible" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
-                                    <select {...register("requestType.fuelLevel")} className="parametrization-input w-32" aria-label="Tipo de solicitud para nivel de combustible">
-                                        <option value="">Seleccione...</option>
-                                        {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
-                                    </select>
+                                    {watchAutoRequestFuelLevel && (
+                                        <select {...register("requestType.fuelLevel", { required: watchAutoRequestFuelLevel })} className="parametrization-input w-32" aria-label="Tipo de solicitud para nivel de combustible">
+                                            <option value="">Seleccione...</option>
+                                            {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
+                                        </select>
+                                    )}
                                 </div>
                             </div>
                             <Slider
@@ -640,10 +806,12 @@ export default function Step7ThresholdSettings({
                                         <input type="checkbox" {...register("autoRequest.fuelUsedGps")} aria-label="Solicitud automática para combustible usado" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
-                                    <select {...register("requestType.fuelUsedGps")} className="parametrization-input w-32" aria-label="Tipo de solicitud para combustible usado">
-                                        <option value="">Seleccione...</option>
-                                        {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
-                                    </select>
+                                    {watchAutoRequestFuelUsedGps && (
+                                        <select {...register("requestType.fuelUsedGps", { required: watchAutoRequestFuelUsedGps })} className="parametrization-input w-32" aria-label="Tipo de solicitud para combustible usado">
+                                            <option value="">Seleccione...</option>
+                                            {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
+                                        </select>
+                                    )}
                                 </div>
                             </div>
                             <Slider
@@ -712,10 +880,12 @@ export default function Step7ThresholdSettings({
                                         <input type="checkbox" {...register("autoRequest.instantFuelConsumption")} aria-label="Solicitud automática para consumo instantáneo" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
-                                    <select {...register("requestType.instantFuelConsumption")} className="parametrization-input w-32" aria-label="Tipo de solicitud para consumo instantáneo">
-                                        <option value="">Seleccione...</option>
-                                        {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
-                                    </select>
+                                    {watchAutoRequestInstantFuelConsumption && (
+                                        <select {...register("requestType.instantFuelConsumption", { required: watchAutoRequestInstantFuelConsumption })} className="parametrization-input w-32" aria-label="Tipo de solicitud para consumo instantáneo">
+                                            <option value="">Seleccione...</option>
+                                            {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
+                                        </select>
+                                    )}
                                 </div>
                             </div>
                             <Slider
@@ -798,10 +968,12 @@ export default function Step7ThresholdSettings({
                                         <input type="checkbox" {...register("autoRequest.totalOdometer")} aria-label="Solicitud automática para odómetro total" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
-                                    <select {...register("requestType.totalOdometer")} className="parametrization-input w-32" aria-label="Tipo de solicitud para odómetro total">
-                                        <option value="">Seleccione...</option>
-                                        {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
-                                    </select>
+                                    {watchAutoRequestTotalOdometer && (
+                                        <select {...register("requestType.totalOdometer", { required: watchAutoRequestTotalOdometer })} className="parametrization-input w-32" aria-label="Tipo de solicitud para odómetro total">
+                                            <option value="">Seleccione...</option>
+                                            {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
+                                        </select>
+                                    )}
                                 </div>
                             </div>
                             <Slider
@@ -873,10 +1045,12 @@ export default function Step7ThresholdSettings({
                                         <input type="checkbox" {...register("autoRequest.tripOdometer")} aria-label="Solicitud automática para odómetro de viaje" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
-                                    <select {...register("requestType.tripOdometer")} className="parametrization-input w-32" aria-label="Tipo de solicitud para odómetro de viaje">
-                                        <option value="">Seleccione...</option>
-                                        {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
-                                    </select>
+                                    {watchAutoRequestTripOdometer && (
+                                        <select {...register("requestType.tripOdometer", { required: watchAutoRequestTripOdometer })} className="parametrization-input w-32" aria-label="Tipo de solicitud para odómetro de viaje">
+                                            <option value="">Seleccione...</option>
+                                            {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
+                                        </select>
+                                    )}
                                 </div>
                             </div>
                             <Slider
@@ -1003,10 +1177,12 @@ export default function Step7ThresholdSettings({
                                                 <input type="checkbox" {...register(`autoRequest.obd.${code}`)} aria-label={`Solicitud automática para código ${code}`} />
                                                 <span className="text-theme-sm">Solicitud automática</span>
                                             </label>
-                                            <select {...register(`requestType.obd.${code}`)} className="parametrization-input" aria-label={`Tipo de solicitud para código ${code}`}>
-                                                <option value="">Seleccione...</option>
-                                                {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
-                                            </select>
+                                            {watchAutoRequestObd?.[code] && (
+                                                <select {...register(`requestType.obd.${code}`, { required: watchAutoRequestObd?.[code] })} className="parametrization-input" aria-label={`Tipo de solicitud para código ${code}`}>
+                                                    <option value="">Seleccione...</option>
+                                                    {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
+                                                </select>
+                                            )}
                                             <button
                                                 type="button"
                                                 onClick={() => handleRemoveObdCode(code)}
@@ -1081,10 +1257,12 @@ export default function Step7ThresholdSettings({
                                                             <span className="text-theme-xs">Solicitud automática</span>
                                                         </label>
                                                     </div>
-                                                    <select {...register(`requestType.event.${event.id_event_type}`)} className="parametrization-input w-full" aria-label={`Tipo de solicitud para evento de ${event.name}`}>
-                                                        <option value="">Seleccione...</option>
-                                                        {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
-                                                    </select>
+                                                    {watchAutoRequestEvent?.[event.id_event_type] && (
+                                                        <select {...register(`requestType.event.${event.id_event_type}`, { required: watchAutoRequestEvent?.[event.id_event_type] })} className="parametrization-input w-full" aria-label={`Tipo de solicitud para evento de ${event.name}`}>
+                                                            <option value="">Seleccione...</option>
+                                                            {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
+                                                        </select>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>

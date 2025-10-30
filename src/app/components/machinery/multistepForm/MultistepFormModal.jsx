@@ -53,7 +53,6 @@ import {
   updateInfoTracker,
   registerThresholdSetting,
   getEventTypes,
-  getOBDFaults,
   getThresholdSettingsByMachinery,
   updateThresholdSetting,
 } from "@/services/machineryService";
@@ -116,6 +115,7 @@ export default function MultiStepFormModal({
   const [operationalStatus, setOperationalStatus] = useState(null); // Estado operativo actual de la maquinaria
   const [eventTypesList, setEventTypesList] = useState([]);
   const [obdSearchResults, setObdSearchResults] = useState([]); // Para almacenar los códigos OBD buscados
+  const [loadedThresholdData, setLoadedThresholdData] = useState(null); // Para almacenar los datos de threshold cargados
   // Hook del tema
   const { getCurrentTheme } = useTheme();
   const defaultValues = {
@@ -337,6 +337,8 @@ export default function MultiStepFormModal({
       setIdUsageSheet(null);
       setSpecificTechnicalSheetId(null);
       setIdTrackerSheet(null);
+      setLoadedThresholdData(null);
+      setObdSearchResults([]);
       return;
     }
 
@@ -499,6 +501,89 @@ export default function MultiStepFormModal({
           console.warn("No usage info found for this machinery:", error);
           setIdUsageSheet(null);
         });
+
+      // Cargar datos del Paso 7 - Threshold Settings
+      getThresholdSettingsByMachinery(machineryToEdit.id_machinery)
+        .then((response) => {
+          if (response && response.success && response.data) {
+            const data = response.data;
+            setLoadedThresholdData(data);
+            
+            // Mapear tolerance_thresholds a los campos del formulario
+            const thresholdUpdates = {};
+            const alertUpdates = {};
+            const requestTypeUpdates = {};
+            
+            data.tolerance_thresholds?.forEach((threshold) => {
+              let paramKey = '';
+              
+              // Mapear id_parameter a nombre de campo
+              switch(threshold.id_parameter) {
+                case 3: paramKey = 'currentSpeed'; break;
+                case 6: paramKey = 'rpm'; break;
+                case 7: paramKey = 'engineTemp'; break;
+                case 8: paramKey = 'engineLoad'; break;
+                case 9: paramKey = 'oilLevel'; break;
+                case 10: paramKey = 'fuelLevel'; break;
+                case 11: paramKey = 'fuelUsedGps'; break;
+                case 12: paramKey = 'instantFuelConsumption'; break;
+                case 14: paramKey = 'totalOdometer'; break;
+                case 15: paramKey = 'tripOdometer'; break;
+                default: return;
+              }
+              
+              if (paramKey) {
+                thresholdUpdates[`thresholds.${paramKey}Min`] = threshold.minimum_threshold;
+                thresholdUpdates[`thresholds.${paramKey}Max`] = threshold.maximum_threshold;
+                alertUpdates[`alerts.${paramKey}`] = threshold.alert_enabled;
+                if (threshold.id_maintenance) {
+                  requestTypeUpdates[`requestType.${paramKey}`] = threshold.id_maintenance;
+                }
+              }
+            });
+            
+            // Mapear obd_fault_machinery
+            const obdCodes = [];
+            data.obd_fault_machinery?.forEach((obd) => {
+              obdCodes.push({
+                id: obd.id_obd_fault,
+                code: obd.fault_code,
+                desc: '' // La descripción se puede cargar después si es necesario
+              });
+              alertUpdates[`alerts.obd.${obd.fault_code}`] = obd.alert_enabled;
+              if (obd.id_maintenance) {
+                requestTypeUpdates[`requestType.obd.${obd.fault_code}`] = obd.id_maintenance;
+              }
+            });
+            setObdSearchResults(obdCodes);
+            
+            // Mapear event_type_machinery
+            data.event_type_machinery?.forEach((event) => {
+              alertUpdates[`alerts.event.${event.id_event_type}`] = event.alert_enabled;
+              if (event.threshold !== null && event.threshold !== undefined) {
+                thresholdUpdates[`thresholds.event.${event.id_event_type}`] = event.threshold;
+              }
+              if (event.id_maintenance) {
+                requestTypeUpdates[`requestType.event.${event.id_event_type}`] = event.id_maintenance;
+              }
+            });
+            
+            // Aplicar todos los valores al formulario
+            Object.keys(thresholdUpdates).forEach(key => {
+              methods.setValue(key, thresholdUpdates[key]);
+            });
+            Object.keys(alertUpdates).forEach(key => {
+              methods.setValue(key, alertUpdates[key]);
+            });
+            Object.keys(requestTypeUpdates).forEach(key => {
+              methods.setValue(key, requestTypeUpdates[key]);
+            });
+          }
+        })
+        .catch((error) => {
+          console.warn("No threshold settings found for this machinery:", error);
+          setLoadedThresholdData(null);
+        });
     } else {
       // MODO CREACIÓN: Resetear a valores por defecto
       methods.reset(defaultValues);
@@ -506,6 +591,8 @@ export default function MultiStepFormModal({
       setIdUsageSheet(null);
       setSpecificTechnicalSheetId(null);
       setIdTrackerSheet(null);
+      setLoadedThresholdData(null);
+      setObdSearchResults([]);
     }
   }, [isOpen, isEditMode, machineryToEdit, methods, machineryList]);
 
@@ -1692,13 +1779,25 @@ export default function MultiStepFormModal({
 
         // Solo agregar si al menos uno de los dos checkboxes está activado
         if (alert || autoRequest) {
-          thresholdPayload.tolerance_thresholds.push({
+          const thresholdItem = {
             id_parameter: parameterId,
             minimum_threshold: minValue !== undefined ? Number(minValue) : null,
             maximum_threshold: maxValue !== undefined ? Number(maxValue) : null,
             id_maintenance: requestType ? Number(requestType) : null,
             alert_enabled: alert || false
-          });
+          };
+          
+          // En modo edición, agregar el id si existe
+          if (isEditMode && loadedThresholdData?.tolerance_thresholds) {
+            const existing = loadedThresholdData.tolerance_thresholds.find(
+              t => t.id_parameter === parameterId
+            );
+            if (existing?.id) {
+              thresholdItem.id = existing.id;
+            }
+          }
+          
+          thresholdPayload.tolerance_thresholds.push(thresholdItem);
         }
       };
 
@@ -1736,11 +1835,23 @@ export default function MultiStepFormModal({
             const obdFault = obdSearchResults?.find(item => item.code === obdCode);
             
             if (obdFault) {
-              thresholdPayload.obd_fault_machinery.push({
+              const obdItem = {
                 id_obd_fault: obdFault.id,
                 alert_enabled: alert || false,
                 id_maintenance: requestType ? Number(requestType) : null
-              });
+              };
+              
+              // En modo edición, agregar el id si existe
+              if (isEditMode && loadedThresholdData?.obd_fault_machinery) {
+                const existing = loadedThresholdData.obd_fault_machinery.find(
+                  o => o.id_obd_fault === obdFault.id
+                );
+                if (existing?.id) {
+                  obdItem.id = existing.id;
+                }
+              }
+              
+              thresholdPayload.obd_fault_machinery.push(obdItem);
             }
           }
         });
@@ -1763,12 +1874,24 @@ export default function MultiStepFormModal({
 
           // Solo agregar si al menos uno de los dos checkboxes está activado
           if (alert || autoRequest) {
-            thresholdPayload.event_type_machinery.push({
+            const eventItem = {
               id_event_type: Number(eventId),
               threshold: threshold !== undefined && threshold !== "" ? Number(threshold) : null,
               alert_enabled: alert || false,
               id_maintenance: requestType ? Number(requestType) : null
-            });
+            };
+            
+            // En modo edición, agregar el id si existe
+            if (isEditMode && loadedThresholdData?.event_type_machinery) {
+              const existing = loadedThresholdData.event_type_machinery.find(
+                e => e.id_event_type === Number(eventId)
+              );
+              if (existing?.id) {
+                eventItem.id = existing.id;
+              }
+            }
+            
+            thresholdPayload.event_type_machinery.push(eventItem);
           }
         });
       }
@@ -1780,14 +1903,36 @@ export default function MultiStepFormModal({
         thresholdPayload.event_type_machinery.length > 0;
 
       if (hasData) {
-        await registerThresholdSetting(thresholdPayload);
+        // Usar updateThresholdSetting en modo edición, registerThresholdSetting en modo creación
+        if (isEditMode) {
+          await updateThresholdSetting(machineryId, thresholdPayload);
+        } else {
+          await registerThresholdSetting(thresholdPayload);
+        }
       }
 
       onSuccess();
       setCompletedSteps((prev) => [...prev, 6]);
       
-      // Después de guardar el paso 7, confirmar el registro
-      await confirmRegistration();
+      // Solo confirmar el registro si NO está en modo edición
+      if (!isEditMode) {
+        await confirmRegistration();
+      } else {
+        // En modo edición, mostrar mensaje de éxito y cerrar
+        setModalMessage("Configuración de umbrales actualizada exitosamente.");
+        setSuccessOpen(true);
+        // Cerrar el modal después de mostrar el mensaje
+        setTimeout(() => {
+          methods.reset(defaultValues);
+          setStep(0);
+          setCompletedSteps([]);
+          setMachineryId(null);
+          setIdUsageSheet(null);
+          setSpecificTechnicalSheetId(null);
+          setIdTrackerSheet(null);
+          setLoadedThresholdData(null);
+        }, 1000);
+      }
     } catch (error) {
       console.error("Error submitting step 7:", error);
       
@@ -2142,6 +2287,8 @@ export default function MultiStepFormModal({
                   eventTypesList={eventTypesList}
                   obdSearchResults={obdSearchResults}
                   setObdSearchResults={setObdSearchResults}
+                  isEditMode={isEditMode}
+                  loadedThresholdData={loadedThresholdData}
                 />)}
             </div>
 
@@ -2160,16 +2307,14 @@ export default function MultiStepFormModal({
 
               {/* Botón Siguiente / Guardar */}
               {isLastStep ? (
-                (!isEditMode || operationalStatus === 3) ? (
-                  <button
-                    type="submit"
-                    aria-label="Save Button"
-                    disabled={isSubmittingStep || isConfirmingRegistration}
-                    className="btn-theme btn-primary w-auto"
-                  >
-                    {isSubmittingStep || isConfirmingRegistration ? "Guardando..." : "Guardar"}
-                  </button>
-                ) : null               
+                <button
+                  type="submit"
+                  aria-label="Save Button"
+                  disabled={isSubmittingStep || isConfirmingRegistration}
+                  className="btn-theme btn-primary w-auto"
+                >
+                  {isSubmittingStep || isConfirmingRegistration ? "Guardando..." : "Guardar"}
+                </button>
               ) : (
                 <button
                   type="button"

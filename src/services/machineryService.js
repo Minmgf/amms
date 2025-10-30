@@ -349,7 +349,7 @@ export const registerThresholdSetting = async (payload) => {
 };
 // listar configuración de umbrales por maquinaria
 export const getThresholdSettingsByMachinery = async (machineryId) => {
-    const { data } = await apiMain.get(`/tolerance-thresholds/detail/?machinery_id=${machineryId}/`);
+    const { data } = await apiMain.get(`/tolerance-thresholds/detail/?machinery_id=${machineryId}`);
     return data;
 };
 // traer configuración de umbrales
@@ -359,7 +359,7 @@ export const getThresholdSettings = async () => {
 };
 // actualizar configuración de umbrales
 export const updateThresholdSetting = async (machineryId, payload) => {
-    const { data } = await apiMain.put(`/tolerance-thresholds/update/?machinery_id=${machineryId}/`, payload);
+    const { data } = await apiMain.patch(`/tolerance-thresholds/update/?machinery_id=${machineryId}`, payload);
     return data;
 };
 // listar fallas por codigo
