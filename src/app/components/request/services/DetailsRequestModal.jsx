@@ -33,89 +33,6 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
     city: null
   });
 
-  // Estados parametrizables (sincronizados con el backend)
-  // IMPORTANTE: Los IDs son fijos y vienen del backend, los nombres pueden cambiar
-  // Estados de solicitud - Endpoint: /statues/list/[category]
-  const [requestStatuses] = useState([
-    { id_statues: 19, name: "Presolicitud", description: "Solicitud en estado inicial" },
-    { id_statues: 20, name: "Pendiente", description: "Solicitud pendiente de aprobación" },
-    { id_statues: 21, name: "Confirmada", description: "Solicitud confirmada" },
-    { id_statues: 4, name: "En ejecución", description: "Solicitud en proceso" },
-    { id_statues: 22, name: "Finalizada", description: "Solicitud completada" },
-    { id_statues: 23, name: "Cancelada", description: "Solicitud cancelada" },
-  ]);
-
-  // Estados de pago - Endpoint: /statues/list/6/
-  const [paymentStatuses] = useState([
-    { id_statues: 16, name: "Pendiente", description: "Pago en estado pendiente" },
-    { id_statues: 17, name: "Parcial", description: "Pago en estado parcial" },
-    { id_statues: 18, name: "Pagado", description: "Pago en estado pagado" },
-  ]);
-
-  // Métodos de pago - Endpoint: /payment_methods/
-  // NOTA: Los métodos de pago usan 'code' en lugar de 'id'
-  const [paymentMethods] = useState([
-    { code: "1", name: "Medio de pago no definido" },
-    { code: "10", name: "Efectivo" },
-    { code: "42", name: "Consignación" },
-    { code: "20", name: "Cheque" },
-    { code: "47", name: "Transferencia" },
-    { code: "71", name: "Bonos" },
-    { code: "72", name: "Vales" },
-    { code: "49", name: "Tarjeta Débito" },
-    { code: "48", name: "Tarjeta Crédito" },
-    { code: "ZZZ", name: "Otro*" },
-  ]);
-
-  // Mock data - Datos de prueba de la solicitud
-  // TODO: Estos datos vendrán del prop 'request' cuando se integre con el endpoint real
-  const mockRequestData = {
-    request_code: "SOL-2025-0023",
-    status_id: 20, // Pendiente
-    detail: "prueba solicitud completar solicitud",
-    registration_date: null,
-    scheduled_start_date: "2025-10-27",
-    scheduled_end_date: "2025-10-28",
-    completion_date: null,
-    
-    // Client information
-    client_name: "Juan Camilo Barranco Tejada",
-    client_document_type: "Cédula de ciudadanía",
-    client_document_number: "1003828562",
-    client_email: "camilomchis1@gmail.com",
-    client_phone: "3222695895",
-    
-    // Machinery
-    machinery: [
-      {
-        name: "Maquinaria BF770-5914111",
-        serial_number: "BF770-5914111",
-        image: null,
-        operator: "Juan Andres Veru Sarmiento"
-      }
-    ],
-    
-    // Location
-    location_country: "CO",
-    location_department: "HUI",
-    location_municipality: 143894,
-    location_place_name: "Finca camilito",
-    location_latitude: 40.0,
-    location_longitude: 40.0,
-    location_area: 200.0,
-    location_area_unit: "m²",
-    location_altitude: 1234.0,
-    location_altitude_unit: "m",
-    
-    // Billing
-    billing_total_amount: 50000.00,
-    billing_currency: "COP",
-    billing_amount_paid: 50000.00,
-    billing_currency_paid: "COP",
-    payment_status_id: 18, // Pagado
-    payment_method_id: "10", // Efectivo
-  };
-
   // Cargar detalles de la solicitud cuando se proporciona requestId
   useEffect(() => {
     const loadRequestDetails = async () => {
@@ -192,14 +109,6 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
     }
   }, [error]);
 
-  // Función para obtener información por ID
-  const getStatusById = (id, statusArray) => {
-    return statusArray.find((s) => s.id_statues === id);
-  };
-
-  const getPaymentMethodByCode = (code) => {
-    return paymentMethods.find((m) => m.code === code);
-  };
 
   // Función para obtener colores por ID (basada en ID, no en nombre)
   // Los colores están mapeados según el diseño del sistema y sincronizados con el backend
@@ -357,13 +266,10 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
     billing_amount_paid: requestData.amount_paid,
     billing_currency_paid: requestData.currency_unit_amount_paid_symbol,
     payment_status_id: requestData.payment_status_id,
-    payment_method_id: requestData.payment_method_code,
-  } : mockRequestData;
-
-  // Obtener información de estados
-  const requestStatus = getStatusById(mappedData.status_id, requestStatuses);
-  const paymentStatus = getStatusById(mappedData.payment_status_id, paymentStatuses);
-  const paymentMethod = getPaymentMethodByCode(mappedData.payment_method_id);
+    payment_status_name: requestData.payment_status_name,
+    payment_method_code: requestData.payment_method_code,
+    payment_method_name: requestData.payment_method_name,
+  } : null;
 
   return (
     <div
@@ -410,7 +316,7 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
         )}
 
         {/* Content - Scrollable */}
-        {!loading && (
+        {!loading && mappedData && (
           <div className="overflow-y-auto max-h-[calc(90vh-90px)]">
             <div className="p-4 sm:p-6 space-y-6">
             {/* Cards Container */}
@@ -434,7 +340,7 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
                       getRequestStatusColorById(mappedData.status_id)
                     }`}>
-                      {requestStatus?.name || "N/A"}
+                      {mappedData.status_name || "N/A"}
                     </span>
                   </div>
 
@@ -660,14 +566,14 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
                     getPaymentStatusColorById(mappedData.payment_status_id)
                   }`}>
-                    {paymentStatus?.name || "N/A"}
+                    {mappedData.payment_status_name || "N/A"}
                   </span>
                 </div>
 
                 {/* Payment method */}
                 <div className="flex justify-between items-start">
                   <span className="text-theme-sm text-secondary">Método de pago:</span>
-                  <span className="font-theme-medium text-primary text-right">{paymentMethod?.name || "N/A"}</span>
+                  <span className="font-theme-medium text-primary text-right">{mappedData.payment_method_name || "N/A"}</span>
                 </div>
               </div>
             </div>

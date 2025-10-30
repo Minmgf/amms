@@ -50,11 +50,11 @@ const RequestsManagementPage = () => {
   
   // Función para cargar solicitudes desde el API
   const loadRequests = async () => {
-    console.log('🔄 loadRequests: Iniciando carga de solicitudes...');
     try {
       setLoading(true);
       const response = await getGestionServicesList();
-      console.log('📥 Solicitudes recibidas del API:', response);
+
+      
 
       if (response.success && response.results) {
         // Mapear datos del API a la estructura del componente
@@ -75,10 +75,7 @@ const RequestsManagementPage = () => {
           hasInvoice: item.payment_status_id !== null // Asumimos que tiene factura si tiene estado de pago
         }));
 
-        console.log('📊 Datos mapeados (mappedData.length):', mappedData.length);
-        console.log('📋 IDs de las solicitudes:', mappedData.map(r => ({ id: r.id, requestCode: r.requestCode })));
         setRequestsData(mappedData);
-        console.log('✅ setRequestsData ejecutado con', mappedData.length, 'solicitudes');
 
         const getTokenBilling = async () => {
           try {
@@ -100,7 +97,6 @@ const RequestsManagementPage = () => {
 
   // Cargar solicitudes al montar el componente
   useEffect(() => {
-    console.log('🎬 Componente montado, llamando loadRequests...');
     loadRequests();
   }, []);
 
@@ -269,7 +265,8 @@ const RequestsManagementPage = () => {
     setDetailsModalOpen(true);
   };
 
-  const handleEditRequest = (requestId) => {
+  const handleEditRequest = (request) => {
+    setSelectedRequest(request);
     setMode('edit');
     setIsRequestModalOpen(true);
   };
@@ -302,7 +299,6 @@ const RequestsManagementPage = () => {
   };
 
   const handleConfirmRequest = (request) => {
-    console.log('🎯 handleConfirmRequest - request:', request);
     setSelectedRequest(request);
     setMode('confirm');
     setConfirmFormModalOpen(true);
@@ -345,9 +341,7 @@ const RequestsManagementPage = () => {
   };
 
   const handleRequestModalSuccess = async () => {
-    console.log('✅ Pre-solicitud/Solicitud creada, recargando lista...');
     await loadRequests();
-    console.log('✅ Lista recargada exitosamente');
   };
 
   const handleGenerateReport = () => {
@@ -356,6 +350,12 @@ const RequestsManagementPage = () => {
 
   // Componente de acciones dinámicas con hover
   const ActionsCell = ({ request }) => {
+    // console.log('🔍 ActionsCell - request:', { 
+    //   id: request.id, 
+    //   requestCode: request.requestCode, 
+    //   statusId: request.requestStatusId 
+    // });
+    
     return (
       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
         {/* Detalles - siempre disponible */}
@@ -383,10 +383,12 @@ const RequestsManagementPage = () => {
         )}
 
         {/* Editar - solo para pendientes */}
-        {request.requestStatusId === 20 && (
+        {request.requestStatusId === 20 && request.id && (request.requestCode || request.id) && (
           <PermissionGuard permission={155}>
             <button
-              onClick={() => handleEditRequest(request.id)}
+              onClick={() => {
+                handleEditRequest(request);
+              }}
               className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 hover:border-green-500 hover:text-green-600 text-green-600"
               title="Editar solicitud"
             >
@@ -800,12 +802,24 @@ const RequestsManagementPage = () => {
         </div>
       </FilterModal>
 
-      {/* Modal de Formulario de Solicitud (Pre-registro, Registro y Confirmación) */}
+      {/* Modal de Formulario de Solicitud (Pre-registro, Registro y Edición) */}
       <MultiStepFormModal
         isOpen={isRequestModalOpen}
-        onClose={() => setIsRequestModalOpen(false)}
+        onClose={() => {
+          console.log('🚪 Cerrando modal de solicitud');
+          setIsRequestModalOpen(false);
+          setSelectedRequest(null);
+          setMode('');
+        }}
         mode={mode}
-        onSuccess={handleRequestModalSuccess}
+        requestToEdit={mode === 'edit' ? selectedRequest : null}
+        onSuccess={() => {
+          console.log('✅ Operación exitosa en modal');
+          setIsRequestModalOpen(false);
+          setSelectedRequest(null);
+          setMode('');
+          handleRequestModalSuccess();
+        }}
       />
 
       {/* Modal de Confirmación de Pre-Solicitud */}
