@@ -5,6 +5,7 @@ import { FaCalendar, FaCheckCircle } from "react-icons/fa";
 import { SuccessModal, ErrorModal, ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
 import FilterModal from "@/app/components/shared/FilterModal";
 import RegisterDevice from "@/app/components/monitoring/RegisterEditDevice";
+import { getTelemetryDevices } from "@/services/devicesService";
 import { useTheme } from "@/contexts/ThemeContext";
 
 import TableList from "@/app/components/shared/TableList";
@@ -14,86 +15,7 @@ import React from "react";
 const page = () => {
   useTheme();
   const [globalFilter, setGlobalFilter] = useState("");
-  const [data, setData] = useState([
-    {
-      id: 1,
-      deviceName: "AgroLink-001",
-      imei: "357984562034378",
-      operationalStatus: 1,
-      statusName: "Active",
-      registerDate: "2025-10-18",
-      monitoringParameters: {
-        ignitionStatus: true,
-        movementStatus: true,
-        currentSpeed: false,
-        gpsLocation: true,
-        gsmSignal: true,
-        revolutions: true,
-        engineTemperature: true,
-        engineLoad: true,
-        oilLevel: true,
-        fuelLevel: true,
-        fuelUsed: false,
-        instantFuelConsumption: true,
-        obdErrors: true,
-        totalOdometer: true,
-        tripOdometer: false,
-        eventsGForce: true,
-      }
-    },
-    {
-      id: 2,
-      deviceName: "JiLink-Tractor-05",
-      imei: "864578902346677",
-      operationalStatus: 2,
-      statusName: "Inactive",
-      registerDate: "2025-09-12",
-      monitoringParameters: {
-        ignitionStatus: true,
-        movementStatus: true,
-        currentSpeed: true,
-        gpsLocation: true,
-        gsmSignal: false,
-        revolutions: false,
-        engineTemperature: false,
-        engineLoad: false,
-        oilLevel: false,
-        fuelLevel: true,
-        fuelUsed: true,
-        instantFuelConsumption: false,
-        obdErrors: false,
-        totalOdometer: true,
-        tripOdometer: true,
-        eventsGForce: true,
-      }
-    },
-    {
-      id: 3,
-      deviceName: "FarmTech-012",
-      imei: "123456789012345",
-      operationalStatus: 1,
-      statusName: "Active",
-      registerDate: "2025-08-05",
-      monitoringParameters: {
-        ignitionStatus: false,
-        movementStatus: false,
-        currentSpeed: false,
-        gpsLocation: false,
-        gsmSignal: false,
-        revolutions: false,
-        engineTemperature: false,
-        engineLoad: false,
-        oilLevel: false,
-        fuelLevel: false,
-        fuelUsed: false,
-        instantFuelConsumption: false,
-        obdErrors: false,
-        totalOdometer: false,
-        tripOdometer: false,
-        eventsGForce: false,
-      }
-    },
-  ]);
+  const [data, setData] = useState([]);
 
   // Estados para el DeviceFormModal (Agregar/Editar Dispositivo)
   const [isDeviceFormModalOpen, setIsDeviceFormModalOpen] = useState(false);
@@ -118,6 +40,38 @@ const page = () => {
   const [confirmMessage, setConfirmMessage] = useState("");
   const [isConfirmDeactivateOpen, setIsConfirmDeactivateOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
+
+  // Cargar dispositivos desde el API
+  useEffect(() => {
+    const loadDevices = async () => {
+      try {
+        setLoading(true);
+        const response = await getTelemetryDevices();
+
+        // Mapear la respuesta del API a la estructura esperada
+        const mappedDevices = response.map(device => ({
+          id: device.id_device,
+          deviceName: device.name,
+          imei: device.IMEI.toString(),
+          operationalStatus: device.status_id,
+          statusName: device.status_name,
+          registerDate: device.registration_date.split('T')[0],
+          selectedParameters: [] // Por ahora vacio, se llenara al editar
+        }));
+
+        setData(mappedDevices);
+      } catch (error) {
+        console.error("Error al cargar dispositivos:", error);
+        setModalTitle("Error");
+        setModalMessage("No se pudieron cargar los dispositivos. Por favor, intente nuevamente.");
+        setErrorOpen(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDevices();
+  }, []);
 
   // Aplicar filtros cuando cambien los datos o los filtros
   useEffect(() => {
@@ -188,30 +142,45 @@ const page = () => {
     setDeviceFormMode("add");
   };
 
-  const handleDeviceRegistrationSuccess = (deviceData) => {
+  const handleDeviceRegistrationSuccess = async (deviceData) => {
     if (deviceFormMode === "edit") {
-      // Actualizar dispositivo existente
-      setData(prevData =>
-        prevData.map(device =>
-          device.id === selectedDevice.id
-            ? { ...device, ...deviceData, id: device.id }
-            : device
-        )
-      );
+      // Recargar la lista completa desde el API
+      try {
+        const response = await getTelemetryDevices();
+        const mappedDevices = response.map(device => ({
+          id: device.id_device,
+          deviceName: device.name,
+          imei: device.IMEI.toString(),
+          operationalStatus: device.status_id,
+          statusName: device.status_name,
+          registerDate: device.registration_date.split('T')[0],
+          selectedParameters: []
+        }));
+        setData(mappedDevices);
+      } catch (error) {
+        console.error("Error al recargar dispositivos:", error);
+      }
+
       setModalTitle("Actualización Exitosa");
       setModalMessage("El dispositivo ha sido actualizado exitosamente.");
     } else {
-      // Agregar nuevo dispositivo
-      const newDevice = {
-        id: data.length + 1,
-        deviceName: deviceData.deviceName,
-        imei: deviceData.imei,
-        operationalStatus: 1,
-        statusName: "Active",
-        registerDate: new Date().toISOString().split('T')[0],
-        monitoringParameters: deviceData.monitoringParameters
-      };
-      setData([...data, newDevice]);
+      // Recargar la lista completa desde el API después de crear
+      try {
+        const response = await getTelemetryDevices();
+        const mappedDevices = response.map(device => ({
+          id: device.id_device,
+          deviceName: device.name,
+          imei: device.IMEI.toString(),
+          operationalStatus: device.status_id,
+          statusName: device.status_name,
+          registerDate: device.registration_date.split('T')[0],
+          selectedParameters: []
+        }));
+        setData(mappedDevices);
+      } catch (error) {
+        console.error("Error al recargar dispositivos:", error);
+      }
+
       setModalTitle("Registro Exitoso");
       setModalMessage("El dispositivo ha sido registrado exitosamente.");
     }
