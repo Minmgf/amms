@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useFormContext } from "react-hook-form";
-import { FaChevronDown, FaChevronUp, FaInfoCircle } from "react-icons/fa";
+import { FaChevronDown, FaChevronUp, FaInfoCircle, FaTrash } from "react-icons/fa";
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
+import { getOBDFaults } from "@/services/machineryService";
 
 // SectionHeader reutilizado del paso 3
 function SectionHeader({ title, sectionKey, isExpanded, toggleSection }) {
@@ -36,7 +37,13 @@ function SectionHeader({ title, sectionKey, isExpanded, toggleSection }) {
     );
 }
 
-export default function Step7ThresholdSettings({ machineryId, maintenanceTypeList = [] }) {
+export default function Step7ThresholdSettings({ 
+    machineryId, 
+    maintenanceTypeList = [], 
+    eventTypesList,
+    obdSearchResults,
+    setObdSearchResults
+}) {
     const { register, setValue } = useFormContext();
 
     const [expandedSections, setExpandedSections] = useState({
@@ -52,6 +59,14 @@ export default function Step7ThresholdSettings({ machineryId, maintenanceTypeLis
         Braking: false,
         Curve: false,
     });
+
+    // Estados para búsqueda de códigos OBD
+    const [obdSearchCode, setObdSearchCode] = useState("");
+    const [isSearchingObd, setIsSearchingObd] = useState(false);
+    const [obdSearchError, setObdSearchError] = useState("");
+
+    // Estado para eventos expandidos dinámicos basado en eventTypesList
+    const [expandedEventsByType, setExpandedEventsByType] = useState({});
 
     // Estado local para los rangos
     const [currentSpeedRange, setCurrentSpeedRange] = useState([0, 350]);
@@ -94,16 +109,59 @@ export default function Step7ThresholdSettings({ machineryId, maintenanceTypeLis
         }));
     };
 
-    const obdCodes = [
-        { code: "P0001", desc: "Circuito de Control del Regulador de Volumen de Combustible" },
-        { code: "P0002", desc: "Rango del Circuito de Control del Regulador de Volumen de Combustible" },
-        { code: "P0003", desc: "Circuito de Control del Regulador de Volumen de Combustible Bajo" },
-    ];
-    const eventTypes = [
-        { key: "Acceleration", label: "Aceleración" },
-        { key: "Braking", label: "Frenado" },
-        { key: "Curve", label: "Curva" },
-    ];
+    // Función para toggle de eventos dinámicos
+    const toggleEventByType = (eventId) => {
+        setExpandedEventsByType((prev) => ({
+            ...prev,
+            [eventId]: !prev[eventId],
+        }));
+    };
+
+    // Función para buscar códigos OBD
+    const handleSearchObd = async () => {
+        if (!obdSearchCode.trim()) {
+            setObdSearchError("Por favor ingrese un código OBD");
+            return;
+        }
+
+        setIsSearchingObd(true);
+        setObdSearchError("");
+
+        try {
+            const response = await getOBDFaults(obdSearchCode.trim());
+            
+            if (response.success && response.data) {
+                // Verificar si el código ya existe en los resultados
+                const codeExists = obdSearchResults.some(
+                    item => item.code === response.data.code
+                );
+
+                if (!codeExists) {
+                    setObdSearchResults(prev => [...prev, {
+                        id: response.data.id_obd_fault,
+                        code: response.data.code,
+                        desc: response.data.description
+                    }]);
+                    setObdSearchCode("");
+                } else {
+                    setObdSearchError("Este código ya está en la lista");
+                }
+            }
+        } catch (error) {
+            console.error("Error searching OBD code:", error);
+            setObdSearchError(
+                error.response?.data?.message || 
+                "No se encontró el código OBD o ocurrió un error"
+            );
+        } finally {
+            setIsSearchingObd(false);
+        }
+    };
+
+    // Función para eliminar un código de la lista
+    const handleRemoveObdCode = (codeToRemove) => {
+        setObdSearchResults(prev => prev.filter(item => item.code !== codeToRemove));
+    };
 
     return (
         <div className="space-y-4" id="step-7-threshold-settings">
@@ -138,7 +196,7 @@ export default function Step7ThresholdSettings({ machineryId, maintenanceTypeLis
                                     </label>
                                     <select {...register("requestType.currentSpeed")} className="parametrization-input w-32" aria-label="Tipo de solicitud para velocidad actual">
                                         <option value="">Seleccione...</option>
-                                        {maintenanceTypeList.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
+                                        {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
                                     </select>
                                 </div>
                             </div>
@@ -201,16 +259,16 @@ export default function Step7ThresholdSettings({ machineryId, maintenanceTypeLis
                                 <label className="block text-theme-sm font-theme-medium">Revoluciones (RPM)</label>
                                 <div className="flex items-center gap-4">
                                     <label className="flex items-center gap-2 whitespace-nowrap">
-                                        <input type="checkbox" {...register("alerts.currentSpeed")} aria-label="Emitir alerta para revoluciones" />
+                                        <input type="checkbox" {...register("alerts.rpm")} aria-label="Emitir alerta para revoluciones" />
                                         <span className="text-theme-sm">Emitir alerta</span>
                                     </label>
                                     <label className="flex items-center gap-2 whitespace-nowrap">
-                                        <input type="checkbox" {...register("autoRequest.currentSpeed")} aria-label="Solicitud automática para revoluciones" />
+                                        <input type="checkbox" {...register("autoRequest.rpm")} aria-label="Solicitud automática para revoluciones" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
                                     <select {...register("requestType.rpm")} className="parametrization-input w-32" aria-label="Tipo de solicitud para revoluciones">
                                         <option value="">Seleccione...</option>
-                                        {maintenanceTypeList.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
+                                        {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
                                     </select>
                                 </div>
                             </div>
@@ -273,16 +331,16 @@ export default function Step7ThresholdSettings({ machineryId, maintenanceTypeLis
                                 <label className="block text-theme-sm font-theme-medium">Temperatura del motor</label>
                                 <div className="flex items-center gap-4">
                                     <label className="flex items-center gap-2 whitespace-nowrap">
-                                        <input type="checkbox" {...register("alerts.currentSpeed")} aria-label="Emitir alerta para temperatura del motor" />
+                                        <input type="checkbox" {...register("alerts.engineTemp")} aria-label="Emitir alerta para temperatura del motor" />
                                         <span className="text-theme-sm">Emitir alerta</span>
                                     </label>
                                     <label className="flex items-center gap-2 whitespace-nowrap">
-                                        <input type="checkbox" {...register("autoRequest.currentSpeed")} aria-label="Solicitud automática para temperatura del motor" />
+                                        <input type="checkbox" {...register("autoRequest.engineTemp")} aria-label="Solicitud automática para temperatura del motor" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
                                     <select {...register("requestType.engineTemp")} className="parametrization-input w-32" aria-label="Tipo de solicitud para temperatura del motor">
                                         <option value="">Seleccione...</option>
-                                        {maintenanceTypeList.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
+                                        {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
                                     </select>
                                 </div>
                             </div>
@@ -345,16 +403,16 @@ export default function Step7ThresholdSettings({ machineryId, maintenanceTypeLis
                                 <label className="block text-theme-sm font-theme-medium">Carga del motor</label>
                                 <div className="flex items-center gap-4">
                                     <label className="flex items-center gap-2 whitespace-nowrap">
-                                        <input type="checkbox" {...register("alerts.currentSpeed")} aria-label="Emitir alerta para carga del motor" />
+                                        <input type="checkbox" {...register("alerts.engineLoad")} aria-label="Emitir alerta para carga del motor" />
                                         <span className="text-theme-sm">Emitir alerta</span>
                                     </label>
                                     <label className="flex items-center gap-2 whitespace-nowrap">
-                                        <input type="checkbox" {...register("autoRequest.currentSpeed")} aria-label="Solicitud automática para carga del motor" />
+                                        <input type="checkbox" {...register("autoRequest.engineLoad")} aria-label="Solicitud automática para carga del motor" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
                                     <select {...register("requestType.engineLoad")} className="parametrization-input w-32" aria-label="Tipo de solicitud para carga del motor">
                                         <option value="">Seleccione...</option>
-                                        {maintenanceTypeList.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
+                                        {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
                                     </select>
                                 </div>
                             </div>
@@ -431,16 +489,16 @@ export default function Step7ThresholdSettings({ machineryId, maintenanceTypeLis
                                 <label className="block text-theme-sm font-theme-medium">Nivel de aceite</label>
                                 <div className="flex items-center gap-4">
                                     <label className="flex items-center gap-2 whitespace-nowrap">
-                                        <input type="checkbox" {...register("alerts.currentSpeed")} aria-label="Emitir alerta para nivel de aceite" />
+                                        <input type="checkbox" {...register("alerts.oilLevel")} aria-label="Emitir alerta para nivel de aceite" />
                                         <span className="text-theme-sm">Emitir alerta</span>
                                     </label>
                                     <label className="flex items-center gap-2 whitespace-nowrap">
-                                        <input type="checkbox" {...register("autoRequest.currentSpeed")} aria-label="Solicitud automática para nivel de aceite" />
+                                        <input type="checkbox" {...register("autoRequest.oilLevel")} aria-label="Solicitud automática para nivel de aceite" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
                                     <select {...register("requestType.oilLevel")} className="parametrization-input w-32" aria-label="Tipo de solicitud para nivel de aceite">
                                         <option value="">Seleccione...</option>
-                                        {maintenanceTypeList.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
+                                        {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
                                     </select>
                                 </div>
                             </div>
@@ -503,16 +561,16 @@ export default function Step7ThresholdSettings({ machineryId, maintenanceTypeLis
                                 <label className="block text-theme-sm font-theme-medium">Nivel de combustible</label>
                                 <div className="flex items-center gap-4">
                                     <label className="flex items-center gap-2 whitespace-nowrap">
-                                        <input type="checkbox" {...register("alerts.currentSpeed")} aria-label="Emitir alerta para nivel de combustible" />
+                                        <input type="checkbox" {...register("alerts.fuelLevel")} aria-label="Emitir alerta para nivel de combustible" />
                                         <span className="text-theme-sm">Emitir alerta</span>
                                     </label>
                                     <label className="flex items-center gap-2 whitespace-nowrap">
-                                        <input type="checkbox" {...register("autoRequest.currentSpeed")} aria-label="Solicitud automática para nivel de combustible" />
+                                        <input type="checkbox" {...register("autoRequest.fuelLevel")} aria-label="Solicitud automática para nivel de combustible" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
                                     <select {...register("requestType.fuelLevel")} className="parametrization-input w-32" aria-label="Tipo de solicitud para nivel de combustible">
                                         <option value="">Seleccione...</option>
-                                        {maintenanceTypeList.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
+                                        {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
                                     </select>
                                 </div>
                             </div>
@@ -575,16 +633,16 @@ export default function Step7ThresholdSettings({ machineryId, maintenanceTypeLis
                                 <label className="block text-theme-sm font-theme-medium">Combustible usado (GPS)</label>
                                 <div className="flex items-center gap-4">
                                     <label className="flex items-center gap-2 whitespace-nowrap">
-                                        <input type="checkbox" {...register("alerts.currentSpeed")} aria-label="Emitir alerta para combustible usado" />
+                                        <input type="checkbox" {...register("alerts.fuelUsedGps")} aria-label="Emitir alerta para combustible usado" />
                                         <span className="text-theme-sm">Emitir alerta</span>
                                     </label>
                                     <label className="flex items-center gap-2 whitespace-nowrap">
-                                        <input type="checkbox" {...register("autoRequest.currentSpeed")} aria-label="Solicitud automática para combustible usado" />
+                                        <input type="checkbox" {...register("autoRequest.fuelUsedGps")} aria-label="Solicitud automática para combustible usado" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
                                     <select {...register("requestType.fuelUsedGps")} className="parametrization-input w-32" aria-label="Tipo de solicitud para combustible usado">
                                         <option value="">Seleccione...</option>
-                                        {maintenanceTypeList.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
+                                        {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
                                     </select>
                                 </div>
                             </div>
@@ -647,16 +705,16 @@ export default function Step7ThresholdSettings({ machineryId, maintenanceTypeLis
                                 <label className="block text-theme-sm font-theme-medium">Consumo instantáneo de combustible</label>
                                 <div className="flex items-center gap-4">
                                     <label className="flex items-center gap-2 whitespace-nowrap">
-                                        <input type="checkbox" {...register("alerts.currentSpeed")} aria-label="Emitir alerta para consumo instantáneo" />
+                                        <input type="checkbox" {...register("alerts.instantFuelConsumption")} aria-label="Emitir alerta para consumo instantáneo" />
                                         <span className="text-theme-sm">Emitir alerta</span>
                                     </label>
                                     <label className="flex items-center gap-2 whitespace-nowrap">
-                                        <input type="checkbox" {...register("autoRequest.currentSpeed")} aria-label="Solicitud automática para consumo instantáneo" />
+                                        <input type="checkbox" {...register("autoRequest.instantFuelConsumption")} aria-label="Solicitud automática para consumo instantáneo" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
                                     <select {...register("requestType.instantFuelConsumption")} className="parametrization-input w-32" aria-label="Tipo de solicitud para consumo instantáneo">
                                         <option value="">Seleccione...</option>
-                                        {maintenanceTypeList.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
+                                        {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
                                     </select>
                                 </div>
                             </div>
@@ -733,16 +791,16 @@ export default function Step7ThresholdSettings({ machineryId, maintenanceTypeLis
                                 <label className="block text-theme-sm font-theme-medium">Odómetro total</label>
                                 <div className="flex items-center gap-4">
                                     <label className="flex items-center gap-2 whitespace-nowrap">
-                                        <input type="checkbox" {...register("alerts.currentSpeed")} aria-label="Emitir alerta para odómetro total" />
+                                        <input type="checkbox" {...register("alerts.totalOdometer")} aria-label="Emitir alerta para odómetro total" />
                                         <span className="text-theme-sm">Emitir alerta</span>
                                     </label>
                                     <label className="flex items-center gap-2 whitespace-nowrap">
-                                        <input type="checkbox" {...register("autoRequest.currentSpeed")} aria-label="Solicitud automática para odómetro total" />
+                                        <input type="checkbox" {...register("autoRequest.totalOdometer")} aria-label="Solicitud automática para odómetro total" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
                                     <select {...register("requestType.totalOdometer")} className="parametrization-input w-32" aria-label="Tipo de solicitud para odómetro total">
                                         <option value="">Seleccione...</option>
-                                        {maintenanceTypeList.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
+                                        {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
                                     </select>
                                 </div>
                             </div>
@@ -808,16 +866,16 @@ export default function Step7ThresholdSettings({ machineryId, maintenanceTypeLis
                                 <label className="block text-theme-sm font-theme-medium">Odómetro de viaje</label>
                                 <div className="flex items-center gap-4">
                                     <label className="flex items-center gap-2 whitespace-nowrap">
-                                        <input type="checkbox" {...register("alerts.currentSpeed")} aria-label="Emitir alerta para odómetro de viaje" />
+                                        <input type="checkbox" {...register("alerts.tripOdometer")} aria-label="Emitir alerta para odómetro de viaje" />
                                         <span className="text-theme-sm">Emitir alerta</span>
                                     </label>
                                     <label className="flex items-center gap-2 whitespace-nowrap">
-                                        <input type="checkbox" {...register("autoRequest.currentSpeed")} aria-label="Solicitud automática para odómetro de viaje" />
+                                        <input type="checkbox" {...register("autoRequest.tripOdometer")} aria-label="Solicitud automática para odómetro de viaje" />
                                         <span className="text-theme-sm">Solicitud automática</span>
                                     </label>
                                     <select {...register("requestType.tripOdometer")} className="parametrization-input w-32" aria-label="Tipo de solicitud para odómetro de viaje">
                                         <option value="">Seleccione...</option>
-                                        {maintenanceTypeList.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
+                                        {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
                                     </select>
                                 </div>
                             </div>
@@ -894,89 +952,150 @@ export default function Step7ThresholdSettings({ machineryId, maintenanceTypeLis
                         {/* OBD Faults */}
                         <div className="card-theme">
                             <label className="block text-theme-sm font-theme-medium mb-4">Fallas OBD</label>
-                            <input type="text" placeholder="Buscar códigos de falla..." className="parametrization-input w-full mb-4" aria-label="Buscar códigos de falla OBD" />
-                            <div className="space-y-3">
-                                {obdCodes.map(({ code, desc }) => (
-                                    <div key={code} className="grid grid-cols-[2fr_auto_auto_1fr] gap-4 items-center">
-                                        <span className="text-theme-sm">{code} - {desc}</span>
-                                        <label className="flex items-center gap-2 whitespace-nowrap">
-                                            <input type="checkbox" {...register(`alerts.obd.${code}`)} aria-label={`Emitir alerta para código ${code}`} />
-                                            <span className="text-theme-sm">Emitir alerta</span>
-                                        </label>
-                                        <label className="flex items-center gap-2 whitespace-nowrap">
-                                            <input type="checkbox" {...register(`autoRequest.obd.${code}`)} aria-label={`Solicitud automática para código ${code}`} />
-                                            <span className="text-theme-sm">Solicitud automática</span>
-                                        </label>
-                                        <select {...register(`requestType.obd.${code}`)} className="parametrization-input" aria-label={`Tipo de solicitud para código ${code}`}>
-                                            <option value="">Seleccione...</option>
-                                            {maintenanceTypeList.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
-                                        </select>
-                                    </div>
-                                ))}
+                            
+                            {/* Buscador de códigos OBD */}
+                            <div className="mb-4">
+                                <div className="flex gap-2">
+                                    <input 
+                                        type="text" 
+                                        value={obdSearchCode}
+                                        onChange={(e) => {
+                                            setObdSearchCode(e.target.value.toUpperCase());
+                                            setObdSearchError("");
+                                        }}
+                                        onKeyPress={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                handleSearchObd();
+                                            }
+                                        }}
+                                        placeholder="Ingrese código OBD (ej: P0087)" 
+                                        className="parametrization-input flex-1" 
+                                        aria-label="Buscar códigos de falla OBD"
+                                        disabled={isSearchingObd}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleSearchObd}
+                                        disabled={isSearchingObd}
+                                        className="btn-theme btn-primary px-4"
+                                        aria-label="Buscar código OBD"
+                                    >
+                                        {isSearchingObd ? "Buscando..." : "Buscar"}
+                                    </button>
+                                </div>
+                                {obdSearchError && (
+                                    <p className="text-theme-xs text-error mt-2">{obdSearchError}</p>
+                                )}
                             </div>
+
+                            {/* Lista de códigos OBD encontrados */}
+                            {obdSearchResults.length > 0 ? (
+                                <div className="space-y-3">
+                                    {obdSearchResults.map(({ code, desc }) => (
+                                        <div key={code} className="grid grid-cols-[2fr_auto_auto_1fr_auto] gap-4 items-center p-3 rounded-theme-md" style={{ backgroundColor: "var(--color-surface)" }}>
+                                            <span className="text-theme-sm font-theme-medium">{code} - {desc}</span>
+                                            <label className="flex items-center gap-2 whitespace-nowrap">
+                                                <input type="checkbox" {...register(`alerts.obd.${code}`)} aria-label={`Emitir alerta para código ${code}`} />
+                                                <span className="text-theme-sm">Emitir alerta</span>
+                                            </label>
+                                            <label className="flex items-center gap-2 whitespace-nowrap">
+                                                <input type="checkbox" {...register(`autoRequest.obd.${code}`)} aria-label={`Solicitud automática para código ${code}`} />
+                                                <span className="text-theme-sm">Solicitud automática</span>
+                                            </label>
+                                            <select {...register(`requestType.obd.${code}`)} className="parametrization-input" aria-label={`Tipo de solicitud para código ${code}`}>
+                                                <option value="">Seleccione...</option>
+                                                {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
+                                            </select>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveObdCode(code)}
+                                                className="text-error hover:opacity-80 transition-opacity"
+                                                aria-label={`Eliminar código ${code}`}
+                                                title="Eliminar código"
+                                            >
+                                                <FaTrash className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 text-secondary">
+                                    <FaInfoCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                    <p className="text-theme-sm">No hay códigos OBD agregados</p>
+                                    <p className="text-theme-xs mt-1">Busque un código para agregarlo a la lista</p>
+                                </div>
+                            )}
                         </div>
                         {/* Event Type (Driving) */}
                         <div className="space-y-4">
                             <label className="block text-theme-sm font-theme-medium">Tipo de Evento (Conducción)</label>
-                            <div className="grid grid-cols-3 gap-4">
-                                {eventTypes.map(({ key, label }) => (
-                                    <div 
-                                        key={key} 
-                                        className="card-theme"
-                                        style={{
-                                            border: "1px solid var(--color-border)",
-                                            borderRadius: "var(--border-radius-md)",
-                                        }}
-                                    >
-                                        <div className="flex items-center gap-2 mb-3">
-                                            <input 
-                                                type="checkbox" 
-                                                checked={expandedEvents[key]}
-                                                onChange={() => toggleEvent(key)}
-                                                aria-label={`Activar evento de ${label}`}
-                                            />
-                                            <span className="font-theme-medium text-theme-sm">{label}</span>
-                                        </div>
-                                        {expandedEvents[key] && (
-                                            <div className="space-y-3 pt-3" style={{ borderTop: "1px solid var(--color-border)" }}>
-                                                <div>
-                                                    <label className="block text-theme-xs font-theme-medium mb-2">Event G - Value</label>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-theme-sm">Umbral:</span>
-                                                        <input 
-                                                            type="number" 
-                                                            placeholder="0" 
-                                                            min="0"
-                                                            max="255"
-                                                            {...register(`thresholds.event.${key}`, {
-                                                                min: 0,
-                                                                max: 255
-                                                            })} 
-                                                            className="parametrization-input w-20"
-                                                            aria-label={`Umbral para ${label}`}
-                                                        />
-                                                        <span className="text-theme-xs text-secondary">G×100 (± 1.50 G)</span>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-3">
-                                                    <label className="flex items-center gap-1">
-                                                        <input type="checkbox" {...register(`alerts.event.${key}`)} aria-label={`Emitir alerta para evento de ${label}`} />
-                                                        <span className="text-theme-xs">Emitir alerta</span>
-                                                    </label>
-                                                    <label className="flex items-center gap-1">
-                                                        <input type="checkbox" {...register(`autoRequest.event.${key}`)} aria-label={`Solicitud automática para evento de ${label}`} />
-                                                        <span className="text-theme-xs">Solicitud automática</span>
-                                                    </label>
-                                                </div>
-                                                <select {...register(`requestType.event.${key}`)} className="parametrization-input w-full" aria-label={`Tipo de solicitud para evento de ${label}`}>
-                                                    <option value="">Seleccione...</option>
-                                                    {maintenanceTypeList.map(rt => <option key={rt.id} value={rt.id}>{rt.name}</option>)}
-                                                </select>
+                            {eventTypesList && eventTypesList.length > 0 ? (
+                                <div className="grid grid-cols-3 gap-4">
+                                    {eventTypesList.map((event) => (
+                                        <div 
+                                            key={event.id_event_type} 
+                                            className="card-theme"
+                                            style={{
+                                                border: "1px solid var(--color-border)",
+                                                borderRadius: "var(--border-radius-md)",
+                                            }}
+                                        >
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={expandedEventsByType[event.id_event_type] || false}
+                                                    onChange={() => toggleEventByType(event.id_event_type)}
+                                                    aria-label={`Activar evento de ${event.name}`}
+                                                />
+                                                <span className="font-theme-medium text-theme-sm">{event.name}</span>
                                             </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
+                                            {expandedEventsByType[event.id_event_type] && (
+                                                <div className="space-y-3 pt-3" style={{ borderTop: "1px solid var(--color-border)" }}>
+                                                    <div>
+                                                        <label className="block text-theme-xs font-theme-medium mb-2">Event G - Value</label>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-theme-sm">Umbral:</span>
+                                                            <input 
+                                                                type="number" 
+                                                                placeholder="0" 
+                                                                min="0"
+                                                                max="255"
+                                                                {...register(`thresholds.event.${event.id_event_type}`, {
+                                                                    min: 0,
+                                                                    max: 255
+                                                                })} 
+                                                                className="parametrization-input w-20"
+                                                                aria-label={`Umbral para ${event.name}`}
+                                                            />
+                                                            <span className="text-theme-xs text-secondary">G×100 (± 1.50 G)</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <label className="flex items-center gap-1">
+                                                            <input type="checkbox" {...register(`alerts.event.${event.id_event_type}`)} aria-label={`Emitir alerta para evento de ${event.name}`} />
+                                                            <span className="text-theme-xs">Emitir alerta</span>
+                                                        </label>
+                                                        <label className="flex items-center gap-1">
+                                                            <input type="checkbox" {...register(`autoRequest.event.${event.id_event_type}`)} aria-label={`Solicitud automática para evento de ${event.name}`} />
+                                                            <span className="text-theme-xs">Solicitud automática</span>
+                                                        </label>
+                                                    </div>
+                                                    <select {...register(`requestType.event.${event.id_event_type}`)} className="parametrization-input w-full" aria-label={`Tipo de solicitud para evento de ${event.name}`}>
+                                                        <option value="">Seleccione...</option>
+                                                        {maintenanceTypeList.map(rt => <option key={rt.id_maintenance} value={rt.id_maintenance}>{rt.name}</option>)}
+                                                    </select>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 text-secondary">
+                                    <FaInfoCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                    <p className="text-theme-sm">No hay tipos de eventos disponibles</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

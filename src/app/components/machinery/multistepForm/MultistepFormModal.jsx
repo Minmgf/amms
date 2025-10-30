@@ -51,6 +51,11 @@ import {
   updateSpecificTechnicalSheet,
   getTrackerInfo,
   updateInfoTracker,
+  registerThresholdSetting,
+  getEventTypes,
+  getOBDFaults,
+  getThresholdSettingsByMachinery,
+  updateThresholdSetting,
 } from "@/services/machineryService";
 import { SuccessModal, ErrorModal } from "../../shared/SuccessErrorModal";
 
@@ -109,6 +114,8 @@ export default function MultiStepFormModal({
   const [idUsageSheet, setIdUsageSheet] = useState(null); // Para almacenar el ID de la hoja de uso
   const [idTrackerSheet, setIdTrackerSheet] = useState(null); // Para almacenar el ID del tracker
   const [operationalStatus, setOperationalStatus] = useState(null); // Estado operativo actual de la maquinaria
+  const [eventTypesList, setEventTypesList] = useState([]);
+  const [obdSearchResults, setObdSearchResults] = useState([]); // Para almacenar los códigos OBD buscados
   // Hook del tema
   const { getCurrentTheme } = useTheme();
   const defaultValues = {
@@ -260,24 +267,34 @@ export default function MultiStepFormModal({
     },
     // Thresholds (Min/Max values)
     thresholds: {
+      currentSpeedId: 3,
       currentSpeedMin: 0,
       currentSpeedMax: 350,
+      rpmId: 6,
       rpmMin: 0,
       rpmMax: 16384,
+      engineTempId: 7,
       engineTempMin: -60,
       engineTempMax: 127,
+      engineLoadId: 8,
       engineLoadMin: 0,
       engineLoadMax: 100,
+      oilLevelId: 9,
       oilLevelMin: 0,
       oilLevelMax: 100,
+      fuelLevelId: 10,
       fuelLevelMin: 0,
       fuelLevelMax: 100,
+      fuelUsedGpsId: 11,
       fuelUsedGpsMin: 0,
       fuelUsedGpsMax: 4294967,
+      instantFuelConsumptionId: 12,
       instantFuelConsumptionMin: 0,
       instantFuelConsumptionMax: 32767,
+      totalOdometerId: 14,
       totalOdometerMin: 0,
       totalOdometerMax: 2147483647,
+      tripOdometerId: 15,
       tripOdometerMin: 0,
       tripOdometerMax: 2147483647,
       event: {
@@ -597,6 +614,9 @@ export default function MultiStepFormModal({
         setDimensionUnitsList(dimension.data);
         setPerformanceUnitsList(performance.data);
         setPressureUnitsList(pressure.data);
+
+        const eventTypes = await getEventTypes();
+        setEventTypesList(eventTypes.data);
       } catch (error) {
         console.error("Error loading selects:", error);
       }
@@ -1630,25 +1650,169 @@ export default function MultiStepFormModal({
         );
         setSuccessOpen(true);
         onSuccess();
-        methods.reset();
+        // Resetear el formulario y cerrar
+        methods.reset(defaultValues);
         setStep(0);
         setCompletedSteps([]);
         setMachineryId(null);
+        setIdUsageSheet(null);
+        setSpecificTechnicalSheetId(null);
+        setIdTrackerSheet(null);
       }
     } catch (error) {
       let message =
         "Error al confirmar el registro. Por favor, inténtelo de nuevo.";
-      setModalMessage(error.response.data.details || message);
+      setModalMessage(error.response?.data?.details || error.response?.data?.message || message);
       setErrorOpen(true);
+      throw error; // Re-lanzar el error para que submitStep7 lo maneje
     } finally {
       setIsConfirmingRegistration(false);
     }
   };
 
+  const submitStep7 = async (data) => {
+    try {
+      setIsSubmittingStep(true);
+
+      // Construir el payload para el paso 7
+      const thresholdPayload = {
+        id_machinery: machineryId,
+        tolerance_thresholds: [],
+        obd_fault_machinery: [],
+        event_type_machinery: []
+      };
+
+      // Función auxiliar para agregar parámetros con umbrales (sliders)
+      const addToleranceThreshold = (parameterId, paramName) => {
+        const alert = data.alerts?.[paramName];
+        const autoRequest = data.autoRequest?.[paramName];
+        const requestType = data.requestType?.[paramName];
+        const minValue = data.thresholds?.[`${paramName}Min`];
+        const maxValue = data.thresholds?.[`${paramName}Max`];
+
+        // Solo agregar si al menos uno de los dos checkboxes está activado
+        if (alert || autoRequest) {
+          thresholdPayload.tolerance_thresholds.push({
+            id_parameter: parameterId,
+            minimum_threshold: minValue !== undefined ? Number(minValue) : null,
+            maximum_threshold: maxValue !== undefined ? Number(maxValue) : null,
+            id_maintenance: requestType ? Number(requestType) : null,
+            alert_enabled: alert || false
+          });
+        }
+      };
+
+      // Agregar parámetros mecánicos y de movimiento
+      addToleranceThreshold(data.thresholds?.currentSpeedId || 3, "currentSpeed");
+      addToleranceThreshold(data.thresholds?.rpmId || 6, "rpm");
+      addToleranceThreshold(data.thresholds?.engineTempId || 7, "engineTemp");
+      addToleranceThreshold(data.thresholds?.engineLoadId || 8, "engineLoad");
+
+      // Agregar parámetros de niveles de fluidos
+      addToleranceThreshold(data.thresholds?.oilLevelId || 9, "oilLevel");
+      addToleranceThreshold(data.thresholds?.fuelLevelId || 10, "fuelLevel");
+      addToleranceThreshold(data.thresholds?.fuelUsedGpsId || 11, "fuelUsedGps");
+      addToleranceThreshold(data.thresholds?.instantFuelConsumptionId || 12, "instantFuelConsumption");
+
+      // Agregar parámetros de distancia
+      addToleranceThreshold(data.thresholds?.totalOdometerId || 14, "totalOdometer");
+      addToleranceThreshold(data.thresholds?.tripOdometerId || 15, "tripOdometer");
+
+      // Agregar códigos OBD si están configurados
+      if (data.alerts?.obd || data.autoRequest?.obd || data.requestType?.obd) {
+        const obdCodes = new Set([
+          ...Object.keys(data.alerts?.obd || {}),
+          ...Object.keys(data.autoRequest?.obd || {}),
+          ...Object.keys(data.requestType?.obd || {})
+        ]);
+
+        obdCodes.forEach((obdCode) => {
+          const alert = data.alerts?.obd?.[obdCode];
+          const autoRequest = data.autoRequest?.obd?.[obdCode];
+          const requestType = data.requestType?.obd?.[obdCode];
+
+          // Solo agregar si al menos uno de los dos checkboxes está activado
+          if (alert || autoRequest) {
+            const obdFault = obdSearchResults?.find(item => item.code === obdCode);
+            
+            if (obdFault) {
+              thresholdPayload.obd_fault_machinery.push({
+                id_obd_fault: obdFault.id,
+                alert_enabled: alert || false,
+                id_maintenance: requestType ? Number(requestType) : null
+              });
+            }
+          }
+        });
+      }
+
+      // Agregar eventos si están configurados
+      if (data.alerts?.event || data.autoRequest?.event || data.requestType?.event || data.thresholds?.event) {
+        const eventIds = new Set([
+          ...Object.keys(data.alerts?.event || {}),
+          ...Object.keys(data.autoRequest?.event || {}),
+          ...Object.keys(data.requestType?.event || {}),
+          ...Object.keys(data.thresholds?.event || {})
+        ]);
+
+        eventIds.forEach((eventId) => {
+          const alert = data.alerts?.event?.[eventId];
+          const autoRequest = data.autoRequest?.event?.[eventId];
+          const requestType = data.requestType?.event?.[eventId];
+          const threshold = data.thresholds?.event?.[eventId];
+
+          // Solo agregar si al menos uno de los dos checkboxes está activado
+          if (alert || autoRequest) {
+            thresholdPayload.event_type_machinery.push({
+              id_event_type: Number(eventId),
+              threshold: threshold !== undefined && threshold !== "" ? Number(threshold) : null,
+              alert_enabled: alert || false,
+              id_maintenance: requestType ? Number(requestType) : null
+            });
+          }
+        });
+      }
+
+      // Solo enviar si hay al menos un elemento configurado
+      const hasData = 
+        thresholdPayload.tolerance_thresholds.length > 0 ||
+        thresholdPayload.obd_fault_machinery.length > 0 ||
+        thresholdPayload.event_type_machinery.length > 0;
+
+      if (hasData) {
+        await registerThresholdSetting(thresholdPayload);
+      }
+
+      onSuccess();
+      setCompletedSteps((prev) => [...prev, 6]);
+      
+      // Después de guardar el paso 7, confirmar el registro
+      await confirmRegistration();
+    } catch (error) {
+      console.error("Error submitting step 7:", error);
+      
+      let errorMessage = "Error al guardar la configuración de umbrales.";
+      
+      if (error.response?.data?.details) {
+        errorMessage = Object.values(error.response.data.details)
+          .flat()
+          .join(" ");
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+
+      setModalMessage(errorMessage);
+      setErrorOpen(true);
+    } finally {
+      setIsSubmittingStep(false);
+    }
+  };
+
   const onSubmit = () => {
-    // Si estamos en el último paso, finalizar el proceso
+    // Si estamos en el último paso, enviar datos del paso 7 y finalizar
     if (step === steps.length - 1) {
-      confirmRegistration();
+      const currentData = methods.getValues();
+      submitStep7(currentData);
     }
   };
 
@@ -1974,7 +2138,10 @@ export default function MultiStepFormModal({
               {step === 6 && (
                 <Step7ThresholdSettings 
                   machineryId={machineryId} 
-                  maintenanceTypeList={maintenanceTypeList}                
+                  maintenanceTypeList={maintenanceTypeList}
+                  eventTypesList={eventTypesList}
+                  obdSearchResults={obdSearchResults}
+                  setObdSearchResults={setObdSearchResults}
                 />)}
             </div>
 
@@ -1997,10 +2164,10 @@ export default function MultiStepFormModal({
                   <button
                     type="submit"
                     aria-label="Save Button"
-                    disabled={isSubmittingStep}
+                    disabled={isSubmittingStep || isConfirmingRegistration}
                     className="btn-theme btn-primary w-auto"
                   >
-                    {isSubmittingStep ? "Guardando..." : "Guardar"}
+                    {isSubmittingStep || isConfirmingRegistration ? "Guardando..." : "Guardar"}
                   </button>
                 ) : null               
               ) : (

@@ -1,0 +1,59 @@
+{
+  "id_machinery": 12,
+  "tolerance_thresholds": [
+    {
+      "id_parameter": 7,
+      "minimum_threshold": -20.5,
+      "maximum_threshold": 80.2,
+      "id_maintenance": 1,
+      "alert_enabled": true
+    },
+    {
+      "id_parameter": 12,
+      "minimum_threshold": 300,
+      "maximum_threshold": 30000,
+      "id_maintenance": 1,
+      "alert_enabled": true
+    },
+    {
+      "id_parameter": 3,
+      "minimum_threshold": 0,
+      "maximum_threshold": 120,
+      "id_maintenance": null,
+      "alert_enabled": false
+    },
+    {
+      "id_parameter": 6,
+      "minimum_threshold": 800,
+      "maximum_threshold": 3000,
+      "id_maintenance": 2,
+      "alert_enabled": true
+    }
+  ],
+  "obd_fault_machinery": [
+    {
+      "id_obd_fault": 1,
+      "alert_enabled": true,
+      "id_maintenance": 2
+    },
+    {
+      "id_obd_fault": 3,
+      "alert_enabled": false,
+      "id_maintenance": null
+    }
+  ],
+  "event_type_machinery": [
+    {
+      "id_event_type": 1,
+      "threshold": 255,
+      "alert_enabled": true,
+      "id_maintenance": 3
+    },
+    {
+      "id_event_type": 2,
+      "threshold": 200,
+      "alert_enabled": false,
+      "id_maintenance": null
+    }
+  ]
+}

@@ -262,7 +262,7 @@ export const updateUsageInfo = async (usageId, formData) => {
 
 // ===== PASO 5 =====
 
-//traer listado de tipos de mantenimiento activos
+//traer listado de mantenimiento activos
 export const getMaintenanceTypes = async () => {
     const { data } = await apiMain.get(`/maintenance/active/`);
     return data;
@@ -338,6 +338,39 @@ export const deleteMachineryDoc = async (documentId) => {
 // listar documentos de maquinaria
 export const getMachineryDocs = async (machineryId) => {
     const { data } = await apiMain.get(`/machinery-documentation/list/${machineryId}/`);
+    return data;
+};
+
+// ===== PASO 7 =====
+// registrar configuración de umbrales
+export const registerThresholdSetting = async (payload) => {
+    const { data } = await apiMain.post("/tolerance-thresholds/create/", payload);
+    return data;
+};
+// listar configuración de umbrales por maquinaria
+export const getThresholdSettingsByMachinery = async (machineryId) => {
+    const { data } = await apiMain.get(`/tolerance-thresholds/detail/?machinery_id=${machineryId}/`);
+    return data;
+};
+// traer configuración de umbrales
+export const getThresholdSettings = async () => {
+    const { data } = await apiMain.get("/parameters/available/");
+    return data;
+};
+// actualizar configuración de umbrales
+export const updateThresholdSetting = async (machineryId, payload) => {
+    const { data } = await apiMain.put(`/tolerance-thresholds/update/?machinery_id=${machineryId}/`, payload);
+    return data;
+};
+// listar fallas por codigo
+export const getOBDFaults = async (code) => {
+    const { data } = await apiMain.get(`/obd-faults/by-code/?code=${code}`);
+    return data;
+};
+
+//listar tipos de eventos
+export const getEventTypes = async () => {
+    const { data } = await apiMain.get("/event-types/");
     return data;
 };
 
