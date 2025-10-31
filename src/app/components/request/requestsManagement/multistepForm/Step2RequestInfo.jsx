@@ -35,13 +35,22 @@ export default function Step2RequestInfo({
   const watchedPaidCurrency = watch("amountPaidCurrency");
   // inicializar / sincronizar desde form o desde props currencies
   React.useEffect(() => {
-    const initial = getValues("amountPaidCurrency") || getValues("amountToBePaidCurrency") || (currencies && currencies[0]?.symbol) || "";
-    if (initial && initial !== selectedCurrency) {
-      setSelectedCurrency(initial);
-      setValue("amountPaidCurrency", initial, { shouldValidate: false, shouldDirty: false });
-      setValue("amountToBePaidCurrency", initial, { shouldValidate: false, shouldDirty: false });
+    // 🔍 DEBUGGER AQUÍ: Ver qué valores tenemos
+
+    
+    // ✅ MEJOR: Usar id_units en vez de symbol
+    const paidCurrency = getValues("amountPaidCurrency");
+    const toBePaidCurrency = getValues("amountToBePaidCurrency");
+    const defaultCurrency = currencies && currencies[0]?.id_units;
+    const initialCurrency = paidCurrency || toBePaidCurrency || defaultCurrency || "";
+    
+    // ✅ Solo actualizar si realmente cambió
+    if (initialCurrency && initialCurrency !== selectedCurrency) {
+      setSelectedCurrency(initialCurrency);
+      setValue("amountPaidCurrency", initialCurrency);
+      setValue("amountToBePaidCurrency", initialCurrency);
     }
-  }, [currencies]); // cuando lleguen las currencies
+  }, [currencies, getValues]); // cuando lleguen las currencies
   
   // Si el formulario cambia el campo (p. ej. edición), reflejarlo
   React.useEffect(() => {

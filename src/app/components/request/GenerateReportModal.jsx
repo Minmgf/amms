@@ -83,10 +83,11 @@ const GenerateReportModal = ({ isOpen, onClose }) => {
       return;
     }
 
-    // Validar que fechas de registro no sean futuras (las programadas sí pueden serlo)
+    // Validar que fechas no sean futuras
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Validar fechas de registro
     if (dateFrom && new Date(dateFrom) > today) {
       setErrorMessage("La fecha de registro inicial no puede ser futura");
       setIsErrorModalOpen(true);
@@ -95,6 +96,20 @@ const GenerateReportModal = ({ isOpen, onClose }) => {
 
     if (dateTo && new Date(dateTo) > today) {
       setErrorMessage("La fecha de registro final no puede ser futura");
+      setIsErrorModalOpen(true);
+      return;
+    }
+
+    // WORKAROUND: Validar fechas programadas no futuras (debido a validación incorrecta del backend)
+    // TODO: Remover estas validaciones cuando el backend se corrija para permitir fechas programadas futuras
+    if (scheduledStartDateFrom && new Date(scheduledStartDateFrom) > today) {
+      setErrorMessage("La fecha programada inicial no puede ser futura (limitación temporal del sistema)");
+      setIsErrorModalOpen(true);
+      return;
+    }
+
+    if (scheduledStartDateTo && new Date(scheduledStartDateTo) > today) {
+      setErrorMessage("La fecha programada final no puede ser futura (limitación temporal del sistema)");
       setIsErrorModalOpen(true);
       return;
     }
@@ -382,7 +397,7 @@ const GenerateReportModal = ({ isOpen, onClose }) => {
                           type="date"
                           value={scheduledStartDateFrom}
                           onChange={(e) => setScheduledStartDateFrom(e.target.value)}
-                          max={scheduledStartDateTo || undefined}
+                          max={scheduledStartDateTo || new Date().toISOString().split('T')[0]}
                           className="input-theme"
                         />
                       </div>
@@ -395,6 +410,7 @@ const GenerateReportModal = ({ isOpen, onClose }) => {
                           value={scheduledStartDateTo}
                           onChange={(e) => setScheduledStartDateTo(e.target.value)}
                           min={scheduledStartDateFrom || undefined}
+                          max={new Date().toISOString().split('T')[0]}
                           className="input-theme"
                         />
                       </div>

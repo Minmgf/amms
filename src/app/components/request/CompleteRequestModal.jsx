@@ -6,8 +6,10 @@ import { completeRequest } from "@/services/requestService";
 
 /**
  * Modal para completar una solicitud
- * Permite ingresar observaciones obligatorias de finalización
- * La fecha, hora y usuario se registran automáticamente en el backend
+ * Permite ingresar:
+ * - Fecha de inicio real (manual)
+ * - Fecha de finalización real (manual)
+ * - Observaciones obligatorias de finalización
  * 
  * @param {boolean} isOpen - Estado de apertura del modal
  * @param {function} onClose - Función para cerrar el modal
@@ -16,8 +18,20 @@ import { completeRequest } from "@/services/requestService";
  */
 const CompleteRequestModal = ({ isOpen, onClose, request, onSuccess }) => {
   const [observations, setObservations] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // Inicializar fechas cuando se abre el modal
+  React.useEffect(() => {
+    if (isOpen) {
+      // Obtener fecha actual en formato YYYY-MM-DD
+      const today = new Date().toISOString().split('T')[0];
+      setStartDate(request?.scheduledStartDate || today);
+      setEndDate(today);
+    }
+  }, [isOpen, request]);
 
   if (!request) return null;
 
@@ -28,6 +42,23 @@ const CompleteRequestModal = ({ isOpen, onClose, request, onSuccess }) => {
       return;
     }
 
+    // Validar que las fechas estén completas
+    if (!startDate) {
+      setError("La fecha de inicio real es obligatoria");
+      return;
+    }
+
+    if (!endDate) {
+      setError("La fecha de finalización real es obligatoria");
+      return;
+    }
+
+    // Validar que la fecha de fin no sea anterior a la fecha de inicio
+    if (new Date(endDate) < new Date(startDate)) {
+      setError("La fecha de finalización no puede ser anterior a la fecha de inicio");
+      return;
+    }
+
     setIsSubmitting(true);
     setError("");
 
@@ -35,12 +66,18 @@ const CompleteRequestModal = ({ isOpen, onClose, request, onSuccess }) => {
       const requestId = request.requestCode || request.id;
       console.log('🔄 Completando solicitud:', requestId);
       
-      const response = await completeRequest(requestId, observations.trim());
+      const response = await completeRequest(requestId, {
+        observations: observations.trim(),
+        startDate: startDate,
+        endDate: endDate
+      });
       
       console.log('✅ Solicitud completada:', response);
 
       // Resetear el formulario
       setObservations("");
+      setStartDate("");
+      setEndDate("");
       
       // Cerrar el modal
       onClose();
@@ -78,6 +115,8 @@ const CompleteRequestModal = ({ isOpen, onClose, request, onSuccess }) => {
 
   const handleClose = () => {
     setObservations("");
+    setStartDate("");
+    setEndDate("");
     setError("");
     onClose();
   };
@@ -107,17 +146,6 @@ const CompleteRequestModal = ({ isOpen, onClose, request, onSuccess }) => {
 
           {/* Content */}
           <div className="p-6">
-            {/* Información sobre el registro automático */}
-            <div className="mb-4 p-4 bg-surface border border-primary rounded-theme-lg">
-              <div className="flex items-start gap-3">
-                <FaCheckCircle className="text-accent mt-0.5 flex-shrink-0" size={20} />
-                <div className="text-theme-sm">
-                  <p className="font-theme-semibold mb-1 text-primary">Información automática</p>
-                  <p className="text-secondary">La fecha, hora y usuario de finalización se registrarán automáticamente al completar la solicitud.</p>
-                </div>
-              </div>
-            </div>
-
             {/* Información de la solicitud */}
             {request && (
               <div className="mb-4 p-3 card-secondary rounded-theme-lg">
@@ -129,6 +157,48 @@ const CompleteRequestModal = ({ isOpen, onClose, request, onSuccess }) => {
                 </p>
               </div>
             )}
+
+            {/* Campos de fechas */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              {/* Fecha de inicio real */}
+              <div>
+                <label className="block text-theme-sm font-theme-medium text-primary mb-2">
+                  Fecha de Inicio Real <span className="text-error">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    setError("");
+                  }}
+                  className="parametrization-input"
+                  aria-label="Fecha de inicio real"
+                  disabled={isSubmitting}
+                  max={new Date().toISOString().split('T')[0]}
+                />
+              </div>
+
+              {/* Fecha de finalización real */}
+              <div>
+                <label className="block text-theme-sm font-theme-medium text-primary mb-2">
+                  Fecha de Finalización Real <span className="text-error">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => {
+                    setEndDate(e.target.value);
+                    setError("");
+                  }}
+                  className="parametrization-input"
+                  aria-label="Fecha de finalización real"
+                  disabled={isSubmitting}
+                  min={startDate}
+                  max={new Date().toISOString().split('T')[0]}
+                />
+              </div>
+            </div>
 
             {/* Campo de observaciones OBLIGATORIO */}
             <div className="mb-2">
@@ -183,7 +253,7 @@ const CompleteRequestModal = ({ isOpen, onClose, request, onSuccess }) => {
             </button>
             <button
               onClick={handleConfirm}
-              disabled={isSubmitting || !observations.trim()}
+              disabled={isSubmitting || !observations.trim() || !startDate || !endDate}
               className="btn-theme btn-success flex-1 disabled:opacity-50 disabled:cursor-not-allowed gap-2"
               aria-label="Completar solicitud"
             >
