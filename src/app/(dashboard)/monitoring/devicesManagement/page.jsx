@@ -10,7 +10,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import TableList from "@/app/components/shared/TableList";
 import { createColumnHelper } from "@tanstack/react-table";
 import React from "react";
-import { getDevicesList, deleteDevice, toggleDeviceStatus } from "@/services/deviceService";
+import { deleteDevice, toggleDeviceStatus } from "@/services/deviceService";
 import PermissionGuard from "@/app/(auth)/PermissionGuard";
 
 const page = () => {
@@ -47,38 +47,6 @@ const page = () => {
     loadInitialData();
   }, []);
 
-  // Cargar dispositivos desde el API
-  useEffect(() => {
-    const loadDevices = async () => {
-      try {
-        setLoading(true);
-        const response = await getTelemetryDevices();
-
-        // Mapear la respuesta del API a la estructura esperada
-        const mappedDevices = response.map(device => ({
-          id: device.id_device,
-          deviceName: device.name,
-          imei: device.IMEI.toString(),
-          operationalStatus: device.status_id,
-          statusName: device.status_name,
-          registerDate: device.registration_date.split('T')[0],
-          selectedParameters: [] // Por ahora vacio, se llenara al editar
-        }));
-
-        setData(mappedDevices);
-      } catch (error) {
-        console.error("Error al cargar dispositivos:", error);
-        setModalTitle("Error");
-        setModalMessage("No se pudieron cargar los dispositivos. Por favor, intente nuevamente.");
-        setErrorOpen(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadDevices();
-  }, []);
-
   // Aplicar filtros cuando cambien los datos o los filtros
   useEffect(() => {
     applyFilters();
@@ -89,8 +57,8 @@ const page = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await getDevicesList();
-      if (response) {
+      const response = await getTelemetryDevices();
+      if (response && Array.isArray(response)) {
         setData(response);
       } else {
         setError("No se pudieron cargar los Dispositivos.");
@@ -162,7 +130,7 @@ const page = () => {
 
   // Funciones para manejar el DeviceFormModal
   const handleOpenDeviceFormModal = (mode, deviceId) => {
-    const device = data.find((d) => d.id === deviceId);
+    const device = data.find((d) => d.id_device === deviceId);
     setDeviceFormMode(mode);
     setSelectedDevice(device);
     setIsDeviceFormModalOpen(true);
@@ -175,44 +143,13 @@ const page = () => {
   };
 
   const handleDeviceRegistrationSuccess = async (deviceData) => {
+    // Recargar la lista completa desde el API
+    await loadInitialData();
+    
     if (deviceFormMode === "edit") {
-      // Recargar la lista completa desde el API
-      try {
-        const response = await getTelemetryDevices();
-        const mappedDevices = response.map(device => ({
-          id: device.id_device,
-          deviceName: device.name,
-          imei: device.IMEI.toString(),
-          operationalStatus: device.status_id,
-          statusName: device.status_name,
-          registerDate: device.registration_date.split('T')[0],
-          selectedParameters: []
-        }));
-        setData(mappedDevices);
-      } catch (error) {
-        console.error("Error al recargar dispositivos:", error);
-      }
-
       setModalTitle("Actualización Exitosa");
       setModalMessage("El dispositivo ha sido actualizado exitosamente.");
     } else {
-      // Recargar la lista completa desde el API después de crear
-      try {
-        const response = await getTelemetryDevices();
-        const mappedDevices = response.map(device => ({
-          id: device.id_device,
-          deviceName: device.name,
-          imei: device.IMEI.toString(),
-          operationalStatus: device.status_id,
-          statusName: device.status_name,
-          registerDate: device.registration_date.split('T')[0],
-          selectedParameters: []
-        }));
-        setData(mappedDevices);
-      } catch (error) {
-        console.error("Error al recargar dispositivos:", error);
-      }
-
       setModalTitle("Registro Exitoso");
       setModalMessage("El dispositivo ha sido registrado exitosamente.");
     }
