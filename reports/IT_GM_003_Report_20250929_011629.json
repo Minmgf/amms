@@ -1,0 +1,17 @@
+{
+  "test_name": "IT-GM-003: Actualizar Mantenimiento",
+  "timestamp": "20250929_011629",
+  "results": [
+    {
+      "step": "Login",
+      "success": false,
+      "message": "Error en login: Message: no such window: target window already closed\nfrom unknown error: web view not found\n  (Session info: chrome=140.0.7339.208)\nStacktrace:\n\tGetHandleVerifier [0x0x7ff73b521eb5+80197]\n\tGetHandleVerifier [0x0x7ff73b521f10+80288]\n\t(No symbol) [0x0x7ff73b2a02fa]\n\t(No symbol) [0x0x7ff73b2782a1]\n\t(No symbol) [0x0x7ff73b32799e]\n\t(No symbol) [0x0x7ff73b348132]\n\t(No symbol) [0x0x7ff73b320153]\n\t(No symbol) [0x0x7ff73b2e8b02]\n\t(No symbol) [0x0x7ff73b2e98d3]\n\tGetHandleVerifier [0x0x7ff73b7de83d+2949837]\n\tGetHandleVerifier [0x0x7ff73b7d8c6a+2926330]\n\tGetHandleVerifier [0x0x7ff73b7f86c7+3055959]\n\tGetHandleVerifier [0x0x7ff73b53cfee+191102]\n\tGetHandleVerifier [0x0x7ff73b5450af+224063]\n\tGetHandleVerifier [0x0x7ff73b52af64+117236]\n\tGetHandleVerifier [0x0x7ff73b52b119+117673]\n\tGetHandleVerifier [0x0x7ff73b5110a8+11064]\n\tBaseThreadInitThunk [0x0x7ffeea6ce8d7+23]\n\tRtlUserThreadStart [0x0x7ffeec4a8d9c+44]\n",
+      "timestamp": "2025-09-29T01:16:29.089717"
+    }
+  ],
+  "summary": {
+    "total_steps": 1,
+    "passed": 0,
+    "failed": 1
+  }
+}
