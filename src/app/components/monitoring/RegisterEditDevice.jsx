@@ -43,7 +43,7 @@ const RegisterDevice = ({ isOpen, onClose, onSuccess, deviceToEdit }) => {
       if (isOpen && isEditMode && deviceToEdit && parameters.length > 0) {
         try {
           setLoadingDevice(true);
-          const response = await getDeviceById(deviceToEdit.id);
+          const response = await getDeviceById(deviceToEdit.id_device);
 
           if (response.success && response.data) {
             // Extraer IDs de los parámetros del dispositivo
@@ -59,8 +59,8 @@ const RegisterDevice = ({ isOpen, onClose, onSuccess, deviceToEdit }) => {
           console.error("Error al cargar datos del dispositivo:", error);
           // Si falla, usar datos del prop deviceToEdit
           setFormData({
-            deviceName: deviceToEdit.deviceName || "",
-            imei: deviceToEdit.imei || "",
+            deviceName: deviceToEdit.name || deviceToEdit.deviceName || "",
+            imei: deviceToEdit.IMEI?.toString() || deviceToEdit.imei || "",
             selectedParameters: deviceToEdit.selectedParameters || []
           });
         } finally {
@@ -136,7 +136,7 @@ const RegisterDevice = ({ isOpen, onClose, onSuccess, deviceToEdit }) => {
         };
 
         console.log("Payload enviado:", payload);
-        const response = await updateDevice(deviceToEdit.id, payload);
+        const response = await updateDevice(deviceToEdit.id_device, payload);
         console.log("Respuesta del API:", response);
 
         if (response && response.success) {
@@ -144,7 +144,7 @@ const RegisterDevice = ({ isOpen, onClose, onSuccess, deviceToEdit }) => {
           if (onSuccess) {
             onSuccess({
               ...formData,
-              id: response.data?.id_device || deviceToEdit.id
+              id_device: response.data?.id_device || deviceToEdit.id_device
             });
           }
           onClose();
