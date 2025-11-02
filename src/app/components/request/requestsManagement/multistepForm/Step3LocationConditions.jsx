@@ -1,70 +1,77 @@
 import React, { useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
-import { getCountries, getStates, getCities } from "@/services/locationService";
-import { getAreaUnits, getAltitudeUnits, getSoilTypes } from "@/services/requestService";
 
-export default function Step3LocationConditions() {
-  const { register, setValue, watch, formState: { errors } } = useFormContext();
+export default function Step3LocationConditions({ countriesList = [], areaUnits = [], altitudeUnits = [], fetchStates, fetchCities }) {
+  const { register, setValue, watch, getValues, formState: { errors } } = useFormContext();
 
-  // Estados para selects
-  const [countriesList, setCountriesList] = useState([]);
   const [departmentsList, setDepartmentsList] = useState([]);
   const [citiesList, setCitiesList] = useState([]);
-  const [areaUnits, setAreaUnits] = useState([]);
-  const [altitudeUnits, setAltitudeUnits] = useState([]);
-  const [soilTypes, setSoilTypes] = useState([]);
 
-  // Watch para selects dependientes
-  const selectedCountry = watch("country");
-  const selectedDepartment = watch("department");
+  // Siempre usa el valor ACTUAL del formulario, no solo el del watch
+  const selectedCountry = getValues("country") || watch("country");
+  const selectedDepartment = getValues("department") || watch("department");
+  const selectedCity = getValues("city") || watch("city");
 
+  // Cargar departamentos si hay país seleccionado (al montar y cuando cambie)
   useEffect(() => {
-    getCountries().then(data => setCountriesList(data || []));
-    getAreaUnits().then(data => {
-      // Ajusta aquí según la estructura real de la respuesta
-      if (Array.isArray(data)) {
-        setAreaUnits(data);
-      } else if (Array.isArray(data?.data)) {
-        setAreaUnits(data.data);
-      } else {
-        setAreaUnits([]);
+    let mounted = true;
+    const loadStates = async () => {
+      if (!selectedCountry) {
+        setDepartmentsList([]);
+        return;
       }
-    });
-    getAltitudeUnits().then(data => {
-      if (Array.isArray(data)) {
-        setAltitudeUnits(data);
-      } else if (Array.isArray(data?.data)) {
-        setAltitudeUnits(data.data);
-      } else {
-        setAltitudeUnits([]);
-      }
-    });
-    getSoilTypes().then(data => {
-      if (Array.isArray(data)) {
-        setSoilTypes(data);
-      } else if (Array.isArray(data?.data)) {
-        setSoilTypes(data.data);
-      } else {
-        setSoilTypes([]);
-      }
-    });
-  }, []);
+      const states = fetchStates ? await fetchStates(selectedCountry) : [];
+      if (!mounted) return;
+      setDepartmentsList(states || []);
+    };
+    loadStates();
+    return () => { mounted = false; };
+  }, [selectedCountry, fetchStates]);
 
+  // Cargar ciudades si hay departamento seleccionado (al montar y cuando cambie)
   useEffect(() => {
-    if (selectedCountry) {
-      getStates(selectedCountry).then(data => setDepartmentsList(data || []));
-      setValue("department", "");
-      setCitiesList([]);
-      setValue("city", "");
+    let mounted = true;
+    const loadCities = async () => {
+      if (!selectedCountry || !selectedDepartment) {
+        setCitiesList([]);
+        return;
+      }
+      const cities = fetchCities ? await fetchCities(selectedCountry, selectedDepartment) : [];
+      if (!mounted) return;
+      setCitiesList(cities || []);
+    };
+    loadCities();
+    return () => { mounted = false; };
+  }, [selectedCountry, selectedDepartment, fetchCities]);
+
+  // Si el valor seleccionado no está en el array, agrégalo temporalmente para que el select lo muestre
+  const safeDepartmentsList = React.useMemo(() => {
+    if (
+      selectedDepartment &&
+      !departmentsList.some(
+        d => String(d.iso2 || d.id) === String(selectedDepartment)
+      )
+    ) {
+      return [
+        ...departmentsList,
+        { id: selectedDepartment, name: "(Seleccionado previamente)" }
+      ];
     }
-  }, [selectedCountry, setValue]);
+    return departmentsList;
+  }, [departmentsList, selectedDepartment]);
 
-  useEffect(() => {
-    if (selectedDepartment) {
-      getCities(selectedCountry, selectedDepartment).then(data => setCitiesList(data || []));
-      setValue("city", "");
+  const safeCitiesList = React.useMemo(() => {
+    if (
+      selectedCity &&
+      !citiesList.some(c => String(c.id) === String(selectedCity))
+    ) {
+      return [
+        ...citiesList,
+        { id: selectedCity, name: "(Seleccionado previamente)" }
+      ];
     }
-  }, [selectedDepartment, selectedCountry, setValue]);
+    return citiesList;
+  }, [citiesList, selectedCity]);
 
   return (
     <div>
@@ -72,13 +79,11 @@ export default function Step3LocationConditions() {
         Condiciones de Ubicación y Terreno
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Columna 1 */}
+        {/* País */}
         <div>
           <label className="block text-theme-sm text-secondary mb-1">País</label>
           <select
-            {...register("country",{
-              required: "El país es obligatorio",
-            })}
+            {...register("country",{ required: "El país es obligatorio" })}
             className="parametrization-input"
             aria-label="País"
           >
@@ -94,20 +99,19 @@ export default function Step3LocationConditions() {
               {errors.country.message}
             </span>
           )}
-        </div>        
-        {/* Columna 2 */}
+        </div>
+
+        {/* Región */}
         <div>
           <label className="block text-theme-sm text-secondary mb-1">Región</label>
           <select
-            {...register("department",{
-              required: "La región es obligatoria",
-            })}
+            {...register("department",{ required: "La región es obligatoria" })}
             className="parametrization-input"
             aria-label="Region"
-            disabled={!departmentsList.length}
+            disabled={!safeDepartmentsList.length}
           >
             <option value="">Seleccione región...</option>
-            {departmentsList.map(dept => (
+            {safeDepartmentsList.map(dept => (
               <option key={dept.iso2 || dept.id} value={dept.iso2 || dept.id}>
                 {dept.name}
               </option>
@@ -119,19 +123,18 @@ export default function Step3LocationConditions() {
             </span>
           )}
         </div>
-        {/* Columna 3 */}
+
+        {/* Ciudad */}
         <div>
           <label className="block text-theme-sm text-secondary mb-1">Ciudad</label>
           <select
-            {...register("city",{
-              required: "La ciudad es obligatoria",
-            })}
+            {...register("city",{ required: "La ciudad es obligatoria" })}
             className="parametrization-input"
             aria-label="Municipio"
-            disabled={!citiesList.length}
+            disabled={!safeCitiesList.length}
           >
             <option value="">Seleccione ciudad...</option>
-            {citiesList.map(city => (
+            {safeCitiesList.map(city => (
               <option key={city.id} value={city.id}>
                 {city.name}
               </option>
@@ -143,7 +146,8 @@ export default function Step3LocationConditions() {
             </span>
           )}
         </div>
-        {/* Segunda fila */}
+
+        {/* Nombre del lugar */}
         <div>
           <label className="block text-theme-sm text-secondary mb-1">Nombre del lugar</label>
           <input
@@ -160,6 +164,8 @@ export default function Step3LocationConditions() {
             </span>
           )}
         </div>
+
+        {/* Coordenadas */}
         <div>
           <label className="block text-theme-sm text-secondary mb-1">Coordenadas</label>
           <div className="flex gap-2">
@@ -196,13 +202,13 @@ export default function Step3LocationConditions() {
             </span>
           )}
         </div>
+
+        {/* Área */}
         <div>
           <label className="block text-theme-sm text-secondary mb-1">Área</label>
           <div className="flex gap-2">
             <select
-              {...register("areaUnit",{
-                required: "La unidad de área es obligatoria",
-              })}
+              {...register("areaUnit")}
               className="parametrization-input"
               aria-label="Unidad de area"
             >
@@ -214,13 +220,12 @@ export default function Step3LocationConditions() {
               ))}
             </select>
             <input
-              {...register("area",{
-                required: "El área es obligatoria",
-              })}
+              {...register("area")}
               className="parametrization-input"
               placeholder="Ej: 10"
               aria-label="Area"
               type="number"
+              step="0.01"
             />
           </div>
           {errors.area && (
@@ -230,56 +235,12 @@ export default function Step3LocationConditions() {
           )}
         </div>
 
-        {/* Tercera fila */}
-        <div>
-          <label className="block text-theme-sm text-secondary mb-1">Tipo de suelo</label>
-          <select
-            {...register("soilType",{
-              required: "El tipo de suelo es obligatorio",
-            })}
-            className="parametrization-input"
-            aria-label="Tipo de suelo"
-          >
-            <option value="">Seleccione tipo...</option>
-            {soilTypes.map(type => (
-              <option key={type.id_types} value={type.id_types}>
-                {type.name}
-              </option>
-            ))}
-          </select>
-          {errors.soilType && (
-            <span className="text-theme-xs mt-1 block" style={{ color: 'var(--color-error)' }}>
-              {errors.soilType.message}
-            </span>
-          )}
-        </div>
-        <div>
-          <label className="block text-theme-sm text-secondary mb-1">Nivel de humedad (%)</label>
-          <input
-            {...register("humidityLevel",{
-              required: "El nivel de humedad es obligatorio",
-              min: { value: 0, message: "El nivel mínimo es 0%" },
-              max: { value: 100, message: "El nivel máximo es 100%" },
-              valueAsNumber: true,
-            })}
-            className="parametrization-input"
-            placeholder="Ej: 60"
-            aria-label="Nivel de humedad (%)"
-            type="number"
-          />
-          {errors.humidityLevel && (
-            <span className="text-theme-xs mt-1 block" style={{ color: 'var(--color-error)' }}>
-              {errors.humidityLevel.message}
-            </span>
-          )}
-        </div>
+        {/* Altitud */}
         <div>
           <label className="block text-theme-sm text-secondary mb-1">Altitud</label>
           <div className="flex gap-2">
             <select
-              {...register("altitudeUnit",{
-                required: "La unidad de altitud es obligatoria",
-              })}
+              {...register("altitudeUnit")}
               className="parametrization-input"
               aria-label="Unidad de altitud"
             >
@@ -292,7 +253,6 @@ export default function Step3LocationConditions() {
             </select>
             <input
               {...register("altitude",{
-                required: "La altitud es obligatoria",
                 valueAsNumber: true,
               })}
               className="parametrization-input"

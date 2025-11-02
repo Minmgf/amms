@@ -36,7 +36,6 @@ export const getClientDetail = async (clientId) => {
         const { data } = await apiMain.get(`/customers/${clientId}/detail/`);
         return data; // Mantener la respuesta tal como el backend la entrega ({success, message, data})
     } catch (error) {
-        console.error("Error al obtener detalle del cliente:", error);
         return {
             success: false,
             message: error.response?.data?.message || error?.message || "Error al obtener el detalle del cliente"
@@ -47,16 +46,26 @@ export const getClientDetail = async (clientId) => {
 // Obtener historial de solicitudes del cliente (HU-CLI-003)
 export const getClientRequestHistory = async (clientId) => {
     try {
-        const { data } = await apiMain.get(`/customers/${clientId}/requests/`);
+        const { data } = await apiMain.get(`/service_requests/list-by-customer/`, {
+            params: { customer_id: clientId }
+        });
+        
+        // El endpoint devuelve { success: true, results: [...] }
+        if (data.success && Array.isArray(data.results)) {
+            return { success: true, data: data.results };
+        }
+        
+        // Por si devuelve directamente un array
         if (Array.isArray(data)) {
             return { success: true, data };
         }
+        
         return data;
     } catch (error) {
-        console.error("Error al obtener historial de solicitudes:", error);
         return {
             success: false,
-            message: error.response?.data?.message || error?.message || "Error al obtener el historial de solicitudes"
+            message: error.response?.data?.message || error?.message || "Error al obtener el historial de solicitudes",
+            data: []
         };
     }
 };
@@ -69,13 +78,13 @@ export const getClientStatuses = async () => {
 
 // Obtener estados de solicitudes
 export const getRequestStatuses = async () => {
-    const { data } = await apiMain.get("/statues/list/4/");
+    const { data } = await apiMain.get("/statues/list/7/");
     return { data };
 };
 
 // Obtener estados de facturación
 export const getBillingStatuses = async () => {
-    const { data } = await apiMain.get("/statues/list/5/");
+    const { data } = await apiMain.get("/statues/list/6/");
     return { data };
 };
 
@@ -89,4 +98,24 @@ export const updateClient = async (clientId, payload) => {
 export const updateUser = async (userId, payload) => {
     const { data } = await apiUsers.put(`/users/${userId}/profile`, payload);
     return data;
-}
+};
+
+// Eliminar cliente (HU-CLI-004)
+export const deleteClient = async (clientId) => {
+    try {
+        const { data } = await apiMain.delete(`/customers/${clientId}/`);
+        return data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+// Alternar estado del cliente (activar/desactivar) (HU-CLI-004)
+export const toggleClientStatus = async (clientId) => {
+    try {
+        const { data } = await apiMain.patch(`/customers/${clientId}/toggle-status/`);
+        return data;
+    } catch (error) {
+        throw error;
+    }
+};

@@ -14,7 +14,8 @@ import {
   getTrackerInfo,
   getSpecificTechnicalSheet,
   getMachineryDocs,
-  getPeriodicMaintenance,
+  getPeriodicMaintenancesById,
+  getThresholdSettingsByMachinery,
 } from "@/services/machineryService";
 import { getMachineryTracker } from "@/services/machineryService";
 
@@ -58,6 +59,7 @@ export default function MachineryDetailsModal({
   const [specificSheetError, setSpecificSheetError] = useState(null); // Error state
   const [docs, setDocs] = useState([]);
   const [periodicMaintenances, setPeriodicMaintenances] = useState([]);
+  const [thresholdData, setThresholdData] = useState(null);
 
   useEffect(() => {
     if (!selectedMachine) return;
@@ -135,7 +137,7 @@ export default function MachineryDetailsModal({
       });
 
     // Mantenimientos periodicos
-    getPeriodicMaintenance(selectedMachine.id_machinery)
+    getPeriodicMaintenancesById(selectedMachine.id_machinery)
       .then((res) => {
         setPeriodicMaintenances(Array.isArray(res) ? res : []);
       })
@@ -147,6 +149,20 @@ export default function MachineryDetailsModal({
         setSpecificSheet(res || null);
       })
       .catch(() => setSpecificSheet(null));
+
+    // Umbrales de tolerancia
+    getThresholdSettingsByMachinery(selectedMachine.id_machinery)
+      .then((res) => {
+        if (res && res.success && res.data) {
+          setThresholdData(res.data);
+        } else {
+          setThresholdData(null);
+        }
+      })
+      .catch((error) => {
+        console.error("Error en getThresholdSettingsByMachinery:", error);
+        setThresholdData(null);
+      });
   }, [selectedMachine]);
 
   // ciudad origen
@@ -219,11 +235,12 @@ export default function MachineryDetailsModal({
         <div className="hidden md:block p-6">
           {/* --- TABS --- */}
           <div className="flex justify-center border-b border-primary mb-6">
-            {["general", "tech", "docs"].map((key, idx) => {
+            {["general", "tech", "docs", "thresholds"].map((key, idx) => {
               const labels = [
                 "Ficha General",
                 "Especificaciones Técnicas",
                 "Documentos y Mantenimiento",
+                "Umbrales de Tolerancia",
               ];
               const label = labels[idx];
               return (
@@ -610,6 +627,152 @@ export default function MachineryDetailsModal({
                 No existe ficha técnica específica registrada.
               </div>
             )}
+
+          {/* === Umbrales de Tolerancia (DESKTOP) === */}
+          {activeTab === "thresholds" && (
+            <div className="space-y-6">
+              {!thresholdData ? (
+                <div className="text-center py-8 text-gray-500">
+                  No hay configuraciones de umbrales registradas para esta maquinaria
+                </div>
+              ) : (
+                <>
+                  {/* Agrupar parámetros por categoría */}
+                  {(() => {
+                    const groupedByCategory = {};
+                    thresholdData.tolerance_thresholds?.forEach(threshold => {
+                      const category = threshold.parameter_category || "Sin categoría";
+                      if (!groupedByCategory[category]) {
+                        groupedByCategory[category] = [];
+                      }
+                      groupedByCategory[category].push(threshold);
+                    });
+
+                    return Object.entries(groupedByCategory).map(([category, thresholds]) => (
+                      <div key={category} className="border rounded-xl p-4 border-primary">
+                        <h3 className="font-semibold text-lg mb-4 text-primary">
+                          {category}
+                        </h3>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-gray-200">
+                                <th className="text-left py-2 px-3 font-semibold text-gray-700">Parámetro</th>
+                                <th className="text-left py-2 px-3 font-semibold text-gray-700">Rango (Mín - Máx)</th>
+                                <th className="text-left py-2 px-3 font-semibold text-gray-700">Unidad</th>
+                                <th className="text-left py-2 px-3 font-semibold text-gray-700">Acción de umbral</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {thresholds.map((threshold) => {
+                                const action = threshold.alert_enabled && threshold.id_maintenance 
+                                  ? `Alerta y Solicitud (${threshold.maintenance_name})`
+                                  : threshold.alert_enabled 
+                                  ? "Solo alerta"
+                                  : threshold.id_maintenance
+                                  ? `Solo solicitud (${threshold.maintenance_name})`
+                                  : "Sin acción";
+                                
+                                return (
+                                  <tr key={threshold.id} className="border-b border-gray-100">
+                                    <td className="py-2 px-3 text-gray-600">{threshold.parameter_name}</td>
+                                    <td className="py-2 px-3 text-gray-900">
+                                      {threshold.minimum_threshold} - {threshold.maximum_threshold}
+                                    </td>
+                                    <td className="py-2 px-3 text-gray-600">{threshold.parameter_unit}</td>
+                                    <td className="py-2 px-3 text-gray-600">{action}</td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ));
+                  })()}
+
+                  {/* Fallas y Eventos - Dos tablas separadas */}
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {/* Fallas OBD */}
+                    {thresholdData.obd_fault_machinery && thresholdData.obd_fault_machinery.length > 0 && (
+                      <div className="border rounded-xl p-4 border-primary">
+                        <h3 className="font-semibold text-lg mb-4 text-primary">
+                          Fallas OBD
+                        </h3>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-gray-200">
+                                <th className="text-left py-2 px-3 font-semibold text-gray-700">Código de Falla</th>
+                                <th className="text-left py-2 px-3 font-semibold text-gray-700">Acción de umbral</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {thresholdData.obd_fault_machinery.map((fault) => {
+                                const action = fault.alert_enabled && fault.id_maintenance 
+                                  ? `Alerta y Solicitud (${fault.maintenance_name})`
+                                  : fault.alert_enabled 
+                                  ? "Solo alerta"
+                                  : fault.id_maintenance
+                                  ? `Solo solicitud (${fault.maintenance_name})`
+                                  : "Sin acción";
+                                
+                                return (
+                                  <tr key={fault.id} className="border-b border-gray-100">
+                                    <td className="py-2 px-3 text-gray-600">{fault.fault_code}</td>
+                                    <td className="py-2 px-3 text-gray-600">{action}</td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Eventos */}
+                    {thresholdData.event_type_machinery && thresholdData.event_type_machinery.length > 0 && (
+                      <div className="border rounded-xl p-4 border-primary">
+                        <h3 className="font-semibold text-lg mb-4 text-primary">
+                          Eventos
+                        </h3>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-gray-200">
+                                <th className="text-left py-2 px-3 font-semibold text-gray-700">Tipo de evento</th>
+                                <th className="text-left py-2 px-3 font-semibold text-gray-700">Valor umbral</th>
+                                <th className="text-left py-2 px-3 font-semibold text-gray-700">Acción de umbral</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {thresholdData.event_type_machinery.map((event) => {
+                                const action = event.alert_enabled && event.id_maintenance 
+                                  ? `Alerta y Solicitud (${event.maintenance_name})`
+                                  : event.alert_enabled 
+                                  ? "Solo alerta"
+                                  : event.id_maintenance
+                                  ? `Solo solicitud (${event.maintenance_name})`
+                                  : "Sin acción";
+                                
+                                return (
+                                  <tr key={event.id} className="border-b border-gray-100">
+                                    <td className="py-2 px-3 text-gray-600">{event.event_name}</td>
+                                    <td className="py-2 px-3 text-gray-900">{event.threshold || 'N/A'}</td>
+                                    <td className="py-2 px-3 text-gray-600">{action}</td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
           {/* === Documentos y Mantenimiento (DESKTOP) === */}
           {activeTab === "docs" && (

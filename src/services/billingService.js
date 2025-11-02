@@ -39,3 +39,38 @@ export const getMunicipalities = async (token) => {
 
   return data;
 };
+
+// Función para obtener tipos de impuestos
+export const getTaxTypes = async (token) => {
+  const { data } = await apiBilling.get("/v1/tax-types", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return data;
+};
+
+//Función para obtener unidades de medida
+export const getUnitsMeasurement = async (token) => {
+  const { data } = await apiBilling.get("/v1/measurement-units", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return data;
+};
+
+// Función para obtener lista de impuestos
+export const getTributesNames = async (token) => {
+  const { data } = await apiBilling.get("/v1/tributes/products?name=", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return data;
+};
+
+

@@ -267,6 +267,12 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           permissions: [],
         },
         {
+          name: "Monitoreo de solicitudes",
+          icon: <FaClipboardList />,
+          path: "/monitoring/requestMonitoring",
+          permissions: [],
+        },
+        {
           name: "Umbrales",
           icon: <FaRssSquare />,
           path: "/monitoring/threshold",

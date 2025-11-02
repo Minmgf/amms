@@ -77,7 +77,6 @@ export default function Step2InvoiceInformation() {
                     </label>
                     <textarea
                         {...register("observations", {
-                            required: "Este campo es obligatorio",
                             maxLength: {
                                 value: 500,
                                 message: "Máximo 500 caracteres",

@@ -1,81 +1,110 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useFormContext } from "react-hook-form";
-import { FiEdit2, FiTrash2, FiCheck } from "react-icons/fi";
-import { getActiveMachineries, getActiveTechnicians, getActiveCurrencyUnits } from "@/services/maintenanceService";
+import { FiEdit2, FiTrash2 } from "react-icons/fi";
+import { BsFillFuelPumpFill } from "react-icons/bs";
+import FuelPredictionModal from "./FuelPredictionModal";
 
-export default function Step2RequestInfo({ mode }) {
-  const { register, formState: { errors }, watch } = useFormContext();
+export default function Step2RequestInfo({ 
+  mode, 
+  machineryOptions = [], 
+  operatorOptions = [], 
+  currencies = [],
+  soilTypes = [],
+  implementTypes=[],
+  textureTypes=[],
+  paymentMethods=[],
+  paymentStatuses=[],
+  setFuelPrediction, 
+  fuelPrediction 
+}) {
+  const { register, setValue, getValues, watch, formState: { errors } } = useFormContext();
+  const [selectError, setSelectError] = useState("");
+  // leer lista persistida en el form (si está vacía devuelve [])
+  const machineryList = watch("machineryList") || [];
 
-  // Estado para moneda
-  const [currencies, setCurrencies] = useState([]);
-
-  // Estado para maquinaria y operador seleccionados
-  const [machineryOptions, setMachineryOptions] = useState([]);
-  const [operatorOptions, setOperatorOptions] = useState([]);
+  // estados locales efímeros (se perderían al desmontar) — guardar solo selección temporal si quieres
   const [selectedMachinery, setSelectedMachinery] = useState("");
   const [selectedOperator, setSelectedOperator] = useState("");
-  const [machineryList, setMachineryList] = useState([]);
   const [editIdx, setEditIdx] = useState(null);
+  const [selectedCurrency, setSelectedCurrency] = useState("");
+  // Estados para el modal de predicción de combustible
+  const [predictionOpen, setPredictionOpen] = useState(false);
+  const [predictionIdx, setPredictionIdx] = useState(null);
 
-  // Cargar opciones reales al montar
-  useEffect(() => {
-    const fetchOptions = async () => {
-      try {
-        const machineries = await getActiveMachineries();
-        const operators = await getActiveTechnicians();
-        const currencyUnits = await getActiveCurrencyUnits();
-        setMachineryOptions(machineries.data || []);
-        setOperatorOptions(operators || []);
-        const currencyArray = Array.isArray(currencyUnits.data) ? currencyUnits.data : [];
-        setCurrencies(currencyArray);
-      } catch (error) {
-      }
-    };
-    fetchOptions();
-  }, []);
+  // Sincronizar el select de monedas para que ambos se comporten como uno
+  const watchedPaidCurrency = watch("amountPaidCurrency");
+  // inicializar / sincronizar desde form o desde props currencies
+  React.useEffect(() => {
+    // 🔍 DEBUGGER AQUÍ: Ver qué valores tenemos
 
-  // Añadir maquinaria y operador a la lista temporal
+    
+    // ✅ MEJOR: Usar id_units en vez de symbol
+    const paidCurrency = getValues("amountPaidCurrency");
+    const toBePaidCurrency = getValues("amountToBePaidCurrency");
+    const defaultCurrency = currencies && currencies[0]?.id_units;
+    const initialCurrency = paidCurrency || toBePaidCurrency || defaultCurrency || "";
+    
+    // ✅ Solo actualizar si realmente cambió
+    if (initialCurrency && initialCurrency !== selectedCurrency) {
+      setSelectedCurrency(initialCurrency);
+      setValue("amountPaidCurrency", initialCurrency);
+      setValue("amountToBePaidCurrency", initialCurrency);
+    }
+  }, [currencies, getValues]); // cuando lleguen las currencies
+  
+  // Si el formulario cambia el campo (p. ej. edición), reflejarlo
+  React.useEffect(() => {
+    if (watchedPaidCurrency && watchedPaidCurrency !== selectedCurrency) {
+      setSelectedCurrency(watchedPaidCurrency);
+    }
+  }, [watchedPaidCurrency]);
+  
+  const handleCurrencyChange = (value) => {
+    setSelectedCurrency(value);
+    // mantener ambos campos sincronizados en react-hook-form
+    setValue("amountPaidCurrency", value, { shouldValidate: false, shouldDirty: true });
+    setValue("amountToBePaidCurrency", value, { shouldValidate: false, shouldDirty: true });
+  };
+
   const handleAddMachinery = () => {
-    if (!selectedMachinery || !selectedOperator) return;
-    const machineryObj = machineryOptions.find(m => String(m.id_machinery) === String(selectedMachinery));
-    const operatorObj = operatorOptions.find(o => String(o.id) === String(selectedOperator));
-    if (!machineryObj || !operatorObj) return; // Evita agregar si no existe
-    setMachineryList([
+    if (!selectedMachinery || !selectedOperator) {
+      setSelectError("Debes seleccionar maquinaria y operador.");
+      return;
+    }
+    setSelectError(""); // limpia el error si todo está bien
+    const machineryObj = machineryOptions.find(m => String(m.id_machinery ?? m.id) === String(selectedMachinery));
+    const operatorObj = operatorOptions.find(o => String(o.id_user ?? o.id) === String(selectedOperator));
+    if (!machineryObj || !operatorObj) return;
+    const newList = [
       ...machineryList,
-      {
-        machinery: machineryObj,
-        operator: operatorObj,
-      }
-    ]);
+      { machinery: machineryObj, operator: operatorObj }
+    ];
+    // persistir en form
+    setValue("machineryList", newList, { shouldValidate: false, shouldDirty: true });
+    // reset seleccion
     setSelectedMachinery("");
     setSelectedOperator("");
   };
 
-  // Eliminar de la lista temporal
   const handleDelete = (idx) => {
-    setMachineryList(machineryList.filter((_, i) => i !== idx));
+    const newList = machineryList.filter((_, i) => i !== idx);
+    setValue("machineryList", newList, { shouldValidate: false, shouldDirty: true });
   };
 
-  // Editar maquinaria y operador en la lista temporal
   const handleEdit = (idx) => {
     const item = machineryList[idx];
-    setSelectedMachinery(item.machinery?.id_machinery || "");
-    setSelectedOperator(item.operator?.id || "");
+    setSelectedMachinery(String(item.machinery.id_machinery ?? item.machinery.id));
+    setSelectedOperator(String(item.operator.id_user ?? item.operator.id));
     setEditIdx(idx);
   };
 
-  // Guardar edición
   const handleSaveEdit = () => {
-    if (!selectedMachinery || !selectedOperator || editIdx === null) return;
-    const machineryObj = machineryOptions.find(m => String(m.id_machinery) === String(selectedMachinery));
-    const operatorObj = operatorOptions.find(o => String(o.id) === String(selectedOperator));
+    if (editIdx === null) return;
+    const machineryObj = machineryOptions.find(m => String(m.id_machinery ?? m.id) === String(selectedMachinery));
+    const operatorObj = operatorOptions.find(o => String(o.id_user ?? o.id) === String(selectedOperator));
     if (!machineryObj || !operatorObj) return;
-    const updatedList = machineryList.map((item, idx) =>
-      idx === editIdx
-        ? { machinery: machineryObj, operator: operatorObj }
-        : item
-    );
-    setMachineryList(updatedList);
+    const updatedList = machineryList.map((it, i) => i === editIdx ? { machinery: machineryObj, operator: operatorObj } : it);
+    setValue("machineryList", updatedList, { shouldValidate: false, shouldDirty: true });
     setSelectedMachinery("");
     setSelectedOperator("");
     setEditIdx(null);
@@ -150,9 +179,9 @@ export default function Step2RequestInfo({ mode }) {
                 aria-label="Método de pago"
               >
                 <option value="">Seleccione...</option>
-                <option value="transferencia">Transferencia</option>
-                <option value="efectivo">Efectivo</option>
-                <option value="tarjeta">Tarjeta</option>
+                {paymentMethods.map(pm => (
+                  <option key={pm.code} value={pm.code}>{pm.name}</option>
+                ))}
               </select>
               {errors.paymentMethod && (
                 <span className="text-theme-xs mt-1 block" style={{ color: 'var(--color-error)' }}>
@@ -168,8 +197,9 @@ export default function Step2RequestInfo({ mode }) {
                 aria-label="Estado de pago"
               >
                 <option value="">Seleccione...</option>
-                <option value="pagado">Pagado</option>
-                <option value="pendiente">Pendiente</option>
+                {paymentStatuses.map(status => (
+                  <option key={status.id_statues} value={status.id_statues}>{status.name}</option>
+                ))}
               </select>
               {errors.paymentStatus && (
                 <span className="text-theme-xs mt-1 block" style={{ color: 'var(--color-error)' }}>
@@ -181,13 +211,14 @@ export default function Step2RequestInfo({ mode }) {
               <label className="block text-theme-sm text-secondary mb-1">Monto pagado</label>
               <div className="flex gap-2">
                 <select
-                  {...register("amountPaidCurrency")}
+                  value={selectedCurrency}
+                  onChange={e => handleCurrencyChange(e.target.value)}
                   className="parametrization-input"
                   aria-label="Moneda pagado"
                 >
                   <option value="">Seleccione moneda...</option>
                   {currencies.map(cur => (
-                    <option key={cur.symbol} value={cur.symbol}>{cur.symbol}</option>
+                    <option key={cur.id_units} value={cur.id_units}>{cur.symbol}</option>
                   ))}
                 </select>
                 <input
@@ -208,13 +239,14 @@ export default function Step2RequestInfo({ mode }) {
               <label className="block text-theme-sm text-secondary mb-1">Monto por pagar</label>
               <div className="flex gap-2">
                 <select
-                  {...register("amountToBePaidCurrency")}
+                  value={selectedCurrency}
+                  onChange={e => handleCurrencyChange(e.target.value)}
                   className="parametrization-input"
                   aria-label="Moneda por pagar"
                 >
                   <option value="">Seleccione moneda...</option>
                   {currencies.map(cur => (
-                    <option key={cur.symbol} value={cur.symbol}>{cur.symbol}</option>
+                    <option key={cur.id_units} value={cur.id_units}>{cur.symbol}</option>
                   ))}
                 </select>
                 <input
@@ -231,7 +263,7 @@ export default function Step2RequestInfo({ mode }) {
                 </span>
               )}
             </div>
-            <div>
+            <div className="col-span-2">
               <label className="block text-theme-sm text-secondary mb-1">Maquinaria disponible</label>
               <div className="flex gap-2">
                 <select
@@ -256,7 +288,7 @@ export default function Step2RequestInfo({ mode }) {
                   <option value="">Seleccione operador...</option>
                   {operatorOptions.map(o => (
                     <option key={o.id} value={o.id}>
-                      {o.name}
+                      {o.name} {o.first_last_name} {o.second_last_name}
                     </option>
                   ))}
                 </select>
@@ -265,7 +297,7 @@ export default function Step2RequestInfo({ mode }) {
                     type="button"
                     className="btn-theme btn-primary px-4"
                     onClick={handleAddMachinery}
-                    disabled={!selectedMachinery || !selectedOperator}
+                    aria-label="Añadir maquinaria y operador"
                   >
                     Añadir
                   </button>
@@ -274,14 +306,20 @@ export default function Step2RequestInfo({ mode }) {
                     type="button"
                     className="btn-theme btn-success px-4"
                     onClick={handleSaveEdit}
+                    aria-label="Guardar cambios de maquinaria y operador"
                     disabled={!selectedMachinery || !selectedOperator}
                   >
-                    <FiCheck className="inline mr-1" /> Guardar
+                    Guardar
                   </button>
                 )}
               </div>
+              {selectError && (
+                <span className="text-theme-xs mt-1 block" style={{ color: 'var(--color-error)' }}>
+                  {selectError}
+                </span>
+              )}
             </div>
-            {/* Lista temporal de maquinaria y operador */}
+            {/* Tabla persistida: leer de machineryList (form) */}
             {machineryList.length > 0 && (
               <div className="col-span-1 sm:col-span-2 mt-4">
                 <table className="w-full text-theme-sm">
@@ -301,20 +339,39 @@ export default function Step2RequestInfo({ mode }) {
                         <td className="py-2 px-2">{item.operator?.name || "-"}</td>
                         <td className="py-2 px-2">
                           <button
+                            title="Editar"
                             type="button"
                             className="btn-theme btn-secondary mr-2"
                             onClick={() => handleEdit(idx)}
+                            aria-label="Editar maquinaria y operador"
                             disabled={editIdx !== null}
                           >
                             <FiEdit2 />
+                            <span className="ml-1">Editar</span>
                           </button>
                           <button
+                            title="Eliminar"
                             type="button"
                             className="btn-theme btn-error"
                             onClick={() => handleDelete(idx)}
+                            aria-label="Eliminar maquinaria y operador"
                             disabled={editIdx !== null}
                           >
                             <FiTrash2 />
+                            <span className="ml-1">Eliminar</span>
+                          </button>
+                          <button
+                            title="Predicción de combustible"
+                            type="button"
+                            className="btn-theme btn-secondary ml-2"
+                            onClick={() => {
+                              setPredictionIdx(idx);
+                              setPredictionOpen(true);
+                            }}
+                            aria-label="Abrir modal de predicción de combustible"
+                          >
+                            <BsFillFuelPumpFill />
+                            <span className="ml-1">Predicción</span>                         
                           </button>
                         </td>
                       </tr>
@@ -323,6 +380,21 @@ export default function Step2RequestInfo({ mode }) {
                 </table>
               </div>
             )}
+            <FuelPredictionModal
+              isOpen={predictionOpen}
+              onClose={() => setPredictionOpen(false)}
+              onSave={data => {
+                setFuelPrediction(prev => ({
+                  ...prev,
+                  [predictionIdx]: data
+                }));
+                setPredictionOpen(false);
+              }}
+              formData={fuelPrediction[predictionIdx]}
+              soilTypes={soilTypes}
+              implementTypes={implementTypes}
+              textureTypes={textureTypes}
+            />
           </>
         )}
       </div>

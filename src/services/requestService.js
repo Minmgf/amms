@@ -1,6 +1,6 @@
-import { apiMain } from "@/lib/axios";
+import { apiMain, apiUsers } from "@/lib/axios";
 
-// Obtener lista de paises
+// Obtener unidades de area
 export const getAreaUnits = async () => {
     const { data } = await apiMain.get("/units/active/11/");
     return data;
@@ -8,7 +8,19 @@ export const getAreaUnits = async () => {
 
 // Obtener tipos de suelo
 export const getSoilTypes = async () => {
-    const { data } = await apiMain.get("/types/list/active/15/");
+    const { data } = await apiMain.get("/soil_types/");
+    return data;
+}
+
+// Obtener tipos de texturas
+export const getTextureTypes = async () => {
+    const { data } = await apiMain.get("/textures/");
+    return data;
+}
+
+// Obtener tipos de implementos
+export const getImplementTypes = async () => {
+    const { data } = await apiMain.get("/implementations/");
     return data;
 }
 
@@ -18,9 +30,41 @@ export const getAltitudeUnits = async () => {
     return data;
 }
 
+// Obtener operarios activos
+export const getActiveWorkers = async () => {
+    const { data } = await apiUsers.get("/users/machinery_operators/active");
+    return data;
+}
+
+// Obtener estados de pago
+// Retorna: [{ id_statues: 16, name: "Pendiente" }, { id_statues: 17, name: "Parcial" }, { id_statues: 18, name: "Pagado" }]
+export const getPaymentStatus = async () => {
+    const { data } = await apiMain.get("/statues/list/6/");
+    return data;
+}
+
+// Obtener metodos de pago
+// Retorna: [{ code: "10", name: "Efectivo" }, { code: "42", name: "Consignación" }, ...]
+export const getPaymentMethods = async () => {
+    const { data } = await apiMain.get("/payment_methods/");
+    return data;
+}
+
+// Obtener unidades de moneda activas
+export const getCurrencyUnits = async () => {
+    const { data } = await apiMain.get("/units/active/10/");
+    return data;
+}
+
 // Crear preregistro
 export const createPreRegister = async (payload) => {
     const { data } = await apiMain.post("/service_requests/create_pre_request/", payload);
+    return data;
+}
+
+// Crear registro de solicitud
+export const createRequest = async (payload) => {
+    const { data } = await apiMain.post("/service_requests/create_request/", payload);
     return data;
 }
 
@@ -29,3 +73,80 @@ export const getClientByIdentification = async (identification) => {
     const { data } = await apiMain.get(`/customers/search_by_document/?document_number=${identification}`);    
     return data;
 }
+
+// Obtener detalles completos de una solicitud (HU-SOL-004)
+export const getRequestDetails = async (requestId) => {
+    const { data } = await apiMain.get(`/service_requests/${requestId}/details/`);
+    return data;
+}
+
+// Cancelar una solicitud
+export const cancelRequest = async (requestId, observations) => {
+    const { data } = await apiMain.post(`/service_requests/${requestId}/cancel/`, {
+        completion_cancellation_observations: observations
+    });
+    return data;
+};
+
+// Confirmar una solicitud (convertir presolicitud a solicitud pendiente)
+export const confirmRequest = async (requestId, requestData) => {
+    console.log('📤 Enviando confirmación - requestId:', requestId);
+    console.log('📦 Payload:', requestData);
+    try {
+        const { data } = await apiMain.patch(`/service_requests/${requestId}/confirm/`, requestData);
+        console.log('✅ Respuesta exitosa:', data);
+        return data;
+    } catch (error) {
+        console.error('❌ Error en confirmRequest:', error);
+        console.error('📋 Error response:', error.response);
+        throw error;
+    }
+};
+
+// Completar una solicitud (cambiar estado de En proceso a Finalizada)
+export const completeRequest = async (requestId, requestData) => {
+    console.log('📤 Completando solicitud - requestId:', requestId);
+    
+    // Soportar formato antiguo (solo string) y nuevo formato (objeto)
+    let payload;
+    if (typeof requestData === 'string') {
+        // Formato antiguo: solo observaciones
+        payload = {
+            completion_cancellation_observations: requestData
+        };
+    } else {
+        // Formato nuevo: objeto con observaciones y fechas
+        payload = {
+            completion_cancellation_observations: requestData.observations,
+            actual_start_date: requestData.startDate,
+            actual_end_date: requestData.endDate
+        };
+    }
+    
+    console.log('📦 Payload:', payload);
+    
+    try {
+        const { data } = await apiMain.post(`/service_requests/${requestId}/complete/`, payload);
+        console.log('✅ Solicitud completada exitosamente:', data);
+        return data;
+    } catch (error) {
+        console.error('❌ Error en completeRequest:', error);
+        console.error('📋 Error response:', error.response);
+        throw error;
+    }
+};
+
+// Actualizar una solicitud existente (HU-SOL-005)
+export const updateRequest = async (requestId, requestData) => {
+    console.log('📤 Actualizando solicitud - requestId:', requestId);
+    console.log('📦 Payload:', requestData);
+    try {
+        const { data } = await apiMain.patch(`/service_requests/${requestId}/update_request/`, requestData);
+        console.log('✅ Solicitud actualizada exitosamente:', data);
+        return data;
+    } catch (error) {
+        console.error('❌ Error en updateRequest:', error);
+        console.error('📋 Error response:', error.response);
+        throw error;
+    }
+};

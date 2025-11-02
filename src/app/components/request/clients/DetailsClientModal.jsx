@@ -6,6 +6,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import TableList from "../../shared/TableList";
 import FilterModal from "../../shared/FilterModal";
 import { getClientDetail, getClientRequestHistory, getClientStatuses, getRequestStatuses, getBillingStatuses } from "@/services/clientService";
+import { getMunicipalities, authorization } from "@/services/billingService";
 
 /**
  * DetailsClientModal Component
@@ -27,26 +28,36 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
   const [requestHistory, setRequestHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  
+  // Estados para ubicación (municipio)
+  const [municipalityName, setMunicipalityName] = useState(null);
+  const [billingToken, setBillingToken] = useState(null);
 
-  // Estados parametrizables (vendrán del endpoint)
+  // Estados parametrizables (vienen del endpoint)
   const [clientStatuses, setClientStatuses] = useState([]);
   const [requestStatuses, setRequestStatuses] = useState([]);
   const [billingStatuses, setBillingStatuses] = useState([]);
-  const [personTypes] = useState([
-    { id: 1, name: "Natural", description: "Persona natural" },
-    { id: 2, name: "Jurídica", description: "Persona jurídica" },
-  ]);
-  const [identificationType] = useState([
-    { id: 1, code: "CC", name: "Cédula de Ciudadanía" },
-    { id: 2, code: "NIT", name: "Número de Identificación Tributaria" },
-    { id: 3, code: "CE", name: "Cédula de Extranjería" },
-    { id: 4, code: "PAS", name: "Pasaporte" },
-  ]);
 
   // Obtener el ID del cliente (soporta tanto 'id' como 'id_customer')
   const getClientId = () => {
     return client?.id_customer || client?.id;
   };
+
+  // Cargar token de facturación cuando se abre el modal
+  useEffect(() => {
+    const loadBillingToken = async () => {
+      try {
+        const response = await authorization();
+        setBillingToken(response.access_token);
+      } catch (error) {
+        console.error('Error cargando token de facturación:', error);
+      }
+    };
+
+    if (isOpen) {
+      loadBillingToken();
+    }
+  }, [isOpen]);
 
   // Cargar datos del cliente cuando se abre el modal
   useEffect(() => {
@@ -73,6 +84,30 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
       // Error silencioso
     }
   };
+
+  // Cargar nombre del municipio cuando se tienen los datos del cliente
+  useEffect(() => {
+    const loadMunicipalityName = async () => {
+      if (!clientData?.id_municipality || !billingToken) return;
+      
+      try {
+        const response = await getMunicipalities(billingToken);
+        const municipalities = response.data || response;
+        
+        // Buscar el municipio por ID
+        const municipality = municipalities.find(m => m.id === clientData.id_municipality);
+        
+        if (municipality) {
+          // Formato: "Nombre (Departamento)"
+          setMunicipalityName(`${municipality.name} (${municipality.department})`);
+        }
+      } catch (error) {
+        console.error('Error cargando municipio:', error);
+      }
+    };
+
+    loadMunicipalityName();
+  }, [clientData, billingToken]);
 
   // Auto-dismiss error after 5 seconds
   useEffect(() => {
@@ -121,6 +156,31 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
   };
 
 
+  // Formatear número de teléfono
+  const formatPhoneNumber = (phone) => {
+    if (!phone) return "N/A";
+    
+    // Convertir a string y limpiar espacios
+    const cleanPhone = String(phone).replace(/\s+/g, '');
+    
+    // Si el número comienza con 57 (indicativo de Colombia) y tiene 12 dígitos
+    if (cleanPhone.startsWith('57') && cleanPhone.length === 12) {
+      const countryCode = cleanPhone.substring(0, 2); // 57
+      const part1 = cleanPhone.substring(2, 5); // 310
+      const part2 = cleanPhone.substring(5, 8); // 235
+      const part3 = cleanPhone.substring(8, 12); // 5419
+      return `+${countryCode} ${part1} ${part2} ${part3}`;
+    }
+    
+    // Si ya tiene formato con +, devolverlo tal cual
+    if (cleanPhone.startsWith('+')) {
+      return phone;
+    }
+    
+    // Retornar el número sin modificar
+    return phone;
+  };
+
   // Funciones para obtener información por ID
   const getStatusById = (id, statusArray) => {
     return (
@@ -131,35 +191,35 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
 
   const getStatusColorById = (id, type = "request") => {
     if (type === "request") {
+      // IDs del endpoint /sigma/main/statues/list/7/
       switch (id) {
-        case 13: return "bg-green-100 text-green-800";
-        case 14: return "bg-blue-100 text-blue-800";
-        case 15: return "bg-red-100 text-red-800";
-        case 16: return "bg-yellow-100 text-yellow-800";
+        case 19: return "bg-gray-100 text-gray-800"; // Pre-solicitud
+        case 20: return "bg-yellow-100 text-yellow-800"; // Pendiente
+        case 21: return "bg-blue-100 text-blue-800"; // En Proceso
+        case 22: return "bg-green-100 text-green-800"; // Finalizada
+        case 23: return "bg-red-100 text-red-800"; // Cancelada
         default: return "bg-gray-100 text-gray-800";
       }
     } else if (type === "billing") {
+      // IDs del endpoint /sigma/main/statues/list/6/
       switch (id) {
-        case 17: return "bg-green-100 text-green-800";
-        case 18: return "bg-yellow-100 text-yellow-800";
-        case 19: return "bg-red-100 text-red-800";
+        case 16: return "bg-yellow-100 text-yellow-800"; // Pendiente
+        case 17: return "bg-blue-100 text-blue-800"; // Parcial
+        case 18: return "bg-green-100 text-green-800"; // Pagado
         default: return "bg-gray-100 text-gray-800";
       }
     } else if (type === "client") {
       switch (id) {
-        case 1: return "bg-green-100 text-green-800";
-        case 2: return "bg-red-100 text-red-800";
+        case 1: return "bg-green-100 text-green-800"; // Activo
+        case 2: return "bg-red-100 text-red-800"; // Inactivo
         default: return "bg-gray-100 text-gray-800";
       }
     }
   };
 
   // Obtener el régimen tributario
-  const getTaxRegimeDisplay = (taxRegime, personType) => {
-    if (personType === 2 || personType === "Persona Jurídica") {
-      return "Régimen Ordinario - Persona Jurídica";
-    }
-    return taxRegime === 1 ? "Régimen Simplificado" : "Régimen Ordinario";
+  const getTaxRegimeDisplay = (taxRegimeName) => {
+    return taxRegimeName || "N/A";
   };
 
   // Filtrar datos
@@ -171,7 +231,7 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
     }
 
     if (billingFilter) {
-      filtered = filtered.filter((req) => req.billing_status_id === parseInt(billingFilter));
+      filtered = filtered.filter((req) => req.payment_status_id === parseInt(billingFilter));
     }
 
     return filtered;
@@ -199,37 +259,65 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
   const columns = useMemo(
     () => [
       {
-        accessorKey: "id",
-        header: "ID Solicitud",
+        accessorKey: "code",
+        header: "Consecutivo",
         cell: ({ row }) => (
           <div className="font-mono text-sm font-medium text-primary">
-            {row.getValue("id")}
+            {row.getValue("code")}
           </div>
         ),
       },
       {
-        accessorKey: "date",
+        accessorKey: "scheduled_date",
         header: "Fecha de solicitud",
         cell: ({ row }) => (
-          <div className="text-sm text-secondary">{row.getValue("date")}</div>
+          <div className="text-sm text-secondary">{row.getValue("scheduled_date") || "N/A"}</div>
         ),
       },
       {
-        accessorKey: "billing_status_id",
+        accessorKey: "payment_status_id",
         header: "Estado de facturación",
         cell: ({ row }) => {
-          const statusId = row.getValue("billing_status_id");
-          const status = getStatusById(statusId, billingStatuses);
-          const statusName = status?.name || "N/A";
+          const statusId = row.getValue("payment_status_id");
+          const statusName = row.original.payment_status_name;
 
+          // Si no hay estado de pago, mostrar N/A
+          if (!statusId) {
+            return (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                N/A
+              </span>
+            );
+          }
+
+          // Estados de pago (endpoint /sigma/main/statues/list/6/)
+          // 16: Pendiente, 17: Parcial, 18: Pagado
+          if (statusId === 16) {
+            return (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                {statusName || "N/A"}
+              </span>
+            );
+          }
+          if (statusId === 17) {
+            return (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                {statusName || "N/A"}
+              </span>
+            );
+          }
+          if (statusId === 18) {
+            return (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                {statusName || "N/A"}
+              </span>
+            );
+          }
+
+          // Estado desconocido
           return (
-            <span
-              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColorById(
-                statusId,
-                "billing"
-              )}`}
-            >
-              {statusName}
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+              {statusName || "N/A"}
             </span>
           );
         },
@@ -239,17 +327,50 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
         header: "Estado de solicitud",
         cell: ({ row }) => {
           const statusId = row.getValue("request_status_id");
-          const status = getStatusById(statusId, requestStatuses);
-          const statusName = status?.name || "N/A";
+          const statusName = row.original.request_status_name;
 
+          // Estados de solicitud (endpoint /sigma/main/statues/list/7/)
+          // 19: Pre-solicitud, 20: Pendiente, 21: En Proceso, 22: Finalizada, 23: Cancelada
+          if (statusId === 19) {
+            return (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                {statusName || "N/A"}
+              </span>
+            );
+          }
+          if (statusId === 20) {
+            return (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                {statusName || "N/A"}
+              </span>
+            );
+          }
+          if (statusId === 21) {
+            return (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                {statusName || "N/A"}
+              </span>
+            );
+          }
+          if (statusId === 22) {
+            return (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                {statusName || "N/A"}
+              </span>
+            );
+          }
+          if (statusId === 23) {
+            return (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                {statusName || "N/A"}
+              </span>
+            );
+          }
+
+          // Estado desconocido
           return (
-            <span
-              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColorById(
-                statusId,
-                "request"
-              )}`}
-            >
-              {statusName}
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+              {statusName || "N/A"}
             </span>
           );
         },
@@ -259,13 +380,14 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
         header: "Acciones",
         cell: ({ row }) => {
           const request = row.original;
-          const canDownload = request.invoice_url && request.billing_status_id === 17;
+          // El estado "Pagado" tiene id_statues: 18 según el endpoint /sigma/main/statues/list/6/
+          const canDownload = request.invoice_url && request.payment_status_id === 18;
 
           return (
             <div className="flex items-center justify-center gap-2">
               {canDownload && (
                 <button
-                  onClick={() => handleDownloadInvoice(request.invoice_url, request.id)}
+                  onClick={() => handleDownloadInvoice(request.invoice_url, request.code)}
                   className="inline-flex items-center px-3 py-1.5 gap-2 border border-orange-500 text-orange-600 text-xs font-medium rounded-md hover:bg-orange-50 transition-all opacity-0 group-hover:opacity-100"
                   title="Descargar factura"
                 >
@@ -293,8 +415,12 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
 
   // Formatear región/ciudad
   const getRegionCity = () => {
-    // TODO: Obtener el nombre del municipio desde un endpoint o catálogo
-    return displayData.region_city || "N/A";
+    // Si no hay id_municipality, mostrar N/A
+    if (!displayData.id_municipality) {
+      return "N/A";
+    }
+    // Si hay id pero aún no se ha cargado el nombre, mostrar el ID temporalmente
+    return municipalityName || `ID: ${displayData.id_municipality}`;
   };
 
   return (
@@ -352,11 +478,20 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
                   <h3 className="font-theme-semibold text-theme-base text-primary">
                     Datos personales y de contacto
                   </h3>
-                  <span className={`inline-flex w-fit items-center px-3 py-1 rounded-full text-sm font-medium ${
-                    getStatusColorById(displayData.customer_statues_id, "client")
-                  }`}>
-                    {displayData.customer_statues_name || "Activo"}
-                  </span>
+                  {/* Estado del cliente: 1=Activo, 2=Inactivo */}
+                  {displayData.customer_statues_id === 1 ? (
+                    <span className="inline-flex w-fit items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                      {displayData.customer_statues_name || "Activo"}
+                    </span>
+                  ) : displayData.customer_statues_id === 2 ? (
+                    <span className="inline-flex w-fit items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                      {displayData.customer_statues_name || "Inactivo"}
+                    </span>
+                  ) : (
+                    <span className="inline-flex w-fit items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                      {displayData.customer_statues_name || "Desconocido"}
+                    </span>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8">
@@ -406,7 +541,7 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
                       Régimen tributario
                     </span>
                     <div className="font-theme-medium text-primary mt-1">
-                      {getTaxRegimeDisplay(displayData.tax_regime, displayData.person_type_id)}
+                      {getTaxRegimeDisplay(displayData.tax_regime_name)}
                     </div>
                   </div>
 
@@ -436,7 +571,7 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
                       Nombre comercial
                     </span>
                     <div className="font-theme-medium text-primary mt-1">
-                      {displayData.business_name || "N/A"}
+                      {displayData.bussiness_name || "N/A"}
                     </div>
                   </div>
 
@@ -472,7 +607,7 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
                       Teléfono
                     </span>
                     <div className="font-theme-medium text-primary mt-1">
-                      {displayData.phone || "N/A"}
+                      {formatPhoneNumber(displayData.phone)}
                     </div>
                   </div>
                 </div>

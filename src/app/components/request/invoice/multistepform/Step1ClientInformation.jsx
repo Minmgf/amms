@@ -1,18 +1,11 @@
 import { useFormContext } from "react-hook-form";
 
-export default function Step1ClientInformation() {
+export default function Step1ClientInformation({ phoneCodes = [], municipalities = [], taxRegimens = [] }) {
   const {
     register,
     formState: { errors },
     getValues,
   } = useFormContext();
-
-  const phoneCodes = [
-    { code: "+57", country: "CO" },
-    { code: "+1", country: "US" },
-    { code: "+52", country: "MX" },
-    { code: "+34", country: "ES" },
-  ];
 
   // Valores por defecto / lectura (toman lo que tenga el form)
   const typeOfPerson = getValues("typeOfPerson") || "Natural";
@@ -92,8 +85,11 @@ export default function Step1ClientInformation() {
               aria-label="Tax Regime Select"
             >
               <option value="">Seleccione</option>
-              <option value="Responsable IVA">Responsable IVA</option>
-              <option value="No Responsable">No Responsable</option>
+              {taxRegimens.map((regime) => (
+                <option key={regime.id} value={regime.id}>
+                  {regime.name}
+                </option>
+              ))}
             </select>
             {errors.taxRegime && (
               <span className="text-xs text-red-500 mt-1 block">
@@ -158,11 +154,16 @@ export default function Step1ClientInformation() {
                 className="parametrization-input w-24"
                 aria-label="Phone Code Select"
               >
-                {phoneCodes.map((phone) => (
-                  <option key={phone.code} value={phone.code}>
-                    {phone.code}
-                  </option>
-                ))}
+                <option value="">-- Seleccione --</option>
+                {phoneCodes && phoneCodes.length > 0 ? (
+                  phoneCodes.map((phone) => (
+                    <option key={phone.id} value={`+${phone.phonecode}`}>
+                      +{phone.phonecode} ({phone.iso2})
+                    </option>
+                  ))
+                ) : (
+                  <option disabled>Cargando países...</option>
+                )}
               </select>
               <input
                 type="tel"
@@ -197,9 +198,11 @@ export default function Step1ClientInformation() {
               aria-label="Region/City Select"
             >
               <option value="">Seleccione</option>
-              <option value="Bogotá">Bogotá</option>
-              <option value="Medellín">Medellín</option>
-              <option value="Cali">Cali</option>
+              {municipalities.map((municipality) => (
+                <option key={municipality.id} value={municipality.id}>
+                  {municipality.name} ({municipality.department})
+                </option>
+              ))}
             </select>
             {errors.regionCity && (
               <span className="text-xs text-red-500 mt-1 block">

@@ -1,0 +1,8 @@
+import { redirect } from 'next/navigation'
+
+const page = () => {
+  // Redirección inmediata del lado del servidor
+  redirect('/monitoring/devicesManagement')
+}
+
+export default page

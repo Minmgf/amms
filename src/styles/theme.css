@@ -652,6 +652,59 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
+/* Info box para datos precargados (modo editar/confirmar) */
+.info-box-preloaded {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.info-box-preloaded-header {
+  margin-bottom: var(--spacing-sm);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.info-box-preloaded-title {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+}
+
+.info-box-preloaded-subtitle {
+  font-size: var(--font-size-xs);
+  color: var(--color-accent);
+  margin-top: var(--spacing-xs);
+}
+
+.info-box-editable-label {
+  font-size: var(--font-size-xs);
+  margin-left: var(--spacing-xs);
+  color: var(--color-success);
+}
+
+.info-box-alert {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-sm);
+  background-color: rgba(220, 38, 38, 0.1);
+  border: 1px solid var(--color-error);
+  border-radius: var(--border-radius-lg);
+}
+
+.info-box-alert-icon {
+  width: 1rem;
+  height: 1rem;
+  background-color: var(--color-error);
+  border-radius: 9999px;
+  margin-right: var(--spacing-sm);
+}
+
+.info-box-alert-text {
+  color: var(--color-error);
+  font-weight: var(--font-weight-medium);
+}
+
 /* Responsive helpers */
 @media (max-width: 768px) {
   .card-theme {
@@ -662,4 +715,29 @@
     padding: var(--spacing-xs) var(--spacing-sm);
     font-size: var(--font-size-sm);
   }
+}
+
+/* Sliders (rc-slider) */
+.rc-slider-track {
+  background-color: var(--color-accent) !important;
+}
+
+.rc-slider-handle {
+  border-color: var(--color-accent) !important;
+  background-color: var(--color-background) !important;
+}
+
+.rc-slider-handle:hover,
+.rc-slider-handle:active,
+.rc-slider-handle:focus {
+  border-color: var(--color-accent-hover) !important;
+  box-shadow: 0 0 0 5px rgba(59, 130, 246, 0.2) !important;
+}
+
+.rc-slider-rail {
+  background-color: var(--color-border) !important;
+}
+
+.rc-slider-handle:focus-visible {
+  outline: none;
 }
