@@ -5,11 +5,12 @@ import { FaCalendar, FaCheckCircle } from "react-icons/fa";
 import { SuccessModal, ErrorModal, ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
 import FilterModal from "@/app/components/shared/FilterModal";
 import RegisterDevice from "@/app/components/monitoring/RegisterEditDevice";
+import { getTelemetryDevices } from "@/services/devicesService";
 import { useTheme } from "@/contexts/ThemeContext";
 import TableList from "@/app/components/shared/TableList";
 import { createColumnHelper } from "@tanstack/react-table";
 import React from "react";
-import { getDevicesList, deleteDevice, toggleDeviceStatus } from "@/services/deviceService";
+import { deleteDevice, toggleDeviceStatus } from "@/services/deviceService";
 import PermissionGuard from "@/app/(auth)/PermissionGuard";
 
 const page = () => {
@@ -46,7 +47,7 @@ const page = () => {
     loadInitialData();
   }, []);
 
-  // Aplicar filtros cada vez que cambian los filtros o los datos cargados
+  // Aplicar filtros cuando cambien los datos o los filtros
   useEffect(() => {
     applyFilters();
   }, [data, statusFilter, startDateFilter, endDateFilter]);
@@ -56,8 +57,8 @@ const page = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await getDevicesList();
-      if (response) {
+      const response = await getTelemetryDevices();
+      if (response && Array.isArray(response)) {
         setData(response);
       } else {
         setError("No se pudieron cargar los Dispositivos.");
@@ -129,7 +130,7 @@ const page = () => {
 
   // Funciones para manejar el DeviceFormModal
   const handleOpenDeviceFormModal = (mode, deviceId) => {
-    const device = data.find((d) => d.id === deviceId);
+    const device = data.find((d) => d.id_device === deviceId);
     setDeviceFormMode(mode);
     setSelectedDevice(device);
     setIsDeviceFormModalOpen(true);
@@ -141,30 +142,14 @@ const page = () => {
     setDeviceFormMode("add");
   };
 
-  const handleDeviceRegistrationSuccess = (deviceData) => {
+  const handleDeviceRegistrationSuccess = async (deviceData) => {
+    // Recargar la lista completa desde el API
+    await loadInitialData();
+    
     if (deviceFormMode === "edit") {
-      // Actualizar dispositivo existente
-      setData(prevData =>
-        prevData.map(device =>
-          device.id === selectedDevice.id
-            ? { ...device, ...deviceData, id: device.id }
-            : device
-        )
-      );
       setModalTitle("Actualización Exitosa");
       setModalMessage("El dispositivo ha sido actualizado exitosamente.");
     } else {
-      // Agregar nuevo dispositivo
-      const newDevice = {
-        id: data.length + 1,
-        deviceName: deviceData.deviceName,
-        imei: deviceData.imei,
-        operationalStatus: 1,
-        statusName: "Active",
-        registerDate: new Date().toISOString().split('T')[0],
-        monitoringParameters: deviceData.monitoringParameters
-      };
-      setData([...data, newDevice]);
       setModalTitle("Registro Exitoso");
       setModalMessage("El dispositivo ha sido registrado exitosamente.");
     }

@@ -378,18 +378,38 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
   };
 
   function formatBackendErrors(errors) {
+    // Mapeo de nombres de campos técnicos a nombres legibles en español
+    const fieldNames = {
+      'machinery_users': 'Maquinaria y operarios',
+      'payment_status': 'Estado de pago',
+      'payment_method': 'Método de pago',
+      'amount_paid': 'Monto pagado',
+      'amount_to_pay': 'Monto a pagar',
+      'customer': 'Cliente',
+      'customer_phone': 'Teléfono del cliente',
+      'customer_email': 'Email del cliente',
+      'request_detail': 'Detalle de la solicitud',
+      'scheduled_start_date': 'Fecha de inicio',
+      'scheduled_end_date': 'Fecha de finalización',
+      'location': 'Ubicación',
+      'non_field_errors': ''
+    };
+
     let messages = [];
     for (const key in errors) {
       if (Array.isArray(errors[key])) {
-        // Muestra non_field_errors sin el prefijo si quieres
+        // Muestra non_field_errors sin el prefijo
         if (key === "non_field_errors") {
           messages.push(...errors[key]);
         } else {
-          messages.push(`${key}: ${errors[key].join(" ")}`);
+          const fieldLabel = fieldNames[key] || key;
+          messages.push(`${fieldLabel}: ${errors[key].join(" ")}`);
         }
       } else if (typeof errors[key] === "object" && errors[key] !== null) {
         for (const subKey in errors[key]) {
-          messages.push(`${subKey}: ${errors[key][subKey].join(" ")}`);
+          const fieldLabel = fieldNames[subKey] || subKey;
+          const subErrors = Array.isArray(errors[key][subKey]) ? errors[key][subKey].join(" ") : errors[key][subKey];
+          messages.push(`${fieldLabel}: ${subErrors}`);
         }
       }
     }
@@ -462,9 +482,27 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
         setFuelPrediction({});
         setCustomerData(null);
       } catch (error) {
-        const errorMessage = error.response?.data?.errors 
-          ? formatBackendErrors(error.response.data.errors)
-          : error.response?.data?.message || "Error al actualizar la solicitud. Por favor, intente nuevamente.";
+        let errorMessage = "Error al actualizar la solicitud. Por favor, intente nuevamente.";
+        
+        // Manejar errores 400 con formato de validación
+        if (error.response?.status === 400 && error.response?.data) {
+          const errorData = error.response.data;
+          // Si hay errores de validación en el data
+          if (typeof errorData === 'object' && Object.keys(errorData).length > 0) {
+            errorMessage = formatBackendErrors(errorData);
+          } else if (errorData.message) {
+            errorMessage = errorData.message;
+          }
+        } 
+        // Manejar errores con estructura .errors
+        else if (error.response?.data?.errors) {
+          errorMessage = formatBackendErrors(error.response.data.errors);
+        } 
+        // Manejar mensaje de error simple
+        else if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        }
+        
         setModalMessage(errorMessage);
         setErrorOpen(true);
       }
@@ -484,9 +522,27 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
         reset();
         setFuelPrediction({});
       } catch (error) {
-        const errorMessage = error.response?.data?.errors 
-          ? formatBackendErrors(error.response.data.errors)
-          : error.response?.data?.message || "Error al confirmar la solicitud. Por favor, intente nuevamente.";
+        let errorMessage = "Error al confirmar la solicitud. Por favor, intente nuevamente.";
+        
+        // Manejar errores 400 con formato de validación
+        if (error.response?.status === 400 && error.response?.data) {
+          const errorData = error.response.data;
+          // Si hay errores de validación en el data
+          if (typeof errorData === 'object' && Object.keys(errorData).length > 0) {
+            errorMessage = formatBackendErrors(errorData);
+          } else if (errorData.message) {
+            errorMessage = errorData.message;
+          }
+        } 
+        // Manejar errores con estructura .errors
+        else if (error.response?.data?.errors) {
+          errorMessage = formatBackendErrors(error.response.data.errors);
+        } 
+        // Manejar mensaje de error simple
+        else if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        }
+        
         setModalMessage(errorMessage);
         setErrorOpen(true);
       }

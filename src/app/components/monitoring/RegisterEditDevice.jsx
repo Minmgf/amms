@@ -1,84 +1,83 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
+import { getMonitoringParameters, getDeviceById, updateDevice, createTelemetryDevice } from "@/services/devicesService";
 
 const RegisterDevice = ({ isOpen, onClose, onSuccess, deviceToEdit }) => {
   const isEditMode = !!deviceToEdit;
 
+  const [parameters, setParameters] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingDevice, setLoadingDevice] = useState(false);
   const [formData, setFormData] = useState({
     deviceName: "",
     imei: "",
-    monitoringParameters: {
-      ignitionStatus: false,
-      movementStatus: false,
-      currentSpeed: false,
-      gpsLocation: false,
-      gsmSignal: false,
-      revolutions: false,
-      engineTemperature: false,
-      engineLoad: false,
-      oilLevel: false,
-      fuelLevel: false,
-      fuelUsed: false,
-      instantFuelConsumption: false,
-      obdErrors: false,
-      totalOdometer: false,
-      tripOdometer: false,
-      eventsGForce: false,
-    }
+    selectedParameters: [] // Array de IDs de parámetros seleccionados
   });
 
-  // Precargar datos en modo edición
+  // Cargar parámetros desde el API
   useEffect(() => {
-    if (isOpen && isEditMode && deviceToEdit) {
-      setFormData({
-        deviceName: deviceToEdit.deviceName || "",
-        imei: deviceToEdit.imei || "",
-        monitoringParameters: deviceToEdit.monitoringParameters || {
-          ignitionStatus: false,
-          movementStatus: false,
-          currentSpeed: false,
-          gpsLocation: false,
-          gsmSignal: false,
-          revolutions: false,
-          engineTemperature: false,
-          engineLoad: false,
-          oilLevel: false,
-          fuelLevel: false,
-          fuelUsed: false,
-          instantFuelConsumption: false,
-          obdErrors: false,
-          totalOdometer: false,
-          tripOdometer: false,
-          eventsGForce: false,
+    const fetchParameters = async () => {
+      try {
+        setLoading(true);
+        const response = await getMonitoringParameters();
+        if (response.success && response.data) {
+          setParameters(response.data);
         }
-      });
-    } else if (isOpen && !isEditMode) {
-      // Limpiar formulario en modo creación
-      setFormData({
-        deviceName: "",
-        imei: "",
-        monitoringParameters: {
-          ignitionStatus: false,
-          movementStatus: false,
-          currentSpeed: false,
-          gpsLocation: false,
-          gsmSignal: false,
-          revolutions: false,
-          engineTemperature: false,
-          engineLoad: false,
-          oilLevel: false,
-          fuelLevel: false,
-          fuelUsed: false,
-          instantFuelConsumption: false,
-          obdErrors: false,
-          totalOdometer: false,
-          tripOdometer: false,
-          eventsGForce: false,
-        }
-      });
+      } catch (error) {
+        console.error("Error al cargar parámetros:", error);
+        setParameters([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (isOpen) {
+      fetchParameters();
     }
-  }, [isOpen, isEditMode, deviceToEdit]);
+  }, [isOpen]);
+
+  // Cargar datos del dispositivo en modo edición
+  useEffect(() => {
+    const loadDeviceData = async () => {
+      if (isOpen && isEditMode && deviceToEdit && parameters.length > 0) {
+        try {
+          setLoadingDevice(true);
+          const response = await getDeviceById(deviceToEdit.id_device);
+
+          if (response.success && response.data) {
+            // Extraer IDs de los parámetros del dispositivo
+            const parameterIds = response.data.parameters.map(p => p.id);
+
+            setFormData({
+              deviceName: response.data.name || "",
+              imei: response.data.IMEI?.toString() || "",
+              selectedParameters: parameterIds
+            });
+          }
+        } catch (error) {
+          console.error("Error al cargar datos del dispositivo:", error);
+          // Si falla, usar datos del prop deviceToEdit
+          setFormData({
+            deviceName: deviceToEdit.name || deviceToEdit.deviceName || "",
+            imei: deviceToEdit.IMEI?.toString() || deviceToEdit.imei || "",
+            selectedParameters: deviceToEdit.selectedParameters || []
+          });
+        } finally {
+          setLoadingDevice(false);
+        }
+      } else if (isOpen && !isEditMode) {
+        // Limpiar formulario en modo creación
+        setFormData({
+          deviceName: "",
+          imei: "",
+          selectedParameters: []
+        });
+      }
+    };
+
+    loadDeviceData();
+  }, [isOpen, isEditMode, deviceToEdit, parameters]);
 
   useEffect(() => {
     if (isOpen) {
@@ -102,49 +101,93 @@ const RegisterDevice = ({ isOpen, onClose, onSuccess, deviceToEdit }) => {
     }));
   };
 
-  const handleCheckboxChange = (parameterName) => {
-    setFormData(prev => ({
-      ...prev,
-      monitoringParameters: {
-        ...prev.monitoringParameters,
-        [parameterName]: !prev.monitoringParameters[parameterName]
-      }
-    }));
+  const handleCheckboxChange = (parameterId) => {
+    setFormData(prev => {
+      const isSelected = prev.selectedParameters.includes(parameterId);
+      return {
+        ...prev,
+        selectedParameters: isSelected
+          ? prev.selectedParameters.filter(id => id !== parameterId)
+          : [...prev.selectedParameters, parameterId]
+      };
+    });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Datos del dispositivo:", formData);
+  const isParameterSelected = (parameterId) => {
+    return formData.selectedParameters.includes(parameterId);
+  };
 
-    // Aquí llamarías al API para guardar
-    if (onSuccess) {
-      onSuccess(formData);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // Validar que se haya ingresado nombre e IMEI
+    if (!formData.deviceName || !formData.imei) {
+      alert("Por favor ingrese el nombre del dispositivo y el IMEI");
+      return;
     }
-    onClose();
+
+    try {
+      if (isEditMode) {
+        // Actualizar dispositivo existente
+        const payload = {
+          name: formData.deviceName,
+          IMEI: parseInt(formData.imei),
+          parameters: formData.selectedParameters
+        };
+
+        console.log("Payload enviado:", payload);
+        const response = await updateDevice(deviceToEdit.id_device, payload);
+        console.log("Respuesta del API:", response);
+
+        if (response && response.success) {
+          // Llamar onSuccess con los datos actualizados
+          if (onSuccess) {
+            onSuccess({
+              ...formData,
+              id_device: response.data?.id_device || deviceToEdit.id_device
+            });
+          }
+          onClose();
+        } else {
+          throw new Error(response?.message || "Error al actualizar el dispositivo");
+        }
+      } else {
+        // Crear nuevo dispositivo
+        const payload = {
+          name: formData.deviceName,
+          IMEI: parseInt(formData.imei),
+          parameters: formData.selectedParameters
+        };
+
+        console.log("Payload para crear:", payload);
+        const response = await createTelemetryDevice(payload);
+        console.log("Respuesta de creación:", response);
+
+        if (response && response.message) {
+          // Llamar onSuccess con los datos creados
+          if (onSuccess) {
+            onSuccess({
+              ...formData,
+              id: response.id
+            });
+          }
+          onClose();
+        } else {
+          throw new Error(response?.message || "Error al crear el dispositivo");
+        }
+      }
+    } catch (error) {
+      console.error("Error al guardar dispositivo:", error);
+      const errorMessage = error.response?.data?.message || error.message || "Error al guardar el dispositivo. Por favor, intente nuevamente.";
+      alert(errorMessage);
+    }
   };
 
   const handleCancel = () => {
     setFormData({
       deviceName: "",
       imei: "",
-      monitoringParameters: {
-        ignitionStatus: false,
-        movementStatus: false,
-        currentSpeed: false,
-        gpsLocation: false,
-        gsmSignal: false,
-        revolutions: false,
-        engineTemperature: false,
-        engineLoad: false,
-        oilLevel: false,
-        fuelLevel: false,
-        fuelUsed: false,
-        instantFuelConsumption: false,
-        obdErrors: false,
-        totalOdometer: false,
-        tripOdometer: false,
-        eventsGForce: false,
-      }
+      selectedParameters: []
     });
     onClose();
   };
@@ -226,173 +269,47 @@ const RegisterDevice = ({ isOpen, onClose, onSuccess, deviceToEdit }) => {
               Parámetros de Monitoreo
             </label>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {/* Columna Izquierda */}
-              <div className="space-y-3">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.monitoringParameters.ignitionStatus}
-                    onChange={() => handleCheckboxChange('ignitionStatus')}
-                    className="w-4 h-4 rounded border-gray-300 text-accent focus:ring-accent"
-                  />
-                  <span className="text-sm text-secondary">Estado de Encendido</span>
-                </label>
-
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.monitoringParameters.currentSpeed}
-                    onChange={() => handleCheckboxChange('currentSpeed')}
-                    className="w-4 h-4 rounded border-gray-300 text-accent focus:ring-accent"
-                  />
-                  <span className="text-sm text-secondary">Velocidad Actual</span>
-                </label>
-
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.monitoringParameters.gsmSignal}
-                    onChange={() => handleCheckboxChange('gsmSignal')}
-                    className="w-4 h-4 rounded border-gray-300 text-accent focus:ring-accent"
-                  />
-                  <span className="text-sm text-secondary">Señal GSM</span>
-                </label>
-
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.monitoringParameters.engineTemperature}
-                    onChange={() => handleCheckboxChange('engineTemperature')}
-                    className="w-4 h-4 rounded border-gray-300 text-accent focus:ring-accent"
-                  />
-                  <span className="text-sm text-secondary">Temperatura del Motor</span>
-                </label>
-
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.monitoringParameters.oilLevel}
-                    onChange={() => handleCheckboxChange('oilLevel')}
-                    className="w-4 h-4 rounded border-gray-300 text-accent focus:ring-accent"
-                  />
-                  <span className="text-sm text-secondary">Nivel de Aceite</span>
-                </label>
-
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.monitoringParameters.fuelUsed}
-                    onChange={() => handleCheckboxChange('fuelUsed')}
-                    className="w-4 h-4 rounded border-gray-300 text-accent focus:ring-accent"
-                  />
-                  <span className="text-sm text-secondary">Combustible Usado (GPS)</span>
-                </label>
-
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.monitoringParameters.obdErrors}
-                    onChange={() => handleCheckboxChange('obdErrors')}
-                    className="w-4 h-4 rounded border-gray-300 text-accent focus:ring-accent"
-                  />
-                  <span className="text-sm text-secondary">Errores OBD</span>
-                </label>
-
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.monitoringParameters.tripOdometer}
-                    onChange={() => handleCheckboxChange('tripOdometer')}
-                    className="w-4 h-4 rounded border-gray-300 text-accent focus:ring-accent"
-                  />
-                  <span className="text-sm text-secondary">Odómetro de Viaje</span>
-                </label>
+            {loading || loadingDevice ? (
+              <div className="text-center py-8">
+                <p className="text-sm text-secondary">
+                  {loadingDevice ? "Cargando datos del dispositivo..." : "Cargando parámetros..."}
+                </p>
               </div>
-
-              {/* Columna Derecha */}
-              <div className="space-y-3">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.monitoringParameters.movementStatus}
-                    onChange={() => handleCheckboxChange('movementStatus')}
-                    className="w-4 h-4 rounded border-gray-300 text-accent focus:ring-accent"
-                  />
-                  <span className="text-sm text-secondary">Estado de Movimiento</span>
-                </label>
-
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.monitoringParameters.gpsLocation}
-                    onChange={() => handleCheckboxChange('gpsLocation')}
-                    className="w-4 h-4 rounded border-gray-300 text-accent focus:ring-accent"
-                  />
-                  <span className="text-sm text-secondary">Ubicación GPS</span>
-                </label>
-
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.monitoringParameters.revolutions}
-                    onChange={() => handleCheckboxChange('revolutions')}
-                    className="w-4 h-4 rounded border-gray-300 text-accent focus:ring-accent"
-                  />
-                  <span className="text-sm text-secondary">Revoluciones (RPM)</span>
-                </label>
-
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.monitoringParameters.engineLoad}
-                    onChange={() => handleCheckboxChange('engineLoad')}
-                    className="w-4 h-4 rounded border-gray-300 text-accent focus:ring-accent"
-                  />
-                  <span className="text-sm text-secondary">Carga del Motor</span>
-                </label>
-
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.monitoringParameters.fuelLevel}
-                    onChange={() => handleCheckboxChange('fuelLevel')}
-                    className="w-4 h-4 rounded border-gray-300 text-accent focus:ring-accent"
-                  />
-                  <span className="text-sm text-secondary">Nivel de Combustible</span>
-                </label>
-
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.monitoringParameters.instantFuelConsumption}
-                    onChange={() => handleCheckboxChange('instantFuelConsumption')}
-                    className="w-4 h-4 rounded border-gray-300 text-accent focus:ring-accent"
-                  />
-                  <span className="text-sm text-secondary">Consumo Instantáneo de Combustible</span>
-                </label>
-
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.monitoringParameters.totalOdometer}
-                    onChange={() => handleCheckboxChange('totalOdometer')}
-                    className="w-4 h-4 rounded border-gray-300 text-accent focus:ring-accent"
-                  />
-                  <span className="text-sm text-secondary">Odómetro Total</span>
-                </label>
-
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.monitoringParameters.eventsGForce}
-                    onChange={() => handleCheckboxChange('eventsGForce')}
-                    className="w-4 h-4 rounded border-gray-300 text-accent focus:ring-accent"
-                  />
-                  <span className="text-sm text-secondary">Eventos - Valor de Fuerza G</span>
-                </label>
+            ) : parameters.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-sm text-secondary">No se encontraron parámetros disponibles</p>
               </div>
-            </div>
+            ) : (
+              <div
+                className="grid grid-cols-1 md:grid-cols-2 gap-3 border border-blue-300 rounded-lg p-4"
+                style={{
+                  maxHeight: "400px",
+                  overflowY: "auto",
+                  borderColor: "var(--color-accent, #3b82f6)"
+                }}
+              >
+                {parameters.map((parameter) => (
+                  <label
+                    key={parameter.id}
+                    className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors"
+                    title={parameter.description || parameter.parameter_name}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isParameterSelected(parameter.id)}
+                      onChange={() => handleCheckboxChange(parameter.id)}
+                      className="w-4 h-4 rounded border-gray-300 text-accent focus:ring-accent"
+                    />
+                    <span className="text-sm text-secondary">
+                      {parameter.parameter_name}
+                      {parameter.unit && (
+                        <span className="text-xs text-gray-400 ml-1">({parameter.unit})</span>
+                      )}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Botones */}
