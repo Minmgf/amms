@@ -16,18 +16,37 @@ export default function Step4TotalTaxes() {
     let totalDiscounts = 0;
 
     invoiceLines?.forEach((line) => {
+      const basePrice = parseFloat(line.basePrice) || 0;
       const amount = parseFloat(line.amount) || 0;
       const taxPercent = parseFloat(line.taxPercent) || 0;
       const discountPercent = parseFloat(line.discountPercent) || 0;
 
-      sumGrossLineValues += amount;
-      totalTaxes += (amount * taxPercent) / 100;
-      totalDiscounts += (amount * discountPercent) / 100;
+      // Subtotal de la línea (precio base × cantidad)
+      const lineSubtotal = basePrice * amount;
+      
+      // Acumular subtotal
+      sumGrossLineValues += lineSubtotal;
+      
+      // 1. Calcular descuento sobre el subtotal
+      const discount = (lineSubtotal * discountPercent) / 100;
+      totalDiscounts += discount;
+      
+      // 2. Subtotal después del descuento
+      const subtotalAfterDiscount = lineSubtotal - discount;
+      
+      // 3. Calcular impuesto sobre el valor ya descontado
+      const taxValue = (subtotalAfterDiscount * taxPercent) / 100;
+      totalTaxes += taxValue;
     });
 
+    // Total sin impuestos = Subtotal - Descuentos
     const totalWithoutTaxes = sumGrossLineValues - totalDiscounts;
+    
+    // Total con impuestos = (Subtotal - Descuentos) + Impuestos
     const totalWithTaxes = totalWithoutTaxes + totalTaxes;
-    const amountPayable = sumGrossLineValues + totalTaxes - totalDiscounts;
+    
+    // Monto a pagar = Total con impuestos (es lo mismo)
+    const amountPayable = totalWithTaxes;
 
     setValue("sumGrossLineValues", sumGrossLineValues.toFixed(2));
     setValue("totalWithTaxes", totalWithTaxes.toFixed(2));

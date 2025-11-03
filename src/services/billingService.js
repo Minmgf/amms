@@ -1,4 +1,4 @@
-import { apiBilling } from "@/lib/axios";
+import { apiBilling, apiMain } from "@/lib/axios";
 
 // Función para obtener el token de autorización usando client credentials
 export const authorization = async () => {
@@ -71,6 +71,12 @@ export const getTributesNames = async (token) => {
   });
 
   return data;
+};
+
+//Nueva funcion para lista de impuestos
+export const getTributesName = async () => {
+    const { data } = await apiMain.get("/invoices/tributes-items/");
+    return { data };
 };
 
 
