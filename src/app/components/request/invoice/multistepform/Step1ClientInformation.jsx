@@ -8,14 +8,14 @@ export default function Step1ClientInformation({ phoneCodes = [], municipalities
   } = useFormContext();
 
   // Valores por defecto / lectura (toman lo que tenga el form)
-  const typeOfPerson = getValues("typeOfPerson") || "Natural";
-  const documentationType = getValues("documentationType") || "Cédula de ciudadanía";
-  const documentationNumber = getValues("documentationNumber") || "901457236";
-  const checkDigit = getValues("checkDigit") || "4";
-  const legalName = getValues("legalName") || "AgroCampos S.A.S";
-  const businessName = getValues("businessName") || "AgroCampos";
-  const fullName = getValues("fullName") || "AgroCampos S.A.S";
-  const fullLastName = getValues("fullLastName") || "AgroCampos";
+  const typeOfPerson = getValues("typeOfPerson") || "";
+  const documentationType = getValues("documentationType") || "";
+  const documentationNumber = getValues("documentationNumber") || "";
+  const checkDigit = getValues("checkDigit") || "";
+  const legalName = getValues("legalName") || "";
+  const businessName = getValues("businessName") || "No Registra";
+  const fullName = getValues("fullName") || "";
+  const fullLastName = getValues("fullLastName") || "";
 
   return (
     <div id="Step-1-Client-Information">

@@ -1,9 +1,11 @@
 import { useFormContext, useFieldArray } from "react-hook-form";
-import { FiSearch, FiMenu, FiTrash2 } from "react-icons/fi";
-import { useState } from "react";
+import { FiSearch, FiMenu, FiTrash2, FiSave, FiCheck } from "react-icons/fi";
+import { useState, useEffect } from "react";
+import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
 import ServicesModal from "../ServicesModal";
+import { searchServiceByCode, saveInvoiceLine, updateInvoiceLine, getInvoiceLines, deleteInvoiceLine } from "@/services/requestService";
 
-export default function Step3InvoiceLine({ unitsMeasurement = [] }) {
+export default function Step3InvoiceLine({ unitsMeasurement = [], tributesName = [], invoiceId, onLinesValidation }) {
     const {
         register,
         control,
@@ -13,27 +15,108 @@ export default function Step3InvoiceLine({ unitsMeasurement = [] }) {
         formState: { errors },
     } = useFormContext();
 
-    const { fields, append, remove } = useFieldArray({
+    const { fields, append, remove, replace } = useFieldArray({
         control,
         name: "invoiceLines",
     });
 
     const invoiceLines = watch("invoiceLines");
-    const [charCount, setCharCount] = useState(0);
+    const [charCount, setCharCount] = useState({});
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedLineIndex, setSelectedLineIndex] = useState(null);
+    const [loadingSearch, setLoadingSearch] = useState({});
+    const [searchError, setSearchError] = useState({});
+    const [savingLine, setSavingLine] = useState({});
+    const [savedLines, setSavedLines] = useState({});
+    const [successOpen, setSuccessOpen] = useState(false);
+    const [errorOpen, setErrorOpen] = useState(false);
+    const [modalMessage, setModalMessage] = useState("");
+
+    // Cargar líneas guardadas al montar el componente
+    useEffect(() => {
+        if (invoiceId) {
+            loadSavedLines();
+        }
+    }, [invoiceId]);
+
+    const loadSavedLines = async () => {
+        if (!invoiceId) return;
+
+        try {
+            const response = await getInvoiceLines(invoiceId);
+            if (response) {
+                const lines = response;
+
+                // Formatear las líneas para el formulario usando factus_payload
+                const formattedLines = lines.map(line => {
+                    const payload = line.factus_payload;
+                    const lineId = line.id_invoice_line || line.id;
+
+                    return {
+                        id: lineId,
+                        serviceCode: payload.code_reference,
+                        serviceName: payload.name,
+                        description: line.service_item_description,
+                        basePrice: payload.price || line.price_unit || "",
+                        amount: payload.quantity || line.quantity || "",
+                        unitOfMeasurement: payload.unit_measure_id || line.units_measurement_id || "",
+                        tax: payload.tribute_id || line.tribute_id || "",
+                        taxPercent: payload.tax_rate || line.percentage_taxes_per_line || "",
+                        discountPercent: payload.discount_rate || line.discount_percentage || "0",
+                        totalDiscount: line.discount_amount || "0.00",
+                        totalValue: line.total_line_amount ? line.total_line_amount.toFixed(2) : "0.00",
+                        isSaved: true  // ✅ <-- agrega esto directamente aquí
+                    };
+                });
+
+                // Reemplazar las líneas en el formulario
+                replace(formattedLines);
+
+                // Marcar líneas como guardadas usando el ID de la línea como clave
+                const savedStatus = {};
+                formattedLines.forEach((line) => {
+                    if (line.id && line.id !== null && line.id !== undefined) {
+                        savedStatus[line.id] = true; // Usar line.id como clave, no el índice
+                    }
+                });
+
+                setTimeout(() => {
+                    setSavedLines(savedStatus);
+
+                    // Notificar al componente padre que hay líneas guardadas
+                    const hasSavedLines = Object.values(savedStatus).some(saved => saved === true);
+                    if (onLinesValidation) {
+                        onLinesValidation(hasSavedLines);
+                    }
+                }, 100);
+            }
+        } catch (error) {
+            console.error("Error cargando líneas guardadas:", error);
+        }
+    };
 
     const calculateLineTotals = (index) => {
         const line = invoiceLines[index];
         if (!line) return;
 
+        const basePrice = parseFloat(line.basePrice) || 0;
         const amount = parseFloat(line.amount) || 0;
+        const subtotal = basePrice * amount;
+
         const taxPercent = parseFloat(line.taxPercent) || 0;
         const discountPercent = parseFloat(line.discountPercent) || 0;
 
-        const taxValue = (amount * taxPercent) / 100;
-        const discountValue = (amount * discountPercent) / 100;
-        const totalValue = amount + taxValue - discountValue;
+        // 1. Calcular el descuento sobre el subtotal
+        const discountValue = (subtotal * discountPercent) / 100;
+
+        // 2. Restar el descuento del subtotal
+        const subtotalAfterDiscount = subtotal - discountValue;
+
+        // 3. Aplicar el impuesto sobre el valor ya descontado
+        const taxValue = (subtotalAfterDiscount * taxPercent) / 100;
+
+        // 4. Total final
+        const totalValue = subtotalAfterDiscount + taxValue;
 
         setValue(`invoiceLines.${index}.totalDiscount`, discountValue.toFixed(2));
         setValue(`invoiceLines.${index}.totalValue`, totalValue.toFixed(2));
@@ -45,13 +128,24 @@ export default function Step3InvoiceLine({ unitsMeasurement = [] }) {
         let totalTaxes = 0;
 
         invoiceLines?.forEach((line) => {
+            const basePrice = parseFloat(line.basePrice) || 0;
             const amount = parseFloat(line.amount) || 0;
-            const discount = parseFloat(line.totalDiscount) || 0;
+            const lineSubtotal = basePrice * amount;
+            const discountPercent = parseFloat(line.discountPercent) || 0;
             const taxPercent = parseFloat(line.taxPercent) || 0;
 
-            subtotal += amount;
+            // 1. Calcular el descuento
+            const discount = (lineSubtotal * discountPercent) / 100;
+
+            // 2. Subtotal después del descuento
+            const subtotalAfterDiscount = lineSubtotal - discount;
+
+            // 3. Aplicar impuesto sobre el valor ya descontado
+            const taxValue = (subtotalAfterDiscount * taxPercent) / 100;
+
+            subtotal += lineSubtotal;
             totalDiscounts += discount;
-            totalTaxes += (amount * taxPercent) / 100;
+            totalTaxes += taxValue;
         });
 
         return {
@@ -69,6 +163,7 @@ export default function Step3InvoiceLine({ unitsMeasurement = [] }) {
             serviceCode: "",
             serviceName: "",
             description: "",
+            basePrice: "",
             amount: "",
             unitOfMeasurement: "",
             tax: "",
@@ -76,6 +171,7 @@ export default function Step3InvoiceLine({ unitsMeasurement = [] }) {
             discountPercent: "",
             totalDiscount: "0.00",
             totalValue: "0.00",
+            isSaved: false
         });
     };
 
@@ -84,14 +180,194 @@ export default function Step3InvoiceLine({ unitsMeasurement = [] }) {
         setIsModalOpen(true);
     };
 
-    const handleSelectService = (serviceName) => {
+    const clearServiceFields = (index) => {
+        setValue(`invoiceLines.${index}.serviceName`, "");
+        setValue(`invoiceLines.${index}.description`, "");
+        setValue(`invoiceLines.${index}.basePrice`, "");
+        setValue(`invoiceLines.${index}.unitOfMeasurement`, "");
+        setValue(`invoiceLines.${index}.tax`, "");
+        setValue(`invoiceLines.${index}.taxPercent`, "");
+        setValue(`invoiceLines.${index}.discountPercent`, "");
+        setValue(`invoiceLines.${index}.totalDiscount`, "0.00");
+        setValue(`invoiceLines.${index}.totalValue`, "0.00");
+    };
+
+    const handleSearchByCode = async (index) => {
+        const serviceCode = watch(`invoiceLines.${index}.serviceCode`);
+
+        if (!serviceCode || serviceCode.trim() === "") {
+            setSearchError({
+                ...searchError,
+                [index]: "Ingrese un código de servicio"
+            });
+            return;
+        }
+
+        try {
+            setLoadingSearch({ ...loadingSearch, [index]: true });
+            setSearchError({ ...searchError, [index]: null });
+
+            const response = await searchServiceByCode(serviceCode.trim());
+
+            if (response) {
+                const service = response.data[0];
+
+                setValue(`invoiceLines.${index}.serviceName`, service.name || service.service_name || "");
+                setValue(`invoiceLines.${index}.description`, service.description || "");
+                setValue(`invoiceLines.${index}.basePrice`, service.price || service.base_price || "");
+
+                if (service.applicable_tax) {
+                    setValue(`invoiceLines.${index}.tax`, service.applicable_tax);
+                }
+
+                if (service.tax_rate) {
+                    setValue(`invoiceLines.${index}.taxPercent`, service.tax_rate);
+                }
+
+                setTimeout(() => calculateLineTotals(index), 100);
+
+                trigger(`invoiceLines.${index}.serviceName`);
+                trigger(`invoiceLines.${index}.amount`);
+                trigger(`invoiceLines.${index}.unitOfMeasurement`);
+
+            } else {
+                clearServiceFields(index);
+                setSearchError({
+                    ...searchError,
+                    [index]: "Servicio no encontrado"
+                });
+            }
+        } catch (error) {
+            console.error("Error buscando servicio:", error);
+            clearServiceFields(index);
+            setSearchError({
+                ...searchError,
+                [index]: "Servicio no encontrado"
+            });
+        } finally {
+            setLoadingSearch({ ...loadingSearch, [index]: false });
+        }
+    };
+
+    const handleSelectService = (service) => {
         if (selectedLineIndex !== null) {
-            setValue(`invoiceLines.${selectedLineIndex}.serviceName`, serviceName);
-            // Validar el campo cuando se selecciona del modal
+            setValue(`invoiceLines.${selectedLineIndex}.serviceName`, service.name);
+            setValue(`invoiceLines.${selectedLineIndex}.serviceCode`, service.id);
+            setValue(`invoiceLines.${selectedLineIndex}.description`, service.description);
+            setValue(`invoiceLines.${selectedLineIndex}.basePrice`, service.price || service.base_price || "");
+            setValue(`invoiceLines.${selectedLineIndex}.tax`, service.applicable_tax);
+            setValue(`invoiceLines.${selectedLineIndex}.taxPercent`, service.tax_rate);
+
+            setTimeout(() => calculateLineTotals(selectedLineIndex), 100);
+
             trigger(`invoiceLines.${selectedLineIndex}.serviceName`);
+            trigger(`invoiceLines.${selectedLineIndex}.amount`);
         }
         setIsModalOpen(false);
         setSelectedLineIndex(null);
+    };
+
+    const handleSaveLine = async (index) => {
+        // Validar campos obligatorios de la línea
+        const fieldsToValidate = [
+            `invoiceLines.${index}.serviceCode`,
+            `invoiceLines.${index}.serviceName`,
+            `invoiceLines.${index}.amount`,
+            `invoiceLines.${index}.unitOfMeasurement`,
+            `invoiceLines.${index}.tax`,
+            `invoiceLines.${index}.taxPercent`
+        ];
+
+        const isValid = await trigger(fieldsToValidate);
+
+        if (!isValid) {
+            return;
+        }
+
+        const line = invoiceLines[index];
+
+        try {
+            setSavingLine({ ...savingLine, [index]: true });
+
+            // Preparar datos para enviar
+            const lineData = {
+                service_item: line.serviceCode,
+                quantity: parseFloat(line.amount),
+                units_measurement_id: Number(line.unitOfMeasurement),
+                tribute_id: line.tax,
+                percentage_taxes_per_line: parseFloat(line.taxPercent),
+                discount_percentage: parseFloat(line.discountPercent) || 0,
+            };
+
+            let response;
+
+            // Si la línea tiene ID (viene del GET), actualizar usando id_invoice_line
+            if (line.id) {
+                response = await updateInvoiceLine(invoiceId, line.id, lineData);
+            } else {
+                // Si es una línea nueva, crear
+                response = await saveInvoiceLine(invoiceId, lineData);
+            }
+
+            if (response) {
+                setModalMessage(response.detail);
+                setSuccessOpen(true);
+                await loadSavedLines();
+                // Solo actualizar el ID si es una línea nueva (no tiene ID previo)
+                if (!line.id && response.id_invoice_line) {
+                    setValue(`invoiceLines.${index}.id`, response.id_invoice_line);
+                }
+
+                // Marcar como guardada
+                const newSavedLines = { ...savedLines, [index]: true };
+                setSavedLines(newSavedLines);
+                setValue(`invoiceLines.${index}.isSaved`, true);
+
+                // Notificar al componente padre que hay líneas guardadas
+                if (onLinesValidation) {
+                    onLinesValidation(true);
+                }
+            }
+        } catch (error) {
+            setModalMessage(error.response.data.message);
+            setErrorOpen(true);
+        } finally {
+            setSavingLine({ ...savingLine, [index]: false });
+        }
+    };
+
+    const handleDeleteLine = async (index) => {
+        const line = invoiceLines[index];
+
+        if (line.id) {
+            // Si la línea está guardada, confirmar eliminación
+            try {
+                // Usar id_invoice_line para eliminar
+                const response = await deleteInvoiceLine(invoiceId, line.id);
+                setModalMessage(response.detail);
+                setSuccessOpen(true);
+
+                // Eliminar del estado de líneas guardadas usando el ID
+                const newSavedLines = { ...savedLines };
+                delete newSavedLines[line.id];
+                setSavedLines(newSavedLines);
+
+                // Remover la línea del formulario
+                remove(index);
+
+                // Verificar si quedan líneas guardadas después de eliminar
+                const hasSavedLines = Object.values(newSavedLines).some(saved => saved === true);
+                if (onLinesValidation) {
+                    onLinesValidation(hasSavedLines);
+                }
+            } catch (error) {
+                console.error("Error eliminando línea:", error);
+                alert(`Error al eliminar la línea: ${error.message || 'Error desconocido'}`);
+            }
+        } else {
+            // Si no está guardada, solo removerla del formulario
+            remove(index);
+        }
     };
 
     const handleNegativeInput = (e) => {
@@ -109,9 +385,15 @@ export default function Step3InvoiceLine({ unitsMeasurement = [] }) {
     };
 
     const handleFieldChange = (fieldPath) => {
-        // Validar el campo específico cuando cambia
         trigger(fieldPath);
     };
+
+    const isLineSaved = (index) => {
+        const line = invoiceLines[index];
+        if (!line) return false;
+        return line.isSaved || savedLines[line.id] || false;
+    };
+
 
     return (
         <>
@@ -120,45 +402,79 @@ export default function Step3InvoiceLine({ unitsMeasurement = [] }) {
 
                 <div className="space-y-6">
                     {fields.map((field, index) => (
-                        <div key={field.id} className="space-y-4">
+                        <div key={field.id} className="space-y-4 p-4 border rounded-lg relative" style={{
+                            backgroundColor: isLineSaved(index) ? '#f0fdf4' : '#ffffff',
+                            borderColor: isLineSaved(index) ? '#86efac' : '#e5e7eb'
+                        }}>
+                            {/* Indicador de línea guardada */}
+                            {isLineSaved(index) && (
+                                <div className="absolute top-2 right-2 flex items-center gap-1 text-green-600 text-xs">
+                                    <FiCheck className="w-4 h-4" />
+                                    <span>Guardada</span>
+                                </div>
+                            )}
+
                             {/* Service Line Header */}
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between mb-4">
                                 <h4 className="text-base font-semibold text-secondary">
                                     Línea de Servicio #{index + 1}
                                 </h4>
-                                {fields.length > 1 && (
-                                    <button
-                                        type="button"
-                                        onClick={() => remove(index)}
-                                        className="text-red-500 hover:text-red-700 transition-colors"
-                                    >
-                                        <FiTrash2 className="w-5 h-5" />
-                                    </button>
-                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => handleDeleteLine(index)}
+                                    className="text-red-500 hover:text-red-700 transition-colors p-2 hover:bg-red-50 rounded-md flex items-center gap-1"
+                                    title="Eliminar línea"
+                                    aria-label="Delete Line Button"
+                                >
+                                    <FiTrash2 className="w-5 h-5" />
+                                </button>
                             </div>
+
+                            {/* Campo oculto para basePrice e id */}
+                            <input type="hidden" {...register(`invoiceLines.${index}.basePrice`)} />
+                            <input type="hidden" {...register(`invoiceLines.${index}.id`)} />
+                            <input type="hidden" {...register(`invoiceLines.${index}.isSaved`)} />
 
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 {/* Service code */}
                                 <div>
                                     <label className="block text-sm font-medium text-secondary mb-2">
-                                        Código del Servicio
+                                        Código del Servicio *
                                     </label>
                                     <div className="relative">
                                         <input
                                             type="text"
                                             {...register(`invoiceLines.${index}.serviceCode`, {
                                                 required: "Campo obligatorio",
-                                                onChange: () => handleFieldChange(`invoiceLines.${index}.serviceCode`),
+                                                onChange: () => {
+                                                    handleFieldChange(`invoiceLines.${index}.serviceCode`);
+                                                    if (searchError[index]) {
+                                                        setSearchError({ ...searchError, [index]: null });
+                                                    }
+                                                },
                                             })}
                                             className="parametrization-input w-full pr-10"
                                             placeholder="Código de Servicio"
                                             aria-label="Service Code Input"
+                                            onKeyPress={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    handleSearchByCode(index);
+                                                }
+                                            }}
                                         />
                                         <button
                                             type="button"
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                            onClick={() => handleSearchByCode(index)}
+                                            disabled={loadingSearch[index]}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            title="Buscar servicio por código"
                                         >
-                                            <FiSearch className="w-4 h-4" />
+                                            {loadingSearch[index] ? (
+                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                                            ) : (
+                                                <FiSearch className="w-4 h-4" />
+                                            )}
                                         </button>
                                     </div>
                                     {errors.invoiceLines?.[index]?.serviceCode && (
@@ -166,11 +482,21 @@ export default function Step3InvoiceLine({ unitsMeasurement = [] }) {
                                             {errors.invoiceLines[index].serviceCode.message}
                                         </span>
                                     )}
+                                    {searchError[index] && (
+                                        <span className="text-xs text-red-500 mt-1 block">
+                                            {searchError[index]}
+                                        </span>
+                                    )}
+                                    {loadingSearch[index] && (
+                                        <span className="text-xs text-blue-500 mt-1 block">
+                                            Buscando servicio...
+                                        </span>
+                                    )}
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-secondary mb-2">
-                                        Nombre del Servicio
+                                        Nombre del Servicio *
                                     </label>
                                     <div className="relative">
                                         <input
@@ -179,17 +505,16 @@ export default function Step3InvoiceLine({ unitsMeasurement = [] }) {
                                                 required: "Campo obligatorio",
                                                 onChange: () => handleFieldChange(`invoiceLines.${index}.serviceName`),
                                             })}
-                                            className="parametrization-input w-full pr-10"
+                                            className="parametrization-input w-full pr-12 whitespace-nowrap overflow-hidden text-ellipsis"
                                             placeholder="Nombre del Servicio"
                                             aria-label="Service Name Input"
+                                            title={watch(`invoiceLines.${index}.serviceName`)}
                                         />
                                         <button
                                             type="button"
-                                            onClick={() => {
-                                                handleOpenModal(index);
-                                            }}
+                                            onClick={() => handleOpenModal(index)}
                                             aria-label="Active Services Button"
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer bg-transparent border-none p-1"
+                                            className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer bg-transparent border-none"
                                         >
                                             <FiMenu className="w-4 h-4" />
                                         </button>
@@ -203,7 +528,7 @@ export default function Step3InvoiceLine({ unitsMeasurement = [] }) {
 
                                 <div>
                                     <label className="block text-sm font-medium text-secondary mb-2">
-                                        Cantidad
+                                        Cantidad *
                                     </label>
                                     <input
                                         type="number"
@@ -231,7 +556,7 @@ export default function Step3InvoiceLine({ unitsMeasurement = [] }) {
 
                                 <div>
                                     <label className="block text-sm font-medium text-secondary mb-2">
-                                        Unidad de Medida
+                                        Unidad de Medida *
                                     </label>
                                     <select
                                         {...register(`invoiceLines.${index}.unitOfMeasurement`, {
@@ -275,7 +600,7 @@ export default function Step3InvoiceLine({ unitsMeasurement = [] }) {
                                     className="parametrization-input w-full"
                                     rows={3}
                                     onChange={(e) => {
-                                        setCharCount(e.target.value.length);
+                                        setCharCount({ ...charCount, [index]: e.target.value.length });
                                         handleFieldChange(`invoiceLines.${index}.description`);
                                     }}
                                     aria-label="Service Description Textarea"
@@ -286,14 +611,14 @@ export default function Step3InvoiceLine({ unitsMeasurement = [] }) {
                                         {errors.invoiceLines[index].description.message}
                                     </span>
                                 ) : (
-                                    <span className="text-xs text-gray-500">{charCount}/500 caracteres</span>
+                                    <span className="text-xs text-gray-500">{charCount[index] || 0}/500 caracteres</span>
                                 )}
                             </div>
 
                             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-secondary mb-2">
-                                        Impuesto
+                                        Impuesto *
                                     </label>
                                     <select
                                         {...register(`invoiceLines.${index}.tax`, {
@@ -304,9 +629,15 @@ export default function Step3InvoiceLine({ unitsMeasurement = [] }) {
                                         aria-label="Tax Select"
                                     >
                                         <option value="">Select</option>
-                                        <option value="IVA">IVA</option>
-                                        <option value="INC">INC</option>
-                                        <option value="Exempt">Exempt</option>
+                                        {tributesName && tributesName.length > 0 ? (
+                                            tributesName.map((tribute) => (
+                                                <option key={tribute.id} value={tribute.id}>
+                                                    {tribute.name}
+                                                </option>
+                                            ))
+                                        ) : (
+                                            <option disabled>Cargando impuestos...</option>
+                                        )}
                                     </select>
                                     {errors.invoiceLines?.[index]?.tax && (
                                         <span className="text-xs text-red-500 mt-1 block">
@@ -317,7 +648,7 @@ export default function Step3InvoiceLine({ unitsMeasurement = [] }) {
 
                                 <div>
                                     <label className="block text-sm font-medium text-secondary mb-2">
-                                        % de Impuesto
+                                        % de Impuesto *
                                     </label>
                                     <input
                                         type="number"
@@ -399,6 +730,31 @@ export default function Step3InvoiceLine({ unitsMeasurement = [] }) {
                                 </div>
                             </div>
 
+                            {/* Botón de Guardar línea debajo del Valor Total */}
+                            <div className="col-span-12 flex justify-end mt-4">
+                                <button
+                                    type="button"
+                                    aria-label="Add/Update Line Button"
+                                    onClick={() => handleSaveLine(index)}
+                                    disabled={savingLine[index]}
+                                    className="flex btn-primary items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {savingLine[index] ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                            <span className="text-sm">Guardando...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FiSave className="w-4 h-4" />
+                                            <span className="text-sm">
+                                                {isLineSaved(index) ? "Actualizar línea" : "Guardar línea"}
+                                            </span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+
                             {index < fields.length - 1 && (
                                 <hr className="border-gray-200 my-6" />
                             )}
@@ -458,6 +814,18 @@ export default function Step3InvoiceLine({ unitsMeasurement = [] }) {
                     setSelectedLineIndex(null);
                 }}
                 onSelectService={handleSelectService}
+            />
+            <SuccessModal
+                isOpen={successOpen}
+                onClose={() => setSuccessOpen(false)}
+                title="Exito"
+                message={modalMessage}
+            />
+            <ErrorModal
+                isOpen={errorOpen}
+                onClose={() => setErrorOpen(false)}
+                title="Error"
+                message={modalMessage}
             />
         </>
     );

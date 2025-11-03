@@ -15,6 +15,7 @@ import GenerateReportModal from '@/app/components/request/GenerateReportModal';
 import { getGestionServicesList } from '@/services/serviceService';
 import { authorization } from "@/services/billingService";
 import PermissionGuard from '@/app/(auth)/PermissionGuard';
+import { downloadInvoicePDF } from '@/services/requestService';
 
 const RequestsManagementPage = () => {
   // Estados principales
@@ -47,14 +48,15 @@ const RequestsManagementPage = () => {
   const [mode, setMode] = useState('preregister'); // 'preregister' o 'register'
   const [billingToken, setBillingToken] = useState("");
   const [reportModalOpen, setReportModalOpen] = useState(false);
-  
+  const [selectedRequestForInvoice, setSelectedRequestForInvoice] = useState(null);
+
   // Función para cargar solicitudes desde el API
   const loadRequests = async () => {
     try {
       setLoading(true);
       const response = await getGestionServicesList();
 
-      
+
 
       if (response.success && response.results) {
         // Mapear datos del API a la estructura del componente
@@ -64,7 +66,8 @@ const RequestsManagementPage = () => {
           requestCode: item.code,
           client: {
             name: item.legal_entity_name,
-            idNumber: item.customer_name // El nombre del cliente va en el subtítulo
+            idNumber: item.customer_name, // El nombre del cliente va en el subtítulo
+            idClient: item.customer_id
           },
           requestStatus: item.request_status_name || 'N/A',
           requestStatusId: item.request_status_id,
@@ -72,7 +75,8 @@ const RequestsManagementPage = () => {
           paymentStatusId: item.payment_status_id,
           scheduledDate: item.scheduled_date,
           completionDate: item.completion_date,
-          hasInvoice: item.payment_status_id !== null // Asumimos que tiene factura si tiene estado de pago
+          iDinvoice: item.invoice_id,
+          invoiceStatusId: item.invoice_status_id,
         }));
 
         setRequestsData(mappedData);
@@ -322,12 +326,44 @@ const RequestsManagementPage = () => {
     loadRequests();
   };
 
-  const handleRegisterInvoice = (requestId) => {
+  const handleRegisterInvoice = (request) => {
+    setSelectedRequestForInvoice(request);
     setGenerateInvoiceModalOpen(true);
   };
 
-  const handleDownloadInvoice = (requestId) => {
-    // TODO: Implementar descarga de factura
+  const handleDownloadInvoice = async (iDinvoice) => {
+    try {
+      const blob = await downloadInvoicePDF(iDinvoice);
+      // Crear URL del blob
+      const url = window.URL.createObjectURL(blob);
+      // Crear enlace temporal para descarga
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `factura_${iDinvoice}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+
+      // Limpiar
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error al descargar factura:', error);
+    }
+
+  };
+
+  // Cuando se cierra el modal
+  const handleInvoiceModalClose = async () => {
+    setGenerateInvoiceModalOpen(false);
+    setSelectedRequestForInvoice(null);
+    await loadRequests();
+  };
+
+  // Cuando se genera exitosamente
+  const handleInvoiceSuccess = async () => {
+    setGenerateInvoiceModalOpen(false);
+    setSelectedRequestForInvoice(null);
+    await loadRequests();
   };
 
   const handleNewPreRequest = () => {
@@ -355,7 +391,7 @@ const RequestsManagementPage = () => {
     //   requestCode: request.requestCode, 
     //   statusId: request.requestStatusId 
     // });
-    
+
     return (
       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
         {/* Detalles - siempre disponible */}
@@ -424,25 +460,31 @@ const RequestsManagementPage = () => {
         )}
 
         {/* Registrar factura - si no tiene factura */}
-        {!request.hasInvoice && request.requestStatusId !== 6 && (
-          <button
-            onClick={() => handleRegisterInvoice(request.id)}
-            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-purple-300 hover:border-purple-500 hover:text-purple-600 text-purple-600"
-            title="Registrar factura"
-          >
-            <FaFileInvoice className="w-3 h-3" /> Factura
-          </button>
+        {(request.requestStatusId === 20 || request.requestStatusId === 21 || request.requestStatusId === 22) && (request.invoiceStatusId != 26) && (
+          <PermissionGuard permission={158}>
+            <button
+              onClick={() => handleRegisterInvoice(request)}
+              aria-label='Create Invoice Button'
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-purple-300 hover:border-purple-500 hover:text-purple-600 text-purple-600"
+              title={request.invoiceStatusId === 24 ? "Continuar registro" : "Registrar factura"}
+            >
+              <FaFileInvoice className="w-3 h-3" /> Factura
+            </button>
+          </PermissionGuard>
         )}
 
         {/* Descargar factura - si tiene factura */}
-        {request.hasInvoice && (
-          <button
-            onClick={() => handleDownloadInvoice(request.id)}
-            className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-blue-300 hover:border-blue-500 hover:text-blue-600 text-blue-600"
-            title="Descargar factura"
-          >
-            <FaFileDownload className="w-3 h-3" /> Factura
-          </button>
+        {(request.invoiceStatusId === 26) && (
+          <PermissionGuard permission={161}>
+            <button
+              onClick={() => handleDownloadInvoice(request.iDinvoice)}
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-blue-300 hover:border-blue-500 hover:text-blue-600 text-blue-600"
+              title="Descargar factura"
+              aria-label='Download Invoice Button'
+            >
+              <FaFileDownload className="w-3 h-3" /> Factura
+            </button>
+          </PermissionGuard>
         )}
       </div>
     );
@@ -868,9 +910,10 @@ const RequestsManagementPage = () => {
       {/* Modal de Generar Factura */}
       <GenerateInvoiceModal
         isOpen={GenerateInvoiceModalOpen}
-        onClose={() => setGenerateInvoiceModalOpen(false)}
-        request={selectedRequest}
+        onClose={handleInvoiceModalClose}
+        request={selectedRequestForInvoice}
         billingToken={billingToken}
+        onSuccess={handleInvoiceSuccess}
       />
 
       {/* Modal de Generar Reporte */}

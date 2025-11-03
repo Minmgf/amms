@@ -1,28 +1,30 @@
-import { useState } from "react";
+import { getServicesActive } from "@/services/requestService";
+import { useEffect, useState } from "react";
 import { FiSearch, FiX } from "react-icons/fi";
 
 function ServicesModal({ isOpen, onClose, onSelectService }) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [services, setServices] = useState([]);
 
-  // Lista de servicios de ejemplo
-  const services = [
-    { id: 1, name: "Servicio Activo 1" },
-    { id: 2, name: "Servicio Activo 2" },
-    { id: 3, name: "Servicio Activo 3" },
-    { id: 4, name: "Servicio Activo 4" },
-    { id: 5, name: "Servicio Activo 5" },
-    { id: 6, name: "Servicio Activo 6" },
-    { id: 7, name: "Servicio Activo 7" },
-    { id: 8, name: "Servicio Activo 8" },
-    { id: 1, name: "Servicio Activo 1" },
-    { id: 2, name: "Servicio Activo 2" },
-    { id: 3, name: "Servicio Activo 3" },
-    { id: 4, name: "Servicio Activo 4" },
-    { id: 5, name: "Servicio Activo 5" },
-    { id: 6, name: "Servicio Activo 6" },
-    { id: 7, name: "Servicio Activo 7" },
-    { id: 8, name: "Servicio Activo 8" },
-  ];
+  // Lista de servicios
+
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  const loadInitialData = async () => {
+    try {
+      const response = await getServicesActive();
+      if (response) {
+        setServices(response.data);
+      } else {
+        setServices([]);
+      }
+    } catch (err) {
+      setServices([]);
+    } 
+  };
+
 
   // Filtrar servicios según búsqueda
   const filteredServices = services.filter((service) =>
@@ -52,7 +54,7 @@ function ServicesModal({ isOpen, onClose, onSelectService }) {
         </div>
 
         {/* Search Input */}
-         <div className="p-4 border-b border-gray-200">
+        <div className="p-4 border-b border-gray-200">
           <div className="relative">
             <FiSearch className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
             <input
@@ -75,7 +77,7 @@ function ServicesModal({ isOpen, onClose, onSelectService }) {
                 <li key={service.id}>
                   <button
                     type="button"
-                    onClick={() => handleSelectService(service.name)}
+                    onClick={() => handleSelectService(service)}
                     className="w-full text-left px-4 py-3 text-secondary hover:bg-gray-100 transition-colors"
                     aria-label={`Select ${service.name}`}
                   >

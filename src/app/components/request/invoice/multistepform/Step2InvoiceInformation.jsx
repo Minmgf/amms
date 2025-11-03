@@ -1,13 +1,15 @@
 import { useFormContext } from "react-hook-form";
 import { useState } from "react";
 
-export default function Step2InvoiceInformation() {
+export default function Step2InvoiceInformation({ paymentMethods = [] }) {
     const {
         register,
         formState: { errors },
+        watch
     } = useFormContext();
 
     const [charCount, setCharCount] = useState(0);
+    const referenceNumber = watch("referenceNumber"); 
 
     return (
         <div id="Step-2-Invoice-Information">
@@ -21,7 +23,9 @@ export default function Step2InvoiceInformation() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
                             <div className="flex items-center">
                                 <span className="text-sm font-medium text-secondary w-48">Código de Referencia:</span>
-                                <span className="text-sm text-gray-700">Example Code</span>
+                                <span className="text-sm text-gray-700 w-60">
+                                    {referenceNumber || "Se genera al completar este paso"}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -58,10 +62,11 @@ export default function Step2InvoiceInformation() {
                             aria-label="Payment Method Select"
                         >
                             <option value="">Seleccione</option>
-                            <option value="Efectivo">Efectivo</option>
-                            <option value="Transferencia">Transferencia</option>
-                            <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
-                            <option value="Tarjeta de Débito">Tarjeta de Débito</option>
+                            {paymentMethods.map((metthod) => (
+                                <option key={metthod.code} value={metthod.code}>
+                                    {metthod.name}
+                                </option>
+                            ))}
                         </select>
                         {errors.paymentMethod && (
                             <span className="text-xs text-red-500 mt-1 block">
