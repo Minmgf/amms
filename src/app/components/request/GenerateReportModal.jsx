@@ -87,16 +87,22 @@ const GenerateReportModal = ({ isOpen, onClose }) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    if (dateFrom && new Date(dateFrom) > today) {
-      setErrorMessage("La fecha de registro inicial no puede ser futura");
-      setIsErrorModalOpen(true);
-      return;
+    if (dateFrom) {
+      const dateFromObj = new Date(dateFrom + 'T00:00:00');
+      if (dateFromObj > today) {
+        setErrorMessage("La fecha de registro inicial no puede ser futura");
+        setIsErrorModalOpen(true);
+        return;
+      }
     }
 
-    if (dateTo && new Date(dateTo) > today) {
-      setErrorMessage("La fecha de registro final no puede ser futura");
-      setIsErrorModalOpen(true);
-      return;
+    if (dateTo) {
+      const dateToObj = new Date(dateTo + 'T00:00:00');
+      if (dateToObj > today) {
+        setErrorMessage("La fecha de registro final no puede ser futura");
+        setIsErrorModalOpen(true);
+        return;
+      }
     }
 
     setIsSubmitting(true);
