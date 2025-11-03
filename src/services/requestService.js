@@ -37,14 +37,12 @@ export const getActiveWorkers = async () => {
 }
 
 // Obtener estados de pago
-// Retorna: [{ id_statues: 16, name: "Pendiente" }, { id_statues: 17, name: "Parcial" }, { id_statues: 18, name: "Pagado" }]
 export const getPaymentStatus = async () => {
     const { data } = await apiMain.get("/statues/list/6/");
     return data;
 }
 
 // Obtener metodos de pago
-// Retorna: [{ code: "10", name: "Efectivo" }, { code: "42", name: "Consignación" }, ...]
 export const getPaymentMethods = async () => {
     const { data } = await apiMain.get("/payment_methods/");
     return data;
@@ -104,48 +102,17 @@ export const confirmRequest = async (requestId, requestData) => {
 };
 
 // Completar una solicitud (cambiar estado de En proceso a Finalizada)
-export const completeRequest = async (requestId, requestData) => {
+export const completeRequest = async (requestId, observations) => {
     console.log('📤 Completando solicitud - requestId:', requestId);
-    
-    // Soportar formato antiguo (solo string) y nuevo formato (objeto)
-    let payload;
-    if (typeof requestData === 'string') {
-        // Formato antiguo: solo observaciones
-        payload = {
-            completion_cancellation_observations: requestData
-        };
-    } else {
-        // Formato nuevo: objeto con observaciones y fechas
-        payload = {
-            completion_cancellation_observations: requestData.observations,
-            actual_start_date: requestData.startDate,
-            actual_end_date: requestData.endDate
-        };
-    }
-    
-    console.log('📦 Payload:', payload);
-    
+    console.log('📦 Observaciones:', observations);
     try {
-        const { data } = await apiMain.post(`/service_requests/${requestId}/complete/`, payload);
+        const { data } = await apiMain.post(`/service_requests/${requestId}/complete/`, {
+            completion_cancellation_observations: observations
+        });
         console.log('✅ Solicitud completada exitosamente:', data);
         return data;
     } catch (error) {
         console.error('❌ Error en completeRequest:', error);
-        console.error('📋 Error response:', error.response);
-        throw error;
-    }
-};
-
-// Actualizar una solicitud existente (HU-SOL-005)
-export const updateRequest = async (requestId, requestData) => {
-    console.log('📤 Actualizando solicitud - requestId:', requestId);
-    console.log('📦 Payload:', requestData);
-    try {
-        const { data } = await apiMain.patch(`/service_requests/${requestId}/update_request/`, requestData);
-        console.log('✅ Solicitud actualizada exitosamente:', data);
-        return data;
-    } catch (error) {
-        console.error('❌ Error en updateRequest:', error);
         console.error('📋 Error response:', error.response);
         throw error;
     }

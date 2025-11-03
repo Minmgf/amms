@@ -174,7 +174,7 @@ export const PerformanceChart = () => {
     <div>
       <div className="mb-4">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-secondary">Speed (Km/h)</span>
+          <span className="text-xs font-medium text-secondary">Velocidad (Km/h)</span>
           <span className="text-xs font-medium text-secondary">RPM</span>
         </div>
       </div>
@@ -250,7 +250,7 @@ export const PerformanceChart = () => {
             <span>14:00</span>
             <span>16:00</span>
             <span>18:00</span>
-            <span>Time</span>
+            <span>Hora</span>
           </div>
         </div>
       </div>
@@ -259,19 +259,19 @@ export const PerformanceChart = () => {
       <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
         <div className="flex items-center gap-2 p-2 rounded" style={{ backgroundColor: 'var(--color-background-tertiary)' }}>
           <div className="w-3 h-3 rounded-full bg-error"></div>
-          <span className="text-secondary">Ending</span>
+          <span className="text-secondary">Frenado</span>
         </div>
         <div className="flex items-center gap-2 p-2 rounded" style={{ backgroundColor: 'var(--color-background-tertiary)' }}>
           <div className="w-3 h-3 rounded-full bg-warning"></div>
-          <span className="text-secondary">Acceleration</span>
+          <span className="text-secondary">Aceleración</span>
         </div>
         <div className="flex items-center gap-2 p-2 rounded" style={{ backgroundColor: 'var(--color-background-tertiary)' }}>
           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#3B82F6' }}></div>
-          <span className="text-secondary">Curve</span>
+          <span className="text-secondary">Curva</span>
         </div>
         <div className="flex items-center gap-2 p-2 rounded" style={{ backgroundColor: 'var(--color-background-tertiary)' }}>
           <div className="w-3 h-3 rounded-full bg-success"></div>
-          <span className="text-secondary">Stationary</span>
+          <span className="text-secondary">Estacionario</span>
         </div>
       </div>
     </div>
@@ -364,7 +364,7 @@ export const FuelConsumptionChart = () => {
             <span>14:00</span>
             <span>16:00</span>
             <span>18:00</span>
-            <span>Time</span>
+            <span>Hora</span>
           </div>
         </div>
       </div>
@@ -373,11 +373,11 @@ export const FuelConsumptionChart = () => {
       <div className="mt-6 flex items-center gap-4 text-xs">
         <div className="flex items-center gap-2">
           <div className="w-12 h-3 rounded" style={{ background: 'linear-gradient(to right, #3B82F6, #3B82F688)' }}></div>
-          <span className="text-secondary">Fuel level</span>
+          <span className="text-secondary">Nivel de combustible</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-12 h-3 rounded" style={{ background: 'linear-gradient(to right, #22C55E, #22C55E88)' }}></div>
-          <span className="text-secondary">Instant Fuel consumption(L/h)</span>
+          <span className="text-secondary">Consumo instantáneo de combustible (L/h)</span>
         </div>
       </div>
     </div>
