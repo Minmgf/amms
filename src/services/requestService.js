@@ -70,7 +70,7 @@ export const createRequest = async (payload) => {
 
 // Buscar cliente por número de identificacion
 export const getClientByIdentification = async (identification) => {
-    const { data } = await apiMain.get(`/customers/search_by_document/?document_number=${identification}`);    
+    const { data } = await apiMain.get(`/customers/search_by_document/?document_number=${identification}`);
     return data;
 }
 
@@ -106,7 +106,7 @@ export const confirmRequest = async (requestId, requestData) => {
 // Completar una solicitud (cambiar estado de En proceso a Finalizada)
 export const completeRequest = async (requestId, requestData) => {
     console.log('📤 Completando solicitud - requestId:', requestId);
-    
+
     // Soportar formato antiguo (solo string) y nuevo formato (objeto)
     let payload;
     if (typeof requestData === 'string') {
@@ -122,9 +122,9 @@ export const completeRequest = async (requestId, requestData) => {
             actual_end_date: requestData.endDate
         };
     }
-    
+
     console.log('📦 Payload:', payload);
-    
+
     try {
         const { data } = await apiMain.post(`/service_requests/${requestId}/complete/`, payload);
         console.log('✅ Solicitud completada exitosamente:', data);
@@ -150,3 +150,90 @@ export const updateRequest = async (requestId, requestData) => {
         throw error;
     }
 };
+
+//Crear borrador de factura
+export const createInvoice = async (payload) => {
+    const { data } = await apiMain.post("/invoices/create-draft/", payload);
+    return data;
+}
+
+//Actualizar borrador de factura
+export const updateInvoice = async (invoiceId, payload) => {
+    const { data } = await apiMain.put(`/invoices/${invoiceId}/update-draft/`, payload);
+    return data;
+};
+
+export const getInvoiceDetail = async (invoiceId) => {
+    const { data } = await apiMain.get(`/invoices/${invoiceId}/`);
+    return data;
+}
+
+//Buscar servicio por código del servivio
+export const searchServiceByCode = async (serviceCode) => {
+    const { data } = await apiMain.get(`/services/search/`, {
+        params: { query: serviceCode }
+    });
+    return data;
+};
+
+//Listar Servicios activos
+export const getServicesActive = async () => {
+    const { data } = await apiMain.get("/services/active/");
+    return data;
+}
+
+//Guardar linea de factura
+export const saveInvoiceLine = async (invoiceId, payload) => {
+    const { data } = await apiMain.post(`/invoices/${invoiceId}/lines/`, payload);
+    return data;
+}
+
+//Obtener lineas de factura
+export const getInvoiceLines = async (invoiceId) => {
+    const { data } = await apiMain.get(`/invoice-lines/`, {
+        params: { invoice: invoiceId }
+    });
+    return data;
+};
+
+//Eliminar linea de factura
+export const deleteInvoiceLine = async (invoiceId, lineId) => {
+    try {
+        const { data } = await apiMain.delete(`/invoices/${invoiceId}/lines/${lineId}/`);
+        return data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+//Actualizar linea de factura
+export const updateInvoiceLine = async (invoiceId, lineId, payload) => {
+    try {
+        const { data } = await apiMain.patch(`/invoices/${invoiceId}/lines/${lineId}/`, payload);
+        return data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+//Enviar factura para generar y validar
+export const generateInvoice = async (invoiceId) => {
+    const { data } = await apiMain.post(`/invoices/${invoiceId}/generate_fe/`);
+    return data;
+}
+
+//Descargar factura
+export const downloadInvoicePDF = async (invoiceId) => {
+    const response = await apiMain.get(`/invoices/${invoiceId}/download_pdf/`, {
+        responseType: 'blob'
+    });
+    return response.data;
+};
+
+
+
+
+
+
+
+

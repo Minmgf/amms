@@ -87,7 +87,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
           
           {/* FILA 1: Header - Título */}
           <div className="flex items-center justify-between p-4 border-b sticky top-0 modal-theme z-10" style={{ borderColor: 'var(--color-border)' }}>
-            <Dialog.Title className="text-xl font-semibold text-primary">Tracking Dashboard</Dialog.Title>
+            <Dialog.Title className="text-xl font-semibold text-primary">Panel de Seguimiento</Dialog.Title>
             <Dialog.Close asChild>
               <button aria-label="Cerrar modal" className="p-2 text-secondary hover:text-primary rounded-full transition-colors cursor-pointer" onClick={onClose}>
                 <FaTimes className="w-5 h-5" />
@@ -101,13 +101,13 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
             
             {/* FILA 2: Request Information */}
             <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
-              <h3 className="text-sm font-semibold text-primary mb-3">Request Information</h3>
+              <h3 className="text-sm font-semibold text-primary mb-3">Información de Solicitud</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-                <div><p className="text-secondary mb-1">Tracking code</p><p className="text-primary font-medium">{mockRequestInfo.trackingCode}</p></div>
-                <div><p className="text-secondary mb-1">Client</p><p className="text-primary font-medium">{mockRequestInfo.client}</p></div>
-                <div><p className="text-secondary mb-1">Start date</p><p className="text-primary font-medium">{mockRequestInfo.startDate}</p></div>
-                <div><p className="text-secondary mb-1">End date</p><p className="text-primary font-medium">{mockRequestInfo.endDate}</p></div>
-                <div className="col-span-2 md:col-span-4"><p className="text-secondary mb-1">Place name</p><p className="text-primary font-medium">{mockRequestInfo.placeName}</p></div>
+                <div><p className="text-secondary mb-1">Código de seguimiento</p><p className="text-primary font-medium">{mockRequestInfo.trackingCode}</p></div>
+                <div><p className="text-secondary mb-1">Cliente</p><p className="text-primary font-medium">{mockRequestInfo.client}</p></div>
+                <div><p className="text-secondary mb-1">Fecha de inicio</p><p className="text-primary font-medium">{mockRequestInfo.startDate}</p></div>
+                <div><p className="text-secondary mb-1">Fecha de fin</p><p className="text-primary font-medium">{mockRequestInfo.endDate}</p></div>
+                <div className="col-span-2 md:col-span-4"><p className="text-secondary mb-1">Nombre del lugar</p><p className="text-primary font-medium">{mockRequestInfo.placeName}</p></div>
               </div>
             </div>
 
@@ -116,7 +116,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
               
               {/* FILA 3.1: Machinery Information */}
               <div>
-                <h3 className="text-sm font-semibold text-primary mb-3">Machinery Information</h3>
+                <h3 className="text-sm font-semibold text-primary mb-3">Información de Maquinaria</h3>
                 <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
                   {mockMachineries.map((machinery, index) => (
                     <div key={machinery.id} onClick={() => setSelectedMachinery(index)}
@@ -134,15 +134,15 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                             </div>
                             <FaSignal className={`flex-shrink-0 ml-2 ${machinery.gsmSignal >= 4 ? 'text-success' : machinery.gsmSignal >= 2 ? 'text-warning' : 'text-error'}`} size={12} />
                           </div>
-                          <p className="text-xs text-secondary mb-1">Operator: {machinery.operator}</p>
-                          <p className="text-xs text-secondary mb-2">Implement: {machinery.implement}</p>
+                          <p className="text-xs text-secondary mb-1">Operador: {machinery.operator}</p>
+                          <p className="text-xs text-secondary mb-2">Implemento: {machinery.implement}</p>
                           <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div><p className="text-secondary mb-0.5">Current speed</p><p className="text-primary font-medium">{machinery.currentSpeed}</p></div>
-                            <div><p className="text-secondary mb-0.5">Current fuel</p><p className="font-medium" style={{ color: getFuelLevelColor(machinery.fuelLevel) }}>{machinery.fuelLevel}</p></div>
+                            <div><p className="text-secondary mb-0.5">Velocidad actual</p><p className="text-primary font-medium">{machinery.currentSpeed}</p></div>
+                            <div><p className="text-secondary mb-0.5">Combustible actual</p><p className="font-medium" style={{ color: getFuelLevelColor(machinery.fuelLevel) }}>{machinery.fuelLevel}</p></div>
                           </div>
                           <div className="flex items-center gap-3 mt-2 text-xs">
-                            <div className="flex items-center gap-1"><MdPowerSettingsNew className={machinery.ignition ? 'text-success' : 'text-error'} size={14} /><span className="text-secondary">{machinery.ignition ? 'On' : 'Off'}</span></div>
-                            <div className="flex items-center gap-1"><MdDirectionsCar className={machinery.moving ? 'text-success' : 'text-warning'} size={14} /><span className="text-secondary">{machinery.moving ? 'Moving' : 'Stationary'}</span></div>
+                            <div className="flex items-center gap-1"><MdPowerSettingsNew className={machinery.ignition ? 'text-success' : 'text-error'} size={14} /><span className="text-secondary">{machinery.ignition ? 'Encendido' : 'Apagado'}</span></div>
+                            <div className="flex items-center gap-1"><MdDirectionsCar className={machinery.moving ? 'text-success' : 'text-warning'} size={14} /><span className="text-secondary">{machinery.moving ? 'En movimiento' : 'Estacionario'}</span></div>
                             <div className="ml-auto text-secondary text-xs">{machinery.lastUpdate}</div>
                           </div>
                         </div>
@@ -154,12 +154,12 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
 
               {/* FILA 3.2: Real Time Ubication */}
               <div>
-                <h3 className="text-sm font-semibold text-primary mb-3">Real Time Ubication</h3>
+                <h3 className="text-sm font-semibold text-primary mb-3">Ubicación en Tiempo Real</h3>
                 <div className="w-full h-[400px] rounded-lg border flex items-center justify-center relative overflow-hidden" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
                   <div className="absolute inset-0 flex items-center justify-center text-secondary">
                     <div className="text-center">
                       <FaMapMarkerAlt size={48} className="mx-auto mb-2 opacity-20" />
-                      <p className="text-sm">Map</p>
+                      <p className="text-sm">Mapa</p>
                     </div>
                   </div>
 
@@ -177,9 +177,9 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                   {/* Legend */}
                   <div className="absolute bottom-4 left-4 p-2 rounded shadow-lg text-xs" style={{ backgroundColor: 'var(--color-background)', borderColor: 'var(--color-border)' }}>
                     <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#22C55E' }} /><span className="text-secondary">In motion</span></div>
-                      <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#F59E0B' }} /><span className="text-secondary">Stationary</span></div>
-                      <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#9CA3AF' }} /><span className="text-secondary">100% connection</span></div>
+                      <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#22C55E' }} /><span className="text-secondary">En movimiento</span></div>
+                      <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#F59E0B' }} /><span className="text-secondary">Estacionario</span></div>
+                      <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#9CA3AF' }} /><span className="text-secondary">Sin conexión</span></div>
                     </div>
                   </div>
                 </div>
@@ -194,10 +194,10 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-base font-semibold text-primary">{mockMachineries[selectedMachinery].name}</h3>
-                  <p className="text-xs text-secondary">Serial: {mockMachineries[selectedMachinery].serial}</p>
+                  <p className="text-xs text-secondary">Serie: {mockMachineries[selectedMachinery].serial}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-secondary">Last update</p>
+                  <p className="text-xs text-secondary">Última actualización</p>
                   <p className="text-sm font-medium text-primary">{mockMachineries[selectedMachinery].lastUpdate}</p>
                 </div>
               </div>
@@ -206,18 +206,18 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
             {/* FILA 5: Grid de 8 sensores (4x2) */}
             {selectedMachinery !== null && (
               <div>
-                <h3 className="text-sm font-semibold text-primary mb-3">Vehicle Sensors and Counters</h3>
+                <h3 className="text-sm font-semibold text-primary mb-3">Sensores y Contadores del Vehículo</h3>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   
                   {/* Sensor 1: Current speed */}
-                  <GaugeCard label="Current speed" value={mockIndicatorsData.currentSpeed.value} max={mockIndicatorsData.currentSpeed.max} unit={mockIndicatorsData.currentSpeed.unit} type="speed" />
+                  <GaugeCard label="Velocidad actual" value={mockIndicatorsData.currentSpeed.value} max={mockIndicatorsData.currentSpeed.max} unit={mockIndicatorsData.currentSpeed.unit} type="speed" />
                   
                   {/* Sensor 2: Revolutions(RPM) */}
-                  <GaugeCard label="Revolutions(RPM)" value={mockIndicatorsData.rpm.value} max={mockIndicatorsData.rpm.max} unit={mockIndicatorsData.rpm.unit} type="rpm" alert={mockIndicatorsData.rpm.alert} />
+                  <GaugeCard label="Revoluciones (RPM)" value={mockIndicatorsData.rpm.value} max={mockIndicatorsData.rpm.max} unit={mockIndicatorsData.rpm.unit} type="rpm" alert={mockIndicatorsData.rpm.alert} />
 
                   {/* Sensor 3: Engine Temperature */}
                   <div className="p-4 rounded-lg border flex flex-col items-center justify-center min-h-[200px]" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
-                    <p className="text-xs text-secondary mb-3">Engine Temperature</p>
+                    <p className="text-xs text-secondary mb-3">Temperatura del Motor</p>
                     <div className="relative">
                       {/* Termómetro */}
                       <svg width="50" height="100" viewBox="0 0 50 100" className="mb-2">
@@ -257,7 +257,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
 
                   {/* Sensor 4: Fuel Level */}
                   <div className="p-4 rounded-lg border flex flex-col items-center justify-center min-h-[200px]" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
-                    <p className="text-xs text-secondary mb-2">Fuel level</p>
+                    <p className="text-xs text-secondary mb-2">Nivel de combustible</p>
                     <div className="relative w-32 h-20">
                       <svg className="w-full h-full" viewBox="0 0 160 80">
                         {/* Arco de fondo */}
@@ -304,14 +304,14 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                   </div>
 
                   {/* Sensor 5: Oil level */}
-                  <CircularProgress label="Oil level" value={mockIndicatorsData.oilLoad.value} color="#F59E0B" />
+                  <CircularProgress label="Nivel de aceite" value={mockIndicatorsData.oilLoad.value} color="#F59E0B" />
 
                   {/* Sensor 6: Engine load */}
-                  <CircularProgress label="Engine load" value={mockIndicatorsData.engineLoad.value} color="#22C55E" />
+                  <CircularProgress label="Carga del motor" value={mockIndicatorsData.engineLoad.value} color="#22C55E" />
 
                   {/* Sensor 7: Odometer */}
                   <div className="p-4 rounded-lg border flex flex-col items-center justify-center min-h-[200px]" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
-                    <p className="text-xs text-secondary mb-3">Odometer</p>
+                    <p className="text-xs text-secondary mb-3">Odómetro</p>
                     
                     {/* Total */}
                     <div className="mb-3">
@@ -342,14 +342,14 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
 
                   {/* Sensor 8: Logistic status */}
                   <div className="p-4 rounded-lg border flex flex-col justify-center min-h-[200px]" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
-                    <p className="text-xs text-secondary mb-2">Logistic status</p>
+                    <p className="text-xs text-secondary mb-2">Estado logístico</p>
                     <select className="input-theme text-sm w-full mb-3" value={mockIndicatorsData.logisticStatus} onChange={(e) => {}}>
-                      <option>Idle</option>
+                      <option>Inactivo</option>
                       <option>En tránsito</option>
                       <option>En operación</option>
                       <option>Mantenimiento</option>
                     </select>
-                    <button className="btn-primary w-full py-2 text-sm rounded-lg font-medium">Update Status</button>
+                    <button className="btn-primary w-full py-2 text-sm rounded-lg font-medium">Actualizar Estado</button>
                   </div>
 
                 </div>
@@ -361,11 +361,11 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
               <div>
                 <div className="flex gap-1 mb-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
                   <button onClick={() => setActiveTab("performance")} className={`px-4 py-2 text-sm font-medium transition-colors relative ${activeTab === "performance" ? 'text-primary' : 'text-secondary hover:text-primary'}`}>
-                    Performance Information
+                    Información de Rendimiento
                     {activeTab === "performance" && <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ backgroundColor: 'var(--color-primary)' }} />}
                   </button>
                   <button onClick={() => setActiveTab("fuel")} className={`px-4 py-2 text-sm font-medium transition-colors relative ${activeTab === "fuel" ? 'text-primary' : 'text-secondary hover:text-primary'}`}>
-                    Fuel Consumption Information
+                    Información de Consumo de Combustible
                     {activeTab === "fuel" && <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ backgroundColor: 'var(--color-primary)' }} />}
                   </button>
                 </div>
