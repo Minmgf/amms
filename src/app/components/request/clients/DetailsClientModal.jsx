@@ -5,7 +5,7 @@ import { FaFilter, FaDownload, FaTimes } from "react-icons/fa";
 import { useTheme } from "@/contexts/ThemeContext";
 import TableList from "../../shared/TableList";
 import FilterModal from "../../shared/FilterModal";
-import { getClientDetail, getClientRequestHistory, getClientStatuses, getRequestStatuses, getBillingStatuses } from "@/services/clientService";
+import { getClientDetail, getClientRequestHistory, getClientStatuses, getRequestStatuses, getBillingStatuses, downloadInvoicePDF } from "@/services/clientService";
 import { getMunicipalities, authorization } from "@/services/billingService";
 
 /**
@@ -28,7 +28,9 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
   const [requestHistory, setRequestHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  
+  const [downloadingInvoice, setDownloadingInvoice] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
+
   // Estados para ubicación (municipio)
   const [municipalityName, setMunicipalityName] = useState(null);
   const [billingToken, setBillingToken] = useState(null);
@@ -119,6 +121,16 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
     }
   }, [error]);
 
+  // Auto-dismiss success message after 5 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
   // Cargar datos del cliente desde el endpoint
   const loadClientData = async () => {
     setLoading(true);
@@ -154,7 +166,6 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
       setLoading(false);
     }
   };
-
 
   // Formatear número de teléfono
   const formatPhoneNumber = (phone) => {
@@ -238,9 +249,47 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
   }, [requestHistory, statusFilter, billingFilter]);
 
   // Manejar descarga de factura
-  const handleDownloadInvoice = (invoiceUrl, requestId) => {
-    // TODO: Implementar descarga real cuando esté disponible el endpoint
-    window.open(invoiceUrl, '_blank');
+  const handleDownloadInvoice = async (invoiceId, requestCode) => {
+    if (!invoiceId) {
+      setError("No se encontró la factura asociada a esta solicitud.");
+      return;
+    }
+
+    setDownloadingInvoice(invoiceId);
+    setError(null);
+
+    try {
+      // Descargar el PDF como blob
+      const blob = await downloadInvoicePDF(invoiceId);
+      
+      // Crear un objeto URL para el blob
+      const url = window.URL.createObjectURL(blob);
+      
+      // Crear un elemento <a> temporal para descargar el archivo
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Factura_${requestCode}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Limpiar
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      setSuccessMessage(`Factura ${requestCode} descargada exitosamente.`);
+    } catch (error) {
+      console.error('Error al descargar la factura:', error);
+      
+      if (error.response?.status === 403) {
+        setError("No tiene permisos para descargar facturas.");
+      } else if (error.response?.status === 404) {
+        setError("Factura no encontrada o aún no está disponible.");
+      } else {
+        setError("Error al descargar la factura. Por favor, intente nuevamente.");
+      }
+    } finally {
+      setDownloadingInvoice(null);
+    }
   };
 
   // Aplicar filtros
@@ -381,17 +430,31 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
         cell: ({ row }) => {
           const request = row.original;
           // El estado "Pagado" tiene id_statues: 18 según el endpoint /sigma/main/statues/list/6/
-          const canDownload = request.invoice_url && request.payment_status_id === 18;
+          // Solo mostrar el botón si hay invoice_id y el estado de pago es "Pagado"
+          const canDownload = request.invoice_id && request.payment_status_id === 18;
+          const isDownloading = downloadingInvoice === request.invoice_id;
 
           return (
             <div className="flex items-center justify-center gap-2">
               {canDownload && (
                 <button
-                  onClick={() => handleDownloadInvoice(request.invoice_url, request.code)}
-                  className="inline-flex items-center px-3 py-1.5 gap-2 border border-orange-500 text-orange-600 text-xs font-medium rounded-md hover:bg-orange-50 transition-all opacity-0 group-hover:opacity-100"
+                  onClick={() => handleDownloadInvoice(request.invoice_id, request.code)}
+                  disabled={isDownloading}
+                  className={`inline-flex items-center px-3 py-1.5 gap-2 border border-orange-500 text-orange-600 text-xs font-medium rounded-md hover:bg-orange-50 transition-all opacity-0 group-hover:opacity-100 ${
+                    isDownloading ? '!opacity-100 cursor-not-allowed' : ''
+                  }`}
                   title="Descargar factura"
                 >
-                  <FaDownload className="w-3 h-3" /> Factura
+                  {isDownloading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-orange-600"></div>
+                      Descargando...
+                    </>
+                  ) : (
+                    <>
+                      <FaDownload className="w-3 h-3" /> Factura
+                    </>
+                  )}
                 </button>
               )}
             </div>
@@ -399,7 +462,7 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
         },
       },
     ],
-    [billingStatuses, requestStatuses]
+    [billingStatuses, requestStatuses, downloadingInvoice]
   );
 
   if (!isOpen || !client) return null;
@@ -461,6 +524,21 @@ const DetailsClientModal = ({ isOpen, onClose, client }) => {
               <button
                 onClick={() => setError(null)}
                 className="text-red-500 hover:text-red-700"
+              >
+                <FiX className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Success message */}
+        {successMessage && !loading && (
+          <div className="p-4 sm:p-6">
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded flex items-center justify-between">
+              <span>{successMessage}</span>
+              <button
+                onClick={() => setSuccessMessage(null)}
+                className="text-green-500 hover:text-green-700"
               >
                 <FiX className="w-5 h-5" />
               </button>
