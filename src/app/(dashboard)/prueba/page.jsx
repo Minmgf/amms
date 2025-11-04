@@ -1,7 +1,7 @@
 "use client";
 import AddClientModal from "@/app/components/request/clients/AddClientModal";
 import DetailsRequestModal from "@/app/components/request/services/DetailsRequestModal";
-import TrackingDashboardModal from "@/app/components/request/TrackingDashboardModal";
+import TrackingDashboardModal from "@/app/components/monitoring/TrackingDashboardModal";
 import { useState } from "react";
 
 const Prueba = () => {
