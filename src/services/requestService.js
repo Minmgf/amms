@@ -230,9 +230,12 @@ export const downloadInvoicePDF = async (invoiceId) => {
     return response.data;
 };
 
-
-
-
+// Obtener listado de solicitudes para monitoreo (HU-MON-001)
+// Retorna solicitudes en estado Pendiente (20), En proceso (21) y Finalizada (22)
+export const getRequestMonitoringList = async () => {
+    const { data } = await apiMain.get("/service_requests/monitoring-list/");
+    return data;
+};
 
 
 
