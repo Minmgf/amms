@@ -9,6 +9,10 @@ const RegisterDevice = ({ isOpen, onClose, onSuccess, deviceToEdit }) => {
   const [parameters, setParameters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingDevice, setLoadingDevice] = useState(false);
+  const [errors, setErrors] = useState({
+    deviceName: "",
+    imei: ""
+  });
   const [formData, setFormData] = useState({
     deviceName: "",
     imei: "",
@@ -99,6 +103,13 @@ const RegisterDevice = ({ isOpen, onClose, onSuccess, deviceToEdit }) => {
       ...prev,
       [name]: value
     }));
+    // Limpiar error del campo al modificarlo
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ""
+      }));
+    }
   };
 
   const handleCheckboxChange = (parameterId) => {
@@ -120,9 +131,18 @@ const RegisterDevice = ({ isOpen, onClose, onSuccess, deviceToEdit }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Limpiar errores previos
+    setErrors({
+      deviceName: "",
+      imei: ""
+    });
+
     // Validar que se haya ingresado nombre e IMEI
     if (!formData.deviceName || !formData.imei) {
-      alert("Por favor ingrese el nombre del dispositivo y el IMEI");
+      setErrors({
+        deviceName: !formData.deviceName ? "El nombre del dispositivo es requerido" : "",
+        imei: !formData.imei ? "El IMEI es requerido" : ""
+      });
       return;
     }
 
@@ -178,8 +198,38 @@ const RegisterDevice = ({ isOpen, onClose, onSuccess, deviceToEdit }) => {
       }
     } catch (error) {
       console.error("Error al guardar dispositivo:", error);
-      const errorMessage = error.response?.data?.message || error.message || "Error al guardar el dispositivo. Por favor, intente nuevamente.";
-      alert(errorMessage);
+      
+      // Manejar errores de validación del servidor (400)
+      if (error.response?.status === 400 && error.response?.data) {
+        const serverErrors = error.response.data;
+        console.log("Errores del servidor:", serverErrors);
+        
+        // Mapear errores específicos a campos del formulario
+        const newErrors = {
+          deviceName: "",
+          imei: ""
+        };
+        
+        // Verificar si hay error de IMEI duplicado
+        if (serverErrors.IMEI) {
+          newErrors.imei = Array.isArray(serverErrors.IMEI) 
+            ? serverErrors.IMEI[0] 
+            : serverErrors.IMEI;
+        }
+        
+        // Verificar si hay error de nombre
+        if (serverErrors.name) {
+          newErrors.deviceName = Array.isArray(serverErrors.name) 
+            ? serverErrors.name[0] 
+            : serverErrors.name;
+        }
+        
+        setErrors(newErrors);
+      } else {
+        // Para otros errores, mostrar alert
+        const errorMessage = error.response?.data?.message || error.message || "Error al guardar el dispositivo. Por favor, intente nuevamente.";
+        alert(errorMessage);
+      }
     }
   };
 
@@ -188,6 +238,10 @@ const RegisterDevice = ({ isOpen, onClose, onSuccess, deviceToEdit }) => {
       deviceName: "",
       imei: "",
       selectedParameters: []
+    });
+    setErrors({
+      deviceName: "",
+      imei: ""
     });
     onClose();
   };
@@ -240,10 +294,13 @@ const RegisterDevice = ({ isOpen, onClose, onSuccess, deviceToEdit }) => {
                 name="deviceName"
                 value={formData.deviceName}
                 onChange={handleInputChange}
-                className="parametrization-input w-full"
+                className={`parametrization-input w-full ${errors.deviceName ? 'border-red-500 focus:ring-red-500' : ''}`}
                 placeholder="Ej: AgroLink-001"
                 required
               />
+              {errors.deviceName && (
+                <p className="text-red-500 text-xs mt-1">{errors.deviceName}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-primary mb-2">
@@ -254,12 +311,15 @@ const RegisterDevice = ({ isOpen, onClose, onSuccess, deviceToEdit }) => {
                 name="imei"
                 value={formData.imei}
                 onChange={handleInputChange}
-                className="parametrization-input w-full"
+                className={`parametrization-input w-full ${errors.imei ? 'border-red-500 focus:ring-red-500' : ''}`}
                 placeholder="Ej: 357984562034378"
                 required
                 pattern="[0-9]{15}"
                 title="El IMEI debe contener exactamente 15 dígitos"
               />
+              {errors.imei && (
+                <p className="text-red-500 text-xs mt-1">{errors.imei}</p>
+              )}
             </div>
           </div>
 
