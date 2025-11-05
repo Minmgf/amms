@@ -272,12 +272,6 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           path: "/monitoring/requestMonitoring",
           permissions: [170],
         },
-        {
-          name: "Umbrales",
-          icon: <FaRssSquare />,
-          path: "/monitoring/threshold",
-          permissions: [],
-        },
       ],
     },
     {
