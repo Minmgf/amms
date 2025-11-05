@@ -9,10 +9,10 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black/60 z-[40] flex items-center justify-center">
       <div className="fixed inset-0 z-[0]" onClick={onClose}></div>
-      <div className="relative bg-white rounded-lg shadow-xl max-w-7xl w-full mx-4 max-h-[90vh] overflow-auto">
+      <div className="relative modal-theme rounded-lg shadow-xl max-w-7xl w-full mx-4 max-h-[90vh] overflow-auto">
         {/* Header del Modal */}
         <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-semibold text-gray-900">
+          <h2 className="text-xl font-semibold text-primary">
             Datos históricos por Máquina u Operador
           </h2>
           <button
@@ -27,7 +27,7 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
         <div className="p-6">
           {/* Filtros Generales */}
           <div className="mb-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
+            <h3 className="text-lg font-medium text-primary mb-4">
               Filtro general
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -35,7 +35,7 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Maquinaria
                 </label>
-                <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                <select className="parametrization-input w-full">
                   <option value=""></option>
                   <option value="excavadora">Excavadora CAT-320</option>
                   <option value="tractor">Tractor John Deere</option>
@@ -45,7 +45,7 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Operador
                 </label>
-                <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                <select className="parametrization-input w-full">
                   <option value=""></option>
                   <option value="juan">Juan Pérez</option>
                   <option value="maria">María García</option>
@@ -82,49 +82,49 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
           {/* Contenido siempre visible */}
           {/* General Metrics Information */}
           <div className="mb-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
+            <h3 className="text-lg font-medium text-primary mb-4">
               Información de Métricas Generales
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <div className="mb-2">
-                  <span className="text-sm text-gray-600">Tiempo total</span>
+                  <span className="text-sm text-secondary">Tiempo total</span>
                 </div>
-                <div className="text-base font-medium text-gray-900">
+                <div className="text-base font-medium text-primary">
                   8h 43 min
                 </div>
                 <div className="mt-4 mb-2">
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-secondary">
                     Distancia total recorrida
                   </span>
                 </div>
-                <div className="text-base font-medium text-gray-900">
+                <div className="text-base font-medium text-primary">
                   150 km
                 </div>
               </div>
               <div>
                 <div className="mb-2">
-                  <span className="text-sm text-gray-600">Velocidad promedio</span>
+                  <span className="text-sm text-secondary">Velocidad promedio</span>
                 </div>
-                <div className="text-base font-medium text-gray-900">
+                <div className="text-base font-medium text-primary">
                   25.3 km/h
                 </div>
                 <div className="mt-4 mb-2">
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-secondary">
                     Horas de trabajo efectivas
                   </span>
                 </div>
-                <div className="text-base font-medium text-gray-900">
+                <div className="text-base font-medium text-primary">
                   7h 20 min
                 </div>
               </div>
               <div>
                 <div className="mb-2">
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-secondary">
                     Consumo promedio
                   </span>
                 </div>
-                <div className="text-base font-medium text-gray-900">
+                <div className="text-base font-medium text-primary">
                   12.5 L/h
                 </div>
               </div>
@@ -133,14 +133,14 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
 
           {/* Completed Requests */}
           <div className="mb-8">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
+            <h3 className="text-lg font-medium text-primary mb-4">
               Solicitudes Completadas
             </h3>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y">
+                <thead className="">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-secondary uppercase tracking-wider">
                       ID Solicitud
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -166,27 +166,27 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-200">
                   <tr>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-primary">
                       SOL-2025-001
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-secondary">
                       15/01/2025 12:30
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-secondary">
                       28/01/2025 14:30
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-secondary">
                       Excavadora CAT-320
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-secondary">
                       Juan Pérez
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-secondary">
                       Constructora ABC
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-secondary">
                       45.2 km
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
@@ -218,52 +218,52 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
 
           {/* Request Information */}
           <div className="mb-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
+            <h3 className="text-lg font-medium text-primary mb-4">
               Request Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
               <div>
                 <div className="mb-4">
-                  <span className="text-gray-600">Tracking code</span>
-                  <div className="font-medium">SOL-2025-001</div>
+                  <span className="text-secondary">Tracking code</span>
+                  <div className="font-medium text-primary">SOL-2025-001</div>
                 </div>
                 <div>
-                  <span className="text-gray-600">Total distance traveled</span>
-                  <div className="font-medium">150 km</div>
+                  <span className="text-secondary">Total distance traveled</span>
+                  <div className="font-medium text-primary">150 km</div>
                 </div>
               </div>
               <div>
                 <div className="mb-4">
-                  <span className="text-gray-600">Client</span>
-                  <div className="font-medium">
+                  <span className="text-secondary">Client</span>
+                  <div className="font-medium text-primary">
                     Constructora El Dorado S.A.S
                   </div>
                 </div>
                 <div>
-                  <span className="text-gray-600">Machinery</span>
-                  <div className="font-medium">Excavadora CAT-320</div>
+                  <span className="text-secondary">Machinery</span>
+                  <div className="font-medium text-primary">Excavadora CAT-320</div>
                 </div>
               </div>
               <div>
                 <div className="mb-4">
-                  <span className="text-gray-600">Start date</span>
-                  <div className="font-medium">15/01/2025 12:30</div>
+                  <span className="text-secondary">Start date</span>
+                  <div className="font-medium text-primary">15/01/2025 12:30</div>
                 </div>
                 <div>
-                  <span className="text-gray-600">Operator</span>
-                  <div className="font-medium">Juan Pérez</div>
+                  <span className="text-secondary">Operator</span>
+                  <div className="font-medium text-primary">Juan Pérez</div>
                 </div>
               </div>
               <div>
-                <span className="text-gray-600">End date</span>
-                <div className="font-medium">28/01/2025 14:30</div>
+                <span className="text-secondary">End date</span>
+                <div className="font-medium text-primary">28/01/2025 14:30</div>
               </div>
             </div>
           </div>
 
           {/* Temporal filter */}
           <div className="mb-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
+            <h3 className="text-lg font-medium text-primary mb-4">
               Temporal filter
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
@@ -348,21 +348,21 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
             <div className="mb-6">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Información de la máquina */}
-                <div className="bg-gray-100 p-4 rounded-lg">
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">Excavadora CAT 320</h4>
+                <div className=" modal-theme p-4 rounded-lg">
+                  <h4 className="text-lg font-medium text-primary mb-4">Excavadora CAT 320</h4>
                   <div className="space-y-2 text-sm">
-                    <div><span className="text-gray-600">Tiempo total de operación:</span> <span className="font-medium">10h</span></div>
-                    <div><span className="text-gray-600">Operador:</span> <span className="font-medium">Juan Perez</span></div>
-                    <div><span className="text-gray-600">Consumo promedio:</span> <span className="font-medium">14L/h</span></div>
-                    <div><span className="text-gray-600">Total de eventos:</span> <span className="font-medium">4</span></div>
-                    <div><span className="text-gray-600">Temperatura promedio:</span> <span className="font-medium">78 °C</span></div>
-                    <div><span className="text-gray-600">Carga promedio del motor:</span> <span className="font-medium">75%</span></div>
+                    <div><span className="text-secondary">Tiempo total de operación:</span> <span className="font-medium text-primary">10h</span></div>
+                    <div><span className="text-secondary">Operador:</span> <span className="font-medium text-primary">Juan Perez</span></div>
+                    <div><span className="text-secondary">Consumo promedio:</span> <span className="font-medium text-primary">14L/h</span></div>
+                    <div><span className="text-secondary">Total de eventos:</span> <span className="font-medium text-primary">4</span></div>
+                    <div><span className="text-secondary">Temperatura promedio:</span> <span className="font-medium text-primary">78 °C</span></div>
+                    <div><span className="text-secondary">Carga promedio del motor:</span> <span className="font-medium text-primary">75%</span></div>
                   </div>
                 </div>
 
                 {/* Gráfico de porcentajes */}
-                <div className="lg:col-span-2 bg-white p-4 rounded-lg border">
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">Gráfico de porcentaje de uso</h4>
+                <div className="lg:col-span-2 modal-theme p-4 rounded-lg border">
+                  <h4 className="text-lg font-medium text-primary mb-4">Gráfico de porcentaje de uso</h4>
                   <div className="h-64 flex items-end justify-center space-x-8">
                     {/* Selected Journey */}
                     <div className="flex flex-col items-center">
@@ -410,9 +410,9 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
             <div className="mb-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Speed */}
-                <div className="bg-white p-4 rounded-lg border">
-                  <h4 className="text-md font-medium text-gray-900 mb-2">Velocidad</h4>
-                  <p className="text-sm text-gray-600 mb-3">Prom: 32.5 km/h | Max: 65.2 km/h | Min: 0.1 km/h</p>
+                <div className="modal-theme p-4 rounded-lg border">
+                  <h4 className="text-md font-medium text-primary mb-2">Velocidad</h4>
+                  <p className="text-sm text-secondary mb-3">Prom: 32.5 km/h | Max: 65.2 km/h | Min: 0.1 km/h</p>
                   <div className="h-40 bg-gray-50 rounded flex items-center justify-center mb-2">
                     <div className="w-full h-full relative">
                       <svg className="w-full h-full" viewBox="0 0 300 120">
@@ -437,9 +437,9 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
                 </div>
 
                 {/* Revolutions */}
-                <div className="bg-white p-4 rounded-lg border">
-                  <h4 className="text-md font-medium text-gray-900 mb-2">Revoluciones</h4>
-                  <p className="text-sm text-gray-600 mb-3">Prom: 750 RPM | Max: 1800 RPM | Min: 0.3 RPM</p>
+                <div className="modal-theme p-4 rounded-lg border">
+                  <h4 className="text-md font-medium text-primary mb-2">Revoluciones</h4>
+                  <p className="text-sm text-secondary mb-3">Prom: 750 RPM | Max: 1800 RPM | Min: 0.3 RPM</p>
                   <div className="h-40 bg-gray-50 rounded flex items-center justify-center mb-2">
                     <div className="w-full h-full relative">
                       <svg className="w-full h-full" viewBox="0 0 300 120">
@@ -464,9 +464,9 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
                 </div>
 
                 {/* Temperature */}
-                <div className="bg-white p-4 rounded-lg border">
-                  <h4 className="text-md font-medium text-gray-900 mb-2">Temperatura</h4>
-                  <p className="text-sm text-gray-600 mb-3">Prom: 60°C | Max: 95°C | Min: 0°C</p>
+                <div className="modal-theme p-4 rounded-lg border">
+                  <h4 className="text-md font-medium text-primary mb-2">Temperatura</h4>
+                  <p className="text-sm text-secondary mb-3">Prom: 60°C | Max: 95°C | Min: 0°C</p>
                   <div className="h-40 bg-gray-50 rounded flex items-center justify-center mb-2">
                     <div className="w-full h-full relative">
                       <svg className="w-full h-full" viewBox="0 0 300 120">
@@ -491,9 +491,9 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
                 </div>
 
                 {/* Fuel level */}
-                <div className="bg-white p-4 rounded-lg border">
-                  <h4 className="text-md font-medium text-gray-900 mb-2">Nivel de combustible</h4>
-                  <p className="text-sm text-gray-600 mb-3">Prom: 43% | Max: 100% | Min: 10%</p>
+                <div className="modal-theme p-4 rounded-lg border">
+                  <h4 className="text-md font-medium text-primary mb-2">Nivel de combustible</h4>
+                  <p className="text-sm text-secondary mb-3">Prom: 43% | Max: 100% | Min: 10%</p>
                   <div className="h-40 bg-gray-50 rounded flex items-center justify-center mb-2">
                     <div className="w-full h-full relative">
                       <svg className="w-full h-full" viewBox="0 0 300 120">
@@ -518,9 +518,9 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
                 </div>
 
                 {/* Engine load */}
-                <div className="bg-white p-4 rounded-lg border">
-                  <h4 className="text-md font-medium text-gray-900 mb-2">Carga del motor</h4>
-                  <p className="text-sm text-gray-600 mb-3">Prom: 75°C | Max: 95°C | Min: 0°C</p>
+                <div className="modal-theme p-4 rounded-lg border">
+                  <h4 className="text-md font-medium text-primary mb-2">Carga del motor</h4>
+                  <p className="text-sm text-secondary mb-3">Prom: 75°C | Max: 95°C | Min: 0°C</p>
                   <div className="h-40 bg-gray-50 rounded flex items-center justify-center mb-2">
                     <div className="w-full h-full relative">
                       <svg className="w-full h-full" viewBox="0 0 300 120">
@@ -556,9 +556,9 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
                 </div>
 
                 {/* Oil level */}
-                <div className="bg-white p-4 rounded-lg border">
-                  <h4 className="text-md font-medium text-gray-900 mb-2">Nivel de aceite</h4>
-                  <p className="text-sm text-gray-600 mb-3">Prom: 60% | Max: 100% | Min: 20%</p>
+                <div className="modal-theme p-4 rounded-lg border">
+                  <h4 className="text-md font-medium text-primary mb-2">Nivel de aceite</h4>
+                  <p className="text-sm text-secondary mb-3">Prom: 60% | Max: 100% | Min: 20%</p>
                   <div className="h-40 bg-gray-50 rounded flex items-center justify-center mb-2">
                     <div className="w-full h-full relative">
                       <svg className="w-full h-full" viewBox="0 0 300 120">
@@ -583,9 +583,9 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
                 </div>
 
                 {/* Total Odometer */}
-                <div className="bg-white p-4 rounded-lg border">
-                  <h4 className="text-md font-medium text-gray-900 mb-2">Odómetro total</h4>
-                  <p className="text-sm text-gray-600 mb-3">Max: 6550 m | Min: 1500 m</p>
+                <div className="modal-theme p-4 rounded-lg border">
+                  <h4 className="text-md font-medium text-primary mb-2">Odómetro total</h4>
+                  <p className="text-sm text-secondary mb-3">Max: 6550 m | Min: 1500 m</p>
                   <div className="h-40 bg-gray-50 rounded flex items-center justify-center mb-2">
                     <div className="w-full h-full relative">
                       <svg className="w-full h-full" viewBox="0 0 300 120">
@@ -610,9 +610,9 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
                 </div>
 
                 {/* Trip Odometer */}
-                <div className="bg-white p-4 rounded-lg border">
-                  <h4 className="text-md font-medium text-gray-900 mb-2">Odómetro de viaje</h4>
-                  <p className="text-sm text-gray-600 mb-3">Max: 2000 m | Min: 0 m</p>
+                <div className="modal-theme p-4 rounded-lg border">
+                  <h4 className="text-md font-medium text-primary mb-2">Odómetro de viaje</h4>
+                  <p className="text-sm text-secondary mb-3">Max: 2000 m | Min: 0 m</p>
                   <div className="h-40 bg-gray-50 rounded flex items-center justify-center mb-2">
                     <div className="w-full h-full relative">
                       <svg className="w-full h-full" viewBox="0 0 300 120">
@@ -644,8 +644,8 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
             <div className="mb-6">
               {/* Fuel Consumption Information */}
               <div className="mb-8">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Información de Consumo de Combustible</h3>
-                <div className="bg-white p-6 rounded-lg border">
+                <h3 className="text-lg font-medium text-primary mb-4">Información de Consumo de Combustible</h3>
+                <div className="modal-theme p-6 rounded-lg border">
                   <div className="h-64 relative">
                     <svg className="w-full h-full" viewBox="0 0 400 200">
                       <defs>
@@ -740,8 +740,8 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
 
               {/* Performance Information */}
               <div className="mb-8">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Información de Rendimiento</h3>
-                <div className="bg-white p-6 rounded-lg border">
+                <h3 className="text-lg font-medium text-primary mb-4">Información de Rendimiento</h3>
+                <div className="modal-theme p-6 rounded-lg border">
                   <div className="h-64 relative">
                     <svg className="w-full h-full" viewBox="0 0 400 200">
                       <defs>
@@ -840,46 +840,46 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
 
               {/* Chart Information */}
               <div className="mb-8">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Información de Gráficos</h3>
+                <h3 className="text-lg font-medium text-primary mb-4">Información de Gráficos</h3>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* G-Events */}
                   <div>
-                    <h4 className="text-md font-medium text-gray-900 mb-4">Eventos G</h4>
-                    <div className="bg-white border rounded-lg overflow-hidden">
+                    <h4 className="text-md font-medium text-primary mb-4">Eventos G</h4>
+                    <div className="modal-theme border rounded-lg overflow-hidden">
                       <table className="min-w-full divide-y divide-gray-200">
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="modal-theme divide-y divide-gray-200">
                           <tr>
                             <td className="px-4 py-3 text-sm">
                               <div className="flex items-center">
                                 <div className="w-3 h-3 bg-red-500 rounded mr-2"></div>
-                                <span>Frenado</span>
+                                <span className="text-primary">Frenado</span>
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">2025-01-17 10:30</td>
-                            <td className="px-4 py-3 text-sm text-gray-600">Intensidad: +0.63</td>
-                            <td className="px-4 py-3 text-sm text-gray-600">Duración: 10 min</td>
+                            <td className="px-4 py-3 text-sm text-secondary">2025-01-17 10:30</td>
+                            <td className="px-4 py-3 text-sm text-secondary">Intensidad: +0.63</td>
+                            <td className="px-4 py-3 text-sm text-secondary">Duración: 10 min</td>
                           </tr>
                           <tr>
                             <td className="px-4 py-3 text-sm">
                               <div className="flex items-center">
                                 <div className="w-3 h-3 bg-red-500 rounded mr-2"></div>
-                                <span>Aceleración</span>
+                                <span className="text-primary">Aceleración</span>
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">2025-01-17 10:45</td>
-                            <td className="px-4 py-3 text-sm text-gray-600">Intensidad: +0.61</td>
-                            <td className="px-4 py-3 text-sm text-gray-600">Duración: 8 min</td>
+                            <td className="px-4 py-3 text-sm text-secondary">2025-01-17 10:45</td>
+                            <td className="px-4 py-3 text-sm text-secondary">Intensidad: +0.61</td>
+                            <td className="px-4 py-3 text-sm text-secondary">Duración: 8 min</td>
                           </tr>
                           <tr>
                             <td className="px-4 py-3 text-sm">
                               <div className="flex items-center">
                                 <div className="w-3 h-3 bg-black rounded mr-2"></div>
-                                <span>Curva</span>
+                                <span className="text-primary">Curva</span>
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">2025-01-17 11:15</td>
-                            <td className="px-4 py-3 text-sm text-gray-600">Intensidad: +0.75</td>
-                            <td className="px-4 py-3 text-sm text-gray-600">Duración: 15 min</td>
+                            <td className="px-4 py-3 text-sm text-secondary">2025-01-17 11:15</td>
+                            <td className="px-4 py-3 text-sm text-secondary">Intensidad: +0.75</td>
+                            <td className="px-4 py-3 text-sm text-secondary">Duración: 15 min</td>
                           </tr>
                         </tbody>
                       </table>
@@ -888,39 +888,39 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
 
                   {/* OBD Faults */}
                   <div>
-                    <h4 className="text-md font-medium text-gray-900 mb-4">Fallas OBD</h4>
-                    <div className="bg-white border rounded-lg overflow-hidden">
+                    <h4 className="text-md font-medium text-primary mb-4">Fallas OBD</h4>
+                    <div className="modal-theme border rounded-lg overflow-hidden">
                       <table className="min-w-full divide-y divide-gray-200">
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="modal-theme divide-y divide-gray-200">
                           <tr>
                             <td className="px-4 py-3 text-sm">
                               <div className="flex items-center">
                                 <div className="w-3 h-3 bg-red-500 rounded mr-2"></div>
-                                <span>P0171</span>
+                                <span className="text-primary">P0171</span>
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">Example</td>
-                            <td className="px-4 py-3 text-sm text-gray-600">2025-01-17 11:30</td>
+                            <td className="px-4 py-3 text-sm text-secondary">Example</td>
+                            <td className="px-4 py-3 text-sm text-secondary">2025-01-17 11:30</td>
                           </tr>
                           <tr>
                             <td className="px-4 py-3 text-sm">
                               <div className="flex items-center">
                                 <div className="w-3 h-3 bg-red-500 rounded mr-2"></div>
-                                <span>P0420</span>
+                                <span className="text-primary">P0420</span>
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">Example</td>
-                            <td className="px-4 py-3 text-sm text-gray-600">2025-01-17 12:30</td>
+                            <td className="px-4 py-3 text-sm text-secondary">Example</td>
+                            <td className="px-4 py-3 text-sm text-secondary">2025-01-17 12:30</td>
                           </tr>
                           <tr>
                             <td className="px-4 py-3 text-sm">
                               <div className="flex items-center">
                                 <div className="w-3 h-3 bg-red-500 rounded mr-2"></div>
-                                <span>P0507</span>
+                                <span className="text-primary">P0507</span>
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">Example</td>
-                            <td className="px-4 py-3 text-sm text-gray-600">2025-01-17 13:30</td>
+                            <td className="px-4 py-3 text-sm text-secondary">Example</td>
+                            <td className="px-4 py-3 text-sm text-secondary">2025-01-17 13:30</td>
                           </tr>
                         </tbody>
                       </table>
@@ -958,7 +958,7 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
           {/* Contenido de Interactive Map */}
           {activeTab === "map" && (
             <div className="mb-6">
-              <div className="bg-white p-6 rounded-lg border">
+              <div className="modal-theme p-6 rounded-lg border">
                 <div className="h-96 bg-gray-100 rounded-lg relative overflow-hidden">
                   <div className="absolute inset-0 flex items-center justify-center">
                     <svg className="w-full h-full" viewBox="0 0 600 400">
