@@ -3,12 +3,14 @@ import AddClientModal from "@/app/components/request/clients/AddClientModal";
 import DetailsRequestModal from "@/app/components/request/services/DetailsRequestModal";
 import TrackingDashboardModal from "@/app/components/monitoring/TrackingDashboardModal";
 import { useState } from "react";
+import HistoricalDataModal from "@/app/components/monitoring/HistoricalDataModal";
 
 const Prueba = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isRequestDetailsOpen, setIsRequestDetailsOpen] = useState(false);
   const [isTrackingDashboardOpen, setIsTrackingDashboardOpen] = useState(false);
+  const [isHistoricalModalOpen, setIsHistoricalModalOpen] = useState(false);
 
   return (
     <div className="p-6">
@@ -66,6 +68,15 @@ const Prueba = () => {
             Ver Dashboard de Monitoreo
           </button>
         </div>
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">Modal de Datos Historicos</h2>
+          <button
+            onClick={() => setIsHistoricalModalOpen(true)}
+            className="px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            Ver Datos Historicos
+          </button>
+        </div>
       </div>
 
       {/* Modal de Registro */}
@@ -85,6 +96,12 @@ const Prueba = () => {
         isOpen={isTrackingDashboardOpen}
         onClose={() => setIsTrackingDashboardOpen(false)}
         requestData={null}
+      />
+
+      {/* Historical Data Modal */}
+      <HistoricalDataModal 
+        isOpen={isHistoricalModalOpen}
+        onClose={() => setIsHistoricalModalOpen(false)}
       />
     </div>
   );
