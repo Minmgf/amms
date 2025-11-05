@@ -5,6 +5,7 @@ import { FaTimes } from "react-icons/fa";
 import { HistoricalCharts } from "./HistoricalCharts";
 import { PerformanceChart, FuelConsumptionChart } from "./TrackingDashboardComponents";
 import TableList from "../shared/TableList";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const HistoricalDataModal = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState("general");
@@ -83,9 +84,10 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
     totalGEvents: "5",
     averageTemperature: "78°C",
     averageEngineLoad: "76%",
-    chartData: {
-      percentage: 85
-    }
+    chartData: [
+      { name: 'Viaje seleccionado', off: 15, on: 85, inMotion: 72 },
+      { name: 'Viaje total', off: 23, on: 78, inMotion: 58 }
+    ]
   };
 
   // Mock data for G-Events
@@ -353,37 +355,47 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
                       </div>
 
                       {/* Right side - Chart */}
-                      <div className="flex flex-col items-center justify-center">
+                      <div className="flex flex-col items-center justify-center w-full">
                         <h4 className="text-sm font-semibold text-primary mb-4">Gráfico de porcentaje de uso</h4>
-                        <div className="relative w-48 h-48">
-                          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                            {/* Background circle */}
-                            <circle
-                              cx="50"
-                              cy="50"
-                              r="40"
-                              stroke="#E5E7EB"
-                              strokeWidth="12"
-                              fill="none"
+                        <ResponsiveContainer width="100%" height={300}>
+                          <BarChart data={performanceData.chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" opacity={0.3} />
+                            <XAxis 
+                              dataKey="name" 
+                              tick={{ fontSize: 12, fill: 'var(--color-text-secondary)' }}
+                              axisLine={{ stroke: 'var(--color-border)' }}
                             />
-                            {/* Progress circle */}
-                            <circle
-                              cx="50"
-                              cy="50"
-                              r="40"
-                              stroke="#EAB308"
-                              strokeWidth="12"
-                              fill="none"
-                              strokeDasharray={`${2 * Math.PI * 40}`}
-                              strokeDashoffset={`${2 * Math.PI * 40 * (1 - performanceData.chartData.percentage / 100)}`}
-                              strokeLinecap="round"
-                              className="transition-all duration-700"
+                            <YAxis 
+                              domain={[0, 100]}
+                              tick={{ fontSize: 12, fill: 'var(--color-text-secondary)' }}
+                              axisLine={{ stroke: 'var(--color-border)' }}
+                              label={{ value: 'Porcentaje %', angle: -90, position: 'insideLeft', style: { fontSize: 12, fill: 'var(--color-text-secondary)' } }}
                             />
-                          </svg>
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <p className="text-4xl font-bold text-primary">{performanceData.chartData.percentage}%</p>
-                          </div>
-                        </div>
+                            <Tooltip 
+                              contentStyle={{ 
+                                backgroundColor: 'var(--color-background)', 
+                                borderColor: '#3B82F6',
+                                borderRadius: '8px',
+                                fontSize: '12px'
+                              }}
+                              formatter={(value) => `${value}%`}
+                            />
+                            <Legend 
+                              wrapperStyle={{ fontSize: '12px' }}
+                              formatter={(value) => {
+                                const labels = {
+                                  off: 'Apagado',
+                                  on: 'Encendido',
+                                  inMotion: 'En movimiento'
+                                };
+                                return labels[value] || value;
+                              }}
+                            />
+                            <Bar dataKey="off" fill="#1F2937" radius={[8, 8, 0, 0]} />
+                            <Bar dataKey="on" fill="#EAB308" radius={[8, 8, 0, 0]} />
+                            <Bar dataKey="inMotion" fill="#22C55E" radius={[8, 8, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
                       </div>
                     </div>
                   </div>
