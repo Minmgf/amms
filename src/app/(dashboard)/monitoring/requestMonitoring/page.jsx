@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { FiSearch, FiFilter, FiX, FiEye } from "react-icons/fi";
+import { FiSearch, FiFilter, FiX, FiEye, FiClock } from "react-icons/fi";
 import { FaCalendar, FaCheckCircle } from "react-icons/fa";
 import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
 import FilterModal from "@/app/components/shared/FilterModal";
+import HistoricalDataModal from "@/app/components/monitoring/HistoricalDataModal";
 import { useTheme } from "@/contexts/ThemeContext";
 import TableList from "@/app/components/shared/TableList";
 import { createColumnHelper } from "@tanstack/react-table";
@@ -29,6 +30,9 @@ const RequestMonitoringPage = () => {
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
   const [error, setError] = useState(null);
+  
+  // Estado para modal de historial
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
   // Datos mock para el listado de monitoreo de solicitudes
   const mockData = [
@@ -151,6 +155,11 @@ const RequestMonitoringPage = () => {
     setModalTitle("Detalles de Solicitud");
     setModalMessage(`Ver detalles de la solicitud ${requestId}`);
     setIsSuccessModalOpen(true);
+  };
+
+  // Función para abrir historial de cambios
+  const handleViewHistory = () => {
+    setIsHistoryModalOpen(true);
   };
 
   // Función para obtener clase de badge según el estado
@@ -330,6 +339,15 @@ const RequestMonitoringPage = () => {
               )}
             </button>
 
+            <button
+              className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit"
+              onClick={handleViewHistory}
+              aria-label="History Button"
+            >
+              <FiClock className="w-4 h-4" />
+              <span className="text-sm">Historial per machine/Operator</span>
+            </button>
+
             {activeFiltersCount > 0 && (
               <button
                 onClick={handleClearFilters}
@@ -421,6 +439,12 @@ const RequestMonitoringPage = () => {
         onClose={() => setIsErrorModalOpen(false)}
         title={modalTitle || "Error"}
         message={modalMessage}
+      />
+
+      {/* Modal de Historial */}
+      <HistoricalDataModal
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
       />
     </>
   );
