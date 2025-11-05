@@ -270,7 +270,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           name: "Monitoreo de solicitudes",
           icon: <FaClipboardList />,
           path: "/monitoring/requestMonitoring",
-          permissions: [],
+          permissions: [170],
         },
         {
           name: "Umbrales",
