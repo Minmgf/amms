@@ -10,6 +10,7 @@ import { createColumnHelper } from "@tanstack/react-table";
 import React from "react";
 import { getRequestMonitoringList } from "@/services/requestService";
 import PermissionGuard from "@/app/(auth)/PermissionGuard";
+import * as Dialog from "@radix-ui/react-dialog";
 
 const RequestMonitoringPage = () => {
   useTheme();
@@ -31,6 +32,7 @@ const RequestMonitoringPage = () => {
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
   const [error, setError] = useState(null);
+  const [isHistoricalModalOpen, setIsHistoricalModalOpen] = useState(false);
 
   // Cargar datos al montar el componente
   useEffect(() => {
@@ -152,6 +154,11 @@ const RequestMonitoringPage = () => {
     setModalTitle("Historial de Monitoreo");
     setModalMessage(`Ver historial de monitoreo de la solicitud ${requestCode}`);
     setIsSuccessModalOpen(true);
+  };
+
+  // Función para abrir modal de historial por maquinaria/operador
+  const handleOpenHistoricalModal = () => {
+    setIsHistoricalModalOpen(true);
   };
 
   // Función para obtener clase de badge según el estado
@@ -348,6 +355,15 @@ const RequestMonitoringPage = () => {
                 <FiX className="w-3 h-3" /> Limpiar filtros
               </button>
             )}
+
+            <button
+              onClick={handleOpenHistoricalModal}
+              className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit"
+              aria-label="Historical per Machine/Operator"
+            >
+              <FaHistory className="w-4 h-4" />
+              <span className="text-sm">Historial por Maquinaria/Operador</span>
+            </button>
           </div>
 
           {/* Table */}
@@ -434,6 +450,103 @@ const RequestMonitoringPage = () => {
         title={modalTitle || "Error"}
         message={modalMessage}
       />
+
+      {/* Modal de Historial por Maquinaria/Operador */}
+      <Dialog.Root open={isHistoricalModalOpen} onOpenChange={setIsHistoricalModalOpen}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 card-theme rounded-lg shadow-lg p-6 w-full max-w-2xl z-50 max-h-[90vh] overflow-y-auto">
+            <Dialog.Title className="text-xl font-bold parametrization-text mb-4">
+              Historial por Maquinaria/Operador
+            </Dialog.Title>
+            
+            <div className="space-y-4">
+              <p className="text-secondary text-sm">
+                Aquí se mostrará el historial de monitoreo filtrado por maquinaria u operador específico.
+              </p>
+
+              {/* Filtros del modal */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-primary mb-2">
+                    Maquinaria
+                  </label>
+                  <select className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+                    <option value="">Seleccionar maquinaria</option>
+                    <option value="1">Tractor John Deere 5075E</option>
+                    <option value="2">Cosechadora Case IH 8230</option>
+                    <option value="3">Fumigadora Jacto Arbus 2000</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-primary mb-2">
+                    Operador
+                  </label>
+                  <select className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+                    <option value="">Seleccionar operador</option>
+                    <option value="1">Juan Pérez</option>
+                    <option value="2">María González</option>
+                    <option value="3">Carlos Rodríguez</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Rango de fechas */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-primary mb-2">
+                    Fecha Desde
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-primary mb-2">
+                    Fecha Hasta
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
+                  />
+                </div>
+              </div>
+
+              {/* Área de resultados mock */}
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="text-sm text-gray-600 text-center">
+                  Los resultados del historial se mostrarán aquí una vez se implementen los filtros.
+                </p>
+              </div>
+            </div>
+
+            {/* Botones de acción */}
+            <div className="flex justify-end gap-3 mt-6">
+              <Dialog.Close asChild>
+                <button
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cerrar
+                </button>
+              </Dialog.Close>
+              <button
+                onClick={() => {
+                  setModalTitle("Búsqueda de Historial");
+                  setModalMessage("Función de búsqueda de historial en desarrollo");
+                  setIsSuccessModalOpen(true);
+                  setIsHistoricalModalOpen(false);
+                }}
+                className="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
+              >
+                Buscar
+              </button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </>
   );
 };
