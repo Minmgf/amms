@@ -11,6 +11,7 @@ import React from "react";
 import { getRequestMonitoringList } from "@/services/requestService";
 import PermissionGuard from "@/app/(auth)/PermissionGuard";
 import HistoricalDataModal from "@/app/components/monitoring/HistoricalDataModal";
+import TrackingDashboardModal from "@/app/components/monitoring/TrackingDashboardModal";
 
 const RequestMonitoringPage = () => {
   useTheme();
@@ -33,6 +34,8 @@ const RequestMonitoringPage = () => {
   const [modalMessage, setModalMessage] = useState("");
   const [error, setError] = useState(null);
   const [isHistoricalModalOpen, setIsHistoricalModalOpen] = useState(false);
+  const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState(null);
 
   // Cargar datos al montar el componente
   useEffect(() => {
@@ -142,10 +145,12 @@ const RequestMonitoringPage = () => {
 
   // Función para ver monitoreo en tiempo real
   const handleViewMonitoring = (requestCode) => {
-    // TODO: Navegar a la página de monitoreo en tiempo real
-    setModalTitle("Monitoreo en Tiempo Real");
-    setModalMessage(`Ver monitoreo de la solicitud ${requestCode}`);
-    setIsSuccessModalOpen(true);
+    // Buscar los datos completos de la solicitud
+    const request = data.find(req => req.tracking_code === requestCode);
+    if (request) {
+      setSelectedRequest(request);
+      setIsTrackingModalOpen(true);
+    }
   };
 
   // Función para ver historial de monitoreo
@@ -455,6 +460,16 @@ const RequestMonitoringPage = () => {
       <HistoricalDataModal 
         isOpen={isHistoricalModalOpen}
         onClose={() => setIsHistoricalModalOpen(false)}
+      />
+
+      {/* Tracking Dashboard Modal */}
+      <TrackingDashboardModal
+        isOpen={isTrackingModalOpen}
+        onClose={() => {
+          setIsTrackingModalOpen(false);
+          setSelectedRequest(null);
+        }}
+        requestData={selectedRequest}
       />
     </>
   );

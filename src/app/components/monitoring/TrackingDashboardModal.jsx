@@ -12,6 +12,16 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
   // Estado solo para tooltip del mapa
   const [mapTooltip, setMapTooltip] = useState({ visible: false, machinery: null, position: null });
   
+  // Helper function to format dates
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
   // Mock data
   const mockRequestInfo = {
     trackingCode: "L-0000003",
@@ -20,6 +30,15 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
     endDate: "28/III/2026",
     placeName: "Proyecto Urbanístico Villa del Sol - Medellín"
   };
+
+  // Use actual request data if available, otherwise use mock data
+  const requestInfo = requestData ? {
+    trackingCode: requestData.tracking_code || mockRequestInfo.trackingCode,
+    client: requestData.legal_entity_name || requestData.client_name || mockRequestInfo.client,
+    startDate: requestData.scheduled_date ? formatDate(requestData.scheduled_date) : mockRequestInfo.startDate,
+    endDate: requestData.completion_date ? formatDate(requestData.completion_date) : mockRequestInfo.endDate,
+    placeName: requestData.place_name || mockRequestInfo.placeName
+  } : mockRequestInfo;
 
   const mockMachineries = [
     {
@@ -142,11 +161,11 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
             <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
               <h3 className="text-sm font-semibold text-primary mb-3">Información de Solicitud</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-                <div><p className="text-secondary mb-1">Código de seguimiento</p><p className="text-primary font-medium">{mockRequestInfo.trackingCode}</p></div>
-                <div><p className="text-secondary mb-1">Cliente</p><p className="text-primary font-medium">{mockRequestInfo.client}</p></div>
-                <div><p className="text-secondary mb-1">Fecha de inicio</p><p className="text-primary font-medium">{mockRequestInfo.startDate}</p></div>
-                <div><p className="text-secondary mb-1">Fecha de fin</p><p className="text-primary font-medium">{mockRequestInfo.endDate}</p></div>
-                <div className="col-span-2 md:col-span-4"><p className="text-secondary mb-1">Nombre del lugar</p><p className="text-primary font-medium">{mockRequestInfo.placeName}</p></div>
+                <div><p className="text-secondary mb-1">Código de seguimiento</p><p className="text-primary font-medium">{requestInfo.trackingCode}</p></div>
+                <div><p className="text-secondary mb-1">Cliente</p><p className="text-primary font-medium">{requestInfo.client}</p></div>
+                <div><p className="text-secondary mb-1">Fecha de inicio</p><p className="text-primary font-medium">{requestInfo.startDate}</p></div>
+                <div><p className="text-secondary mb-1">Fecha de fin</p><p className="text-primary font-medium">{requestInfo.endDate}</p></div>
+                <div className="col-span-2 md:col-span-4"><p className="text-secondary mb-1">Nombre del lugar</p><p className="text-primary font-medium">{requestInfo.placeName}</p></div>
               </div>
             </div>
 
