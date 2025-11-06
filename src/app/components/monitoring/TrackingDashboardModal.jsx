@@ -3,12 +3,25 @@ import React, { useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { FaTimes, FaSignal, FaMapMarkerAlt } from "react-icons/fa";
 import { MdPowerSettingsNew, MdDirectionsCar, MdLocationOn } from "react-icons/md";
-import { GaugeCard, CircularProgress, PerformanceChart, FuelConsumptionChart } from "./TrackingDashboardComponents";
+import { GaugeCard, CircularProgress, PerformanceChart, FuelConsumptionChart, MapTooltip } from "./TrackingDashboardComponents";
 
 const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
   const [selectedMachinery, setSelectedMachinery] = useState(0);
   const [activeTab, setActiveTab] = useState("performance");
   
+  // Estado solo para tooltip del mapa
+  const [mapTooltip, setMapTooltip] = useState({ visible: false, machinery: null, position: null });
+  
+  // Helper function to format dates
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
   // Mock data
   const mockRequestInfo = {
     trackingCode: "L-0000003",
@@ -17,6 +30,15 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
     endDate: "28/III/2026",
     placeName: "Proyecto Urbanístico Villa del Sol - Medellín"
   };
+
+  // Use actual request data if available, otherwise use mock data
+  const requestInfo = requestData ? {
+    trackingCode: requestData.tracking_code || mockRequestInfo.trackingCode,
+    client: requestData.legal_entity_name || requestData.client_name || mockRequestInfo.client,
+    startDate: requestData.scheduled_date ? formatDate(requestData.scheduled_date) : mockRequestInfo.startDate,
+    endDate: requestData.completion_date ? formatDate(requestData.completion_date) : mockRequestInfo.endDate,
+    placeName: requestData.place_name || mockRequestInfo.placeName
+  } : mockRequestInfo;
 
   const mockMachineries = [
     {
@@ -52,6 +74,42 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
     totalOdometer: { value: "0 8 5 2 3 4", unit: "km" },
     tripOdometer: { value: "0 0 1 3 2 8", unit: "km" },
     logisticStatus: "En tránsito"
+  };
+
+  // Mock data para la fila adicional
+  const mockAdditionalMetrics = {
+    fuelConsumption: {
+      fuelLeft: "84.1 L",
+      averageConsumption: "183.2 L/h",
+      fuelUsed: "- L",
+      litersAdded: "- L"
+    },
+    obdFaults: {
+      p0401: { fault: "P0401", date: "2024-08-11 18:30", code: "PEND1", description: "Sistema de recirculación de gases de escape" },
+      p0402: { fault: "P0402", date: "2024-08-11 18:32", code: "CONF2", description: "Flujo excesivo de EGR detectado" }
+    },
+    gEvents: {
+      braking: 1,
+      acceleration: 3,
+      cornering: 0,
+      impact: 0
+    }
+  };
+
+  // Handler para tooltip del mapa
+  const handleMapMarkerHover = (machinery, event) => {
+    setMapTooltip({
+      visible: true,
+      machinery,
+      position: { 
+        x: event.clientX, 
+        y: event.clientY 
+      }
+    });
+  };
+
+  const handleMapMarkerLeave = () => {
+    setMapTooltip({ visible: false, machinery: null, position: null });
   };
 
   const getCardBackgroundColor = (status) => {
@@ -103,11 +161,11 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
             <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
               <h3 className="text-sm font-semibold text-primary mb-3">Información de Solicitud</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-                <div><p className="text-secondary mb-1">Código de seguimiento</p><p className="text-primary font-medium">{mockRequestInfo.trackingCode}</p></div>
-                <div><p className="text-secondary mb-1">Cliente</p><p className="text-primary font-medium">{mockRequestInfo.client}</p></div>
-                <div><p className="text-secondary mb-1">Fecha de inicio</p><p className="text-primary font-medium">{mockRequestInfo.startDate}</p></div>
-                <div><p className="text-secondary mb-1">Fecha de fin</p><p className="text-primary font-medium">{mockRequestInfo.endDate}</p></div>
-                <div className="col-span-2 md:col-span-4"><p className="text-secondary mb-1">Nombre del lugar</p><p className="text-primary font-medium">{mockRequestInfo.placeName}</p></div>
+                <div><p className="text-secondary mb-1">Código de seguimiento</p><p className="text-primary font-medium">{requestInfo.trackingCode}</p></div>
+                <div><p className="text-secondary mb-1">Cliente</p><p className="text-primary font-medium">{requestInfo.client}</p></div>
+                <div><p className="text-secondary mb-1">Fecha de inicio</p><p className="text-primary font-medium">{requestInfo.startDate}</p></div>
+                <div><p className="text-secondary mb-1">Fecha de fin</p><p className="text-primary font-medium">{requestInfo.endDate}</p></div>
+                <div className="col-span-2 md:col-span-4"><p className="text-secondary mb-1">Nombre del lugar</p><p className="text-primary font-medium">{requestInfo.placeName}</p></div>
               </div>
             </div>
 
@@ -120,8 +178,13 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                 <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
                   {mockMachineries.map((machinery, index) => (
                     <div key={machinery.id} onClick={() => setSelectedMachinery(index)}
-                      className={`p-3 rounded-lg border cursor-pointer transition-all ${selectedMachinery === index ? 'ring-2' : ''}`}
-                      style={{ backgroundColor: getCardBackgroundColor(machinery.status), borderColor: selectedMachinery === index ? 'var(--color-primary)' : 'var(--color-border)', ringColor: 'var(--color-primary)' }}>
+                      className={`p-3 rounded-lg border cursor-pointer transition-all ${selectedMachinery === index ? 'shadow-lg' : ''}`}
+                      style={{ 
+                        backgroundColor: getCardBackgroundColor(machinery.status), 
+                        borderColor: selectedMachinery === index ? 'var(--color-primary)' : 'var(--color-border)',
+                        borderWidth: selectedMachinery === index ? '2px' : '1px',
+                        outline: 'none'
+                      }}>
                       <div className="flex gap-3">
                         <div className="w-16 h-16 rounded flex-shrink-0" style={{ backgroundColor: 'var(--color-background-tertiary)' }}>
                           <div className="w-full h-full flex items-center justify-center text-secondary text-xs">IMG</div>
@@ -167,7 +230,12 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                   <div className="absolute inset-0">
                     {mockMachineries.map((machinery, index) => (
                       <div key={machinery.id} className="absolute" style={{ top: `${30 + index * 25}%`, left: `${40 + index * 10}%` }}>
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center shadow-lg cursor-pointer transform hover:scale-110 transition-transform" style={{ backgroundColor: getMarkerColor(machinery.status) }}>
+                        <div 
+                          className="w-8 h-8 rounded-full flex items-center justify-center shadow-lg cursor-pointer transform hover:scale-110 transition-transform" 
+                          style={{ backgroundColor: getMarkerColor(machinery.status) }}
+                          onMouseEnter={(e) => handleMapMarkerHover(machinery, e)}
+                          onMouseLeave={handleMapMarkerLeave}
+                        >
                           <MdLocationOn className="text-white" size={20} />
                         </div>
                       </div>
@@ -186,19 +254,25 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
               </div>
             </div>
 
-            {/* FILA 4: Nombre del tractor + Last update */}
+            {/* FILA 4: Header del vehículo seleccionado */}
             {selectedMachinery !== null && (
-              <div className="flex items-center gap-3 p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
-                <div className="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold text-white" style={{ backgroundColor: 'var(--color-primary)' }}>
-                  {mockMachineries[selectedMachinery].name.charAt(0)}
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-base font-semibold text-primary">{mockMachineries[selectedMachinery].name}</h3>
-                  <p className="text-xs text-secondary">Serie: {mockMachineries[selectedMachinery].serial}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-secondary">Última actualización</p>
-                  <p className="text-sm font-medium text-primary">{mockMachineries[selectedMachinery].lastUpdate}</p>
+              <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white" style={{ backgroundColor: '#1F2937' }}>
+                      {mockMachineries[selectedMachinery].name.charAt(0)}
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-primary">{mockMachineries[selectedMachinery].name}</h3>
+                      <p className="text-xs text-secondary">Serie: {mockMachineries[selectedMachinery].serial}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-secondary mb-1">Última actualización</p>
+                    <p className={`text-sm font-semibold ${mockMachineries[selectedMachinery].lastUpdate === 'No conecta' ? 'text-error' : 'text-success'}`}>
+                      {mockMachineries[selectedMachinery].lastUpdate}
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
@@ -206,7 +280,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
             {/* FILA 5: Grid de 8 sensores (4x2) */}
             {selectedMachinery !== null && (
               <div>
-                <h3 className="text-sm font-semibold text-primary mb-3">Sensores y Contadores del Vehículo</h3>
+                <h3 className="text-base font-bold text-primary mb-4">Sensores y Contadores del Vehículo</h3>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   
                   {/* Sensor 1: Current speed */}
@@ -356,6 +430,96 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
               </div>
             )}
 
+            {/* FILA 5.5: Fuel Consumption, OBD Faults, G-Events */}
+            {selectedMachinery !== null && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                
+                {/* Fuel Consumption */}
+                <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
+                  <h3 className="text-sm font-semibold text-primary mb-4">Consumo de Combustible</h3>
+                  <div className="space-y-3 text-xs">
+                    <div>
+                      <p className="text-secondary mb-1">Combustible usado:</p>
+                      <p className="text-lg font-bold text-primary">45.2 L</p>
+                    </div>
+                    <div>
+                      <p className="text-secondary mb-1">Consumo instantáneo:</p>
+                      <p className="text-lg font-bold text-primary">12.5 L/h</p>
+                    </div>
+                    <div>
+                      <p className="text-secondary mb-1">Predicción:</p>
+                      <p className="text-lg font-bold text-primary">11.8 L/h</p>
+                    </div>
+                    <div className="pt-2">
+                      <p className="text-success font-medium">+5.9% sobre predicción</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* OBD Faults */}
+                <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
+                  <h3 className="text-sm font-semibold text-primary mb-4">Fallas OBD</h3>
+                  <div className="space-y-3 text-xs">
+                    {Object.values(mockAdditionalMetrics.obdFaults).map((fault, index) => (
+                      <div key={index} className="pb-3 border-b last:border-b-0" style={{ borderColor: 'var(--color-border)' }}>
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-1 h-8 bg-error rounded"></div>
+                            <div>
+                              <p className="font-bold text-error text-sm">{fault.fault}</p>
+                              <p className="text-[10px] text-secondary">Ejemplo</p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] text-secondary whitespace-nowrap">{fault.date}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* G-Events */}
+                <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
+                  <h3 className="text-sm font-semibold text-primary mb-4">Eventos G</h3>
+                  <div className="space-y-4 text-xs">
+                    
+                    {/* Braking */}
+                    <div>
+                      <div className="flex items-start justify-between mb-1">
+                        <span className="text-primary font-medium">Frenado</span>
+                        <span className="text-secondary text-[10px]">2024-01-17 10:30</span>
+                      </div>
+                      <div className="text-secondary">
+                        Intensidad: <span className="text-error font-bold">-0.8G</span>
+                      </div>
+                    </div>
+
+                    {/* Acceleration */}
+                    <div>
+                      <div className="flex items-start justify-between mb-1">
+                        <span className="text-primary font-medium">Aceleración</span>
+                        <span className="text-secondary text-[10px]">2024-01-17 10:30</span>
+                      </div>
+                      <div className="text-secondary">
+                        Intensidad: <span className="text-warning font-bold">+0.6G</span>
+                      </div>
+                    </div>
+
+                    {/* Curve */}
+                    <div>
+                      <div className="flex items-start justify-between mb-1">
+                        <span className="text-primary font-medium">Curva</span>
+                        <span className="text-secondary text-[10px]">2024-01-17 10:30</span>
+                      </div>
+                      <div className="text-secondary">
+                        Intensidad: <span className="text-primary font-bold">0.7G</span>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* FILA 6: Gráficas con tabs */}
             {selectedMachinery !== null && (
               <div>
@@ -378,6 +542,13 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
 
           </div>
         </Dialog.Content>
+
+        {/* Tooltip del mapa */}
+        <MapTooltip 
+          machinery={mapTooltip.machinery}
+          position={mapTooltip.position}
+          visible={mapTooltip.visible}
+        />
       </Dialog.Portal>
     </Dialog.Root>
   );
