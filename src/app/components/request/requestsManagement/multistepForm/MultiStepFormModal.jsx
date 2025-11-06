@@ -280,6 +280,7 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
                 texture: item.texture_id || "",
                 humidity: item.humidity_level ?? "",
                 implementation: item.implementation_id || "",
+                implementWidth: item.implement_width ?? "",
                 workDepth: item.depth ?? "",
                 slope: item.slope ?? "",
                 estimatedHours: item.work_duration ?? ""
@@ -452,6 +453,7 @@ export default function MultiStepFormModal({ isOpen, onClose, requestToEdit, mod
           texture: prediction.texture ?? null,
           humidity_level: prediction.humidity ?? null,
           implementation: prediction.implementation ?? null,
+          implement_width: prediction.implementWidth ?? null,
           depth: prediction.workDepth ?? null,
           slope: prediction.slope ?? null,
           work_duration: prediction.estimatedHours ?? null
