@@ -119,3 +119,17 @@ export const toggleClientStatus = async (clientId) => {
         throw error;
     }
 };
+
+// Descargar factura en formato PDF (HU-CLI-003)
+// Permiso requerido: 161 (request.download_invoice)
+export const downloadInvoicePDF = async (invoiceId) => {
+    try {
+        const response = await apiMain.get(`/invoices/${invoiceId}/download_pdf/`, {
+            responseType: 'blob'
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error descargando factura:', error);
+        throw error;
+    }
+};

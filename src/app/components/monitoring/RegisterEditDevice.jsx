@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { FiX } from "react-icons/fi";
+import { FiX, FiInfo } from "react-icons/fi";
 import { getMonitoringParameters, getDeviceById, updateDevice, createTelemetryDevice } from "@/services/devicesService";
 
 const RegisterDevice = ({ isOpen, onClose, onSuccess, deviceToEdit }) => {
@@ -9,11 +9,26 @@ const RegisterDevice = ({ isOpen, onClose, onSuccess, deviceToEdit }) => {
   const [parameters, setParameters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingDevice, setLoadingDevice] = useState(false);
+  const [errors, setErrors] = useState({
+    deviceName: "",
+    imei: ""
+  });
   const [formData, setFormData] = useState({
     deviceName: "",
     imei: "",
     selectedParameters: [] // Array de IDs de parámetros seleccionados
   });
+  const [notification, setNotification] = useState("");
+
+  // Definir las relaciones entre parámetros según el backend usando IDs
+  // Relación 1: Valor G de Evento (ID: 17) <-> Eventos (ID: 16)
+  // Relación 2: GPS (ID: 4) <-> Estado logístico (ID: 18)
+  const PARAMETER_RELATIONS = {
+    17: 16, // Valor G de Evento -> Eventos
+    16: 17, // Eventos -> Valor G de Evento
+    4: 18, // GPS -> Estado logístico
+    18: 4  // Estado logístico -> GPS
+  };
 
   // Cargar parámetros desde el API
   useEffect(() => {
@@ -99,16 +114,70 @@ const RegisterDevice = ({ isOpen, onClose, onSuccess, deviceToEdit }) => {
       ...prev,
       [name]: value
     }));
+    // Limpiar error del campo al modificarlo
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ""
+      }));
+    }
   };
 
   const handleCheckboxChange = (parameterId) => {
+    // Encontrar el parámetro seleccionado
+    const selectedParameter = parameters.find(p => p.id === parameterId);
+    
     setFormData(prev => {
       const isSelected = prev.selectedParameters.includes(parameterId);
+      let newSelectedParameters;
+      let notificationMessage = "";
+
+      if (isSelected) {
+        // Deseleccionar el parámetro
+        newSelectedParameters = prev.selectedParameters.filter(id => id !== parameterId);
+        
+        // Verificar si tiene un parámetro relacionado y también deseleccionarlo
+        const relatedParameterId = PARAMETER_RELATIONS[parameterId];
+        
+        if (relatedParameterId) {
+          // Buscar el parámetro relacionado por ID
+          const relatedParameter = parameters.find(p => p.id === relatedParameterId);
+          
+          // Si el parámetro relacionado está seleccionado, también deseleccionarlo
+          if (relatedParameter && newSelectedParameters.includes(relatedParameterId)) {
+            newSelectedParameters = newSelectedParameters.filter(id => id !== relatedParameterId);
+            notificationMessage = `✓ "${relatedParameter.parameter_name}" se deseleccionó automáticamente por relación de backend con "${selectedParameter.parameter_name}"`;
+          }
+        }
+      } else {
+        // Seleccionar el parámetro
+        newSelectedParameters = [...prev.selectedParameters, parameterId];
+
+        // Verificar si tiene un parámetro relacionado usando el ID
+        const relatedParameterId = PARAMETER_RELATIONS[parameterId];
+        
+        if (relatedParameterId) {
+          // Buscar el parámetro relacionado por ID
+          const relatedParameter = parameters.find(p => p.id === relatedParameterId);
+          
+          if (relatedParameter && !newSelectedParameters.includes(relatedParameterId)) {
+            // Agregar automáticamente el parámetro relacionado
+            newSelectedParameters.push(relatedParameterId);
+            notificationMessage = `✓ "${relatedParameter.parameter_name}" se seleccionó automáticamente por relación de backend con "${selectedParameter.parameter_name}"`;
+          }
+        }
+      }
+
+      // Mostrar notificación si existe
+      if (notificationMessage) {
+        setNotification(notificationMessage);
+        // Ocultar notificación después de 5 segundos
+        setTimeout(() => setNotification(""), 5000);
+      }
+
       return {
         ...prev,
-        selectedParameters: isSelected
-          ? prev.selectedParameters.filter(id => id !== parameterId)
-          : [...prev.selectedParameters, parameterId]
+        selectedParameters: newSelectedParameters
       };
     });
   };
@@ -120,9 +189,18 @@ const RegisterDevice = ({ isOpen, onClose, onSuccess, deviceToEdit }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Limpiar errores previos
+    setErrors({
+      deviceName: "",
+      imei: ""
+    });
+
     // Validar que se haya ingresado nombre e IMEI
     if (!formData.deviceName || !formData.imei) {
-      alert("Por favor ingrese el nombre del dispositivo y el IMEI");
+      setErrors({
+        deviceName: !formData.deviceName ? "El nombre del dispositivo es requerido" : "",
+        imei: !formData.imei ? "El IMEI es requerido" : ""
+      });
       return;
     }
 
@@ -178,8 +256,38 @@ const RegisterDevice = ({ isOpen, onClose, onSuccess, deviceToEdit }) => {
       }
     } catch (error) {
       console.error("Error al guardar dispositivo:", error);
-      const errorMessage = error.response?.data?.message || error.message || "Error al guardar el dispositivo. Por favor, intente nuevamente.";
-      alert(errorMessage);
+      
+      // Manejar errores de validación del servidor (400)
+      if (error.response?.status === 400 && error.response?.data) {
+        const serverErrors = error.response.data;
+        console.log("Errores del servidor:", serverErrors);
+        
+        // Mapear errores específicos a campos del formulario
+        const newErrors = {
+          deviceName: "",
+          imei: ""
+        };
+        
+        // Verificar si hay error de IMEI duplicado
+        if (serverErrors.IMEI) {
+          newErrors.imei = Array.isArray(serverErrors.IMEI) 
+            ? serverErrors.IMEI[0] 
+            : serverErrors.IMEI;
+        }
+        
+        // Verificar si hay error de nombre
+        if (serverErrors.name) {
+          newErrors.deviceName = Array.isArray(serverErrors.name) 
+            ? serverErrors.name[0] 
+            : serverErrors.name;
+        }
+        
+        setErrors(newErrors);
+      } else {
+        // Para otros errores, mostrar alert
+        const errorMessage = error.response?.data?.message || error.message || "Error al guardar el dispositivo. Por favor, intente nuevamente.";
+        alert(errorMessage);
+      }
     }
   };
 
@@ -188,6 +296,10 @@ const RegisterDevice = ({ isOpen, onClose, onSuccess, deviceToEdit }) => {
       deviceName: "",
       imei: "",
       selectedParameters: []
+    });
+    setErrors({
+      deviceName: "",
+      imei: ""
     });
     onClose();
   };
@@ -204,6 +316,21 @@ const RegisterDevice = ({ isOpen, onClose, onSuccess, deviceToEdit }) => {
       onClick={handleOverlayClick}
       style={{ zIndex: 9999 }}
     >
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.3s ease-out;
+        }
+      `}</style>
       <div
         className="modal-theme w-full max-w-xl relative"
         onClick={(e) => e.stopPropagation()}
@@ -229,6 +356,23 @@ const RegisterDevice = ({ isOpen, onClose, onSuccess, deviceToEdit }) => {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6">
+          {/* Notificación de selección automática */}
+          {notification && (
+            <div className="mb-4 bg-blue-50 border border-blue-300 text-blue-800 px-4 py-3 rounded-lg flex items-start gap-3 animate-fade-in">
+              <FiInfo className="w-5 h-5 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium">{notification}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setNotification("")}
+                className="text-blue-600 hover:text-blue-800 transition-colors"
+              >
+                <FiX className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           {/* Nombre del Dispositivo e IMEI */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
@@ -240,10 +384,13 @@ const RegisterDevice = ({ isOpen, onClose, onSuccess, deviceToEdit }) => {
                 name="deviceName"
                 value={formData.deviceName}
                 onChange={handleInputChange}
-                className="parametrization-input w-full"
+                className={`parametrization-input w-full ${errors.deviceName ? 'border-red-500 focus:ring-red-500' : ''}`}
                 placeholder="Ej: AgroLink-001"
                 required
               />
+              {errors.deviceName && (
+                <p className="text-red-500 text-xs mt-1">{errors.deviceName}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-primary mb-2">
@@ -254,20 +401,29 @@ const RegisterDevice = ({ isOpen, onClose, onSuccess, deviceToEdit }) => {
                 name="imei"
                 value={formData.imei}
                 onChange={handleInputChange}
-                className="parametrization-input w-full"
+                className={`parametrization-input w-full ${errors.imei ? 'border-red-500 focus:ring-red-500' : ''}`}
                 placeholder="Ej: 357984562034378"
                 required
                 pattern="[0-9]{15}"
                 title="El IMEI debe contener exactamente 15 dígitos"
               />
+              {errors.imei && (
+                <p className="text-red-500 text-xs mt-1">{errors.imei}</p>
+              )}
             </div>
           </div>
 
           {/* Parámetros de Monitoreo */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-primary mb-3">
-              Parámetros de Monitoreo
-            </label>
+            <div className="flex items-center justify-between mb-3">
+              <label className="block text-sm font-medium text-primary">
+                Parámetros de Monitoreo
+              </label>
+              <div className="text-xs text-gray-500 flex items-center gap-1">
+                <FiInfo className="w-3 h-3" />
+                <span>Algunos parámetros se seleccionan automáticamente por dependencias</span>
+              </div>
+            </div>
 
             {loading || loadingDevice ? (
               <div className="text-center py-8">

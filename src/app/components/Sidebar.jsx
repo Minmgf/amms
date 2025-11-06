@@ -270,13 +270,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           name: "Monitoreo de solicitudes",
           icon: <FaClipboardList />,
           path: "/monitoring/requestMonitoring",
-          permissions: [],
-        },
-        {
-          name: "Umbrales",
-          icon: <FaRssSquare />,
-          path: "/monitoring/threshold",
-          permissions: [],
+          permissions: [170],
         },
       ],
     },
@@ -362,7 +356,11 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                     <>
                       <Link
                         href={item.path}
-                        onClick={() => {
+                        onClick={(e) => {
+                          // Si ya estamos en la ruta, solo toggle sin navegar
+                          if (isActiveParent) {
+                            e.preventDefault();
+                          }
                           toggleMenu(item.name);
                         }}
                         className={`nav-item-theme flex justify-between items-center w-full p-2 rounded-theme-lg transition-colors ${
@@ -382,7 +380,7 @@ export default function Sidebar({ isOpen, setIsOpen }) {
                       {openMenus[item.name] && (
                         <div className="w-full mt-1 flex flex-col gap-1 text-sm pl-6">
                           {item.sub
-                            .filter(subItem => shouldShowMenuItem(subItem)) // 👈 Filtrar submenús
+                            .filter(subItem => shouldShowMenuItem(subItem)) 
                             .map((sub) => {
                               const isActiveSub = pathname === sub.path;
                               return (

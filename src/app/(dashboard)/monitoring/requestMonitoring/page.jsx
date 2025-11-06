@@ -1,13 +1,18 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { FiSearch, FiFilter, FiX, FiEye } from "react-icons/fi";
-import { FaCalendar, FaCheckCircle } from "react-icons/fa";
+import { FaCalendar, FaCheckCircle, FaHistory } from "react-icons/fa";
 import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
 import FilterModal from "@/app/components/shared/FilterModal";
 import { useTheme } from "@/contexts/ThemeContext";
 import TableList from "@/app/components/shared/TableList";
 import { createColumnHelper } from "@tanstack/react-table";
 import React from "react";
+import { getRequestMonitoringList } from "@/services/requestService";
+import PermissionGuard from "@/app/(auth)/PermissionGuard";
+import HistoricalDataModal from "@/app/components/monitoring/HistoricalDataModal";
+import TrackingDashboardModal from "@/app/components/monitoring/TrackingDashboardModal";
+import RequestHistoricalModal from "@/app/components/monitoring/RequestHistoricalModal";
 
 const RequestMonitoringPage = () => {
   useTheme();
@@ -29,40 +34,10 @@ const RequestMonitoringPage = () => {
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
   const [error, setError] = useState(null);
-
-  // Datos mock para el listado de monitoreo de solicitudes
-  const mockData = [
-    {
-      id: 1,
-      tracking_code: "S-0001",
-      client_name: "Agrícolas SAS",
-      place_name: "Finca La Esperanza/Neiva",
-      status_id: 2,
-      status_name: "Pendiente",
-      start_date: "2024-01-15T14:30:00",
-      end_date: null,
-    },
-    {
-      id: 2,
-      tracking_code: "S-0002",
-      client_name: "Agrícolas SAS",
-      place_name: "Finca La Esperanza/Neiva",
-      status_id: 3,
-      status_name: "En progreso",
-      start_date: "2024-01-15T14:30:00",
-      end_date: null,
-    },
-    {
-      id: 3,
-      tracking_code: "S-0002",
-      client_name: "Agrícolas SAS",
-      place_name: "Finca La Esperanza/Neiva",
-      status_id: 5,
-      status_name: "Finalizado",
-      start_date: "2024-01-15T14:30:00",
-      end_date: "2024-01-30T12:00:00",
-    },
-  ];
+  const [isHistoricalModalOpen, setIsHistoricalModalOpen] = useState(false);
+  const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
+  const [isRequestHistoricalModalOpen, setIsRequestHistoricalModalOpen] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState(null);
 
   // Cargar datos al montar el componente
   useEffect(() => {
@@ -74,17 +49,41 @@ const RequestMonitoringPage = () => {
     applyFilters();
   }, [data, statusFilter, startDateFilter, endDateFilter]);
 
-  // Función para cargar datos (mock por ahora)
+  // Función para cargar datos del API
   const loadInitialData = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Simular llamada a API con timeout
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setData(mockData);
+      const response = await getRequestMonitoringList();
+      
+      if (response.status && response.data) {
+        // Mapear los datos del API a la estructura del componente
+        const mappedData = response.data.map((item) => ({
+          id: item.code,
+          tracking_code: item.code,
+          customer_id: item.customer_id,
+          legal_entity_name: item.legal_entity_name,
+          client_name: item.customer_name,
+          place_name: item.place_name,
+          status_id: item.request_status_id,
+          status_name: item.request_status_name,
+          scheduled_date: item.scheduled_date,
+          completion_date: item.completion_date,
+          city_id: item.city_id,
+        }));
+        setData(mappedData);
+      } else {
+        setError("No se pudieron cargar las solicitudes.");
+        setData([]);
+      }
     } catch (err) {
       console.error("Error loading request monitoring:", err);
-      setError("Error al conectar con el servidor.");
+      setModalTitle("Error");
+      setModalMessage(
+        err?.response?.data?.message ||
+        "Error al conectar con el servidor. Por favor, inténtelo de nuevo."
+      );
+      setIsErrorModalOpen(true);
       setData([]);
     } finally {
       setLoading(false);
@@ -102,10 +101,10 @@ const RequestMonitoringPage = () => {
       );
     }
 
-    // Filtro por rango de fechas (fecha de inicio)
+    // Filtro por rango de fechas (fecha programada)
     if (startDateFilter) {
       filtered = filtered.filter((request) => {
-        const requestDate = new Date(request.start_date);
+        const requestDate = new Date(request.scheduled_date);
         const startDate = new Date(startDateFilter);
         return requestDate >= startDate;
       });
@@ -113,7 +112,7 @@ const RequestMonitoringPage = () => {
 
     if (endDateFilter) {
       filtered = filtered.filter((request) => {
-        const requestDate = new Date(request.start_date);
+        const requestDate = new Date(request.scheduled_date);
         const endDate = new Date(endDateFilter);
         endDate.setDate(endDate.getDate() + 1);
         return requestDate < endDate;
@@ -146,26 +145,40 @@ const RequestMonitoringPage = () => {
     applyFilters();
   };
 
-  // Función para ver detalles
-  const handleViewDetails = (requestId) => {
-    setModalTitle("Detalles de Solicitud");
-    setModalMessage(`Ver detalles de la solicitud ${requestId}`);
-    setIsSuccessModalOpen(true);
+  // Función para ver monitoreo en tiempo real
+  const handleViewMonitoring = (requestCode) => {
+    // Buscar los datos completos de la solicitud
+    const request = data.find(req => req.tracking_code === requestCode);
+    if (request) {
+      setSelectedRequest(request);
+      setIsTrackingModalOpen(true);
+    }
+  };
+
+  // Función para ver historial de monitoreo
+  const handleViewHistory = (requestCode) => {
+    // Buscar los datos completos de la solicitud
+    const request = data.find(req => req.tracking_code === requestCode);
+    if (request) {
+      setSelectedRequest(request);
+      setIsRequestHistoricalModalOpen(true);
+    }
+  };
+
+  // Función para abrir modal de historial por maquinaria/operador
+  const handleOpenHistoricalModal = () => {
+    setIsHistoricalModalOpen(true);
   };
 
   // Función para obtener clase de badge según el estado
   const getStatusClass = (statusId) => {
     switch (statusId) {
-      case 1:
+      case 20:
         return "bg-yellow-100 text-yellow-800"; // Pendiente
-      case 2:
-        return "bg-yellow-100 text-yellow-800"; // Pendiente
-      case 3:
-        return "bg-blue-100 text-blue-800"; // En progreso
-      case 4:
-        return "bg-purple-100 text-purple-800"; // En ejecución
-      case 5:
-        return "bg-green-100 text-green-800"; // Finalizado
+      case 21:
+        return "bg-blue-100 text-blue-800"; // En proceso
+      case 22:
+        return "bg-green-100 text-green-800"; // Finalizada
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -204,17 +217,17 @@ const RequestMonitoringPage = () => {
           );
         },
       }),
-      columnHelper.accessor("start_date", {
-        header: "Fecha de Inicio",
+      columnHelper.accessor("scheduled_date", {
+        header: "Fecha Programada",
         cell: (info) => (
-          <div className="text-secondary">{formatDateTime(info.getValue())}</div>
+          <div className="text-secondary">{formatDate(info.getValue())}</div>
         ),
       }),
-      columnHelper.accessor("end_date", {
-        header: "Fecha de Fin",
+      columnHelper.accessor("completion_date", {
+        header: "Fecha de Finalización",
         cell: (info) => (
           <div className="text-secondary">
-            {info.getValue() ? formatDateTime(info.getValue()) : "N/A"}
+            {info.getValue() ? formatDate(info.getValue()) : "N/A"}
           </div>
         ),
       }),
@@ -222,17 +235,35 @@ const RequestMonitoringPage = () => {
         header: "Acciones",
         cell: (info) => {
           const request = info.row.original;
+          const isCompleted = request.status_id === 22; // Finalizada
+          const isInProcess = request.status_id === 21; // En proceso
 
           return (
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              <button
-                aria-label="View Details Button"
-                onClick={() => handleViewDetails(request.tracking_code)}
-                className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600 text-gray-700"
-                title="Ver detalles"
-              >
-                <FiEye className="w-3 h-3" /> Ver Detalles
-              </button>
+              {isInProcess && (
+                <PermissionGuard permission={170}>
+                  <button
+                    aria-label="View Monitoring Button"
+                    onClick={() => handleViewMonitoring(request.tracking_code)}
+                    className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600 text-gray-700"
+                    title="Ver monitoreo"
+                  >
+                    <FiEye className="w-3 h-3" /> Ver Monitoreo
+                  </button>
+                </PermissionGuard>
+              )}
+              {isCompleted && (
+                <PermissionGuard permission={170}>
+                  <button
+                    aria-label="View History Button"
+                    onClick={() => handleViewHistory(request.tracking_code)}
+                    className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
+                    title="Ver historial de monitoreo"
+                  >
+                    <FaHistory className="w-3 h-3" /> Ver Historial
+                  </button>
+                </PermissionGuard>
+              )}
             </div>
           );
         },
@@ -266,16 +297,11 @@ const RequestMonitoringPage = () => {
     Boolean
   ).length;
 
-  // Formatear Fecha y Hora
-  const formatDateTime = (dateString) => {
+  // Formatear Fecha
+  const formatDate = (dateString) => {
     if (!dateString) return "";
-    const date = new Date(dateString);
     const [year, month, day] = dateString.split("T")[0].split("-");
-    const time = date.toLocaleTimeString("es-ES", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    return `${year}-${month}-${day} ${time}`;
+    return `${year}-${month}-${day}`;
   };
 
   return (
@@ -338,16 +364,27 @@ const RequestMonitoringPage = () => {
                 <FiX className="w-3 h-3" /> Limpiar filtros
               </button>
             )}
+
+            <button
+              onClick={handleOpenHistoricalModal}
+              className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit"
+              aria-label="Historical per Machine/Operator"
+            >
+              <FaHistory className="w-4 h-4" />
+              <span className="text-sm">Historial por Maquinaria/Operador</span>
+            </button>
           </div>
 
           {/* Table */}
-          <TableList
-            columns={columns}
-            data={displayData}
-            loading={loading}
-            globalFilter={globalFilter}
-            onGlobalFilterChange={setGlobalFilter}
-          />
+          <PermissionGuard permission={170}>
+            <TableList
+              columns={columns}
+              data={displayData}
+              loading={loading}
+              globalFilter={globalFilter}
+              onGlobalFilterChange={setGlobalFilter}
+            />
+          </PermissionGuard>
         </div>
       </div>
 
@@ -383,7 +420,7 @@ const RequestMonitoringPage = () => {
           <div>
             <label className="block text-sm font-medium text-primary mb-3">
               <FaCalendar className="inline w-4 h-4 mr-2" />
-              Fecha de Inicio (Desde)
+              Fecha Programada (Desde)
             </label>
             <input
               type="date"
@@ -397,7 +434,7 @@ const RequestMonitoringPage = () => {
           <div>
             <label className="block text-sm font-medium text-primary mb-3">
               <FaCalendar className="inline w-4 h-4 mr-2" />
-              Fecha de Inicio (Hasta)
+              Fecha Programada (Hasta)
             </label>
             <input
               type="date"
@@ -421,6 +458,32 @@ const RequestMonitoringPage = () => {
         onClose={() => setIsErrorModalOpen(false)}
         title={modalTitle || "Error"}
         message={modalMessage}
+      />
+
+      {/* Historical Data Machine/Operator Modal */}
+      <HistoricalDataModal 
+        isOpen={isHistoricalModalOpen}
+        onClose={() => setIsHistoricalModalOpen(false)}
+      />
+
+      {/* Tracking Dashboard Modal */}
+      <TrackingDashboardModal
+        isOpen={isTrackingModalOpen}
+        onClose={() => {
+          setIsTrackingModalOpen(false);
+          setSelectedRequest(null);
+        }}
+        requestData={selectedRequest}
+      />
+
+      {/* Request Historical Modal */}
+      <RequestHistoricalModal
+        isOpen={isRequestHistoricalModalOpen}
+        onClose={() => {
+          setIsRequestHistoricalModalOpen(false);
+          setSelectedRequest(null);
+        }}
+        requestData={selectedRequest}
       />
     </>
   );
