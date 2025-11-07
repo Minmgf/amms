@@ -12,6 +12,7 @@ import { getRequestMonitoringList } from "@/services/requestService";
 import PermissionGuard from "@/app/(auth)/PermissionGuard";
 import HistoricalDataModal from "@/app/components/monitoring/HistoricalDataModal";
 import TrackingDashboardModal from "@/app/components/monitoring/TrackingDashboardModal";
+import RequestHistoricalModal from "@/app/components/monitoring/RequestHistoricalModal";
 
 const RequestMonitoringPage = () => {
   useTheme();
@@ -35,6 +36,7 @@ const RequestMonitoringPage = () => {
   const [error, setError] = useState(null);
   const [isHistoricalModalOpen, setIsHistoricalModalOpen] = useState(false);
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
+  const [isRequestHistoricalModalOpen, setIsRequestHistoricalModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
 
   // Cargar datos al montar el componente
@@ -155,10 +157,12 @@ const RequestMonitoringPage = () => {
 
   // Función para ver historial de monitoreo
   const handleViewHistory = (requestCode) => {
-    // TODO: Navegar a la página de historial de monitoreo
-    setModalTitle("Historial de Monitoreo");
-    setModalMessage(`Ver historial de monitoreo de la solicitud ${requestCode}`);
-    setIsSuccessModalOpen(true);
+    // Buscar los datos completos de la solicitud
+    const request = data.find(req => req.tracking_code === requestCode);
+    if (request) {
+      setSelectedRequest(request);
+      setIsRequestHistoricalModalOpen(true);
+    }
   };
 
   // Función para abrir modal de historial por maquinaria/operador
@@ -467,6 +471,16 @@ const RequestMonitoringPage = () => {
         isOpen={isTrackingModalOpen}
         onClose={() => {
           setIsTrackingModalOpen(false);
+          setSelectedRequest(null);
+        }}
+        requestData={selectedRequest}
+      />
+
+      {/* Request Historical Modal */}
+      <RequestHistoricalModal
+        isOpen={isRequestHistoricalModalOpen}
+        onClose={() => {
+          setIsRequestHistoricalModalOpen(false);
           setSelectedRequest(null);
         }}
         requestData={selectedRequest}
