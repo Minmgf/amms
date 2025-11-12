@@ -1,4 +1,5 @@
 "use client";
+import ContractDetail from "@/app/components/contractManagement/contractDetail/ContractDetail";
 import { useEffect, useMemo, useState } from "react";
 import { FiSearch, FiFilter, FiEdit2, FiTrash2, FiPlus, FiX, FiEye } from "react-icons/fi";
 import { FaCalendar, FaCheckCircle, FaDollarSign, FaFileContract } from "react-icons/fa";
@@ -18,6 +19,7 @@ const ContractManagementPage = () => {
   const [isContractFormModalOpen, setIsContractFormModalOpen] = useState(false);
   const [contractFormMode, setContractFormMode] = useState("add");
   const [selectedContract, setSelectedContract] = useState(null);
+  const [isContractDetailsOpen, setIsContractDetailsOpen] = useState(false);
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -226,7 +228,12 @@ const ContractManagementPage = () => {
       setContractFormMode("add");
       setSelectedContract(null);
       setIsContractFormModalOpen(true);
+    } else if (mode === "view") {
+      const contract = data.find((c) => c.id_contract === contractId);
+      setSelectedContract(contract);
+      setIsContractDetailsOpen(true);
     } else {
+      // edit
       const contract = data.find((c) => c.id_contract === contractId);
       setContractFormMode(mode);
       setSelectedContract(contract);
@@ -691,6 +698,16 @@ const ContractManagementPage = () => {
         onClose={() => setIsErrorModalOpen(false)}
         title={modalTitle || "Error"}
         message={modalMessage}
+      />
+
+      <ContractDetail
+        isOpen={isContractDetailsOpen}
+        onClose={() => { setIsContractDetailsOpen(false); setSelectedContract(null); }}
+        contractData={selectedContract}
+        onBackToList={() => { setIsContractDetailsOpen(false); setSelectedContract(null); }}
+        onExport={(format) => { setModalTitle("Exportar"); setModalMessage(`Export solicitado: ${format} (pendiente de implementar)`); setIsSuccessModalOpen(true); }}
+        themeColors={{}}
+        canViewContract={true}
       />
     </>
   );
