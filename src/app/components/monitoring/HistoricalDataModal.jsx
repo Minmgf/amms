@@ -1,25 +1,91 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { FaTimes } from "react-icons/fa";
 import { HistoricalCharts } from "./HistoricalCharts";
 import { PerformanceChart, FuelConsumptionChart } from "./TrackingDashboardComponents";
 import TableList from "../shared/TableList";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { 
+  getHistoricalDataByRequest, 
+  processParameterData, 
+  calculateTimePercentages,
+  processGPSData,
+  getGEvents,
+  getOBDFaults
+} from '@/services/monitoringService';
 
-const HistoricalDataModal = ({ isOpen, onClose }) => {
-  const [activeTab, setActiveTab] = useState("general");
+const getAuthToken = () => {
+  let token = localStorage.getItem("token");
+  if (!token) token = sessionStorage.getItem("token");
+  return token;
+};
+
+const HistoricalDataModal = ({ isOpen, onClose, trackingCode = "SOL-2025-0072" }) => {
+  const [activeTab, setActiveTab] = useState("historical");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [historicalData, setHistoricalData] = useState(null);
+  const [machineryList, setMachineryList] = useState([]);
+  
   const [filters, setFilters] = useState({
-    machinery: "",
-    operator: "",
-    startDate: "2025-01-15 08:30",
-    endDate: "2025-01-15 14:30"
+    startDate: "",
+    endDate: "",
+    machineryId: "",
+    operatorId: ""
   });
   
   const [temporalFilter, setTemporalFilter] = useState({
-    startDate: "2025-01-15 08:30",
-    endDate: "2025-01-15 14:30"
+    startDate: "2025-01-15T08:30",
+    endDate: "2025-01-15T14:30"
   });
+
+  // Función para cargar datos históricos
+  const loadHistoricalData = async () => {
+    if (!trackingCode) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const filterParams = {};
+      
+      if (filters.startDate) filterParams.start_date = filters.startDate;
+      if (filters.endDate) filterParams.end_date = filters.endDate;
+      if (filters.machineryId) filterParams.machinery_id = filters.machineryId;
+      if (filters.operatorId) filterParams.operator_id = filters.operatorId;
+      
+      const data = await getHistoricalDataByRequest(trackingCode, filterParams);
+      
+      debugger; // 🔍 Inspecciona 'data' aquí
+      
+      setHistoricalData(data);
+      setMachineryList(data || []);
+    } catch (err) {
+      console.error("Error loading historical data:", err);
+      
+      // Extraer mensaje de error específico
+      const errorMessage = err.response?.data?.detail 
+        || err.response?.data?.message 
+        || "Error al cargar los datos históricos";
+      
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Cargar datos cuando se abre el modal
+  useEffect(() => {
+    if (isOpen && trackingCode) {
+      loadHistoricalData();
+    }
+  }, [isOpen, trackingCode]);
+
+  // Aplicar filtros
+  const handleApplyFilters = () => {
+    loadHistoricalData();
+  };
 
   // Mock data for general metrics
   const generalMetrics = {
@@ -103,10 +169,6 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
     { fault: "P0177", example: "Ejemplo", date: "2024-01-11 17:32" }
   ];
 
-  const handleApplyFilters = () => {
-    console.log("Applying filters:", filters);
-  };
-
   const handleApplyTemporalFilter = () => {
     console.log("Applying temporal filter:", temporalFilter);
   };
@@ -132,6 +194,28 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
           <Dialog.Description className="sr-only">Panel de monitoreo de datos históricos</Dialog.Description>
 
           <div className="p-6 space-y-6">
+            
+            {/* Loading State */}
+            {loading && (
+              <div className="flex items-center justify-center py-8">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                  <p className="text-sm text-secondary">Cargando datos históricos...</p>
+                </div>
+              </div>
+            )}
+
+            {/* Error State */}
+            {error && (
+              <div className="p-4 rounded-lg border border-red-500 bg-red-50 dark:bg-red-900/20">
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-sm font-medium text-red-800 dark:text-red-200">{error}</p>
+                </div>
+              </div>
+            )}
             
             {/* General Filter */}
             <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
