@@ -24,9 +24,10 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
       .map(m => m.telemetry_device_imei);
   }, [requestDetails]);
   
-  // Hook de WebSocket de telemetría con filtro de IMEIs
+  // Hook de WebSocket de telemetría con filtro de IMEIs y código de solicitud
   const { machineriesData, connectionStatus, reconnect, alerts } = useTrackingWebSocket({ 
-    imeiFilter: machineryImeis 
+    imeiFilter: machineryImeis,
+    requestCode: requestData?.tracking_code || null
   });
   
   // Cargar detalles de la solicitud cuando se abre el modal
