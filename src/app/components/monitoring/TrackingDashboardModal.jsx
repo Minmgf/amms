@@ -1,17 +1,55 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { FaTimes, FaSignal, FaMapMarkerAlt } from "react-icons/fa";
 import { MdPowerSettingsNew, MdDirectionsCar, MdLocationOn } from "react-icons/md";
 import { GaugeCard, CircularProgress, PerformanceChart, FuelConsumptionChart, MapTooltip } from "./TrackingDashboardComponents";
+import { useTrackingWebSocket } from "@/hooks/useTrackingWebSocket";
+import { getRequestDetails } from "@/services/requestService";
 
 const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
   const [selectedMachinery, setSelectedMachinery] = useState(0);
   const [activeTab, setActiveTab] = useState("performance");
+  const [requestDetails, setRequestDetails] = useState(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   
   // Estado solo para tooltip del mapa
   const [mapTooltip, setMapTooltip] = useState({ visible: false, machinery: null, position: null });
   
+  // Extraer IMEIs de las maquinarias de la solicitud
+  const machineryImeis = useMemo(() => {
+    if (!requestDetails || !requestDetails.machineries) return null;
+    return requestDetails.machineries
+      .filter(m => m.telemetry_device_imei)
+      .map(m => m.telemetry_device_imei);
+  }, [requestDetails]);
+  
+  // Hook de WebSocket de telemetría con filtro de IMEIs
+  const { machineriesData, connectionStatus, reconnect, alerts } = useTrackingWebSocket({ 
+    imeiFilter: machineryImeis 
+  });
+  
+  // Cargar detalles de la solicitud cuando se abre el modal
+  useEffect(() => {
+    const loadRequestDetails = async () => {
+      if (!isOpen || !requestData || !requestData.id) return;
+      
+      setLoadingDetails(true);
+      try {
+        const details = await getRequestDetails(requestData.id);
+        setRequestDetails(details);
+        console.log('📦 Detalles de solicitud cargados:', details);
+        console.log('📍 IMEIs de maquinarias:', details.machineries?.map(m => m.telemetry_device_imei));
+      } catch (error) {
+        console.error('Error al cargar detalles de la solicitud:', error);
+      } finally {
+        setLoadingDetails(false);
+      }
+    };
+    
+    loadRequestDetails();
+  }, [isOpen, requestData]);
+
   // Helper function to format dates
   const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -22,79 +60,151 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
     return `${day}/${month}/${year}`;
   };
 
-  // Mock data
-  const mockRequestInfo = {
-    trackingCode: "L-0000003",
-    client: "Constructora el Dorado S.A.S",
-    startDate: "06/V/2025",
-    endDate: "28/III/2026",
-    placeName: "Proyecto Urbanístico Villa del Sol - Medellín"
-  };
-
-  // Use actual request data if available, otherwise use mock data
+  // Información de la solicitud
   const requestInfo = requestData ? {
-    trackingCode: requestData.tracking_code || mockRequestInfo.trackingCode,
-    client: requestData.legal_entity_name || requestData.client_name || mockRequestInfo.client,
-    startDate: requestData.scheduled_date ? formatDate(requestData.scheduled_date) : mockRequestInfo.startDate,
-    endDate: requestData.completion_date ? formatDate(requestData.completion_date) : mockRequestInfo.endDate,
-    placeName: requestData.place_name || mockRequestInfo.placeName
-  } : mockRequestInfo;
-
-  const mockMachineries = [
-    {
-      id: 1, serial: "EXC-3526-098", name: "Excavadora CAT 320",
-      operator: "Carlos Andrés Martínez", implement: "Cucharón estándar 1.2m³",
-      currentSpeed: "0 km/h", fuelLevel: "96%", ignition: true, moving: false,
-      gsmSignal: 5, lastUpdate: "5 sec", status: "idle",
-      location: { lat: 6.2442, lng: -75.5812 }
-    },
-    {
-      id: 2, serial: "BUL-2526-456", name: "Bulldozer CAT D6T",
-      operator: "Miguel Ángel Rodríguez", implement: "Hoja tipo U (3.9m³)",
-      currentSpeed: "0 km/h", fuelLevel: "46%", ignition: true, moving: false,
-      gsmSignal: 4, lastUpdate: "3 sec", status: "alert",
-      location: { lat: 6.2445, lng: -75.5815 }
-    },
-    {
-      id: 3, serial: "VOL-3055-123", name: "Volqueta CAT 797",
-      operator: "Juan Martín Gonzales", implement: "Tolva tipo T",
-      currentSpeed: "0 km/h", fuelLevel: "80%", ignition: false, moving: false,
-      gsmSignal: 3, lastUpdate: "No conecta", status: "disconnected",
-      location: { lat: 6.2448, lng: -75.5818 }
-    }
-  ];
-
-  const mockIndicatorsData = {
-    currentSpeed: { value: 135, max: 200, unit: "km/h" },
-    rpm: { value: 1620, max: 3000, unit: "RPM", alert: true },
-    engineTemp: { value: 92, min: 0, max: 120, unit: "°C" },
-    fuelLevel: { value: 40, unit: "%" },
-    oilLoad: { value: 30, unit: "%" },
-    engineLoad: { value: 80, unit: "%" },
-    totalOdometer: { value: "0 8 5 2 3 4", unit: "km" },
-    tripOdometer: { value: "0 0 1 3 2 8", unit: "km" },
-    logisticStatus: "En tránsito"
+    trackingCode: requestData.tracking_code || "Sin código",
+    client: requestData.legal_entity_name || requestData.client_name || "Sin cliente",
+    startDate: requestData.scheduled_date ? formatDate(requestData.scheduled_date) : "Sin fecha",
+    endDate: requestData.completion_date ? formatDate(requestData.completion_date) : "Sin fecha",
+    placeName: requestData.place_name || "Sin lugar"
+  } : {
+    trackingCode: "Sin código",
+    client: "Sin cliente",
+    startDate: "Sin fecha",
+    endDate: "Sin fecha",
+    placeName: "Sin lugar"
   };
 
-  // Mock data para la fila adicional
-  const mockAdditionalMetrics = {
-    fuelConsumption: {
-      fuelLeft: "84.1 L",
-      averageConsumption: "183.2 L/h",
-      fuelUsed: "- L",
-      litersAdded: "- L"
-    },
-    obdFaults: {
-      p0401: { fault: "P0401", date: "2024-08-11 18:30", code: "PEND1", description: "Sistema de recirculación de gases de escape" },
-      p0402: { fault: "P0402", date: "2024-08-11 18:32", code: "CONF2", description: "Flujo excesivo de EGR detectado" }
-    },
-    gEvents: {
-      braking: 1,
-      acceleration: 3,
-      cornering: 0,
-      impact: 0
+  // Convertir datos del WebSocket a formato UI combinando con datos de la solicitud
+  const machineries = useMemo(() => {
+    const imeis = Object.keys(machineriesData);
+    
+    if (imeis.length === 0) {
+      return [];
     }
+    
+    return imeis.map((imei, index) => {
+      const data = machineriesData[imei];
+      const hasAlert = alerts.some(alert => alert.imei === imei);
+      
+      // Buscar información de la maquinaria en los detalles de la solicitud
+      const machineryInfo = requestDetails?.machineries?.find(
+        m => m.telemetry_device_imei === imei
+      );
+      
+      return {
+        id: index + 1,
+        imei: imei,
+        serial: machineryInfo?.machinery_serial || imei,
+        name: machineryInfo?.machinery_name || `Maquinaria ${imei.slice(-4)}`,
+        operator: machineryInfo?.operator_name || "Operador asignado",
+        implement: machineryInfo?.implement_name || "Sin implemento",
+        photo: machineryInfo?.machinery_photo || null,
+        currentSpeed: data.speed !== null ? `${data.speed} km/h` : "0 km/h",
+        fuelLevel: data.fuelLevel !== null ? `${data.fuelLevel}%` : "--",
+        ignition: data.ignition || false,
+        moving: data.moving || false,
+        gsmSignal: data.gsmSignal || 0,
+        lastUpdate: data.relativeTime || "Sin datos",
+        status: hasAlert ? "alert" : data.status,
+        location: data.location,
+        rpm: data.rpm,
+        engineTemp: data.engineTemp,
+        engineLoad: data.engineLoad,
+        oilLevel: data.oilLevel,
+        fuelUsedGps: data.fuelUsedGps,
+        instantConsumption: data.instantConsumption,
+        obdFaults: data.obdFaults,
+        odometerTotal: data.odometerTotal,
+        odometerTrip: data.odometerTrip,
+        eventType: data.eventType,
+        eventGValue: data.eventGValue,
+        timestamp: data.timestamp,
+        raw: data.raw
+      };
+    });
+  }, [machineriesData, alerts, requestDetails]);
+
+  // Función para formatear odómetro
+  const formatOdometer = (meters) => {
+    if (!meters) return "0 0 0 0 0 0";
+    const km = Math.floor(meters / 1000);
+    const kmStr = String(km).padStart(6, '0');
+    return kmStr.split('').join(' ');
   };
+
+  // Obtener datos de la maquinaria seleccionada
+  const selectedMachineryData = useMemo(() => {
+    if (!machineries.length || selectedMachinery >= machineries.length) {
+      return null;
+    }
+    
+    const machinery = machineries[selectedMachinery];
+    const hasRpmAlert = alerts.some(a => a.imei === machinery.imei && a.parameter === 'rpm');
+    
+    return {
+      currentSpeed: { 
+        value: machinery.rpm !== null ? parseInt(machinery.currentSpeed) : 0, 
+        max: 200, 
+        unit: "km/h" 
+      },
+      rpm: { 
+        value: machinery.rpm || 0, 
+        max: 3000, 
+        unit: "RPM", 
+        alert: hasRpmAlert 
+      },
+      engineTemp: { 
+        value: machinery.engineTemp || 0, 
+        min: 0, 
+        max: 120, 
+        unit: "°C" 
+      },
+      fuelLevel: { 
+        value: machinery.fuelLevel !== "--" ? parseInt(machinery.fuelLevel) : 0, 
+        unit: "%" 
+      },
+      oilLoad: { 
+        value: machinery.oilLevel || 0, 
+        unit: "%" 
+      },
+      engineLoad: { 
+        value: machinery.engineLoad || 0, 
+        unit: "%" 
+      },
+      totalOdometer: { 
+        value: formatOdometer(machinery.odometerTotal), 
+        unit: "km" 
+      },
+      tripOdometer: { 
+        value: formatOdometer(machinery.odometerTrip), 
+        unit: "km" 
+      },
+      logisticStatus: "En operación"
+    };
+  }, [machineries, selectedMachinery, alerts]);
+
+  // Métricas adicionales de la maquinaria seleccionada
+  const additionalMetrics = useMemo(() => {
+    if (!machineries.length || selectedMachinery >= machineries.length) {
+      return null;
+    }
+    
+    const machinery = machineries[selectedMachinery];
+    
+    return {
+      fuelConsumption: {
+        fuelUsed: machinery.fuelUsedGps ? `${machinery.fuelUsedGps.toFixed(1)} L` : "-- L",
+        instantConsumption: machinery.instantConsumption ? `${machinery.instantConsumption.toFixed(1)} L/h` : "-- L/h",
+        prediction: "-- L/h"
+      },
+      obdFaults: machinery.obdFaults || [],
+      events: {
+        type: machinery.eventType,
+        gValue: machinery.eventGValue
+      }
+    };
+  }, [machineries, selectedMachinery]);
 
   // Handler para tooltip del mapa
   const handleMapMarkerHover = (machinery, event) => {
@@ -176,7 +286,12 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
               <div>
                 <h3 className="text-sm font-semibold text-primary mb-3">Información de Maquinaria</h3>
                 <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                  {mockMachineries.map((machinery, index) => (
+                  {machineries.length === 0 ? (
+                    <div className="p-4 text-center text-secondary">
+                      <p>Esperando datos de telemetría...</p>
+                      <p className="text-xs mt-2">Estado: {connectionStatus}</p>
+                    </div>
+                  ) : machineries.map((machinery, index) => (
                     <div key={machinery.id} onClick={() => setSelectedMachinery(index)}
                       className={`p-3 rounded-lg border cursor-pointer transition-all ${selectedMachinery === index ? 'shadow-lg' : ''}`}
                       style={{ 
@@ -186,8 +301,12 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                         outline: 'none'
                       }}>
                       <div className="flex gap-3">
-                        <div className="w-16 h-16 rounded flex-shrink-0" style={{ backgroundColor: 'var(--color-background-tertiary)' }}>
-                          <div className="w-full h-full flex items-center justify-center text-secondary text-xs">IMG</div>
+                        <div className="w-16 h-16 rounded flex-shrink-0 overflow-hidden" style={{ backgroundColor: 'var(--color-background-tertiary)' }}>
+                          {machinery.photo ? (
+                            <img src={machinery.photo} alt={machinery.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-secondary text-xs">IMG</div>
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between mb-1">
@@ -228,7 +347,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
 
                   {/* Map markers */}
                   <div className="absolute inset-0">
-                    {mockMachineries.map((machinery, index) => (
+                    {machineries.map((machinery, index) => (
                       <div key={machinery.id} className="absolute" style={{ top: `${30 + index * 25}%`, left: `${40 + index * 10}%` }}>
                         <div 
                           className="w-8 h-8 rounded-full flex items-center justify-center shadow-lg cursor-pointer transform hover:scale-110 transition-transform" 
@@ -255,22 +374,22 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
             </div>
 
             {/* FILA 4: Header del vehículo seleccionado */}
-            {selectedMachinery !== null && (
+            {selectedMachinery !== null && machineries.length > 0 && machineries[selectedMachinery] && (
               <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white" style={{ backgroundColor: '#1F2937' }}>
-                      {mockMachineries[selectedMachinery].name.charAt(0)}
+                      {machineries[selectedMachinery].name.charAt(0)}
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-primary">{mockMachineries[selectedMachinery].name}</h3>
-                      <p className="text-xs text-secondary">Serie: {mockMachineries[selectedMachinery].serial}</p>
+                      <h3 className="text-lg font-bold text-primary">{machineries[selectedMachinery].name}</h3>
+                      <p className="text-xs text-secondary">Serie: {machineries[selectedMachinery].serial}</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-secondary mb-1">Última actualización</p>
-                    <p className={`text-sm font-semibold ${mockMachineries[selectedMachinery].lastUpdate === 'No conecta' ? 'text-error' : 'text-success'}`}>
-                      {mockMachineries[selectedMachinery].lastUpdate}
+                    <p className={`text-sm font-semibold ${machineries[selectedMachinery].lastUpdate === 'Sin datos' ? 'text-error' : 'text-success'}`}>
+                      {machineries[selectedMachinery].lastUpdate}
                     </p>
                   </div>
                 </div>
@@ -278,16 +397,16 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
             )}
 
             {/* FILA 5: Grid de 8 sensores (4x2) */}
-            {selectedMachinery !== null && (
+            {selectedMachinery !== null && selectedMachineryData && (
               <div>
                 <h3 className="text-base font-bold text-primary mb-4">Sensores y Contadores del Vehículo</h3>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   
                   {/* Sensor 1: Current speed */}
-                  <GaugeCard label="Velocidad actual" value={mockIndicatorsData.currentSpeed.value} max={mockIndicatorsData.currentSpeed.max} unit={mockIndicatorsData.currentSpeed.unit} type="speed" />
+                  <GaugeCard label="Velocidad actual" value={selectedMachineryData.currentSpeed.value} max={selectedMachineryData.currentSpeed.max} unit={selectedMachineryData.currentSpeed.unit} type="speed" />
                   
                   {/* Sensor 2: Revolutions(RPM) */}
-                  <GaugeCard label="Revoluciones (RPM)" value={mockIndicatorsData.rpm.value} max={mockIndicatorsData.rpm.max} unit={mockIndicatorsData.rpm.unit} type="rpm" alert={mockIndicatorsData.rpm.alert} />
+                  <GaugeCard label="Revoluciones (RPM)" value={selectedMachineryData.rpm.value} max={selectedMachineryData.rpm.max} unit={selectedMachineryData.rpm.unit} type="rpm" alert={selectedMachineryData.rpm.alert} />
 
                   {/* Sensor 3: Engine Temperature */}
                   <div className="p-4 rounded-lg border flex flex-col items-center justify-center min-h-[200px]" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
@@ -312,9 +431,9 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                         {/* Líquido del termómetro */}
                         <rect 
                           x="22" 
-                          y={`${85 - (mockIndicatorsData.engineTemp.value / mockIndicatorsData.engineTemp.max) * 68}`} 
+                          y={`${85 - (selectedMachineryData.engineTemp.value / selectedMachineryData.engineTemp.max) * 68}`} 
                           width="6" 
-                          height={`${(mockIndicatorsData.engineTemp.value / mockIndicatorsData.engineTemp.max) * 68}`}
+                          height={`${(selectedMachineryData.engineTemp.value / selectedMachineryData.engineTemp.max) * 68}`}
                           rx="3" 
                           fill="url(#tempGradient)"
                           className="transition-all duration-700"
@@ -326,7 +445,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                         <line x1="30" y1="65" x2="35" y2="65" stroke="#9CA3AF" strokeWidth="1" />
                       </svg>
                     </div>
-                    <p className="text-2xl font-bold text-primary">{mockIndicatorsData.engineTemp.value}°C</p>
+                    <p className="text-2xl font-bold text-primary">{selectedMachineryData.engineTemp.value}°C</p>
                   </div>
 
                   {/* Sensor 4: Fuel Level */}
@@ -347,10 +466,10 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                         <path
                           d="M 20 70 A 60 60 0 0 1 140 70"
                           fill="none"
-                          stroke={getFuelLevelColor(`${mockIndicatorsData.fuelLevel.value}`)}
+                          stroke={getFuelLevelColor(`${selectedMachineryData.fuelLevel.value}`)}
                           strokeWidth="12"
                           strokeLinecap="round"
-                          strokeDasharray={`${(mockIndicatorsData.fuelLevel.value / 100) * 188} 188`}
+                          strokeDasharray={`${(selectedMachineryData.fuelLevel.value / 100) * 188} 188`}
                         />
                         
                         {/* Etiqueta E (Empty) */}
@@ -365,7 +484,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                         className="absolute bottom-2 left-1/2 w-1 h-12 origin-bottom transition-all duration-700 ease-out"
                         style={{ 
                           backgroundColor: '#1F2937',
-                          transform: `translateX(-50%) rotate(${(mockIndicatorsData.fuelLevel.value / 100) * 180 - 90}deg)`,
+                          transform: `translateX(-50%) rotate(${(selectedMachineryData.fuelLevel.value / 100) * 180 - 90}deg)`,
                           borderRadius: '2px'
                         }}
                       />
@@ -373,15 +492,15 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                       {/* Centro de la aguja */}
                       <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-gray-800 border-2 border-white" />
                     </div>
-                    <p className="text-2xl font-bold text-primary mt-2">{mockIndicatorsData.fuelLevel.value}%</p>
+                    <p className="text-2xl font-bold text-primary mt-2">{selectedMachineryData.fuelLevel.value}%</p>
                     <p className="text-xs text-secondary">~36L / ~90L</p>
                   </div>
 
                   {/* Sensor 5: Oil level */}
-                  <CircularProgress label="Nivel de aceite" value={mockIndicatorsData.oilLoad.value} color="#F59E0B" />
+                  <CircularProgress label="Nivel de aceite" value={selectedMachineryData.oilLoad.value} color="#F59E0B" />
 
                   {/* Sensor 6: Engine load */}
-                  <CircularProgress label="Carga del motor" value={mockIndicatorsData.engineLoad.value} color="#22C55E" />
+                  <CircularProgress label="Carga del motor" value={selectedMachineryData.engineLoad.value} color="#22C55E" />
 
                   {/* Sensor 7: Odometer */}
                   <div className="p-4 rounded-lg border flex flex-col items-center justify-center min-h-[200px]" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
@@ -391,7 +510,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                     <div className="mb-3">
                       <p className="text-xs text-secondary mb-1 text-center">Total</p>
                       <div className="flex gap-0.5 bg-black p-2 rounded">
-                        {mockIndicatorsData.totalOdometer.value.split(' ').map((digit, i) => (
+                        {selectedMachineryData.totalOdometer.value.split(' ').map((digit, i) => (
                           <div key={i} className="w-6 h-8 flex items-center justify-center bg-gray-900 text-white font-mono text-lg font-bold border border-gray-700">
                             {digit}
                           </div>
@@ -404,7 +523,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                     <div>
                       <p className="text-xs text-secondary mb-1 text-center">Trip</p>
                       <div className="flex gap-0.5 bg-black p-2 rounded">
-                        {mockIndicatorsData.tripOdometer.value.split(' ').map((digit, i) => (
+                        {selectedMachineryData.tripOdometer.value.split(' ').map((digit, i) => (
                           <div key={i} className="w-6 h-8 flex items-center justify-center bg-gray-900 text-white font-mono text-lg font-bold border border-gray-700">
                             {digit}
                           </div>
@@ -417,7 +536,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                   {/* Sensor 8: Logistic status */}
                   <div className="p-4 rounded-lg border flex flex-col justify-center min-h-[200px]" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
                     <p className="text-xs text-secondary mb-2">Estado logístico</p>
-                    <select className="input-theme text-sm w-full mb-3" value={mockIndicatorsData.logisticStatus} onChange={(e) => {}}>
+                    <select className="input-theme text-sm w-full mb-3" value={selectedMachineryData.logisticStatus} onChange={(e) => {}}>
                       <option>Inactivo</option>
                       <option>En tránsito</option>
                       <option>En operación</option>
@@ -431,7 +550,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
             )}
 
             {/* FILA 5.5: Fuel Consumption, OBD Faults, G-Events */}
-            {selectedMachinery !== null && (
+            {selectedMachinery !== null && additionalMetrics && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 
                 {/* Fuel Consumption */}
@@ -440,18 +559,18 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                   <div className="space-y-3 text-xs">
                     <div>
                       <p className="text-secondary mb-1">Combustible usado:</p>
-                      <p className="text-lg font-bold text-primary">45.2 L</p>
+                      <p className="text-lg font-bold text-primary">{additionalMetrics.fuelConsumption.fuelUsed}</p>
                     </div>
                     <div>
                       <p className="text-secondary mb-1">Consumo instantáneo:</p>
-                      <p className="text-lg font-bold text-primary">12.5 L/h</p>
+                      <p className="text-lg font-bold text-primary">{additionalMetrics.fuelConsumption.instantConsumption}</p>
                     </div>
                     <div>
                       <p className="text-secondary mb-1">Predicción:</p>
-                      <p className="text-lg font-bold text-primary">11.8 L/h</p>
+                      <p className="text-lg font-bold text-primary">{additionalMetrics.fuelConsumption.prediction}</p>
                     </div>
                     <div className="pt-2">
-                      <p className="text-success font-medium">+5.9% sobre predicción</p>
+                      <p className="text-secondary font-medium text-xs">Predicción en desarrollo</p>
                     </div>
                   </div>
                 </div>
@@ -460,17 +579,19 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                 <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
                   <h3 className="text-sm font-semibold text-primary mb-4">Fallas OBD</h3>
                   <div className="space-y-3 text-xs">
-                    {Object.values(mockAdditionalMetrics.obdFaults).map((fault, index) => (
+                    {additionalMetrics.obdFaults.length === 0 ? (
+                      <p className="text-center text-secondary py-4">Sin fallas OBD detectadas</p>
+                    ) : additionalMetrics.obdFaults.map((faultCode, index) => (
                       <div key={index} className="pb-3 border-b last:border-b-0" style={{ borderColor: 'var(--color-border)' }}>
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <div className="w-1 h-8 bg-error rounded"></div>
                             <div>
-                              <p className="font-bold text-error text-sm">{fault.fault}</p>
-                              <p className="text-[10px] text-secondary">Ejemplo</p>
+                              <p className="font-bold text-error text-sm">{faultCode}</p>
+                              <p className="text-[10px] text-secondary">Código OBD detectado</p>
                             </div>
                           </div>
-                          <span className="text-[10px] text-secondary whitespace-nowrap">{fault.date}</span>
+                          <span className="text-[10px] text-secondary whitespace-nowrap">{new Date().toLocaleString('es-CO')}</span>
                         </div>
                       </div>
                     ))}
@@ -481,40 +602,30 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                 <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
                   <h3 className="text-sm font-semibold text-primary mb-4">Eventos G</h3>
                   <div className="space-y-4 text-xs">
-                    
-                    {/* Braking */}
-                    <div>
-                      <div className="flex items-start justify-between mb-1">
-                        <span className="text-primary font-medium">Frenado</span>
-                        <span className="text-secondary text-[10px]">2024-01-17 10:30</span>
+                    {additionalMetrics.events.type === null || additionalMetrics.events.gValue === null ? (
+                      <p className="text-center text-secondary py-4">Sin eventos G detectados</p>
+                    ) : (
+                      <div>
+                        <div className="flex items-start justify-between mb-1">
+                          <span className="text-primary font-medium">
+                            {additionalMetrics.events.type === 1 ? 'Aceleración' : 
+                             additionalMetrics.events.type === 2 ? 'Frenado' : 
+                             additionalMetrics.events.type === 3 ? 'Curva' : 
+                             'Evento'}
+                          </span>
+                          <span className="text-secondary text-[10px]">{new Date().toLocaleString('es-CO')}</span>
+                        </div>
+                        <div className="text-secondary">
+                          Intensidad: <span className={`font-bold ${
+                            additionalMetrics.events.type === 2 ? 'text-error' : 
+                            additionalMetrics.events.type === 1 ? 'text-warning' : 
+                            'text-primary'
+                          }`}>
+                            {additionalMetrics.events.gValue}G
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-secondary">
-                        Intensidad: <span className="text-error font-bold">-0.8G</span>
-                      </div>
-                    </div>
-
-                    {/* Acceleration */}
-                    <div>
-                      <div className="flex items-start justify-between mb-1">
-                        <span className="text-primary font-medium">Aceleración</span>
-                        <span className="text-secondary text-[10px]">2024-01-17 10:30</span>
-                      </div>
-                      <div className="text-secondary">
-                        Intensidad: <span className="text-warning font-bold">+0.6G</span>
-                      </div>
-                    </div>
-
-                    {/* Curve */}
-                    <div>
-                      <div className="flex items-start justify-between mb-1">
-                        <span className="text-primary font-medium">Curva</span>
-                        <span className="text-secondary text-[10px]">2024-01-17 10:30</span>
-                      </div>
-                      <div className="text-secondary">
-                        Intensidad: <span className="text-primary font-bold">0.7G</span>
-                      </div>
-                    </div>
-
+                    )}
                   </div>
                 </div>
               </div>

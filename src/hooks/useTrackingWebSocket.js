@@ -1,29 +1,175 @@
 /**
- * Hook personalizado para manejar WebSocket de tracking en tiempo real
+ * Hook para manejar WebSocket de telemetría en tiempo real
+ * Basado en la guía oficial del WebSocket de telemetría
  * 
  * Uso:
  * const { 
- *   machineries,          // Array de maquinarias con datos en tiempo real
- *   isConnected,          // Estado de conexión
+ *   machineriesData,      // Object con datos de maquinarias organizados por IMEI
+ *   connectionStatus,     // Estado de conexión: 'conectando', 'conectado', 'desconectado', 'error'
  *   reconnect,            // Función para reconectar manualmente
- *   sendCommand           // Función para enviar comandos al servidor
- * } = useTrackingWebSocket(trackingCode);
+ *   lastMessage,          // Último mensaje recibido
+ *   alerts                // Array de alertas recibidas
+ * } = useTrackingWebSocket();
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-const WEBSOCKET_URL = process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'ws://localhost:8080';
 const RECONNECT_INTERVAL = 5000; // 5 segundos
 const MAX_RECONNECT_ATTEMPTS = 10;
 
-export const useTrackingWebSocket = (trackingCode) => {
-  const [machineries, setMachineries] = useState([]);
-  const [isConnected, setIsConnected] = useState(false);
-  const [error, setError] = useState(null);
+export const useTrackingWebSocket = (options = {}) => {
+  const { imeiFilter = null } = options; // Array de IMEIs a filtrar, null = todos
   
+  // Estado de datos de maquinarias organizados por IMEI
+  const [machineriesData, setMachineriesData] = useState({});
+  
+  // Estado de conexión
+  const [connectionStatus, setConnectionStatus] = useState('conectando');
+  
+  // Último mensaje recibido
+  const [lastMessage, setLastMessage] = useState(null);
+  
+  // Alertas recibidas
+  const [alerts, setAlerts] = useState([]);
+  
+  // Referencias
   const wsRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const reconnectAttemptsRef = useRef(0);
+
+  // Obtener configuración desde variables de entorno
+  const WS_URL = process.env.NEXT_PUBLIC_TELEMETRY_WS_URL || 'wss://api.inmero.co/sigma/ws/telemetria';
+  const WS_PASSWORD = process.env.NEXT_PUBLIC_TELEMETRY_WS_PASSWORD || 'telemetry_password_2024';
+
+  // Función para procesar datos de ubicación GPS
+  const parseGpsLocation = useCallback((gpsString) => {
+    if (!gpsString) return null;
+    
+    try {
+      // Formato: "+04.60971-074.08175/"
+      const cleanStr = gpsString.replace('/', '');
+      const latMatch = cleanStr.match(/([+-]\d+\.\d+)/);
+      const lngMatch = cleanStr.match(/([+-]\d+\.\d+)$/);
+      
+      if (latMatch && lngMatch) {
+        return {
+          lat: parseFloat(latMatch[1]),
+          lng: parseFloat(lngMatch[1])
+        };
+      }
+    } catch (error) {
+      console.error('Error al parsear ubicación GPS:', error);
+    }
+    return null;
+  }, []);
+
+  // Función para calcular el estado de la maquinaria
+  const getMachineryStatus = useCallback((data) => {
+    if (!data.ignition_status) return 'off'; // Apagado
+    if (!data.movement_status) return 'idle'; // Estacionario
+    return 'moving'; // En movimiento
+  }, []);
+
+  // Función para formatear timestamp relativo
+  const getRelativeTime = useCallback((timestamp) => {
+    if (!timestamp) return 'Sin datos';
+    
+    try {
+      const now = new Date();
+      const messageTime = new Date(timestamp);
+      const diffInSeconds = Math.floor((now - messageTime) / 1000);
+      
+      if (diffInSeconds < 60) return `${diffInSeconds} seg`;
+      if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} min`;
+      return `${Math.floor(diffInSeconds / 3600)} h`;
+    } catch (error) {
+      return 'Tiempo desconocido';
+    }
+  }, []);
+
+  // Función para procesar mensajes entrantes
+  const processMessage = useCallback((message) => {
+    try {
+      const data = JSON.parse(message);
+      
+      // Validar estructura del mensaje según la guía
+      if (!data.imei || !data.timestamp || !data.data) {
+        console.warn('Mensaje con estructura inválida:', data);
+        return;
+      }
+
+      const { imei, timestamp, data: telemetryData, alerts: messageAlerts } = data;
+      
+      // Filtrar por IMEI si se especifica un filtro
+      if (imeiFilter && Array.isArray(imeiFilter) && imeiFilter.length > 0) {
+        if (!imeiFilter.includes(imei)) {
+          // Ignorar este mensaje, no pertenece a las maquinarias de esta solicitud
+          return;
+        }
+      }
+      
+      // Calcular estado de la maquinaria
+      const status = getMachineryStatus(telemetryData);
+      
+      // Parsear ubicación GPS
+      const location = parseGpsLocation(telemetryData.gps_location);
+      
+      // Formatear tiempo relativo
+      const relativeTime = getRelativeTime(timestamp);
+
+      // Crear objeto con datos procesados
+      const processedData = {
+        imei,
+        timestamp,
+        relativeTime,
+        status,
+        location,
+        // Datos de telemetría (solo los que existan según configuración)
+        ignition: telemetryData.ignition_status !== undefined ? telemetryData.ignition_status === 1 : null,
+        moving: telemetryData.movement_status !== undefined ? telemetryData.movement_status === 1 : null,
+        speed: telemetryData.speed !== undefined ? telemetryData.speed : null,
+        gsmSignal: telemetryData.gsm_signal !== undefined ? telemetryData.gsm_signal : null,
+        rpm: telemetryData.rpm !== undefined ? telemetryData.rpm : null,
+        engineTemp: telemetryData.engine_temp !== undefined ? telemetryData.engine_temp : null,
+        engineLoad: telemetryData.engine_load !== undefined ? telemetryData.engine_load : null,
+        oilLevel: telemetryData.oil_level !== undefined ? telemetryData.oil_level : null,
+        fuelLevel: telemetryData.fuel_level !== undefined ? telemetryData.fuel_level : null,
+        fuelUsedGps: telemetryData.fuel_used_gps !== undefined ? telemetryData.fuel_used_gps : null,
+        instantConsumption: telemetryData.instant_consumption !== undefined ? telemetryData.instant_consumption : null,
+        obdFaults: telemetryData.obd_faults || [],
+        odometerTotal: telemetryData.odometer_total !== undefined ? telemetryData.odometer_total : null,
+        odometerTrip: telemetryData.odometer_trip !== undefined ? telemetryData.odometer_trip : null,
+        eventType: telemetryData.event_type !== undefined ? telemetryData.event_type : null,
+        eventGValue: telemetryData.event_g_value !== undefined ? telemetryData.event_g_value : null,
+        // Datos crudos para referencia
+        raw: telemetryData
+      };
+
+      // Actualizar estado de maquinarias
+      setMachineriesData(prev => ({
+        ...prev,
+        [imei]: processedData
+      }));
+
+      // Actualizar último mensaje
+      setLastMessage(processedData);
+
+      // Procesar alertas si existen
+      if (messageAlerts && Array.isArray(messageAlerts) && messageAlerts.length > 0) {
+        const newAlerts = messageAlerts.map(alert => ({
+          ...alert,
+          imei,
+          timestamp,
+          id: `${imei}-${timestamp}-${alert.parameter}`
+        }));
+        
+        setAlerts(prev => [...newAlerts, ...prev].slice(0, 50)); // Mantener últimas 50 alertas
+      }
+
+    } catch (error) {
+      console.error('Error al procesar mensaje del WebSocket:', error);
+    }
+  }, [getMachineryStatus, parseGpsLocation, getRelativeTime, imeiFilter]);
 
   // Función para conectar al WebSocket
   const connect = useCallback(() => {
@@ -33,129 +179,70 @@ export const useTrackingWebSocket = (trackingCode) => {
         wsRef.current.close();
       }
 
-      // Crear nueva conexión WebSocket
-      const ws = new WebSocket(`${WEBSOCKET_URL}/tracking/${trackingCode}`);
+      // Construir URL con contraseña
+      const wsUrl = `${WS_URL}?password=${encodeURIComponent(WS_PASSWORD)}`;
+      
+      console.log('🔌 Conectando al WebSocket de telemetría...');
+      const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        console.log('✅ WebSocket conectado');
-        setIsConnected(true);
-        setError(null);
+        console.log('✅ WebSocket de telemetría conectado');
+        setConnectionStatus('conectado');
         reconnectAttemptsRef.current = 0;
-
-        // Enviar mensaje inicial de suscripción
-        ws.send(JSON.stringify({
-          type: 'subscribe',
-          trackingCode: trackingCode
-        }));
       };
 
       ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          
-          // Manejar diferentes tipos de mensajes
-          switch (data.type) {
-            case 'initial_data':
-              // Datos iniciales al conectar
-              setMachineries(data.machineries);
-              break;
-              
-            case 'machinery_update':
-              // Actualización de una maquinaria específica
-              setMachineries(prev => prev.map(m => 
-                m.id === data.machinery.id ? { ...m, ...data.machinery } : m
-              ));
-              break;
-              
-            case 'sensor_update':
-              // Actualización de sensores específicos
-              setMachineries(prev => prev.map(m => 
-                m.id === data.machineryId 
-                  ? { ...m, sensors: { ...m.sensors, ...data.sensors } }
-                  : m
-              ));
-              break;
-              
-            case 'location_update':
-              // Actualización de ubicación
-              setMachineries(prev => prev.map(m => 
-                m.id === data.machineryId 
-                  ? { ...m, location: data.location, lastUpdate: data.timestamp }
-                  : m
-              ));
-              break;
-
-            case 'chart_data':
-              // Actualización de datos para gráficas
-              setMachineries(prev => prev.map(m => 
-                m.id === data.machineryId 
-                  ? { ...m, chartData: data.chartData }
-                  : m
-              ));
-              break;
-              
-            case 'error':
-              console.error('Error del servidor:', data.message);
-              setError(data.message);
-              break;
-              
-            default:
-              console.warn('Tipo de mensaje desconocido:', data.type);
-          }
-        } catch (err) {
-          console.error('Error al procesar mensaje:', err);
-        }
+        processMessage(event.data);
       };
 
       ws.onerror = (error) => {
-        console.error('❌ Error en WebSocket:', error);
-        setError('Error de conexión');
+        console.error('❌ Error en WebSocket de telemetría:', error);
+        setConnectionStatus('error');
       };
 
-      ws.onclose = () => {
-        console.log('🔌 WebSocket desconectado');
-        setIsConnected(false);
+      ws.onclose = (event) => {
+        console.log('🔌 WebSocket de telemetría desconectado');
+        
+        // Verificar si fue rechazado por contraseña incorrecta
+        if (event.code === 4001) {
+          console.error('❌ Contraseña incorrecta para WebSocket de telemetría');
+          setConnectionStatus('error');
+          return;
+        }
+        
+        setConnectionStatus('desconectado');
 
         // Intentar reconectar automáticamente
         if (reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
           reconnectAttemptsRef.current++;
-          console.log(`🔄 Reintentando conexión (${reconnectAttemptsRef.current}/${MAX_RECONNECT_ATTEMPTS})...`);
+          console.log(`🔄 Reintentando conexión al WebSocket de telemetría (${reconnectAttemptsRef.current}/${MAX_RECONNECT_ATTEMPTS})...`);
           
           reconnectTimeoutRef.current = setTimeout(() => {
             connect();
           }, RECONNECT_INTERVAL);
         } else {
-          setError('No se pudo conectar al servidor. Intentos máximos alcanzados.');
+          console.error('❌ Máximo de intentos de reconexión alcanzado');
         }
       };
 
       wsRef.current = ws;
-    } catch (err) {
-      console.error('Error al crear WebSocket:', err);
-      setError('Error al conectar');
+    } catch (error) {
+      console.error('Error al crear conexión WebSocket:', error);
+      setConnectionStatus('error');
     }
-  }, [trackingCode]);
-
-  // Función para enviar comandos al servidor
-  const sendCommand = useCallback((command) => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(command));
-    } else {
-      console.error('WebSocket no está conectado');
-    }
-  }, []);
+  }, [WS_URL, WS_PASSWORD, processMessage]);
 
   // Función para reconectar manualmente
   const reconnect = useCallback(() => {
+    console.log('🔄 Reconectando manualmente...');
     reconnectAttemptsRef.current = 0;
+    setConnectionStatus('conectando');
     connect();
   }, [connect]);
 
-  // Conectar al montar el componente
+  // Efecto para conectar al montar
   useEffect(() => {
-    if (trackingCode) {
-      connect();
-    }
+    connect();
 
     // Limpiar al desmontar
     return () => {
@@ -166,14 +253,32 @@ export const useTrackingWebSocket = (trackingCode) => {
         wsRef.current.close();
       }
     };
-  }, [trackingCode, connect]);
+  }, [connect]);
+
+  // Efecto para actualizar tiempos relativos cada 5 segundos
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMachineriesData(prev => {
+        const updated = { ...prev };
+        Object.keys(updated).forEach(imei => {
+          updated[imei] = {
+            ...updated[imei],
+            relativeTime: getRelativeTime(updated[imei].timestamp)
+          };
+        });
+        return updated;
+      });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [getRelativeTime]);
 
   return {
-    machineries,
-    isConnected,
-    error,
+    machineriesData,
+    connectionStatus,
     reconnect,
-    sendCommand
+    lastMessage,
+    alerts
   };
 };
 

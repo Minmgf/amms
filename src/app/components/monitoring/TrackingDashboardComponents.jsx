@@ -170,20 +170,10 @@ export const InfoCard = ({ label, value, sublabel }) => {
 };
 
 // Performance Chart Component with Recharts
-export const PerformanceChart = () => {
-  // Data para la gráfica con eventos
-  const data = [
-    { time: '14:00', speed: 0, rpm: 0, event: 'off' },
-    { time: '14:15', speed: 5, rpm: 200, event: 'stationary' },
-    { time: '14:30', speed: 25, rpm: 800, event: 'motion' },
-    { time: '14:45', speed: 40, rpm: 1200, event: 'braking' },
-    { time: '15:00', speed: 45, rpm: 1400 },
-    { time: '15:15', speed: 55, rpm: 1700 },
-    { time: '15:30', speed: 85, rpm: 2100, event: 'acceleration' },
-    { time: '15:45', speed: 70, rpm: 1800, event: 'curve' },
-    { time: '16:00', speed: 75, rpm: 1900 },
-    { time: '16:15', speed: 65, rpm: 1650 },
-    { time: '16:30', speed: 60, rpm: 1500, event: 'motion' },
+export const PerformanceChart = ({ data = [] }) => {
+  // Si no hay datos, usar datos por defecto
+  const chartData = data.length > 0 ? data : [
+    { time: '--', speed: 0, rpm: 0 }
   ];
 
   // Función para obtener el color del punto según el evento
@@ -250,7 +240,7 @@ export const PerformanceChart = () => {
       </div>
 
       <ResponsiveContainer width="100%" height={400}>
-        <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+        <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="colorSpeed" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
@@ -308,13 +298,13 @@ export const PerformanceChart = () => {
       {/* Marcadores de eventos en el eje X */}
       <div className="relative w-full h-6 -mt-2">
         <div className="absolute inset-0 flex justify-around items-center px-12">
-          {data.filter(d => d.event).map((point, index) => (
+          {chartData.filter(d => d.event).map((point, index) => (
             <div 
               key={index}
               className="flex flex-col items-center"
               style={{ 
                 position: 'absolute',
-                left: `${(data.indexOf(point) / (data.length - 1)) * 100}%`,
+                left: `${(chartData.indexOf(point) / (chartData.length - 1)) * 100}%`,
                 transform: 'translateX(-50%)'
               }}
             >
@@ -361,20 +351,10 @@ export const PerformanceChart = () => {
 };
 
 // Fuel Consumption Chart Component with Recharts
-export const FuelConsumptionChart = () => {
-  // Data para la gráfica
-  const data = [
-    { time: '14:00', fuelLevel: 85, consumption: 0 },
-    { time: '14:15', fuelLevel: 82, consumption: 1.5 },
-    { time: '14:30', fuelLevel: 75, consumption: 4.5 },
-    { time: '14:45', fuelLevel: 68, consumption: 7.2 },
-    { time: '15:00', fuelLevel: 60, consumption: 6.8 },
-    { time: '15:15', fuelLevel: 55, consumption: 5.5 },
-    { time: '15:30', fuelLevel: 48, consumption: 7.0 },
-    { time: '15:45', fuelLevel: 42, consumption: 6.2 },
-    { time: '16:00', fuelLevel: 35, consumption: 5.8 },
-    { time: '16:15', fuelLevel: 28, consumption: 5.5 },
-    { time: '16:30', fuelLevel: 20, consumption: 4.8 },
+export const FuelConsumptionChart = ({ data = [] }) => {
+  // Si no hay datos, usar datos por defecto
+  const chartData = data.length > 0 ? data : [
+    { time: '--', fuelLevel: 0, consumption: 0 }
   ];
 
   // Custom Tooltip
@@ -410,7 +390,7 @@ export const FuelConsumptionChart = () => {
       </div>
 
       <ResponsiveContainer width="100%" height={400}>
-        <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+        <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="colorFuel" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
