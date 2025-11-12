@@ -180,9 +180,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
       module: "payroll",
       sub: [
         { 
-          name: "Reportes", 
+          name: "Gestor de contratos", 
           icon: <FaFileInvoice />, 
-          path: "/payroll/reports",
+          path: "/payroll/contractManagement",
           permissions: [],
         },
         {

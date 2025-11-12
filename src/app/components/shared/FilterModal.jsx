@@ -14,10 +14,10 @@ const FilterModal = ({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/60 z-[60]" />
         <Dialog.Content 
-          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] bg-background rounded-xl shadow-2xl w-full max-w-2xl max-h-[95vh] overflow-hidden"
+          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] bg-background rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
             <Dialog.Title className="text-xl font-bold text-primary">
               Filtrar por
             </Dialog.Title>
@@ -31,23 +31,25 @@ const FilterModal = ({
             </Dialog.Close>
           </div>
 
-          {/* Campos personalizados */}
-          <div className="p-8">
+          {/* Campos personalizados - Con scroll */}
+          <div className="p-8 overflow-y-auto flex-1">
             {children}
-            <div className="flex gap-4 mt-8 justify-center">
-              <button
-                onClick={onClear}
-                className="flex-1 px-6 py-3 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 transition-colors parametrization-text"
-              >
-                Limpiar
-              </button>
-              <button
-                onClick={onApply}
-                className="flex-1 px-6 py-3 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition-colors parametrization-text"
-              >
-                Aplicar
-              </button>
-            </div>
+          </div>
+          
+          {/* Botones fijos en la parte inferior */}
+          <div className="flex gap-4 p-6 border-t border-gray-200 bg-background flex-shrink-0">
+            <button
+              onClick={onClear}
+              className="flex-1 px-6 py-3 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 transition-colors parametrization-text"
+            >
+              Limpiar
+            </button>
+            <button
+              onClick={onApply}
+              className="flex-1 px-6 py-3 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition-colors parametrization-text"
+            >
+              Aplicar
+            </button>
           </div>
         </Dialog.Content>
       </Dialog.Portal>
