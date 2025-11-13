@@ -10,7 +10,7 @@ const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLaye
 const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
 const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { ssr: false });
 
-// Iconos personalizados para Leaflet
+// Crear iconos personalizados para Leaflet
 const createCustomIcon = (color) => {
   if (typeof window !== 'undefined') {
     const L = require('leaflet');
@@ -229,15 +229,10 @@ export const InfoCard = ({ label, value, sublabel }) => {
   );
 };
 
-// Performance Chart Component with Recharts
+// Componente de Gráfica de Rendimiento con Recharts
 export const PerformanceChart = ({ data = [] }) => {
-  console.log('📈 PerformanceChart recibiendo datos:', {
-    dataPoints: data.length,
-    firstPoint: data[0],
-    lastPoint: data[data.length - 1]
-  });
   
-  // Si no hay datos, usar datos por defecto
+  // Si no hay datos, usar datos predeterminados
   const chartData = data.length > 0 ? data : [
     { time: '--', speed: 0, rpm: 0 }
   ];
@@ -255,7 +250,7 @@ export const PerformanceChart = ({ data = [] }) => {
     }
   };
 
-  // Custom Dot para mostrar puntos de eventos
+  // Punto personalizado para mostrar puntos de eventos
   const CustomDot = (props) => {
     const { cx, cy, payload } = props;
     if (payload.event) {
@@ -273,7 +268,7 @@ export const PerformanceChart = ({ data = [] }) => {
     return null;
   };
 
-  // Custom Tooltip
+  // Información emergente personalizada
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -436,20 +431,15 @@ export const PerformanceChart = ({ data = [] }) => {
   );
 };
 
-// Fuel Consumption Chart Component with Recharts
+// Componente de Gráfica de Consumo de Combustible con Recharts
 export const FuelConsumptionChart = ({ data = [] }) => {
-  console.log('⛽ FuelConsumptionChart recibiendo datos:', {
-    dataPoints: data.length,
-    firstPoint: data[0],
-    lastPoint: data[data.length - 1]
-  });
   
-  // Si no hay datos, usar datos por defecto
+  // Si no hay datos, usar datos predeterminados
   const chartData = data.length > 0 ? data : [
     { time: '--', fuelLevel: 0, consumption: 0 }
   ];
 
-  // Custom Tooltip
+  // Información emergente personalizada
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -551,7 +541,7 @@ export const FuelConsumptionChart = ({ data = [] }) => {
   );
 };
 
-// Tooltip Component - Para marcadores del mapa
+// Componente de Información Emergente - Para marcadores del mapa
 export const MapTooltip = ({ machinery, position, visible }) => {
   if (!visible || !machinery || !position) return null;
 

@@ -42,24 +42,21 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
         if (storedData) {
           const parsedData = JSON.parse(storedData);
           setHistoricalData(parsedData);
-          console.log('📊 Datos históricos cargados desde localStorage:', Object.keys(parsedData).length, 'maquinarias');
         }
         
         const storedOBD = localStorage.getItem('telemetry_obd_faults_history');
         if (storedOBD) {
           const parsedOBD = JSON.parse(storedOBD);
           setObdFaultsHistory(parsedOBD);
-          console.log('🔧 Histórico de fallas OBD cargado');
         }
         
         const storedGEvents = localStorage.getItem('telemetry_g_events_history');
         if (storedGEvents) {
           const parsedGEvents = JSON.parse(storedGEvents);
           setGEventsHistory(parsedGEvents);
-          console.log('📍 Histórico de eventos G cargado');
         }
       } catch (error) {
-        console.warn('⚠️ Error al cargar datos históricos desde localStorage:', error);
+        // Error al cargar datos históricos desde localStorage
       }
     }
   }, []);
@@ -69,9 +66,8 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
     if (typeof window !== 'undefined' && Object.keys(historicalData).length > 0) {
       try {
         localStorage.setItem('telemetry_historical_data', JSON.stringify(historicalData));
-        console.log('💾 Datos históricos guardados en localStorage');
       } catch (error) {
-        console.warn('⚠️ Error al guardar datos históricos en localStorage:', error);
+        // Error al guardar datos históricos en localStorage
       }
     }
   }, [historicalData]);
@@ -81,9 +77,8 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
     if (typeof window !== 'undefined' && Object.keys(obdFaultsHistory).length > 0) {
       try {
         localStorage.setItem('telemetry_obd_faults_history', JSON.stringify(obdFaultsHistory));
-        console.log('💾 Histórico de fallas OBD guardado en localStorage');
       } catch (error) {
-        console.warn('⚠️ Error al guardar histórico de fallas OBD:', error);
+        // Error al guardar histórico de fallas OBD
       }
     }
   }, [obdFaultsHistory]);
@@ -93,9 +88,8 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
     if (typeof window !== 'undefined' && Object.keys(gEventsHistory).length > 0) {
       try {
         localStorage.setItem('telemetry_g_events_history', JSON.stringify(gEventsHistory));
-        console.log('💾 Histórico de eventos G guardado en localStorage');
       } catch (error) {
-        console.warn('⚠️ Error al guardar histórico de eventos G:', error);
+        // Error al guardar histórico de eventos G
       }
     }
   }, [gEventsHistory]);
@@ -110,7 +104,6 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
       localStorage.removeItem('telemetry_historical_data');
       localStorage.removeItem('telemetry_obd_faults_history');
       localStorage.removeItem('telemetry_g_events_history');
-      console.log('🗑️ Todos los datos históricos eliminados');
     }
   };
   
@@ -136,9 +129,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
       });
     }
     
-    console.log('🧪 Datos de prueba generados:', testData);
     setHistoricalData({ [testImei]: testData });
-    console.log('✅ historicalData actualizado con datos de prueba');
   };
   
   // Extraer IMEIs de las maquinarias de la solicitud
@@ -160,41 +151,26 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
   // Mostrar modal de error cuando hay timeout
   useEffect(() => {
     if (timeoutMessage) {
-      console.log('⏰ Timeout recibido:', timeoutMessage);
       const errorMsg = `No se han recibido datos para la solicitud ${timeoutMessage.request_id} en ${timeoutMessage.timeout_seconds} segundos. La conexión se ha cerrado.`;
       setTimeoutErrorMessage(errorMsg);
       setIsTimeoutErrorOpen(true);
     }
   }, [timeoutMessage]);
 
-  // Debug: Verificar si el WebSocket está recibiendo datos
+  // Verificar si el WebSocket está recibiendo datos
   useEffect(() => {
-    console.log('🔍 Estado WebSocket:', {
-      requestId,
-      connectionStatus,
-      machineriesDataKeys: Object.keys(machineriesData),
-      machineriesDataLength: Object.keys(machineriesData).length,
-      firstMachinery: Object.values(machineriesData)[0],
-      machineryImeis,
-      requestData: {
-        id: requestData?.id,
-        tracking_code: requestData?.tracking_code
-      },
-      timeoutMessage
-    });
+    // Monitoreo de estado del WebSocket
   }, [machineriesData, connectionStatus, requestId, machineryImeis, requestData, timeoutMessage]);
   
   // Limpiar datos históricos cuando cambia la solicitud
   useEffect(() => {
     if (requestData && requestData.id) {
-      console.log('🔄 Solicitud cambió a:', requestData.id);
       // Limpiar datos históricos para evitar mezclar datos de diferentes solicitudes
       setHistoricalData({});
       setChartData({});
       setObdFaultsHistory({});
       setGEventsHistory({});
       setSelectedMachinery(0);
-      console.log('🗑️ Datos históricos limpiados para la nueva solicitud');
     }
   }, [requestData?.id]);
 
@@ -207,10 +183,8 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
       try {
         const details = await getRequestDetails(requestData.id);
         setRequestDetails(details);
-        console.log('📦 Detalles de solicitud cargados:', details);
-        console.log('📍 IMEIs de maquinarias:', details.machineries?.map(m => m.telemetry_device_imei));
       } catch (error) {
-        console.error('Error al cargar detalles de la solicitud:', error);
+        // Error al cargar detalles de la solicitud
       } finally {
         setLoadingDetails(false);
       }
@@ -222,29 +196,16 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
   // Almacenar datos históricos cuando llegan del WebSocket
   useEffect(() => {
     if (!machineriesData || Object.keys(machineriesData).length === 0) {
-      console.log('⏭️ Sin datos del WebSocket para procesar');
       return;
     }
-
-    console.log('📊 Datos recibidos del WebSocket:', machineriesData);
-    console.log('📈 Datos históricos actuales antes de actualizar:', historicalData);
 
     setHistoricalData(prev => {
       const newData = { ...prev };
       let dataAdded = false;
       
       Object.entries(machineriesData).forEach(([imei, data]) => {
-        console.log(`🔄 Procesando datos para IMEI ${imei}:`, {
-          speed: data.speed,
-          rpm: data.rpm,
-          fuelLevel: data.fuelLevel,
-          instantConsumption: data.instantConsumption,
-          timestamp: data.timestamp
-        });
-        
         if (!newData[imei]) {
           newData[imei] = [];
-          console.log(`📝 Creando array para IMEI ${imei}`);
         }
         
         // Agregar nuevo punto de datos con timestamp
@@ -266,9 +227,6 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
         if (!lastPoint || lastPoint.timestamp !== dataPoint.timestamp) {
           newData[imei].push(dataPoint);
           dataAdded = true;
-          console.log(`✅ Datos agregados para ${imei}. Total puntos: ${newData[imei].length}`);
-        } else {
-          console.log(`⏭️ Datos duplicados ignorados para ${imei} (mismo timestamp: ${dataPoint.timestamp})`);
         }
         
         // Mantener solo los últimos 50 puntos (aproximadamente 25 minutos de datos)
@@ -277,7 +235,6 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
         }
       });
       
-      console.log('📊 Datos históricos después de actualizar:', newData);
       return newData;
     });
   }, [machineriesData]);
@@ -311,7 +268,6 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
             if (!isDuplicate) {
               // Agregar al inicio (nuevos primero)
               newOBDData[imei].unshift(faultWithTimestamp);
-              console.log(`🔧 Falla OBD agregada para ${imei}:`, faultCode);
             }
           });
           
@@ -350,7 +306,6 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
           if (!isDuplicate) {
             // Agregar al inicio (nuevos primero)
             newGEventsData[imei].unshift(gEvent);
-            console.log(`📍 Evento G agregado para ${imei}:`, data.eventType, 'G-Value:', data.eventGValue);
           }
           
           // Mantener solo los últimos 50 registros
@@ -364,22 +319,18 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
     });
   }, [machineriesData]);
 
-  // Debug: Verificar históricos de OBD y eventos G
+  // Verificar históricos de OBD y eventos G
   useEffect(() => {
-    console.log('🔧 Histórico OBD actual:', obdFaultsHistory);
-    console.log('📍 Histórico Eventos G actual:', gEventsHistory);
+    // Monitoreo de histórico de OBD y eventos G
   }, [obdFaultsHistory, gEventsHistory]);
 
   // Formatear datos para las gráficas cuando se actualizan los datos históricos
   useEffect(() => {
     if (!historicalData || Object.keys(historicalData).length === 0) return;
 
-    console.log('🔄 Formateando datos para gráficas...', historicalData);
-
     const formattedChartData = {};
     
     Object.entries(historicalData).forEach(([imei, dataPoints]) => {
-      console.log(`📈 Formateando ${dataPoints.length} puntos para IMEI ${imei}`);
       
       // Formatear datos para gráfica de rendimiento (Velocidad vs RPM)
       const performanceData = dataPoints.map(point => {
@@ -480,7 +431,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
     placeName: "Sin lugar"
   };
 
-  // Convertir datos del WebSocket a formato UI combinando con datos de la solicitud
+  // Convertir datos del WebSocket a formato de interfaz combinando con datos de la solicitud
   const machineries = useMemo(() => {
     const imeis = Object.keys(machineriesData);
     
@@ -1130,18 +1081,8 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                       activeImei = Object.keys(chartData)[0];
                       performanceData = chartData[activeImei]?.performance || [];
                       fuelData = chartData[activeImei]?.fuelConsumption || [];
-                      console.log('⚠️ Usando IMEI alternativo:', activeImei);
+                      // Usando IMEI alternativo
                     }
-                    
-                    console.log('🎨 Renderizando gráficas:', {
-                      selectedMachinery,
-                      selectedImei,
-                      activeImei,
-                      activeTab,
-                      performanceDataPoints: performanceData.length,
-                      fuelDataPoints: fuelData.length,
-                      chartDataKeys: Object.keys(chartData)
-                    });
                     
                     return activeTab === "performance" ? (
                       <PerformanceChart 

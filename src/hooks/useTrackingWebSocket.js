@@ -1,7 +1,7 @@
 /**
  * Hook para manejar WebSocket de telemetría en tiempo real
  * 
- * Endpoint: wss://api.inmero.co/telemetry/ws/telemetria/{request_id}?password={password}
+ * Punto de conexión: wss://api.inmero.co/telemetry/ws/telemetria/{request_id}?password={password}
  * Actualización: ~30 segundos
  * 
  * Uso:
@@ -12,13 +12,13 @@
  *   lastMessage,          // Último mensaje recibido
  *   alerts                // Array de alertas recibidas
  * } = useTrackingWebSocket({
- *   requestId: 'SOL-2025-0011',  // Required: Código de solicitud
+ *   requestId: 'SOL-2025-0011',  // Requerido: Código de solicitud
  *   imeiFilter: ['357894561234567', '352099001761482']  // Opcional: filtrar por IMEIs
  * });
  * 
  * Variables de entorno requeridas:
- * - NEXT_PUBLIC_TELEMETRY_WS_URL: URL base (default: wss://api.inmero.co/telemetry/ws/telemetria)
- * - NEXT_PUBLIC_TELEMETRY_WS_PASSWORD o WEBSOCKET_PASSWORD: Contraseña (default: telemetry_password_2024)
+ * - NEXT_PUBLIC_TELEMETRY_WS_URL: URL base (predeterminada: wss://api.inmero.co/telemetry/ws/telemetria)
+ * - NEXT_PUBLIC_TELEMETRY_WS_PASSWORD o WEBSOCKET_PASSWORD: Contraseña (predeterminada: telemetry_password_2024)
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -27,7 +27,7 @@ const RECONNECT_INTERVAL = 5000; // 5 segundos
 const MAX_RECONNECT_ATTEMPTS = 10;
 
 export const useTrackingWebSocket = (options = {}) => {
-  const { requestId = null, imeiFilter = null } = options; // requestId es requerido, Array de IMEIs a filtrar, null = todos
+  const { requestId = null, imeiFilter = null } = options; // requestId es requerido, Array de IMEIs a filtrar, nulo = todos
   
   // Estado de datos de maquinarias organizados por IMEI
   const [machineriesData, setMachineriesData] = useState({});
@@ -58,7 +58,7 @@ export const useTrackingWebSocket = (options = {}) => {
     if (!gpsString) return null;
     
     try {
-      // Formato: "+04.60971-074.08175/"
+      // Formato: "+04.60971-074.08175/" (latitud-longitud)
       const cleanStr = gpsString.replace('/', '');
       const latMatch = cleanStr.match(/([+-]\d+\.\d+)/);
       const lngMatch = cleanStr.match(/([+-]\d+\.\d+)$/);
@@ -70,7 +70,7 @@ export const useTrackingWebSocket = (options = {}) => {
         };
       }
     } catch (error) {
-      console.error('Error al parsear ubicación GPS:', error);
+      // Error al parsear ubicación GPS
     }
     return null;
   }, []);
@@ -102,24 +102,15 @@ export const useTrackingWebSocket = (options = {}) => {
   // Función para procesar mensajes entrantes
   const processMessage = useCallback((message) => {
     try {
-      console.log('📨 Mensaje recibido del WebSocket:', message);
       const data = JSON.parse(message);
       
       // Manejar mensajes de control del sistema
       if (data.type === 'connection_confirmed') {
-        console.log('✅ Conexión confirmada para solicitud:', data.request_id);
         setConnectionStatus('conectado');
         return;
       }
       
       if (data.type === 'timeout') {
-        console.warn('⏰ Timeout de conexión para solicitud:', data.request_id);
-        console.warn('📋 Detalles del timeout:', {
-          request_id: data.request_id,
-          message: data.message,
-          timeout_seconds: data.timeout_seconds,
-          reason: data.reason
-        });
         setConnectionStatus('error');
         // Guardar el mensaje de timeout para mostrarlo en el modal
         setTimeoutMessage({
@@ -133,11 +124,8 @@ export const useTrackingWebSocket = (options = {}) => {
       
       // Validar estructura del mensaje de telemetría
       if (!data.imei || !data.timestamp || !data.data) {
-        console.warn('Mensaje con estructura inválida:', data);
         return;
       }
-      
-      console.log('✅ Mensaje válido recibido para IMEI:', data.imei);
 
       const { imei, timestamp, data: telemetryData, alerts: messageAlerts, serial_number, machinery_name, operator_name } = data;
       
@@ -186,7 +174,7 @@ export const useTrackingWebSocket = (options = {}) => {
         odometerTrip: telemetryData.odometer_trip !== undefined ? telemetryData.odometer_trip : null,
         eventType: telemetryData.event_type !== undefined ? telemetryData.event_type : null,
         eventGValue: telemetryData.event_g_value !== undefined ? telemetryData.event_g_value : null,
-        // Datos crudos para referencia
+        // Datos sin procesar para referencia
         raw: telemetryData
       };
 
@@ -212,106 +200,123 @@ export const useTrackingWebSocket = (options = {}) => {
       }
 
     } catch (error) {
-      console.error('Error al procesar mensaje del WebSocket:', error);
+      // Error al procesar mensaje del WebSocket
     }
   }, [getMachineryStatus, parseGpsLocation, getRelativeTime, imeiFilter]);
 
-  // Función para conectar al WebSocket
-  const connect = useCallback(() => {
-    try {
-      // Validar que se proporcionó un requestId
-      if (!requestId) {
-        console.error('❌ requestId es requerido para conectar al WebSocket de telemetría');
-        setConnectionStatus('error');
-        return;
-      }
-      
-      // Cerrar conexión existente si hay una
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-
-      // Construir URL con requestId y contraseña: wss://api.inmero.co/telemetry/ws/telemetria/{request_id}?password={password}
+  // Función para reconectar manualmente
+  const reconnect = useCallback(() => {
+    reconnectAttemptsRef.current = 0;
+    setConnectionStatus('conectando');
+    
+    if (wsRef.current) {
+      wsRef.current.close();
+    }
+    
+    if (requestId) {
       const wsUrl = `${WS_URL}/${encodeURIComponent(requestId)}?password=${encodeURIComponent(WS_PASSWORD)}`;
-      
-      console.log('🔌 Conectando al WebSocket de telemetría...');
-      console.log('📍 Endpoint:', `${WS_URL}/${requestId}?password=***`);
-      console.log('🎯 Request ID:', requestId);
       const ws = new WebSocket(wsUrl);
-
+      
       ws.onopen = () => {
-        console.log('✅ WebSocket de telemetría conectado, esperando confirmación...');
-        console.log('🔌 URL conectada:', wsUrl);
         setConnectionStatus('conectando');
         reconnectAttemptsRef.current = 0;
       };
-
+      
       ws.onmessage = (event) => {
-        console.log('📨 Evento onmessage disparado');
         processMessage(event.data);
       };
-
-      ws.onerror = (error) => {
-        console.error('❌ Error en WebSocket de telemetría:', error);
+      
+      ws.onerror = () => {
         setConnectionStatus('error');
       };
-
-      ws.onclose = (event) => {
-        console.log('🔌 WebSocket de telemetría desconectado');
-        
-        // Verificar si fue rechazado por contraseña incorrecta
-        if (event.code === 4001) {
-          console.error('❌ Contraseña incorrecta para WebSocket de telemetría');
-          setConnectionStatus('error');
-          return;
-        }
-        
-        // Verificar si fue un timeout
-        if (event.code === 4002) {
-          console.warn('⏰ Timeout de conexión para solicitud:', requestId);
-          setConnectionStatus('error');
-          return;
-        }
-        
+      
+      ws.onclose = () => {
         setConnectionStatus('desconectado');
-
-        // Intentar reconectar automáticamente
-        if (reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
-          reconnectAttemptsRef.current++;
-          console.log(`🔄 Reintentando conexión al WebSocket de telemetría (${reconnectAttemptsRef.current}/${MAX_RECONNECT_ATTEMPTS})...`);
-          
-          reconnectTimeoutRef.current = setTimeout(() => {
-            connect();
-          }, RECONNECT_INTERVAL);
-        } else {
-          console.error('❌ Máximo de intentos de reconexión alcanzado');
-        }
       };
-
+      
       wsRef.current = ws;
-    } catch (error) {
-      console.error('Error al crear conexión WebSocket:', error);
-      setConnectionStatus('error');
     }
-  }, [WS_URL, WS_PASSWORD, processMessage, requestId]);
-
-  // Función para reconectar manualmente
-  const reconnect = useCallback(() => {
-    console.log('🔄 Reconectando manualmente...');
-    reconnectAttemptsRef.current = 0;
-    setConnectionStatus('conectando');
-    connect();
-  }, [connect]);
+  }, [requestId, WS_URL, WS_PASSWORD, processMessage]);
 
   // Efecto para conectar al montar o cuando cambia el requestId
   useEffect(() => {
     // Limpiar datos anteriores cuando cambia el requestId
     if (requestId) {
-      console.log('🔄 RequestId cambió a:', requestId);
       setMachineriesData({});
       setAlerts([]);
+      setTimeoutMessage(null);
       reconnectAttemptsRef.current = 0;
-      connect();
+      
+      // Cerrar conexión anterior si existe
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+      
+      // Conectar con el nuevo requestId
+      try {
+        const wsUrl = `${WS_URL}/${encodeURIComponent(requestId)}?password=${encodeURIComponent(WS_PASSWORD)}`;
+        const ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+          setConnectionStatus('conectando');
+          reconnectAttemptsRef.current = 0;
+        };
+
+        ws.onmessage = (event) => {
+          processMessage(event.data);
+        };
+
+        ws.onerror = (error) => {
+          setConnectionStatus('error');
+        };
+
+        ws.onclose = (event) => {
+          // Verificar si fue rechazado por contraseña incorrecta
+          if (event.code === 4001) {
+            setConnectionStatus('error');
+            return;
+          }
+          
+          // Verificar si fue un timeout
+          if (event.code === 4002) {
+            setConnectionStatus('error');
+            return;
+          }
+          
+          setConnectionStatus('desconectado');
+
+          // Intentar reconectar automáticamente
+          if (reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
+            reconnectAttemptsRef.current++;
+            reconnectTimeoutRef.current = setTimeout(() => {
+              // Reconectar solo si el requestId sigue siendo el mismo
+              if (requestId) {
+                const reconnectUrl = `${WS_URL}/${encodeURIComponent(requestId)}?password=${encodeURIComponent(WS_PASSWORD)}`;
+                const reconnectWs = new WebSocket(reconnectUrl);
+                
+                reconnectWs.onopen = () => {
+                  setConnectionStatus('conectando');
+                };
+                
+                reconnectWs.onmessage = (event) => {
+                  processMessage(event.data);
+                };
+                
+                reconnectWs.onerror = () => {
+                  setConnectionStatus('error');
+                };
+                
+                reconnectWs.onclose = ws.onclose;
+                wsRef.current = reconnectWs;
+              }
+            }, RECONNECT_INTERVAL);
+          }
+        };
+
+        wsRef.current = ws;
+      } catch (error) {
+        setConnectionStatus('error');
+      }
     }
 
     // Limpiar al desmontar o cambiar requestId
@@ -323,7 +328,7 @@ export const useTrackingWebSocket = (options = {}) => {
         wsRef.current.close();
       }
     };
-  }, [requestId, connect]);
+  }, [requestId, WS_URL, WS_PASSWORD, processMessage]);
 
   // Efecto para actualizar tiempos relativos cada 5 segundos
   useEffect(() => {
