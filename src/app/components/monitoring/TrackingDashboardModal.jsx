@@ -3,9 +3,10 @@ import React, { useState, useMemo, useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { FaTimes, FaSignal, FaMapMarkerAlt } from "react-icons/fa";
 import { MdPowerSettingsNew, MdDirectionsCar, MdLocationOn } from "react-icons/md";
-import { GaugeCard, CircularProgress, PerformanceChart, FuelConsumptionChart, MapTooltip } from "./TrackingDashboardComponents";
+import { GaugeCard, CircularProgress, PerformanceChart, FuelConsumptionChart, MapTooltip, RealTimeMap } from "./TrackingDashboardComponents";
 import { useTrackingWebSocket } from "@/hooks/useTrackingWebSocket";
 import { getRequestDetails } from "@/services/requestService";
+import "./tracking-animations.css";
 
 const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
   const [selectedMachinery, setSelectedMachinery] = useState(0);
@@ -16,6 +17,9 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
   // Estado solo para tooltip del mapa
   const [mapTooltip, setMapTooltip] = useState({ visible: false, machinery: null, position: null });
   
+  // Estado para almacenar datos históricos de cada maquinaria
+  const [historicalData, setHistoricalData] = useState({});
+  
   // Extraer IMEIs de las maquinarias de la solicitud
   const machineryImeis = useMemo(() => {
     if (!requestDetails || !requestDetails.machineries) return null;
@@ -24,10 +28,9 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
       .map(m => m.telemetry_device_imei);
   }, [requestDetails]);
   
-  // Hook de WebSocket de telemetría con filtro de IMEIs y código de solicitud
+  // Hook de WebSocket de telemetría con filtro de IMEIs
   const { machineriesData, connectionStatus, reconnect, alerts } = useTrackingWebSocket({ 
-    imeiFilter: machineryImeis,
-    requestCode: requestData?.tracking_code || null
+    imeiFilter: machineryImeis
   });
   
   // Cargar detalles de la solicitud cuando se abre el modal
@@ -50,6 +53,44 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
     
     loadRequestDetails();
   }, [isOpen, requestData]);
+
+  // Almacenar datos históricos cuando llegan del WebSocket
+  useEffect(() => {
+    if (!machineriesData || Object.keys(machineriesData).length === 0) return;
+
+    setHistoricalData(prev => {
+      const newData = { ...prev };
+      
+      Object.entries(machineriesData).forEach(([imei, data]) => {
+        if (!newData[imei]) {
+          newData[imei] = [];
+        }
+        
+        // Agregar nuevo punto de datos con timestamp
+        const dataPoint = {
+          timestamp: data.timestamp || new Date().toISOString(),
+          speed: data.speed || 0,
+          rpm: data.rpm || 0,
+          engineTemp: data.engineTemp || 0,
+          fuelLevel: data.fuelLevel || 0,
+          fuelUsedGps: data.fuelUsedGps || 0,
+          instantConsumption: data.instantConsumption || 0,
+          eventType: data.eventType || null,
+          eventGValue: data.eventGValue || 0,
+          engineLoad: data.engineLoad || 0
+        };
+        
+        newData[imei].push(dataPoint);
+        
+        // Mantener solo los últimos 50 puntos (aproximadamente 25 minutos de datos)
+        if (newData[imei].length > 50) {
+          newData[imei] = newData[imei].slice(-50);
+        }
+      });
+      
+      return newData;
+    });
+  }, [machineriesData]);
 
   // Helper function to format dates
   const formatDate = (dateString) => {
@@ -338,37 +379,14 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
               {/* FILA 3.2: Real Time Ubication */}
               <div>
                 <h3 className="text-sm font-semibold text-primary mb-3">Ubicación en Tiempo Real</h3>
-                <div className="w-full h-[400px] rounded-lg border flex items-center justify-center relative overflow-hidden" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
-                  <div className="absolute inset-0 flex items-center justify-center text-secondary">
-                    <div className="text-center">
-                      <FaMapMarkerAlt size={48} className="mx-auto mb-2 opacity-20" />
-                      <p className="text-sm">Mapa</p>
-                    </div>
-                  </div>
-
-                  {/* Map markers */}
-                  <div className="absolute inset-0">
-                    {machineries.map((machinery, index) => (
-                      <div key={machinery.id} className="absolute" style={{ top: `${30 + index * 25}%`, left: `${40 + index * 10}%` }}>
-                        <div 
-                          className="w-8 h-8 rounded-full flex items-center justify-center shadow-lg cursor-pointer transform hover:scale-110 transition-transform" 
-                          style={{ backgroundColor: getMarkerColor(machinery.status) }}
-                          onMouseEnter={(e) => handleMapMarkerHover(machinery, e)}
-                          onMouseLeave={handleMapMarkerLeave}
-                        >
-                          <MdLocationOn className="text-white" size={20} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Legend */}
-                  <div className="absolute bottom-4 left-4 p-2 rounded shadow-lg text-xs" style={{ backgroundColor: 'var(--color-background)', borderColor: 'var(--color-border)' }}>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#22C55E' }} /><span className="text-secondary">En movimiento</span></div>
-                      <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#F59E0B' }} /><span className="text-secondary">Estacionario</span></div>
-                      <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#9CA3AF' }} /><span className="text-secondary">Sin conexión</span></div>
-                    </div>
+                <RealTimeMap machineries={machineries} />
+                
+                {/* Legend */}
+                <div className="mt-3 p-3 rounded-lg border text-xs" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#22C55E' }} /><span className="text-secondary">En movimiento</span></div>
+                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#F59E0B' }} /><span className="text-secondary">Estacionario</span></div>
+                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#9CA3AF' }} /><span className="text-secondary">Sin conexión</span></div>
                   </div>
                 </div>
               </div>
@@ -410,7 +428,14 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                   <GaugeCard label="Revoluciones (RPM)" value={selectedMachineryData.rpm.value} max={selectedMachineryData.rpm.max} unit={selectedMachineryData.rpm.unit} type="rpm" alert={selectedMachineryData.rpm.alert} />
 
                   {/* Sensor 3: Engine Temperature */}
-                  <div className="p-4 rounded-lg border flex flex-col items-center justify-center min-h-[200px]" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
+                  <div 
+                    className="p-4 rounded-lg border flex flex-col items-center justify-center min-h-[200px] transition-all duration-500"
+                    style={{ 
+                      backgroundColor: selectedMachineryData.engineTemp.value > 110 ? 'rgba(239, 68, 68, 0.1)' : 'var(--color-background-secondary)',
+                      borderColor: selectedMachineryData.engineTemp.value > 110 ? '#EF4444' : 'var(--color-border)',
+                      boxShadow: selectedMachineryData.engineTemp.value > 110 ? '0 0 10px rgba(239, 68, 68, 0.2)' : 'none'
+                    }}
+                  >
                     <p className="text-xs text-secondary mb-3">Temperatura del Motor</p>
                     <div className="relative">
                       {/* Termómetro */}
@@ -429,16 +454,27 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                         {/* Tubo del termómetro */}
                         <rect x="20" y="15" width="10" height="70" rx="5" fill="#E5E7EB" stroke="#9CA3AF" strokeWidth="2" />
                         
-                        {/* Líquido del termómetro */}
-                        <rect 
-                          x="22" 
-                          y={`${85 - (selectedMachineryData.engineTemp.value / selectedMachineryData.engineTemp.max) * 68}`} 
-                          width="6" 
-                          height={`${(selectedMachineryData.engineTemp.value / selectedMachineryData.engineTemp.max) * 68}`}
-                          rx="3" 
-                          fill="url(#tempGradient)"
-                          className="transition-all duration-700"
-                        />
+                        {/* Líquido del termómetro - Limitar al rango -40 a 130°C */}
+                        {(() => {
+                          const minTemp = -40;
+                          const maxTemp = 130;
+                          const clampedTemp = Math.min(Math.max(selectedMachineryData.engineTemp.value, minTemp), maxTemp);
+                          const percentage = (clampedTemp - minTemp) / (maxTemp - minTemp);
+                          const height = percentage * 68;
+                          const yPos = 85 - height;
+                          
+                          return (
+                            <rect 
+                              x="22" 
+                              y={yPos}
+                              width="6" 
+                              height={height}
+                              rx="3" 
+                              fill="url(#tempGradient)"
+                              style={{ transition: 'y 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)' }}
+                            />
+                          );
+                        })()}
                         
                         {/* Marcas de temperatura */}
                         <line x1="30" y1="25" x2="35" y2="25" stroke="#9CA3AF" strokeWidth="1" />
@@ -446,11 +482,23 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                         <line x1="30" y1="65" x2="35" y2="65" stroke="#9CA3AF" strokeWidth="1" />
                       </svg>
                     </div>
-                    <p className="text-2xl font-bold text-primary">{selectedMachineryData.engineTemp.value}°C</p>
+                    <p 
+                      className="text-2xl font-bold transition-colors duration-500"
+                      style={{ color: selectedMachineryData.engineTemp.value > 110 ? '#EF4444' : 'var(--color-primary)' }}
+                    >
+                      {Math.min(Math.max(selectedMachineryData.engineTemp.value, -40), 130)}°C
+                    </p>
                   </div>
 
                   {/* Sensor 4: Fuel Level */}
-                  <div className="p-4 rounded-lg border flex flex-col items-center justify-center min-h-[200px]" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
+                  <div 
+                    className="p-4 rounded-lg border flex flex-col items-center justify-center min-h-[200px] transition-all duration-500"
+                    style={{ 
+                      backgroundColor: selectedMachineryData.fuelLevel.value < 20 ? 'rgba(239, 68, 68, 0.1)' : 'var(--color-background-secondary)',
+                      borderColor: selectedMachineryData.fuelLevel.value < 20 ? '#EF4444' : 'var(--color-border)',
+                      boxShadow: selectedMachineryData.fuelLevel.value < 20 ? '0 0 10px rgba(239, 68, 68, 0.2)' : 'none'
+                    }}
+                  >
                     <p className="text-xs text-secondary mb-2">Nivel de combustible</p>
                     <div className="relative w-32 h-20">
                       <svg className="w-full h-full" viewBox="0 0 160 80">
@@ -463,14 +511,15 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                           strokeLinecap="round"
                         />
                         
-                        {/* Arco de nivel de combustible */}
+                        {/* Arco de nivel de combustible - Limitar al 180° */}
                         <path
                           d="M 20 70 A 60 60 0 0 1 140 70"
                           fill="none"
-                          stroke={getFuelLevelColor(`${selectedMachineryData.fuelLevel.value}`)}
+                          stroke={getFuelLevelColor(`${Math.min(selectedMachineryData.fuelLevel.value, 100)}`)}
                           strokeWidth="12"
                           strokeLinecap="round"
-                          strokeDasharray={`${(selectedMachineryData.fuelLevel.value / 100) * 188} 188`}
+                          strokeDasharray={`${(Math.min(selectedMachineryData.fuelLevel.value, 100) / 100) * 188} 188`}
+                          style={{ transition: 'stroke-dasharray 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), stroke 0.5s ease' }}
                         />
                         
                         {/* Etiqueta E (Empty) */}
@@ -480,20 +529,28 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                         <text x="138" y="75" fontSize="10" fill="#9CA3AF" fontWeight="bold">F</text>
                       </svg>
                       
-                      {/* Aguja */}
+                      {/* Aguja - Limitar rotación a 180° */}
                       <div 
                         className="absolute bottom-2 left-1/2 w-1 h-12 origin-bottom transition-all duration-700 ease-out"
                         style={{ 
-                          backgroundColor: '#1F2937',
-                          transform: `translateX(-50%) rotate(${(selectedMachineryData.fuelLevel.value / 100) * 180 - 90}deg)`,
+                          backgroundColor: selectedMachineryData.fuelLevel.value < 20 ? '#EF4444' : '#1F2937',
+                          transform: `translateX(-50%) rotate(${Math.min(selectedMachineryData.fuelLevel.value, 100) / 100 * 180 - 90}deg)`,
                           borderRadius: '2px'
                         }}
                       />
                       
                       {/* Centro de la aguja */}
-                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-gray-800 border-2 border-white" />
+                      <div 
+                        className="absolute bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-white transition-colors duration-500"
+                        style={{ backgroundColor: selectedMachineryData.fuelLevel.value < 20 ? '#EF4444' : '#1F2937' }}
+                      />
                     </div>
-                    <p className="text-2xl font-bold text-primary mt-2">{selectedMachineryData.fuelLevel.value}%</p>
+                    <p 
+                      className="text-2xl font-bold mt-2 transition-colors duration-500"
+                      style={{ color: selectedMachineryData.fuelLevel.value < 20 ? '#EF4444' : 'var(--color-primary)' }}
+                    >
+                      {Math.min(selectedMachineryData.fuelLevel.value, 100)}%
+                    </p>
                     <p className="text-xs text-secondary">~36L / ~90L</p>
                   </div>
 
@@ -647,7 +704,15 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                 </div>
 
                 <div className="p-4 rounded-lg border min-h-[400px]" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
-                  {activeTab === "performance" ? <PerformanceChart /> : <FuelConsumptionChart />}
+                  {activeTab === "performance" ? (
+                    <PerformanceChart 
+                      historicalData={selectedMachinery && machineries[selectedMachinery]?.imei ? historicalData[machineries[selectedMachinery].imei] || [] : []}
+                    />
+                  ) : (
+                    <FuelConsumptionChart 
+                      historicalData={selectedMachinery && machineries[selectedMachinery]?.imei ? historicalData[machineries[selectedMachinery].imei] || [] : []}
+                    />
+                  )}
                 </div>
               </div>
             )}

@@ -1,8 +1,8 @@
 /**
  * Hook para manejar WebSocket de telemetría en tiempo real
- * Basado en la guía oficial del WebSocket de telemetría
  * 
- * Endpoint: https://api.inmero.co/telemetry/api/telemetria/stream/{solicitudCodigo}?password={password}
+ * Endpoint: wss://api.inmero.co/telemetry/ws/telemetria?password={password}
+ * Actualización: ~30 segundos
  * 
  * Uso:
  * const { 
@@ -12,12 +12,11 @@
  *   lastMessage,          // Último mensaje recibido
  *   alerts                // Array de alertas recibidas
  * } = useTrackingWebSocket({
- *   imeiFilter: ['352099001761481', '352099001761482'],  // Opcional: filtrar por IMEIs
- *   requestCode: 'SOL-2025-0031'  // Requerido: código de la solicitud
+ *   imeiFilter: ['357894561234567', '352099001761482']  // Opcional: filtrar por IMEIs
  * });
  * 
  * Variables de entorno requeridas:
- * - NEXT_PUBLIC_TELEMETRY_WS_URL: URL base (default: https://api.inmero.co/telemetry/api/telemetria/stream)
+ * - NEXT_PUBLIC_TELEMETRY_WS_URL: URL base (default: wss://api.inmero.co/telemetry/ws/telemetria)
  * - NEXT_PUBLIC_TELEMETRY_WS_PASSWORD o WEBSOCKET_PASSWORD: Contraseña (default: telemetry_password_2024)
  */
 
@@ -27,7 +26,7 @@ const RECONNECT_INTERVAL = 5000; // 5 segundos
 const MAX_RECONNECT_ATTEMPTS = 10;
 
 export const useTrackingWebSocket = (options = {}) => {
-  const { imeiFilter = null, requestCode = null } = options; // Array de IMEIs a filtrar, null = todos; requestCode = código de solicitud
+  const { imeiFilter = null } = options; // Array de IMEIs a filtrar, null = todos
   
   // Estado de datos de maquinarias organizados por IMEI
   const [machineriesData, setMachineriesData] = useState({});
@@ -47,7 +46,7 @@ export const useTrackingWebSocket = (options = {}) => {
   const reconnectAttemptsRef = useRef(0);
 
   // Obtener configuración desde variables de entorno
-  const WS_BASE_URL = process.env.NEXT_PUBLIC_TELEMETRY_WS_URL || 'https://api.inmero.co/telemetry/api/telemetria/stream';
+  const WS_URL = process.env.NEXT_PUBLIC_TELEMETRY_WS_URL || 'wss://api.inmero.co/telemetry/ws/telemetria';
   const WS_PASSWORD = process.env.NEXT_PUBLIC_TELEMETRY_WS_PASSWORD || process.env.WEBSOCKET_PASSWORD || 'telemetry_password_2024';
 
   // Función para procesar datos de ubicación GPS
@@ -188,18 +187,11 @@ export const useTrackingWebSocket = (options = {}) => {
         wsRef.current.close();
       }
 
-      // Validar que tenemos el código de solicitud
-      if (!requestCode) {
-        console.warn('⚠️ No se proporcionó código de solicitud (requestCode)');
-        setConnectionStatus('error');
-        return;
-      }
-
-      // Construir URL con formato correcto: https://api.inmero.co/telemetry/api/telemetria/stream/{solicitudCodigo}?password={password}
-      const wsUrl = `${WS_BASE_URL}/${requestCode}?password=${encodeURIComponent(WS_PASSWORD)}`;
+      // Construir URL con contraseña: wss://api.inmero.co/telemetry/ws/telemetria?password={password}
+      const wsUrl = `${WS_URL}?password=${encodeURIComponent(WS_PASSWORD)}`;
       
       console.log('🔌 Conectando al WebSocket de telemetría...');
-      console.log('📍 Endpoint:', `${WS_BASE_URL}/${requestCode}?password=***`);
+      console.log('📍 Endpoint:', `${WS_URL}?password=***`);
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
@@ -247,7 +239,7 @@ export const useTrackingWebSocket = (options = {}) => {
       console.error('Error al crear conexión WebSocket:', error);
       setConnectionStatus('error');
     }
-  }, [WS_BASE_URL, WS_PASSWORD, requestCode, processMessage]);
+  }, [WS_URL, WS_PASSWORD, processMessage]);
 
   // Función para reconectar manualmente
   const reconnect = useCallback(() => {

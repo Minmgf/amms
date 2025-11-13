@@ -4,8 +4,10 @@
 The real-time monitoring dashboard uses a WebSocket connection to receive telemetry data from machinery devices. The endpoint format is:
 
 ```
-https://api.inmero.co/telemetry/api/telemetria/stream/{solicitudCodigo}?password={password}
+wss://api.inmero.co/telemetry/ws/telemetria?password={password}
 ```
+
+**Data updates approximately every 30 seconds** - Los datos llegan del servidor cada ~30 segundos, no continuamente.
 
 ## Environment Variables
 
@@ -14,7 +16,7 @@ Set these in your `.env.local` file:
 
 ```env
 # WebSocket Telemetry Configuration
-NEXT_PUBLIC_TELEMETRY_WS_URL=https://api.inmero.co/telemetry/api/telemetria/stream
+NEXT_PUBLIC_TELEMETRY_WS_URL=wss://api.inmero.co/telemetry/ws/telemetria
 NEXT_PUBLIC_TELEMETRY_WS_PASSWORD=telemetry_password_2024
 WEBSOCKET_PASSWORD=telemetry_password_2024
 ```
@@ -22,8 +24,8 @@ WEBSOCKET_PASSWORD=telemetry_password_2024
 ### Variable Descriptions
 
 - **NEXT_PUBLIC_TELEMETRY_WS_URL**: Base URL for the WebSocket endpoint
-  - Default: `https://api.inmero.co/telemetry/api/telemetria/stream`
-  - The request code will be appended after `/stream/`
+  - Default: `wss://api.inmero.co/telemetry/ws/telemetria`
+  - Password is passed as a query parameter
 
 - **NEXT_PUBLIC_TELEMETRY_WS_PASSWORD** or **WEBSOCKET_PASSWORD**: Authentication password
   - Default: `telemetry_password_2024`
@@ -43,15 +45,13 @@ const {
   lastMessage,          // Last received message
   alerts                // Array of received alerts
 } = useTrackingWebSocket({
-  imeiFilter: ['352099001761481', '352099001761482'],  // Optional: filter by IMEIs
-  requestCode: 'SOL-2025-0031'  // Required: request code
+  imeiFilter: ['357894561234567', '352099001761482']  // Optional: filter by IMEIs
 });
 ```
 
 ### Parameters
 
 - **imeiFilter** (optional): Array of IMEI numbers to filter. If null, all devices are accepted.
-- **requestCode** (required): The request code that appears in the URL after `/stream/`
 
 ## Data Format Received
 
