@@ -1,11 +1,16 @@
 "use client";
 import React, { useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { FaTimes, FaCheckCircle, FaExclamationTriangle } from "react-icons/fa";
-import { completeRequest } from "@/services/requestService";
+import { FaTimes, FaCheckCircle, FaExclamationTriangle, FaTools } from "react-icons/fa";
+import { completeRequest, createMaintenanceFromServiceRequest } from "@/services/requestService";
 
 /**
  * Modal para completar una solicitud
+ * 
+ * Flujo de completado:
+ * 1. Crear solicitudes de mantenimiento automático (OBLIGATORIO)
+ * 2. Si el paso 1 tiene éxito, completar la solicitud
+ * 
  * Permite ingresar:
  * - Fecha de inicio real (manual)
  * - Fecha de finalización real (manual)
@@ -14,7 +19,7 @@ import { completeRequest } from "@/services/requestService";
  * @param {boolean} isOpen - Estado de apertura del modal
  * @param {function} onClose - Función para cerrar el modal
  * @param {object} request - Objeto de la solicitud a completar (requiere requestCode o id)
- * @param {function} onSuccess - Callback al completar exitosamente
+ * @param {function} onSuccess - Callback al completar exitosamente (recibe requestId y maintenanceResponse)
  */
 const CompleteRequestModal = ({ isOpen, onClose, request, onSuccess }) => {
   const [observations, setObservations] = useState("");
@@ -22,6 +27,8 @@ const CompleteRequestModal = ({ isOpen, onClose, request, onSuccess }) => {
   const [endDate, setEndDate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [maintenanceInfo, setMaintenanceInfo] = useState(null);
+  const [currentStep, setCurrentStep] = useState(""); // Para mostrar el paso actual del proceso
 
   // Inicializar fechas cuando se abre el modal
   React.useEffect(() => {
@@ -30,6 +37,9 @@ const CompleteRequestModal = ({ isOpen, onClose, request, onSuccess }) => {
       const today = new Date().toISOString().split('T')[0];
       setStartDate(request?.scheduledStartDate || today);
       setEndDate(today);
+      setMaintenanceInfo(null);
+      setCurrentStep("");
+      setError("");
     }
   }, [isOpen, request]);
 
@@ -61,10 +71,37 @@ const CompleteRequestModal = ({ isOpen, onClose, request, onSuccess }) => {
 
     setIsSubmitting(true);
     setError("");
+    setMaintenanceInfo(null);
 
     try {
       const requestId = request.requestCode || request.id;
-      console.log('🔄 Completando solicitud:', requestId);
+      
+      // PASO 1: Crear solicitudes de mantenimiento automático (OBLIGATORIO)
+      console.log('🔧 Paso 1: Creando solicitudes de mantenimiento automático...');
+      setCurrentStep("Creando solicitudes de mantenimiento automático...");
+      
+      let maintenanceResponse;
+      try {
+        maintenanceResponse = await createMaintenanceFromServiceRequest(requestId);
+        console.log('✅ Mantenimiento automático creado exitosamente:', maintenanceResponse);
+        setMaintenanceInfo(maintenanceResponse.data);
+      } catch (maintenanceError) {
+        console.error('❌ Error al crear mantenimiento automático:', maintenanceError);
+        
+        // Si falla el mantenimiento automático, NO continuar con completar solicitud
+        if (maintenanceError.response?.data?.message) {
+          setError(`Error al crear mantenimiento automático: ${maintenanceError.response.data.message}`);
+        } else if (maintenanceError.response?.data?.error) {
+          setError(`Error al crear mantenimiento automático: ${maintenanceError.response.data.error}`);
+        } else {
+          setError('Error al crear solicitudes de mantenimiento automático. No se puede completar la solicitud sin este paso.');
+        }
+        return; // Detener la ejecución aquí
+      }
+
+      // PASO 2: Si el mantenimiento automático fue exitoso, completar la solicitud
+      console.log('🔄 Paso 2: Completando solicitud...');
+      setCurrentStep("Completando solicitud...");
       
       const response = await completeRequest(requestId, {
         observations: observations.trim(),
@@ -78,13 +115,14 @@ const CompleteRequestModal = ({ isOpen, onClose, request, onSuccess }) => {
       setObservations("");
       setStartDate("");
       setEndDate("");
+      setCurrentStep("");
       
       // Cerrar el modal
       onClose();
 
       // Llamar al callback de éxito con el código de la solicitud
       if (onSuccess) {
-        onSuccess(response.id_request || requestId);
+        onSuccess(response.id_request || requestId, maintenanceResponse);
       }
     } catch (error) {
       console.error('❌ Error al completar solicitud:', error);
@@ -110,6 +148,7 @@ const CompleteRequestModal = ({ isOpen, onClose, request, onSuccess }) => {
       }
     } finally {
       setIsSubmitting(false);
+      setCurrentStep("");
     }
   };
 
@@ -118,6 +157,8 @@ const CompleteRequestModal = ({ isOpen, onClose, request, onSuccess }) => {
     setStartDate("");
     setEndDate("");
     setError("");
+    setMaintenanceInfo(null);
+    setCurrentStep("");
     onClose();
   };
 
@@ -200,6 +241,47 @@ const CompleteRequestModal = ({ isOpen, onClose, request, onSuccess }) => {
               </div>
             </div>
 
+            {/* Indicador de progreso durante el envío */}
+            {isSubmitting && currentStep && (
+              <div className="mb-4 p-4 card-secondary rounded-theme-lg border border-primary">
+                <div className="flex items-center gap-3">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                  <div>
+                    <p className="text-theme-sm font-theme-semibold text-primary">{currentStep}</p>
+                    <p className="text-theme-xs text-secondary mt-1">
+                      Por favor, espere mientras se procesa su solicitud...
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Información de mantenimiento creado (éxito) */}
+            {maintenanceInfo && maintenanceInfo.count > 0 && (
+              <div className="mb-4 p-4 bg-surface border border-success rounded-theme-lg">
+                <div className="flex items-start gap-3">
+                  <FaTools className="text-success mt-0.5 flex-shrink-0" size={20} />
+                  <div className="flex-1">
+                    <p className="text-theme-sm font-theme-semibold text-success mb-2">
+                      Se crearon {maintenanceInfo.count} solicitud(es) de mantenimiento automático
+                    </p>
+                    <div className="space-y-2">
+                      {maintenanceInfo.requests?.map((req, index) => (
+                        <div key={index} className="text-theme-xs bg-background p-2 rounded-theme">
+                          <p className="font-theme-medium text-primary">
+                            <span className="text-secondary">Solicitud:</span> {req.id}
+                          </p>
+                          <p className="text-secondary mt-1 line-clamp-2">
+                            {req.description}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Campo de observaciones OBLIGATORIO */}
             <div className="mb-2">
               <label className="block text-theme-sm font-theme-medium text-primary mb-3">
@@ -260,7 +342,7 @@ const CompleteRequestModal = ({ isOpen, onClose, request, onSuccess }) => {
               {isSubmitting ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Completando...
+                  Procesando...
                 </>
               ) : (
                 <>

@@ -1,17 +1,411 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { FaTimes, FaSignal, FaMapMarkerAlt } from "react-icons/fa";
 import { MdPowerSettingsNew, MdDirectionsCar, MdLocationOn } from "react-icons/md";
-import { GaugeCard, CircularProgress, PerformanceChart, FuelConsumptionChart, MapTooltip } from "./TrackingDashboardComponents";
+import { GaugeCard, CircularProgress, PerformanceChart, FuelConsumptionChart, MapTooltip, RealTimeMap } from "./TrackingDashboardComponents";
+import { ErrorModal } from "@/app/components/shared/SuccessErrorModal";
+import { useTrackingWebSocket } from "@/hooks/useTrackingWebSocket";
+import { getRequestDetails } from "@/services/requestService";
+import "@/styles/tracking-animations.css";
 
 const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
   const [selectedMachinery, setSelectedMachinery] = useState(0);
   const [activeTab, setActiveTab] = useState("performance");
+  const [requestDetails, setRequestDetails] = useState(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   
   // Estado solo para tooltip del mapa
   const [mapTooltip, setMapTooltip] = useState({ visible: false, machinery: null, position: null });
   
+  // Estado para almacenar datos históricos de cada maquinaria
+  const [historicalData, setHistoricalData] = useState({});
+  
+  // Estado para datos formateados de las gráficas
+  const [chartData, setChartData] = useState({});
+  
+  // Estado para histórico de fallas OBD
+  const [obdFaultsHistory, setObdFaultsHistory] = useState({});
+  
+  // Estado para histórico de eventos G
+  const [gEventsHistory, setGEventsHistory] = useState({});
+  
+  // Estado para modal de error de timeout
+  const [isTimeoutErrorOpen, setIsTimeoutErrorOpen] = useState(false);
+  const [timeoutErrorMessage, setTimeoutErrorMessage] = useState("");
+  
+  // Cargar datos históricos desde localStorage al montar el componente
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const storedData = localStorage.getItem('telemetry_historical_data');
+        if (storedData) {
+          const parsedData = JSON.parse(storedData);
+          setHistoricalData(parsedData);
+        }
+        
+        const storedOBD = localStorage.getItem('telemetry_obd_faults_history');
+        if (storedOBD) {
+          const parsedOBD = JSON.parse(storedOBD);
+          setObdFaultsHistory(parsedOBD);
+        }
+        
+        const storedGEvents = localStorage.getItem('telemetry_g_events_history');
+        if (storedGEvents) {
+          const parsedGEvents = JSON.parse(storedGEvents);
+          setGEventsHistory(parsedGEvents);
+        }
+      } catch (error) {
+        // Error al cargar datos históricos desde localStorage
+      }
+    }
+  }, []);
+  
+  // Guardar datos históricos en localStorage cuando se actualizan
+  useEffect(() => {
+    if (typeof window !== 'undefined' && Object.keys(historicalData).length > 0) {
+      try {
+        localStorage.setItem('telemetry_historical_data', JSON.stringify(historicalData));
+      } catch (error) {
+        // Error al guardar datos históricos en localStorage
+      }
+    }
+  }, [historicalData]);
+  
+  // Guardar histórico de fallas OBD en localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined' && Object.keys(obdFaultsHistory).length > 0) {
+      try {
+        localStorage.setItem('telemetry_obd_faults_history', JSON.stringify(obdFaultsHistory));
+      } catch (error) {
+        // Error al guardar histórico de fallas OBD
+      }
+    }
+  }, [obdFaultsHistory]);
+  
+  // Guardar histórico de eventos G en localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined' && Object.keys(gEventsHistory).length > 0) {
+      try {
+        localStorage.setItem('telemetry_g_events_history', JSON.stringify(gEventsHistory));
+      } catch (error) {
+        // Error al guardar histórico de eventos G
+      }
+    }
+  }, [gEventsHistory]);
+  
+  // Función para limpiar datos históricos
+  const clearHistoricalData = () => {
+    setHistoricalData({});
+    setChartData({});
+    setObdFaultsHistory({});
+    setGEventsHistory({});
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('telemetry_historical_data');
+      localStorage.removeItem('telemetry_obd_faults_history');
+      localStorage.removeItem('telemetry_g_events_history');
+    }
+  };
+  
+  // Función para generar datos de prueba
+  const generateTestData = () => {
+    const testImei = '357894561234567';
+    const testData = [];
+    
+    // Generar 15 puntos de datos de prueba (más puntos para mejor visualización)
+    for (let i = 0; i < 15; i++) {
+      const timestamp = new Date(Date.now() - (14 - i) * 30000).toISOString(); // Cada 30 segundos
+      testData.push({
+        timestamp,
+        speed: Math.floor(Math.random() * 60) + 80, // 80-140 km/h
+        rpm: Math.floor(Math.random() * 1000) + 3500, // 3500-4500 RPM
+        engineTemp: Math.floor(Math.random() * 20) + 90, // 90-110°C
+        fuelLevel: Math.floor(Math.random() * 30) + 50, // 50-80%
+        fuelUsedGps: 150 + Math.random() * 20,
+        instantConsumption: Math.random() * 10 + 15, // 15-25 L/h
+        eventType: Math.random() > 0.7 ? Math.floor(Math.random() * 3) + 1 : null,
+        eventGValue: Math.random() > 0.7 ? Math.floor(Math.random() * 30) + 10 : 0,
+        engineLoad: Math.floor(Math.random() * 40) + 30
+      });
+    }
+    
+    setHistoricalData({ [testImei]: testData });
+  };
+  
+  // Extraer IMEIs de las maquinarias de la solicitud
+  const machineryImeis = useMemo(() => {
+    if (!requestDetails || !requestDetails.machineries) return null;
+    return requestDetails.machineries
+      .filter(m => m.telemetry_device_imei)
+      .map(m => m.telemetry_device_imei);
+  }, [requestDetails]);
+  
+  // Hook de WebSocket de telemetría con filtro de IMEIs y request ID
+  // El requestId debe ser el Código de Seguimiento (tracking_code)
+  const requestId = requestData?.tracking_code || requestData?.id;
+  const { machineriesData, connectionStatus, reconnect, alerts, timeoutMessage } = useTrackingWebSocket({ 
+    requestId: requestId,
+    imeiFilter: machineryImeis
+  });
+
+  // Mostrar modal de error cuando hay timeout
+  useEffect(() => {
+    if (timeoutMessage) {
+      const errorMsg = `No se han recibido datos para la solicitud ${timeoutMessage.request_id} en ${timeoutMessage.timeout_seconds} segundos. La conexión se ha cerrado.`;
+      setTimeoutErrorMessage(errorMsg);
+      setIsTimeoutErrorOpen(true);
+    }
+  }, [timeoutMessage]);
+
+  // Verificar si el WebSocket está recibiendo datos
+  useEffect(() => {
+    // Monitoreo de estado del WebSocket
+  }, [machineriesData, connectionStatus, requestId, machineryImeis, requestData, timeoutMessage]);
+  
+  // Limpiar datos históricos cuando cambia la solicitud
+  useEffect(() => {
+    if (requestData && requestData.id) {
+      // Limpiar datos históricos para evitar mezclar datos de diferentes solicitudes
+      setHistoricalData({});
+      setChartData({});
+      setObdFaultsHistory({});
+      setGEventsHistory({});
+      setSelectedMachinery(0);
+    }
+  }, [requestData?.id]);
+
+  // Cargar detalles de la solicitud cuando se abre el modal
+  useEffect(() => {
+    const loadRequestDetails = async () => {
+      if (!isOpen || !requestData || !requestData.id) return;
+      
+      setLoadingDetails(true);
+      try {
+        const details = await getRequestDetails(requestData.id);
+        setRequestDetails(details);
+      } catch (error) {
+        // Error al cargar detalles de la solicitud
+      } finally {
+        setLoadingDetails(false);
+      }
+    };
+    
+    loadRequestDetails();
+  }, [isOpen, requestData]);
+
+  // Almacenar datos históricos cuando llegan del WebSocket
+  useEffect(() => {
+    if (!machineriesData || Object.keys(machineriesData).length === 0) {
+      return;
+    }
+
+    setHistoricalData(prev => {
+      const newData = { ...prev };
+      let dataAdded = false;
+      
+      Object.entries(machineriesData).forEach(([imei, data]) => {
+        if (!newData[imei]) {
+          newData[imei] = [];
+        }
+        
+        // Agregar nuevo punto de datos con timestamp
+        const dataPoint = {
+          timestamp: data.timestamp || new Date().toISOString(),
+          speed: data.speed !== null && data.speed !== undefined ? data.speed : 0,
+          rpm: data.rpm !== null && data.rpm !== undefined ? data.rpm : 0,
+          engineTemp: data.engineTemp !== null && data.engineTemp !== undefined ? data.engineTemp : 0,
+          fuelLevel: data.fuelLevel !== null && data.fuelLevel !== undefined ? data.fuelLevel : 0,
+          fuelUsedGps: data.fuelUsedGps !== null && data.fuelUsedGps !== undefined ? data.fuelUsedGps : 0,
+          instantConsumption: data.instantConsumption !== null && data.instantConsumption !== undefined ? data.instantConsumption : 0,
+          eventType: data.eventType || null,
+          eventGValue: data.eventGValue || 0,
+          engineLoad: data.engineLoad !== null && data.engineLoad !== undefined ? data.engineLoad : 0
+        };
+        
+        // Verificar si el último punto tiene el mismo timestamp (evitar duplicados)
+        const lastPoint = newData[imei][newData[imei].length - 1];
+        if (!lastPoint || lastPoint.timestamp !== dataPoint.timestamp) {
+          newData[imei].push(dataPoint);
+          dataAdded = true;
+        }
+        
+        // Mantener solo los últimos 50 puntos (aproximadamente 25 minutos de datos)
+        if (newData[imei].length > 50) {
+          newData[imei] = newData[imei].slice(-50);
+        }
+      });
+      
+      return newData;
+    });
+  }, [machineriesData]);
+
+  // Almacenar histórico de fallas OBD y eventos G
+  useEffect(() => {
+    if (!machineriesData || Object.keys(machineriesData).length === 0) return;
+
+    setObdFaultsHistory(prev => {
+      const newOBDData = { ...prev };
+      
+      Object.entries(machineriesData).forEach(([imei, data]) => {
+        if (data.obdFaults && Array.isArray(data.obdFaults) && data.obdFaults.length > 0) {
+          if (!newOBDData[imei]) {
+            newOBDData[imei] = [];
+          }
+          
+          data.obdFaults.forEach(faultCode => {
+            // faultCode es un string como "P0135"
+            const faultWithTimestamp = {
+              code: faultCode,
+              timestamp: data.timestamp || new Date().toISOString(),
+              imei
+            };
+            
+            // Evitar duplicados - buscar por código y timestamp
+            const isDuplicate = newOBDData[imei].some(f => 
+              f.code === faultCode && f.timestamp === faultWithTimestamp.timestamp
+            );
+            
+            if (!isDuplicate) {
+              // Agregar al inicio (nuevos primero)
+              newOBDData[imei].unshift(faultWithTimestamp);
+            }
+          });
+          
+          // Mantener solo los últimos 50 registros
+          if (newOBDData[imei].length > 50) {
+            newOBDData[imei] = newOBDData[imei].slice(0, 50);
+          }
+        }
+      });
+      
+      return newOBDData;
+    });
+
+    setGEventsHistory(prev => {
+      const newGEventsData = { ...prev };
+      
+      Object.entries(machineriesData).forEach(([imei, data]) => {
+        // Solo agregar si hay un evento válido (eventType no es null)
+        if (data.eventType !== null && data.eventType !== undefined && data.eventType !== 0) {
+          if (!newGEventsData[imei]) {
+            newGEventsData[imei] = [];
+          }
+          
+          const gEvent = {
+            timestamp: data.timestamp || new Date().toISOString(),
+            eventType: data.eventType,
+            eventGValue: data.eventGValue || 0,
+            imei
+          };
+          
+          // Evitar duplicados por timestamp y tipo de evento
+          const isDuplicate = newGEventsData[imei].some(e => 
+            e.eventType === gEvent.eventType && e.timestamp === gEvent.timestamp
+          );
+          
+          if (!isDuplicate) {
+            // Agregar al inicio (nuevos primero)
+            newGEventsData[imei].unshift(gEvent);
+          }
+          
+          // Mantener solo los últimos 50 registros
+          if (newGEventsData[imei].length > 50) {
+            newGEventsData[imei] = newGEventsData[imei].slice(0, 50);
+          }
+        }
+      });
+      
+      return newGEventsData;
+    });
+  }, [machineriesData]);
+
+  // Verificar históricos de OBD y eventos G
+  useEffect(() => {
+    // Monitoreo de histórico de OBD y eventos G
+  }, [obdFaultsHistory, gEventsHistory]);
+
+  // Formatear datos para las gráficas cuando se actualizan los datos históricos
+  useEffect(() => {
+    if (!historicalData || Object.keys(historicalData).length === 0) return;
+
+    const formattedChartData = {};
+    
+    Object.entries(historicalData).forEach(([imei, dataPoints]) => {
+      
+      // Formatear datos para gráfica de rendimiento (Velocidad vs RPM)
+      const performanceData = dataPoints.map(point => {
+        const time = new Date(point.timestamp);
+        const timeStr = time.toLocaleTimeString('es-CO', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          second: '2-digit'
+        });
+        
+        // Determinar el tipo de evento para el marcador
+        let event = null;
+        if (point.eventType === 1) event = 'acceleration';
+        else if (point.eventType === 2) event = 'braking';
+        else if (point.eventType === 3) event = 'curve';
+        else if (point.speed > 0 && point.rpm > 0) event = 'motion';
+        else if (point.speed === 0 && point.rpm > 0) event = 'stationary';
+        else event = 'off';
+        
+        return {
+          time: timeStr,
+          speed: point.speed,
+          rpm: point.rpm,
+          event: event,
+          eventGValue: point.eventGValue,
+          timestamp: point.timestamp
+        };
+      });
+      
+      // Formatear datos para gráfica de consumo de combustible
+      const fuelConsumptionData = dataPoints.map(point => {
+        const time = new Date(point.timestamp);
+        const timeStr = time.toLocaleTimeString('es-CO', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          second: '2-digit'
+        });
+        
+        return {
+          time: timeStr,
+          fuelLevel: point.fuelLevel,
+          consumption: point.instantConsumption,
+          fuelUsedGps: point.fuelUsedGps,
+          timestamp: point.timestamp
+        };
+      });
+      
+      formattedChartData[imei] = {
+        performance: performanceData,
+        fuelConsumption: fuelConsumptionData
+      };
+      
+      console.log(`✅ Gráficas formateadas para ${imei}:`, {
+        performancePoints: performanceData.length,
+        fuelPoints: fuelConsumptionData.length
+      });
+    });
+    
+    setChartData(formattedChartData);
+    console.log('📊 Datos de gráficas actualizados:', formattedChartData);
+    console.log('📊 chartData state actualizado con', Object.keys(formattedChartData).length, 'IMEIs');
+  }, [historicalData]);
+
+  // Debug: Verificar chartData
+  useEffect(() => {
+    console.log('🔍 chartData actual:', chartData);
+    console.log('🔍 chartData keys:', Object.keys(chartData));
+    Object.entries(chartData).forEach(([imei, data]) => {
+      console.log(`🔍 IMEI ${imei}:`, {
+        performancePoints: data.performance?.length || 0,
+        fuelPoints: data.fuelConsumption?.length || 0
+      });
+    });
+  }, [chartData]);
+
   // Helper function to format dates
   const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -22,79 +416,151 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
     return `${day}/${month}/${year}`;
   };
 
-  // Mock data
-  const mockRequestInfo = {
-    trackingCode: "L-0000003",
-    client: "Constructora el Dorado S.A.S",
-    startDate: "06/V/2025",
-    endDate: "28/III/2026",
-    placeName: "Proyecto Urbanístico Villa del Sol - Medellín"
-  };
-
-  // Use actual request data if available, otherwise use mock data
+  // Información de la solicitud
   const requestInfo = requestData ? {
-    trackingCode: requestData.tracking_code || mockRequestInfo.trackingCode,
-    client: requestData.legal_entity_name || requestData.client_name || mockRequestInfo.client,
-    startDate: requestData.scheduled_date ? formatDate(requestData.scheduled_date) : mockRequestInfo.startDate,
-    endDate: requestData.completion_date ? formatDate(requestData.completion_date) : mockRequestInfo.endDate,
-    placeName: requestData.place_name || mockRequestInfo.placeName
-  } : mockRequestInfo;
-
-  const mockMachineries = [
-    {
-      id: 1, serial: "EXC-3526-098", name: "Excavadora CAT 320",
-      operator: "Carlos Andrés Martínez", implement: "Cucharón estándar 1.2m³",
-      currentSpeed: "0 km/h", fuelLevel: "96%", ignition: true, moving: false,
-      gsmSignal: 5, lastUpdate: "5 sec", status: "idle",
-      location: { lat: 6.2442, lng: -75.5812 }
-    },
-    {
-      id: 2, serial: "BUL-2526-456", name: "Bulldozer CAT D6T",
-      operator: "Miguel Ángel Rodríguez", implement: "Hoja tipo U (3.9m³)",
-      currentSpeed: "0 km/h", fuelLevel: "46%", ignition: true, moving: false,
-      gsmSignal: 4, lastUpdate: "3 sec", status: "alert",
-      location: { lat: 6.2445, lng: -75.5815 }
-    },
-    {
-      id: 3, serial: "VOL-3055-123", name: "Volqueta CAT 797",
-      operator: "Juan Martín Gonzales", implement: "Tolva tipo T",
-      currentSpeed: "0 km/h", fuelLevel: "80%", ignition: false, moving: false,
-      gsmSignal: 3, lastUpdate: "No conecta", status: "disconnected",
-      location: { lat: 6.2448, lng: -75.5818 }
-    }
-  ];
-
-  const mockIndicatorsData = {
-    currentSpeed: { value: 135, max: 200, unit: "km/h" },
-    rpm: { value: 1620, max: 3000, unit: "RPM", alert: true },
-    engineTemp: { value: 92, min: 0, max: 120, unit: "°C" },
-    fuelLevel: { value: 40, unit: "%" },
-    oilLoad: { value: 30, unit: "%" },
-    engineLoad: { value: 80, unit: "%" },
-    totalOdometer: { value: "0 8 5 2 3 4", unit: "km" },
-    tripOdometer: { value: "0 0 1 3 2 8", unit: "km" },
-    logisticStatus: "En tránsito"
+    trackingCode: requestData.tracking_code || "Sin código",
+    client: requestData.legal_entity_name || requestData.client_name || "Sin cliente",
+    startDate: requestData.scheduled_date ? formatDate(requestData.scheduled_date) : "Sin fecha",
+    endDate: requestData.completion_date ? formatDate(requestData.completion_date) : "Sin fecha",
+    placeName: requestData.place_name || "Sin lugar"
+  } : {
+    trackingCode: "Sin código",
+    client: "Sin cliente",
+    startDate: "Sin fecha",
+    endDate: "Sin fecha",
+    placeName: "Sin lugar"
   };
 
-  // Mock data para la fila adicional
-  const mockAdditionalMetrics = {
-    fuelConsumption: {
-      fuelLeft: "84.1 L",
-      averageConsumption: "183.2 L/h",
-      fuelUsed: "- L",
-      litersAdded: "- L"
-    },
-    obdFaults: {
-      p0401: { fault: "P0401", date: "2024-08-11 18:30", code: "PEND1", description: "Sistema de recirculación de gases de escape" },
-      p0402: { fault: "P0402", date: "2024-08-11 18:32", code: "CONF2", description: "Flujo excesivo de EGR detectado" }
-    },
-    gEvents: {
-      braking: 1,
-      acceleration: 3,
-      cornering: 0,
-      impact: 0
+  // Convertir datos del WebSocket a formato de interfaz combinando con datos de la solicitud
+  const machineries = useMemo(() => {
+    const imeis = Object.keys(machineriesData);
+    
+    if (imeis.length === 0) {
+      return [];
     }
+    
+    return imeis.map((imei, index) => {
+      const data = machineriesData[imei];
+      const hasAlert = alerts.some(alert => alert.imei === imei);
+      
+      // Buscar información de la maquinaria en los detalles de la solicitud
+      const machineryInfo = requestDetails?.machineries?.find(
+        m => m.telemetry_device_imei === imei
+      );
+      
+      return {
+        id: index + 1,
+        imei: imei,
+        serial: data.serialNumber || machineryInfo?.machinery_serial || imei,
+        name: data.machineryName || machineryInfo?.machinery_name || `Maquinaria ${imei.slice(-4)}`,
+        operator: data.operatorName || machineryInfo?.operator_name || "Operador asignado",
+        implement: machineryInfo?.implement_name || "Sin implemento",
+        photo: machineryInfo?.machinery_photo || null,
+        currentSpeed: data.speed !== null ? `${data.speed} km/h` : "0 km/h",
+        fuelLevel: data.fuelLevel !== null ? `${data.fuelLevel}%` : "--",
+        ignition: data.ignition || false,
+        moving: data.moving || false,
+        gsmSignal: data.gsmSignal || 0,
+        lastUpdate: data.relativeTime || "Sin datos",
+        status: hasAlert ? "alert" : data.status,
+        location: data.location,
+        rpm: data.rpm,
+        engineTemp: data.engineTemp,
+        engineLoad: data.engineLoad,
+        oilLevel: data.oilLevel,
+        fuelUsedGps: data.fuelUsedGps,
+        instantConsumption: data.instantConsumption,
+        obdFaults: data.obdFaults,
+        odometerTotal: data.odometerTotal,
+        odometerTrip: data.odometerTrip,
+        eventType: data.eventType,
+        eventGValue: data.eventGValue,
+        timestamp: data.timestamp,
+        raw: data.raw
+      };
+    });
+  }, [machineriesData, alerts, requestDetails]);
+
+  // Función para formatear odómetro
+  const formatOdometer = (meters) => {
+    if (!meters) return "0 0 0 0 0 0";
+    const km = Math.floor(meters / 1000);
+    const kmStr = String(km).padStart(6, '0');
+    return kmStr.split('').join(' ');
   };
+
+  // Obtener datos de la maquinaria seleccionada
+  const selectedMachineryData = useMemo(() => {
+    if (!machineries.length || selectedMachinery >= machineries.length) {
+      return null;
+    }
+    
+    const machinery = machineries[selectedMachinery];
+    const hasRpmAlert = alerts.some(a => a.imei === machinery.imei && a.parameter === 'rpm');
+    
+    return {
+      currentSpeed: { 
+        value: machinery.currentSpeed !== null && machinery.currentSpeed !== "0 km/h" ? parseInt(machinery.currentSpeed) : 0, 
+        max: 180, 
+        unit: "km/h" 
+      },
+      rpm: { 
+        value: machinery.rpm || 0, 
+        max: 3000, 
+        unit: "RPM", 
+        alert: hasRpmAlert 
+      },
+      engineTemp: { 
+        value: machinery.engineTemp || 0, 
+        min: 0, 
+        max: 120, 
+        unit: "°C" 
+      },
+      fuelLevel: { 
+        value: machinery.fuelLevel !== "--" ? parseInt(machinery.fuelLevel) : 0, 
+        unit: "%" 
+      },
+      oilLoad: { 
+        value: machinery.oilLevel || 0, 
+        unit: "%" 
+      },
+      engineLoad: { 
+        value: machinery.engineLoad || 0, 
+        unit: "%" 
+      },
+      totalOdometer: { 
+        value: formatOdometer(machinery.odometerTotal), 
+        unit: "km" 
+      },
+      tripOdometer: { 
+        value: formatOdometer(machinery.odometerTrip), 
+        unit: "km" 
+      },
+      logisticStatus: "En operación"
+    };
+  }, [machineries, selectedMachinery, alerts]);
+
+  // Métricas adicionales de la maquinaria seleccionada
+  const additionalMetrics = useMemo(() => {
+    if (!machineries.length || selectedMachinery >= machineries.length) {
+      return null;
+    }
+    
+    const machinery = machineries[selectedMachinery];
+    
+    return {
+      fuelConsumption: {
+        fuelUsed: machinery.fuelUsedGps ? `${machinery.fuelUsedGps.toFixed(1)} L` : "-- L",
+        instantConsumption: machinery.instantConsumption ? `${machinery.instantConsumption.toFixed(1)} L/h` : "-- L/h",
+        prediction: "-- L/h"
+      },
+      obdFaults: machinery.obdFaults || [],
+      events: {
+        type: machinery.eventType,
+        gValue: machinery.eventGValue
+      }
+    };
+  }, [machineries, selectedMachinery]);
 
   // Handler para tooltip del mapa
   const handleMapMarkerHover = (machinery, event) => {
@@ -138,6 +604,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
   };
 
   return (
+    <>
     <Dialog.Root open={isOpen} onOpenChange={onClose}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/60 z-[60]" />
@@ -176,7 +643,12 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
               <div>
                 <h3 className="text-sm font-semibold text-primary mb-3">Información de Maquinaria</h3>
                 <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                  {mockMachineries.map((machinery, index) => (
+                  {machineries.length === 0 ? (
+                    <div className="p-4 text-center text-secondary">
+                      <p>Esperando datos de telemetría...</p>
+                      <p className="text-xs mt-2">Estado: {connectionStatus}</p>
+                    </div>
+                  ) : machineries.map((machinery, index) => (
                     <div key={machinery.id} onClick={() => setSelectedMachinery(index)}
                       className={`p-3 rounded-lg border cursor-pointer transition-all ${selectedMachinery === index ? 'shadow-lg' : ''}`}
                       style={{ 
@@ -186,8 +658,12 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                         outline: 'none'
                       }}>
                       <div className="flex gap-3">
-                        <div className="w-16 h-16 rounded flex-shrink-0" style={{ backgroundColor: 'var(--color-background-tertiary)' }}>
-                          <div className="w-full h-full flex items-center justify-center text-secondary text-xs">IMG</div>
+                        <div className="w-16 h-16 rounded flex-shrink-0 overflow-hidden" style={{ backgroundColor: 'var(--color-background-tertiary)' }}>
+                          {machinery.photo ? (
+                            <img src={machinery.photo} alt={machinery.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-secondary text-xs">IMG</div>
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between mb-1">
@@ -216,61 +692,43 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
               </div>
 
               {/* FILA 3.2: Real Time Ubication */}
-              <div>
+              <div className="relative z-0 overflow-hidden">
                 <h3 className="text-sm font-semibold text-primary mb-3">Ubicación en Tiempo Real</h3>
-                <div className="w-full h-[400px] rounded-lg border flex items-center justify-center relative overflow-hidden" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
-                  <div className="absolute inset-0 flex items-center justify-center text-secondary">
-                    <div className="text-center">
-                      <FaMapMarkerAlt size={48} className="mx-auto mb-2 opacity-20" />
-                      <p className="text-sm">Mapa</p>
-                    </div>
-                  </div>
-
-                  {/* Map markers */}
-                  <div className="absolute inset-0">
-                    {mockMachineries.map((machinery, index) => (
-                      <div key={machinery.id} className="absolute" style={{ top: `${30 + index * 25}%`, left: `${40 + index * 10}%` }}>
-                        <div 
-                          className="w-8 h-8 rounded-full flex items-center justify-center shadow-lg cursor-pointer transform hover:scale-110 transition-transform" 
-                          style={{ backgroundColor: getMarkerColor(machinery.status) }}
-                          onMouseEnter={(e) => handleMapMarkerHover(machinery, e)}
-                          onMouseLeave={handleMapMarkerLeave}
-                        >
-                          <MdLocationOn className="text-white" size={20} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Legend */}
-                  <div className="absolute bottom-4 left-4 p-2 rounded shadow-lg text-xs" style={{ backgroundColor: 'var(--color-background)', borderColor: 'var(--color-border)' }}>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#22C55E' }} /><span className="text-secondary">En movimiento</span></div>
-                      <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#F59E0B' }} /><span className="text-secondary">Estacionario</span></div>
-                      <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#9CA3AF' }} /><span className="text-secondary">Sin conexión</span></div>
-                    </div>
+                <div className="overflow-hidden rounded-lg">
+                  <RealTimeMap 
+                    machineries={machineries} 
+                    selectedMachinery={selectedMachinery !== null && machineries[selectedMachinery] ? machineries[selectedMachinery] : null}
+                  />
+                </div>
+                
+                {/* Legend */}
+                <div className="mt-3 p-3 rounded-lg border text-xs" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#22C55E' }} /><span className="text-secondary">En movimiento</span></div>
+                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#F59E0B' }} /><span className="text-secondary">Estacionario</span></div>
+                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#9CA3AF' }} /><span className="text-secondary">Sin conexión</span></div>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* FILA 4: Header del vehículo seleccionado */}
-            {selectedMachinery !== null && (
+            {selectedMachinery !== null && machineries.length > 0 && machineries[selectedMachinery] && (
               <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white" style={{ backgroundColor: '#1F2937' }}>
-                      {mockMachineries[selectedMachinery].name.charAt(0)}
+                      {machineries[selectedMachinery].name.charAt(0)}
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-primary">{mockMachineries[selectedMachinery].name}</h3>
-                      <p className="text-xs text-secondary">Serie: {mockMachineries[selectedMachinery].serial}</p>
+                      <h3 className="text-lg font-bold text-primary">{machineries[selectedMachinery].name}</h3>
+                      <p className="text-xs text-secondary">Serie: {machineries[selectedMachinery].serial}</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-secondary mb-1">Última actualización</p>
-                    <p className={`text-sm font-semibold ${mockMachineries[selectedMachinery].lastUpdate === 'No conecta' ? 'text-error' : 'text-success'}`}>
-                      {mockMachineries[selectedMachinery].lastUpdate}
+                    <p className={`text-sm font-semibold ${machineries[selectedMachinery].lastUpdate === 'Sin datos' ? 'text-error' : 'text-success'}`}>
+                      {machineries[selectedMachinery].lastUpdate}
                     </p>
                   </div>
                 </div>
@@ -278,19 +736,26 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
             )}
 
             {/* FILA 5: Grid de 8 sensores (4x2) */}
-            {selectedMachinery !== null && (
+            {selectedMachinery !== null && selectedMachineryData && (
               <div>
                 <h3 className="text-base font-bold text-primary mb-4">Sensores y Contadores del Vehículo</h3>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   
                   {/* Sensor 1: Current speed */}
-                  <GaugeCard label="Velocidad actual" value={mockIndicatorsData.currentSpeed.value} max={mockIndicatorsData.currentSpeed.max} unit={mockIndicatorsData.currentSpeed.unit} type="speed" />
+                  <GaugeCard label="Velocidad actual" value={selectedMachineryData.currentSpeed.value} max={selectedMachineryData.currentSpeed.max} unit={selectedMachineryData.currentSpeed.unit} type="speed" />
                   
                   {/* Sensor 2: Revolutions(RPM) */}
-                  <GaugeCard label="Revoluciones (RPM)" value={mockIndicatorsData.rpm.value} max={mockIndicatorsData.rpm.max} unit={mockIndicatorsData.rpm.unit} type="rpm" alert={mockIndicatorsData.rpm.alert} />
+                  <GaugeCard label="Revoluciones (RPM)" value={selectedMachineryData.rpm.value} max={selectedMachineryData.rpm.max} unit={selectedMachineryData.rpm.unit} type="rpm" alert={selectedMachineryData.rpm.alert} />
 
                   {/* Sensor 3: Engine Temperature */}
-                  <div className="p-4 rounded-lg border flex flex-col items-center justify-center min-h-[200px]" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
+                  <div 
+                    className="p-4 rounded-lg border flex flex-col items-center justify-center min-h-[200px] transition-all duration-500"
+                    style={{ 
+                      backgroundColor: selectedMachineryData.engineTemp.value > 110 ? 'rgba(239, 68, 68, 0.1)' : 'var(--color-background-secondary)',
+                      borderColor: selectedMachineryData.engineTemp.value > 110 ? '#EF4444' : 'var(--color-border)',
+                      boxShadow: selectedMachineryData.engineTemp.value > 110 ? '0 0 10px rgba(239, 68, 68, 0.2)' : 'none'
+                    }}
+                  >
                     <p className="text-xs text-secondary mb-3">Temperatura del Motor</p>
                     <div className="relative">
                       {/* Termómetro */}
@@ -309,16 +774,27 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                         {/* Tubo del termómetro */}
                         <rect x="20" y="15" width="10" height="70" rx="5" fill="#E5E7EB" stroke="#9CA3AF" strokeWidth="2" />
                         
-                        {/* Líquido del termómetro */}
-                        <rect 
-                          x="22" 
-                          y={`${85 - (mockIndicatorsData.engineTemp.value / mockIndicatorsData.engineTemp.max) * 68}`} 
-                          width="6" 
-                          height={`${(mockIndicatorsData.engineTemp.value / mockIndicatorsData.engineTemp.max) * 68}`}
-                          rx="3" 
-                          fill="url(#tempGradient)"
-                          className="transition-all duration-700"
-                        />
+                        {/* Líquido del termómetro - Limitar al rango -40 a 130°C */}
+                        {(() => {
+                          const minTemp = -40;
+                          const maxTemp = 130;
+                          const clampedTemp = Math.min(Math.max(selectedMachineryData.engineTemp.value, minTemp), maxTemp);
+                          const percentage = (clampedTemp - minTemp) / (maxTemp - minTemp);
+                          const height = percentage * 68;
+                          const yPos = 85 - height;
+                          
+                          return (
+                            <rect 
+                              x="22" 
+                              y={yPos}
+                              width="6" 
+                              height={height}
+                              rx="3" 
+                              fill="url(#tempGradient)"
+                              style={{ transition: 'y 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)' }}
+                            />
+                          );
+                        })()}
                         
                         {/* Marcas de temperatura */}
                         <line x1="30" y1="25" x2="35" y2="25" stroke="#9CA3AF" strokeWidth="1" />
@@ -326,11 +802,23 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                         <line x1="30" y1="65" x2="35" y2="65" stroke="#9CA3AF" strokeWidth="1" />
                       </svg>
                     </div>
-                    <p className="text-2xl font-bold text-primary">{mockIndicatorsData.engineTemp.value}°C</p>
+                    <p 
+                      className="text-2xl font-bold transition-colors duration-500"
+                      style={{ color: selectedMachineryData.engineTemp.value > 110 ? '#EF4444' : 'var(--color-primary)' }}
+                    >
+                      {Math.min(Math.max(selectedMachineryData.engineTemp.value, -40), 130)}°C
+                    </p>
                   </div>
 
                   {/* Sensor 4: Fuel Level */}
-                  <div className="p-4 rounded-lg border flex flex-col items-center justify-center min-h-[200px]" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
+                  <div 
+                    className="p-4 rounded-lg border flex flex-col items-center justify-center min-h-[200px] transition-all duration-500"
+                    style={{ 
+                      backgroundColor: selectedMachineryData.fuelLevel.value < 20 ? 'rgba(239, 68, 68, 0.1)' : 'var(--color-background-secondary)',
+                      borderColor: selectedMachineryData.fuelLevel.value < 20 ? '#EF4444' : 'var(--color-border)',
+                      boxShadow: selectedMachineryData.fuelLevel.value < 20 ? '0 0 10px rgba(239, 68, 68, 0.2)' : 'none'
+                    }}
+                  >
                     <p className="text-xs text-secondary mb-2">Nivel de combustible</p>
                     <div className="relative w-32 h-20">
                       <svg className="w-full h-full" viewBox="0 0 160 80">
@@ -343,14 +831,15 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                           strokeLinecap="round"
                         />
                         
-                        {/* Arco de nivel de combustible */}
+                        {/* Arco de nivel de combustible - Limitar al 180° */}
                         <path
                           d="M 20 70 A 60 60 0 0 1 140 70"
                           fill="none"
-                          stroke={getFuelLevelColor(`${mockIndicatorsData.fuelLevel.value}`)}
+                          stroke={getFuelLevelColor(`${Math.min(selectedMachineryData.fuelLevel.value, 100)}`)}
                           strokeWidth="12"
                           strokeLinecap="round"
-                          strokeDasharray={`${(mockIndicatorsData.fuelLevel.value / 100) * 188} 188`}
+                          strokeDasharray={`${(Math.min(selectedMachineryData.fuelLevel.value, 100) / 100) * 188} 188`}
+                          style={{ transition: 'stroke-dasharray 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), stroke 0.5s ease' }}
                         />
                         
                         {/* Etiqueta E (Empty) */}
@@ -360,28 +849,36 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                         <text x="138" y="75" fontSize="10" fill="#9CA3AF" fontWeight="bold">F</text>
                       </svg>
                       
-                      {/* Aguja */}
+                      {/* Aguja - Limitar rotación a 180° */}
                       <div 
                         className="absolute bottom-2 left-1/2 w-1 h-12 origin-bottom transition-all duration-700 ease-out"
                         style={{ 
-                          backgroundColor: '#1F2937',
-                          transform: `translateX(-50%) rotate(${(mockIndicatorsData.fuelLevel.value / 100) * 180 - 90}deg)`,
+                          backgroundColor: selectedMachineryData.fuelLevel.value < 20 ? '#EF4444' : '#1F2937',
+                          transform: `translateX(-50%) rotate(${Math.min(selectedMachineryData.fuelLevel.value, 100) / 100 * 180 - 90}deg)`,
                           borderRadius: '2px'
                         }}
                       />
                       
                       {/* Centro de la aguja */}
-                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-gray-800 border-2 border-white" />
+                      <div 
+                        className="absolute bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-white transition-colors duration-500"
+                        style={{ backgroundColor: selectedMachineryData.fuelLevel.value < 20 ? '#EF4444' : '#1F2937' }}
+                      />
                     </div>
-                    <p className="text-2xl font-bold text-primary mt-2">{mockIndicatorsData.fuelLevel.value}%</p>
+                    <p 
+                      className="text-2xl font-bold mt-2 transition-colors duration-500"
+                      style={{ color: selectedMachineryData.fuelLevel.value < 20 ? '#EF4444' : 'var(--color-primary)' }}
+                    >
+                      {Math.min(selectedMachineryData.fuelLevel.value, 100)}%
+                    </p>
                     <p className="text-xs text-secondary">~36L / ~90L</p>
                   </div>
 
                   {/* Sensor 5: Oil level */}
-                  <CircularProgress label="Nivel de aceite" value={mockIndicatorsData.oilLoad.value} color="#F59E0B" />
+                  <CircularProgress label="Nivel de aceite" value={selectedMachineryData.oilLoad.value} color="#F59E0B" />
 
                   {/* Sensor 6: Engine load */}
-                  <CircularProgress label="Carga del motor" value={mockIndicatorsData.engineLoad.value} color="#22C55E" />
+                  <CircularProgress label="Carga del motor" value={selectedMachineryData.engineLoad.value} color="#22C55E" />
 
                   {/* Sensor 7: Odometer */}
                   <div className="p-4 rounded-lg border flex flex-col items-center justify-center min-h-[200px]" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
@@ -391,7 +888,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                     <div className="mb-3">
                       <p className="text-xs text-secondary mb-1 text-center">Total</p>
                       <div className="flex gap-0.5 bg-black p-2 rounded">
-                        {mockIndicatorsData.totalOdometer.value.split(' ').map((digit, i) => (
+                        {selectedMachineryData.totalOdometer.value.split(' ').map((digit, i) => (
                           <div key={i} className="w-6 h-8 flex items-center justify-center bg-gray-900 text-white font-mono text-lg font-bold border border-gray-700">
                             {digit}
                           </div>
@@ -404,7 +901,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                     <div>
                       <p className="text-xs text-secondary mb-1 text-center">Trip</p>
                       <div className="flex gap-0.5 bg-black p-2 rounded">
-                        {mockIndicatorsData.tripOdometer.value.split(' ').map((digit, i) => (
+                        {selectedMachineryData.tripOdometer.value.split(' ').map((digit, i) => (
                           <div key={i} className="w-6 h-8 flex items-center justify-center bg-gray-900 text-white font-mono text-lg font-bold border border-gray-700">
                             {digit}
                           </div>
@@ -417,7 +914,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                   {/* Sensor 8: Logistic status */}
                   <div className="p-4 rounded-lg border flex flex-col justify-center min-h-[200px]" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
                     <p className="text-xs text-secondary mb-2">Estado logístico</p>
-                    <select className="input-theme text-sm w-full mb-3" value={mockIndicatorsData.logisticStatus} onChange={(e) => {}}>
+                    <select className="input-theme text-sm w-full mb-3" value={selectedMachineryData.logisticStatus} onChange={(e) => {}}>
                       <option>Inactivo</option>
                       <option>En tránsito</option>
                       <option>En operación</option>
@@ -431,7 +928,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
             )}
 
             {/* FILA 5.5: Fuel Consumption, OBD Faults, G-Events */}
-            {selectedMachinery !== null && (
+            {selectedMachinery !== null && additionalMetrics && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 
                 {/* Fuel Consumption */}
@@ -440,18 +937,18 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                   <div className="space-y-3 text-xs">
                     <div>
                       <p className="text-secondary mb-1">Combustible usado:</p>
-                      <p className="text-lg font-bold text-primary">45.2 L</p>
+                      <p className="text-lg font-bold text-primary">{additionalMetrics.fuelConsumption.fuelUsed}</p>
                     </div>
                     <div>
                       <p className="text-secondary mb-1">Consumo instantáneo:</p>
-                      <p className="text-lg font-bold text-primary">12.5 L/h</p>
+                      <p className="text-lg font-bold text-primary">{additionalMetrics.fuelConsumption.instantConsumption}</p>
                     </div>
                     <div>
                       <p className="text-secondary mb-1">Predicción:</p>
-                      <p className="text-lg font-bold text-primary">11.8 L/h</p>
+                      <p className="text-lg font-bold text-primary">{additionalMetrics.fuelConsumption.prediction}</p>
                     </div>
                     <div className="pt-2">
-                      <p className="text-success font-medium">+5.9% sobre predicción</p>
+                      <p className="text-secondary font-medium text-xs">Predicción en desarrollo</p>
                     </div>
                   </div>
                 </div>
@@ -459,62 +956,84 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                 {/* OBD Faults */}
                 <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
                   <h3 className="text-sm font-semibold text-primary mb-4">Fallas OBD</h3>
-                  <div className="space-y-3 text-xs">
-                    {Object.values(mockAdditionalMetrics.obdFaults).map((fault, index) => (
-                      <div key={index} className="pb-3 border-b last:border-b-0" style={{ borderColor: 'var(--color-border)' }}>
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <div className="w-1 h-8 bg-error rounded"></div>
-                            <div>
-                              <p className="font-bold text-error text-sm">{fault.fault}</p>
-                              <p className="text-[10px] text-secondary">Ejemplo</p>
+                  <div className="space-y-3 text-xs max-h-[400px] overflow-y-auto">
+                    {(() => {
+                      const selectedImei = selectedMachinery !== null && machineries[selectedMachinery] ? machineries[selectedMachinery].imei : null;
+                      const faults = selectedImei && obdFaultsHistory[selectedImei] ? obdFaultsHistory[selectedImei] : [];
+                      
+                      console.log('🔍 OBD Debug:', {
+                        selectedMachinery,
+                        selectedImei,
+                        machineries: machineries.map(m => ({ id: m.id, imei: m.imei })),
+                        obdFaultsHistory,
+                        faults
+                      });
+                      
+                      return faults.length === 0 ? (
+                        <p className="text-center text-secondary py-4">Sin fallas OBD detectadas</p>
+                      ) : faults.map((fault, index) => (
+                        <div key={index} className="pb-3 border-b last:border-b-0" style={{ borderColor: 'var(--color-border)' }}>
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-1 h-8 bg-error rounded"></div>
+                              <div>
+                                <p className="font-bold text-error text-sm">{fault.code || 'Código desconocido'}</p>
+                                <p className="text-[10px] text-secondary">{fault.description || 'Falla OBD detectada'}</p>
+                              </div>
                             </div>
+                            <span className="text-[10px] text-secondary whitespace-nowrap">
+                              {new Date(fault.timestamp).toLocaleString('es-CO')}
+                            </span>
                           </div>
-                          <span className="text-[10px] text-secondary whitespace-nowrap">{fault.date}</span>
                         </div>
-                      </div>
-                    ))}
+                      ));
+                    })()}
                   </div>
                 </div>
 
                 {/* G-Events */}
                 <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
                   <h3 className="text-sm font-semibold text-primary mb-4">Eventos G</h3>
-                  <div className="space-y-4 text-xs">
-                    
-                    {/* Braking */}
-                    <div>
-                      <div className="flex items-start justify-between mb-1">
-                        <span className="text-primary font-medium">Frenado</span>
-                        <span className="text-secondary text-[10px]">2024-01-17 10:30</span>
-                      </div>
-                      <div className="text-secondary">
-                        Intensidad: <span className="text-error font-bold">-0.8G</span>
-                      </div>
-                    </div>
-
-                    {/* Acceleration */}
-                    <div>
-                      <div className="flex items-start justify-between mb-1">
-                        <span className="text-primary font-medium">Aceleración</span>
-                        <span className="text-secondary text-[10px]">2024-01-17 10:30</span>
-                      </div>
-                      <div className="text-secondary">
-                        Intensidad: <span className="text-warning font-bold">+0.6G</span>
-                      </div>
-                    </div>
-
-                    {/* Curve */}
-                    <div>
-                      <div className="flex items-start justify-between mb-1">
-                        <span className="text-primary font-medium">Curva</span>
-                        <span className="text-secondary text-[10px]">2024-01-17 10:30</span>
-                      </div>
-                      <div className="text-secondary">
-                        Intensidad: <span className="text-primary font-bold">0.7G</span>
-                      </div>
-                    </div>
-
+                  <div className="space-y-4 text-xs max-h-[400px] overflow-y-auto">
+                    {(() => {
+                      const selectedImei = selectedMachinery !== null && machineries[selectedMachinery] ? machineries[selectedMachinery].imei : null;
+                      const events = selectedImei && gEventsHistory[selectedImei] ? gEventsHistory[selectedImei] : [];
+                      
+                      console.log('🔍 G-Events Debug:', {
+                        selectedMachinery,
+                        selectedImei,
+                        machineries: machineries.map(m => ({ id: m.id, imei: m.imei })),
+                        gEventsHistory,
+                        events
+                      });
+                      
+                      return events.length === 0 ? (
+                        <p className="text-center text-secondary py-4">Sin eventos G detectados</p>
+                      ) : events.map((event, index) => (
+                        <div key={index} className="pb-3 border-b last:border-b-0" style={{ borderColor: 'var(--color-border)' }}>
+                          <div className="flex items-start justify-between mb-1">
+                            <span className="text-primary font-medium">
+                              {event.eventType === 1 ? 'Aceleración' : 
+                               event.eventType === 2 ? 'Frenado' : 
+                               event.eventType === 3 ? 'Curva' : 
+                               'Evento'}
+                            </span>
+                            <span className="text-secondary text-[10px]">
+                              {new Date(event.timestamp).toLocaleString('es-CO')}
+                            </span>
+                          </div>
+                          <div className="text-secondary">
+                            Intensidad: <span className={`font-bold ${
+                              event.eventType === 2 ? 'text-error' : 
+                              event.eventType === 1 ? 'text-warning' : 
+                              'text-primary'
+                            }`}>
+                              {event.eventGValue}G
+                            </span>
+                          </div>
+                        </div>
+                      ));
+                    })()}
                   </div>
                 </div>
               </div>
@@ -523,19 +1042,58 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
             {/* FILA 6: Gráficas con tabs */}
             {selectedMachinery !== null && (
               <div>
-                <div className="flex gap-1 mb-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
-                  <button onClick={() => setActiveTab("performance")} className={`px-4 py-2 text-sm font-medium transition-colors relative ${activeTab === "performance" ? 'text-primary' : 'text-secondary hover:text-primary'}`}>
-                    Información de Rendimiento
-                    {activeTab === "performance" && <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ backgroundColor: 'var(--color-primary)' }} />}
-                  </button>
-                  <button onClick={() => setActiveTab("fuel")} className={`px-4 py-2 text-sm font-medium transition-colors relative ${activeTab === "fuel" ? 'text-primary' : 'text-secondary hover:text-primary'}`}>
-                    Información de Consumo de Combustible
-                    {activeTab === "fuel" && <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ backgroundColor: 'var(--color-primary)' }} />}
-                  </button>
+                <div className="flex gap-1 mb-3 border-b justify-between items-center" style={{ borderColor: 'var(--color-border)' }}>
+                  <div className="flex gap-1">
+                    <button onClick={() => setActiveTab("performance")} className={`px-4 py-2 text-sm font-medium transition-colors relative ${activeTab === "performance" ? 'text-primary' : 'text-secondary hover:text-primary'}`}>
+                      Información de Rendimiento
+                      {activeTab === "performance" && <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ backgroundColor: 'var(--color-primary)' }} />}
+                    </button>
+                    <button onClick={() => setActiveTab("fuel")} className={`px-4 py-2 text-sm font-medium transition-colors relative ${activeTab === "fuel" ? 'text-primary' : 'text-secondary hover:text-primary'}`}>
+                      Información de Consumo de Combustible
+                      {activeTab === "fuel" && <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ backgroundColor: 'var(--color-primary)' }} />}
+                    </button>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={clearHistoricalData}
+                      className="px-3 py-1 text-xs text-secondary hover:text-error border border-secondary hover:border-error rounded transition-colors"
+                      title="Limpiar datos históricos"
+                    >
+                      Limpiar Datos
+                    </button>
+                  </div>
                 </div>
 
                 <div className="p-4 rounded-lg border min-h-[400px]" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
-                  {activeTab === "performance" ? <PerformanceChart /> : <FuelConsumptionChart />}
+                  {(() => {
+                    const selectedImei = selectedMachinery && machineries[selectedMachinery]?.imei;
+                    
+                    // Si no hay datos para el IMEI seleccionado, usar el primer IMEI disponible
+                    let performanceData = [];
+                    let fuelData = [];
+                    let activeImei = selectedImei;
+                    
+                    if (selectedImei && chartData[selectedImei]) {
+                      performanceData = chartData[selectedImei]?.performance || [];
+                      fuelData = chartData[selectedImei]?.fuelConsumption || [];
+                    } else if (Object.keys(chartData).length > 0) {
+                      // Usar el primer IMEI disponible si el seleccionado no tiene datos
+                      activeImei = Object.keys(chartData)[0];
+                      performanceData = chartData[activeImei]?.performance || [];
+                      fuelData = chartData[activeImei]?.fuelConsumption || [];
+                      // Usando IMEI alternativo
+                    }
+                    
+                    return activeTab === "performance" ? (
+                      <PerformanceChart 
+                        data={performanceData}
+                      />
+                    ) : (
+                      <FuelConsumptionChart 
+                        data={fuelData}
+                      />
+                    );
+                  })()}
                 </div>
               </div>
             )}
@@ -551,6 +1109,16 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
         />
       </Dialog.Portal>
     </Dialog.Root>
+
+    {/* Modal de Error - Timeout del WebSocket */}
+    <ErrorModal
+      isOpen={isTimeoutErrorOpen}
+      onClose={() => setIsTimeoutErrorOpen(false)}
+      title="Conexión Perdida"
+      message={timeoutErrorMessage}
+      buttonText="Cerrar"
+    />
+    </>
   );
 };
 

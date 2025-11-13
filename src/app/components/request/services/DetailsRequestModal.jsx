@@ -4,6 +4,7 @@ import { FiX } from "react-icons/fi";
 import { FaTractor, FaMapMarkerAlt } from "react-icons/fa";
 import { useTheme } from "@/contexts/ThemeContext";
 import { getRequestDetails } from "@/services/requestService";
+import { getMachineryDetails } from "@/services/machineryService";
 import { getCountries, getStates, getCities } from "@/services/locationService";
 
 /**
@@ -12,6 +13,9 @@ import { getCountries, getStates, getCities } from "@/services/locationService";
  * Modal para visualizar el detalle completo de una solicitud (HU-SOL-004)
  * Muestra información general, datos del cliente, detalles del servicio,
  * ubicación del trabajo e información económica
+ * 
+ * NOTA PARA DESARROLLO: El endpoint /service_requests/{id}/details/ necesita agregar 
+ * el campo "registration_date" o "created_at" para cumplir con HU-SOL-004
  * 
  * @param {Object} props
  * @param {boolean} props.isOpen - Controla si el modal está abierto
@@ -32,6 +36,9 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
     department: null,
     city: null
   });
+
+  // Estados para nombres de maquinaria
+  const [machineryNames, setMachineryNames] = useState({});
 
   // Cargar detalles de la solicitud cuando se proporciona requestId
   useEffect(() => {
@@ -97,6 +104,53 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
     };
     
     loadLocationNames();
+  }, [requestData]);
+
+  // Cargar nombres de maquinaria cuando se reciben los datos
+  useEffect(() => {
+    const loadMachineryNames = async () => {
+      if (!requestData?.request_machinery_user) return;
+      
+      const machineryList = requestData.request_machinery_user;
+      const namesMap = {};
+      
+      try {
+        // Cargar detalles de cada maquinaria en paralelo
+        const machineryPromises = machineryList.map(async (machinery) => {
+          if (machinery.id_machinery) {
+            try {
+              const machineryDetails = await getMachineryDetails(machinery.id_machinery);
+              return {
+                id: machinery.id_machinery,
+                name: machineryDetails.data?.machinery_name || `Maquinaria ${machinery.serial_number}`
+              };
+            } catch (error) {
+              console.error(`Error cargando detalles de maquinaria ${machinery.id_machinery}:`, error);
+              return {
+                id: machinery.id_machinery,
+                name: `Maquinaria ${machinery.serial_number}`
+              };
+            }
+          }
+          return null;
+        });
+        
+        const results = await Promise.all(machineryPromises);
+        
+        // Crear mapa de nombres
+        results.forEach(result => {
+          if (result) {
+            namesMap[result.id] = result.name;
+          }
+        });
+        
+        setMachineryNames(namesMap);
+      } catch (err) {
+        console.error('Error cargando nombres de maquinaria:', err);
+      }
+    };
+    
+    loadMachineryNames();
   }, [requestData]);
 
   // Auto-dismiss error after 5 seconds
@@ -222,7 +276,7 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
     status_id: requestData.request_status_id,
     status_name: requestData.request_status_name,
     detail: requestData.request_detail,
-    registration_date: requestData.confirmation_datetime,
+    registration_date: requestData.scheduled_start_date, // Temporal: usar fecha programada hasta que backend agregue registration_date
     scheduled_start_date: requestData.scheduled_start_date,
     scheduled_end_date: requestData.scheduled_end_date,
     completion_date: requestData.completion_cancellation_datetime,
@@ -244,7 +298,7 @@ const DetailsRequestModal = ({ isOpen, onClose, requestId }) => {
     machinery: (requestData.request_machinery_user || []).map(m => ({
       image: m.machinery_image_path,
       serial_number: m.serial_number,
-      name: `Maquinaria ${m.serial_number}`,
+      name: machineryNames[m.id_machinery] || `Maquinaria ${m.serial_number}`,
       operator: m.user_name
     })),
     

@@ -1,13 +1,56 @@
 "use client";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Dot } from 'recharts';
+import dynamic from 'next/dynamic';
+import 'leaflet/dist/leaflet.css';
+
+// Importar Leaflet dinámicamente para evitar SSR issues
+const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false });
+const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false });
+const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
+const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { ssr: false });
+
+// Crear iconos personalizados para Leaflet
+const createCustomIcon = (color) => {
+  if (typeof window !== 'undefined') {
+    const L = require('leaflet');
+    return L.divIcon({
+      className: 'custom-marker',
+      html: `<div style="
+        background-color: ${color};
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      "><div style="
+        background-color: white;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+      "></div></div>`,
+      iconSize: [20, 20],
+      iconAnchor: [10, 10],
+      popupAnchor: [0, -10]
+    });
+  }
+  return null;
+};
 
 // Gauge Card Component (Velocímetro/Tacómetro)
 export const GaugeCard = ({ label, value, max, unit, type, alert }) => {
-  const percentage = (value / max) * 100;
+  // Valor real sin limitar (para mostrar)
+  const realValue = value || 0;
+  
+  // Valor clampeado solo para la rotación gráfica (no superar 180°)
+  const clampedValue = Math.min(Math.max(realValue, 0), max);
+  const percentage = (clampedValue / max) * 100;
   const rotation = (percentage / 100) * 180 - 90;
   
-  // Determinar el color según el tipo y el valor
+  // Determinar el color según el tipo y el valor real
   const getGradient = () => {
     if (type === 'speed') {
       return 'url(#speedGradient)';
@@ -17,12 +60,16 @@ export const GaugeCard = ({ label, value, max, unit, type, alert }) => {
     return 'var(--color-primary)';
   };
 
+  // Determinar si hay alerta basado en umbrales (usando valor real)
+  const hasAlert = alert || (type === 'speed' && realValue > 45) || (type === 'rpm' && realValue > 2800);
+
   return (
     <div 
-      className="p-4 rounded-lg border flex flex-col items-center justify-center min-h-[200px]"
+      className="p-4 rounded-lg border flex flex-col items-center justify-center min-h-[200px] transition-all duration-500"
       style={{ 
-        backgroundColor: alert ? '#FED7E2' : 'var(--color-background-secondary)',
-        borderColor: 'var(--color-border)' 
+        backgroundColor: hasAlert ? 'rgba(239, 68, 68, 0.1)' : 'var(--color-background-secondary)',
+        borderColor: hasAlert ? '#EF4444' : 'var(--color-border)',
+        boxShadow: hasAlert ? '0 0 10px rgba(239, 68, 68, 0.2)' : 'none'
       }}
     >
       <p className="text-xs text-secondary mb-2">{label}</p>
@@ -59,6 +106,7 @@ export const GaugeCard = ({ label, value, max, unit, type, alert }) => {
             strokeWidth="12"
             strokeLinecap="round"
             strokeDasharray={`${(percentage / 100) * 188} 188`}
+            style={{ transition: 'stroke-dasharray 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)' }}
           />
           
           {/* Marcadores */}
@@ -87,33 +135,43 @@ export const GaugeCard = ({ label, value, max, unit, type, alert }) => {
         <div 
           className="absolute bottom-2 left-1/2 w-1 h-12 origin-bottom transition-all duration-700 ease-out"
           style={{ 
-            backgroundColor: '#1F2937',
+            backgroundColor: hasAlert ? '#EF4444' : '#1F2937',
             transform: `translateX(-50%) rotate(${rotation}deg)`,
             borderRadius: '2px'
           }}
         />
         
         {/* Centro de la aguja */}
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-gray-800 border-2 border-white" />
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-gray-800 border-2 border-white transition-colors duration-500" style={{ backgroundColor: hasAlert ? '#EF4444' : '#1F2937' }} />
       </div>
-      <p className="text-2xl font-bold text-primary mt-2">{value}</p>
+      <p className="text-2xl font-bold text-primary mt-2 transition-colors duration-500" style={{ color: hasAlert ? '#EF4444' : 'var(--color-primary)' }}>{Math.round(realValue)}</p>
       <p className="text-xs text-secondary">{unit}</p>
     </div>
   );
 };
 
 // Circular Progress Component
-export const CircularProgress = ({ label, value, color = "#3B82F6" }) => {
+export const CircularProgress = ({ label, value, color = "#3B82F6", alert = false }) => {
+  // Valor real sin limitar (para mostrar)
+  const realValue = value || 0;
+  
+  // Valor clampeado solo para la visualización gráfica (no superar 100%)
+  const clampedValue = Math.min(Math.max(realValue, 0), 100);
   const radius = 40;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (value / 100) * circumference;
+  const offset = circumference - (clampedValue / 100) * circumference;
+  
+  // Determinar alerta si el valor es muy alto (usando valor real)
+  const hasAlert = alert || realValue > 90;
+  const displayColor = hasAlert ? '#EF4444' : color;
 
   return (
     <div 
-      className="p-4 rounded-lg border flex flex-col items-center justify-center min-h-[200px]"
+      className="p-4 rounded-lg border flex flex-col items-center justify-center min-h-[200px] transition-all duration-500"
       style={{ 
-        backgroundColor: 'var(--color-background-secondary)',
-        borderColor: 'var(--color-border)' 
+        backgroundColor: hasAlert ? 'rgba(239, 68, 68, 0.1)' : 'var(--color-background-secondary)',
+        borderColor: hasAlert ? '#EF4444' : 'var(--color-border)',
+        boxShadow: hasAlert ? '0 0 10px rgba(239, 68, 68, 0.2)' : 'none'
       }}
     >
       <p className="text-xs text-secondary mb-3">{label}</p>
@@ -133,18 +191,20 @@ export const CircularProgress = ({ label, value, color = "#3B82F6" }) => {
             cx="50"
             cy="50"
             r={radius}
-            stroke={color}
+            stroke={displayColor}
             strokeWidth="10"
             fill="none"
             strokeDasharray={circumference}
             strokeDashoffset={offset}
             strokeLinecap="round"
-            className="transition-all duration-700 ease-out"
+            style={{ 
+              transition: 'stroke-dashoffset 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), stroke 0.5s ease'
+            }}
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
-            <p className="text-3xl font-bold text-primary">{value}%</p>
+            <p className="text-3xl font-bold transition-colors duration-500" style={{ color: displayColor }}>{Math.round(realValue)}%</p>
           </div>
         </div>
       </div>
@@ -169,21 +229,12 @@ export const InfoCard = ({ label, value, sublabel }) => {
   );
 };
 
-// Performance Chart Component with Recharts
-export const PerformanceChart = () => {
-  // Data para la gráfica con eventos
-  const data = [
-    { time: '14:00', speed: 0, rpm: 0, event: 'off' },
-    { time: '14:15', speed: 5, rpm: 200, event: 'stationary' },
-    { time: '14:30', speed: 25, rpm: 800, event: 'motion' },
-    { time: '14:45', speed: 40, rpm: 1200, event: 'braking' },
-    { time: '15:00', speed: 45, rpm: 1400 },
-    { time: '15:15', speed: 55, rpm: 1700 },
-    { time: '15:30', speed: 85, rpm: 2100, event: 'acceleration' },
-    { time: '15:45', speed: 70, rpm: 1800, event: 'curve' },
-    { time: '16:00', speed: 75, rpm: 1900 },
-    { time: '16:15', speed: 65, rpm: 1650 },
-    { time: '16:30', speed: 60, rpm: 1500, event: 'motion' },
+// Componente de Gráfica de Rendimiento con Recharts
+export const PerformanceChart = ({ data = [] }) => {
+  
+  // Si no hay datos, usar datos predeterminados
+  const chartData = data.length > 0 ? data : [
+    { time: '--', speed: 0, rpm: 0 }
   ];
 
   // Función para obtener el color del punto según el evento
@@ -199,7 +250,7 @@ export const PerformanceChart = () => {
     }
   };
 
-  // Custom Dot para mostrar puntos de eventos
+  // Punto personalizado para mostrar puntos de eventos
   const CustomDot = (props) => {
     const { cx, cy, payload } = props;
     if (payload.event) {
@@ -217,14 +268,29 @@ export const PerformanceChart = () => {
     return null;
   };
 
-  // Custom Tooltip
+  // Información emergente personalizada
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
+      const data = payload[0].payload;
       return (
         <div className="p-3 rounded border shadow-lg" style={{ backgroundColor: 'var(--color-background)', borderColor: '#3B82F6' }}>
-          <p className="text-xs font-bold text-primary mb-2">{payload[0].payload.time}</p>
-          <p className="text-xs text-secondary">Velocidad: <span className="text-primary font-medium">{payload[0].value} km/h</span></p>
-          <p className="text-xs text-secondary">RPM: <span className="text-primary font-medium">{payload[1].value}</span></p>
+          <p className="text-xs font-bold text-primary mb-2">{data.time}</p>
+          <p className="text-xs text-secondary">Velocidad: <span className="text-primary font-medium">{data.speed} km/h</span></p>
+          <p className="text-xs text-secondary">RPM: <span className="text-primary font-medium">{data.rpm}</span></p>
+          {data.event && (
+            <p className="text-xs text-secondary mt-1">
+              Evento: <span className="font-medium" style={{ color: getEventColor(data.event) }}>
+                {data.event === 'acceleration' ? 'Aceleración' :
+                 data.event === 'braking' ? 'Frenado' :
+                 data.event === 'curve' ? 'Curva' :
+                 data.event === 'motion' ? 'En movimiento' :
+                 data.event === 'stationary' ? 'Estacionario' : 'Apagado'}
+              </span>
+            </p>
+          )}
+          {data.eventGValue && (
+            <p className="text-xs text-secondary">Intensidad: <span className="text-primary font-medium">{data.eventGValue}G</span></p>
+          )}
         </div>
       );
     }
@@ -233,24 +299,29 @@ export const PerformanceChart = () => {
 
   return (
     <div>
-      {/* Header con leyenda */}
-      <div className="mb-4 flex items-center justify-between">
-        <span className="text-sm font-medium text-primary">Velocidad (Km/h)</span>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#3B82F6' }}></div>
-            <span className="text-xs text-secondary">Velocidad</span>
+      {/* Header con información de datos */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-medium text-primary">Velocidad (Km/h)</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#3B82F6' }}></div>
+              <span className="text-xs text-secondary">Velocidad</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#22C55E' }}></div>
+              <span className="text-xs text-secondary">RPM</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#22C55E' }}></div>
-            <span className="text-xs text-secondary">RPM</span>
-          </div>
+          <span className="text-sm font-medium text-primary">RPM</span>
         </div>
-        <span className="text-sm font-medium text-primary">RPM</span>
+        <div className="text-xs text-secondary bg-blue-50 dark:bg-blue-900/20 p-2 rounded">
+          📊 Mostrando {chartData.length} puntos de datos históricos (últimos ~25 minutos)
+        </div>
       </div>
 
       <ResponsiveContainer width="100%" height={400}>
-        <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+        <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="colorSpeed" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
@@ -308,18 +379,18 @@ export const PerformanceChart = () => {
       {/* Marcadores de eventos en el eje X */}
       <div className="relative w-full h-6 -mt-2">
         <div className="absolute inset-0 flex justify-around items-center px-12">
-          {data.filter(d => d.event).map((point, index) => (
+          {chartData.filter(d => d.event && d.event !== 'off' && d.event !== 'stationary' && d.event !== 'motion').map((point, index) => (
             <div 
               key={index}
               className="flex flex-col items-center"
               style={{ 
                 position: 'absolute',
-                left: `${(data.indexOf(point) / (data.length - 1)) * 100}%`,
+                left: `${(chartData.indexOf(point) / (chartData.length - 1)) * 100}%`,
                 transform: 'translateX(-50%)'
               }}
             >
               <svg width="8" height="8" viewBox="0 0 8 8">
-                <polygon points="4,0 8,8 0,8" fill="#1F2937" />
+                <polygon points="4,0 8,8 0,8" fill={getEventColor(point.event)} />
               </svg>
             </div>
           ))}
@@ -360,31 +431,26 @@ export const PerformanceChart = () => {
   );
 };
 
-// Fuel Consumption Chart Component with Recharts
-export const FuelConsumptionChart = () => {
-  // Data para la gráfica
-  const data = [
-    { time: '14:00', fuelLevel: 85, consumption: 0 },
-    { time: '14:15', fuelLevel: 82, consumption: 1.5 },
-    { time: '14:30', fuelLevel: 75, consumption: 4.5 },
-    { time: '14:45', fuelLevel: 68, consumption: 7.2 },
-    { time: '15:00', fuelLevel: 60, consumption: 6.8 },
-    { time: '15:15', fuelLevel: 55, consumption: 5.5 },
-    { time: '15:30', fuelLevel: 48, consumption: 7.0 },
-    { time: '15:45', fuelLevel: 42, consumption: 6.2 },
-    { time: '16:00', fuelLevel: 35, consumption: 5.8 },
-    { time: '16:15', fuelLevel: 28, consumption: 5.5 },
-    { time: '16:30', fuelLevel: 20, consumption: 4.8 },
+// Componente de Gráfica de Consumo de Combustible con Recharts
+export const FuelConsumptionChart = ({ data = [] }) => {
+  
+  // Si no hay datos, usar datos predeterminados
+  const chartData = data.length > 0 ? data : [
+    { time: '--', fuelLevel: 0, consumption: 0 }
   ];
 
-  // Custom Tooltip
+  // Información emergente personalizada
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
+      const data = payload[0].payload;
       return (
         <div className="p-3 rounded border shadow-lg" style={{ backgroundColor: 'var(--color-background)', borderColor: '#3B82F6' }}>
-          <p className="text-xs font-bold text-primary mb-2">{payload[0].payload.time}</p>
-          <p className="text-xs text-secondary">Nivel de combustible: <span className="text-primary font-medium">{payload[0].value}%</span></p>
-          <p className="text-xs text-secondary">Consumo instantáneo: <span className="text-primary font-medium">{payload[1].value} L/h</span></p>
+          <p className="text-xs font-bold text-primary mb-2">{data.time}</p>
+          <p className="text-xs text-secondary">Nivel de combustible: <span className="text-primary font-medium">{data.fuelLevel}%</span></p>
+          <p className="text-xs text-secondary">Consumo instantáneo: <span className="text-primary font-medium">{data.consumption} L/h</span></p>
+          {data.fuelUsedGps && (
+            <p className="text-xs text-secondary mt-1">Combustible usado: <span className="text-primary font-medium">{data.fuelUsedGps.toFixed(1)} L</span></p>
+          )}
         </div>
       );
     }
@@ -393,24 +459,29 @@ export const FuelConsumptionChart = () => {
 
   return (
     <div>
-      {/* Header con leyenda */}
-      <div className="mb-4 flex items-center justify-between">
-        <span className="text-sm font-medium text-primary">%</span>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#3B82F6' }}></div>
-            <span className="text-xs text-secondary">Nivel de combustible</span>
+      {/* Header con información de datos */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-medium text-primary">%</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#3B82F6' }}></div>
+              <span className="text-xs text-secondary">Nivel de combustible</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#22C55E' }}></div>
+              <span className="text-xs text-secondary">Consumo instantáneo</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#22C55E' }}></div>
-            <span className="text-xs text-secondary">Consumo instantáneo</span>
-          </div>
+          <span className="text-sm font-medium text-primary">L/h</span>
         </div>
-        <span className="text-sm font-medium text-primary">L/h</span>
+        <div className="text-xs text-secondary bg-green-50 dark:bg-green-900/20 p-2 rounded">
+          ⛽ Mostrando {chartData.length} puntos de datos históricos (últimos ~25 minutos)
+        </div>
       </div>
 
       <ResponsiveContainer width="100%" height={400}>
-        <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+        <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="colorFuel" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
@@ -470,43 +541,199 @@ export const FuelConsumptionChart = () => {
   );
 };
 
-// Tooltip Component - Para marcadores del mapa
+// Componente de Información Emergente - Para marcadores del mapa
 export const MapTooltip = ({ machinery, position, visible }) => {
   if (!visible || !machinery || !position) return null;
 
   return (
     <div 
-      className="fixed z-[100] p-4 rounded-lg border shadow-xl min-w-[200px] pointer-events-none"
+      className="fixed z-[100] p-4 rounded-lg border shadow-xl min-w-[220px] pointer-events-none animate-fadeIn"
       style={{ 
         backgroundColor: 'var(--color-background)',
         borderColor: '#3B82F6',
         borderWidth: '2px',
         left: `${position.x}px`,
         top: `${position.y - 10}px`,
-        transform: 'translate(-50%, -100%)'
+        transform: 'translate(-50%, -100%)',
+        animation: 'fadeIn 0.3s ease-out'
       }}
     >
-      <h3 className="text-sm font-bold text-primary mb-2">{machinery.name}</h3>
+      <h3 className="text-sm font-bold text-primary mb-1">{machinery.name}</h3>
       <p className="text-xs text-secondary mb-3">Serial: {machinery.serial}</p>
       
-      <div className="space-y-2 text-xs">
-        <div>
-          <p className="text-secondary font-medium">Velocidad actual</p>
-          <p className="text-primary">{machinery.currentSpeed || "0 km/h"}</p>
+      <div className="space-y-2 text-xs border-t border-gray-200 pt-2">
+        <div className="flex justify-between">
+          <p className="text-secondary font-medium">Velocidad:</p>
+          <p className="text-primary font-semibold">{machinery.currentSpeed || "0 km/h"}</p>
         </div>
-        <div>
-          <p className="text-secondary font-medium">RPM</p>
-          <p className="text-primary">{machinery.rpm || "3000"}</p>
+        <div className="flex justify-between">
+          <p className="text-secondary font-medium">RPM:</p>
+          <p className="text-primary font-semibold">{machinery.rpm || "0"}</p>
         </div>
-        <div>
-          <p className="text-secondary font-medium">Temperatura</p>
-          <p className="text-primary">{machinery.temperature || "45°C"}</p>
+        <div className="flex justify-between">
+          <p className="text-secondary font-medium">Temperatura:</p>
+          <p className="text-primary font-semibold">{machinery.engineTemp || "0°C"}</p>
         </div>
-        <div>
-          <p className="text-secondary font-medium">Nivel de combustible</p>
-          <p className="text-primary">{machinery.fuelLevel || "45%"}</p>
+        <div className="flex justify-between">
+          <p className="text-secondary font-medium">Combustible:</p>
+          <p className="text-primary font-semibold">{machinery.fuelLevel || "0%"}</p>
         </div>
       </div>
+    </div>
+  );
+};
+
+// Helper function to get marker color based on machinery status
+const getMarkerColor = (machinery) => {
+  // Sin conexión: Gris
+  if (!machinery.location?.lat || !machinery.location?.lng) {
+    return '#9CA3AF'; // Gris
+  }
+  
+  // En movimiento: Verde
+  if (machinery.moving && machinery.ignition) {
+    return '#22C55E'; // Verde
+  }
+  
+  // Estacionario (encendido pero sin movimiento): Naranja
+  if (machinery.ignition && !machinery.moving) {
+    return '#F59E0B'; // Naranja
+  }
+  
+  // Apagado: Gris
+  return '#9CA3AF'; // Gris
+};
+
+// Real Map Component - Leaflet con múltiples pins
+export const RealTimeMap = ({ machineries = [], selectedMachinery = null }) => {
+  const [isClient, setIsClient] = React.useState(false);
+  const mapRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Centrar mapa en la maquinaria seleccionada cada 30 segundos
+  useEffect(() => {
+    if (!isClient || !mapInstanceRef.current || !selectedMachinery) return;
+
+    const machinery = machineries.find(m => m.id === selectedMachinery.id);
+    if (!machinery || !machinery.location?.lat || !machinery.location?.lng) return;
+
+    // Centrar el mapa en la maquinaria seleccionada
+    const L = require('leaflet');
+    mapInstanceRef.current.setView([machinery.location.lat, machinery.location.lng], 13);
+  }, [machineries, selectedMachinery, isClient]);
+
+  if (!machineries || machineries.length === 0) {
+    return (
+      <div className="w-full h-[400px] rounded-lg border flex items-center justify-center" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
+        <div className="text-center">
+          <p className="text-secondary">No hay ubicaciones disponibles</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Filtrar maquinarias con ubicación válida
+  const machineriesWithLocation = machineries.filter(m => m.location?.lat && m.location?.lng);
+  
+  if (machineriesWithLocation.length === 0) {
+    return (
+      <div className="w-full h-[400px] rounded-lg border flex items-center justify-center" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
+        <div className="text-center">
+          <p className="text-secondary">No hay coordenadas disponibles</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Calcular centro del mapa
+  const centerLat = machineriesWithLocation.reduce((sum, m) => sum + m.location.lat, 0) / machineriesWithLocation.length;
+  const centerLng = machineriesWithLocation.reduce((sum, m) => sum + m.location.lng, 0) / machineriesWithLocation.length;
+
+  if (!isClient) {
+    return (
+      <div className="w-full h-[400px] rounded-lg border flex items-center justify-center" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
+        <div className="text-center">
+          <p className="text-secondary">Cargando mapa...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-[400px] rounded-lg border overflow-hidden" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
+      <MapContainer
+        center={[centerLat, centerLng]}
+        zoom={13}
+        style={{ height: '100%', width: '100%' }}
+        ref={(map) => {
+          if (map) {
+            mapInstanceRef.current = map;
+          }
+        }}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        
+        {machineriesWithLocation.map((machinery, idx) => {
+          const color = getMarkerColor(machinery);
+          const status = !machinery.location?.lat || !machinery.location?.lng 
+            ? 'Sin conexión'
+            : machinery.moving && machinery.ignition 
+              ? 'En movimiento'
+              : machinery.ignition && !machinery.moving
+                ? 'Estacionario'
+                : 'Apagado';
+
+          return (
+            <Marker
+              key={idx}
+              position={[machinery.location.lat, machinery.location.lng]}
+              icon={createCustomIcon(color)}
+            >
+              <Popup>
+                <div className="p-2 min-w-[200px]">
+                  <h3 className="text-sm font-bold text-primary mb-1">{machinery.name}</h3>
+                  <p className="text-xs text-secondary mb-2">Serial: {machinery.serial}</p>
+                  <div className="space-y-1 text-xs border-t pt-2">
+                    <div className="flex justify-between">
+                      <span className="text-secondary">Estado:</span>
+                      <span className="font-medium" style={{ color }}>{status}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-secondary">Velocidad:</span>
+                      <span className="font-medium">{machinery.currentSpeed || "0 km/h"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-secondary">RPM:</span>
+                      <span className="font-medium">{machinery.rpm || "0"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-secondary">Temperatura:</span>
+                      <span className="font-medium">{machinery.engineTemp || "0°C"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-secondary">Combustible:</span>
+                      <span className="font-medium">{machinery.fuelLevel || "0%"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-secondary">Coordenadas:</span>
+                      <span className="font-medium text-xs">
+                        {machinery.location.lat.toFixed(5)}, {machinery.location.lng.toFixed(5)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+      </MapContainer>
     </div>
   );
 };
