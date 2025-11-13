@@ -416,6 +416,12 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
     return `${day}/${month}/${year}`;
   };
 
+  // Helper function to format values with "No aplica" fallback
+  const formatValue = (value, unit = "") => {
+    if (value === null || value === undefined) return "No aplica";
+    return `${value}${unit ? ` ${unit}` : ""}`;
+  };
+
   // Información de la solicitud
   const requestInfo = requestData ? {
     trackingCode: requestData.tracking_code || "Sin código",
@@ -457,6 +463,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
         implement: machineryInfo?.implement_name || "Sin implemento",
         photo: machineryInfo?.machinery_photo || null,
         currentSpeed: data.speed !== null ? `${data.speed} km/h` : "0 km/h",
+        speed: data.speed,
         fuelLevel: data.fuelLevel !== null ? `${data.fuelLevel}%` : "--",
         ignition: data.ignition || false,
         moving: data.moving || false,
@@ -476,6 +483,8 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
         eventType: data.eventType,
         eventGValue: data.eventGValue,
         timestamp: data.timestamp,
+        consumptionPrediction: data.consumptionPrediction,
+        consumptionComparison: data.consumptionComparison,
         raw: data.raw
       };
     });
@@ -498,42 +507,69 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
     const machinery = machineries[selectedMachinery];
     const hasRpmAlert = alerts.some(a => a.imei === machinery.imei && a.parameter === 'rpm');
     
+    // Obtener umbrales del JSON si existen, sino usar valores por defecto
+    const getThresholds = () => {
+      const thresholds = {};
+      if (machinery.raw?.thresholds) {
+        return machinery.raw.thresholds;
+      }
+      // Valores por defecto si no vienen en el JSON
+      return {
+        speed_max: 180,
+        rpm_max: 3000,
+        engine_temp_max: 120,
+        fuel_level_min: 20
+      };
+    };
+
+    const thresholds = getThresholds();
+
     return {
-      currentSpeed: { 
-        value: machinery.currentSpeed !== null && machinery.currentSpeed !== "0 km/h" ? parseInt(machinery.currentSpeed) : 0, 
-        max: 180, 
-        unit: "km/h" 
+      currentSpeed: {
+        value: machinery.currentSpeed !== null && machinery.currentSpeed !== "0 km/h" ? parseInt(machinery.currentSpeed) : 0,
+        hasData: machinery.speed !== null,
+        max: thresholds.speed_max || 180,
+        unit: "km/h"
       },
       rpm: { 
-        value: machinery.rpm || 0, 
-        max: 3000, 
+        value: machinery.rpm || 0,
+        hasData: machinery.rpm !== null,
+        max: thresholds.rpm_max || 3000, 
         unit: "RPM", 
         alert: hasRpmAlert 
       },
       engineTemp: { 
-        value: machinery.engineTemp || 0, 
+        value: machinery.engineTemp || 0,
+        hasData: machinery.engineTemp !== null,
         min: 0, 
-        max: 120, 
+        max: thresholds.engine_temp_max || 120, 
+        alertThreshold: thresholds.engine_temp_max ? thresholds.engine_temp_max * 0.92 : 110,
         unit: "°C" 
       },
       fuelLevel: { 
-        value: machinery.fuelLevel !== "--" ? parseInt(machinery.fuelLevel) : 0, 
+        value: machinery.fuelLevel !== "--" ? parseInt(machinery.fuelLevel) : 0,
+        hasData: machinery.fuelLevel !== null && machinery.fuelLevel !== "--",
+        alertThreshold: thresholds.fuel_level_min || 20,
         unit: "%" 
       },
       oilLoad: { 
-        value: machinery.oilLevel || 0, 
+        value: machinery.oilLevel || 0,
+        hasData: machinery.oilLevel !== null,
         unit: "%" 
       },
       engineLoad: { 
-        value: machinery.engineLoad || 0, 
+        value: machinery.engineLoad || 0,
+        hasData: machinery.engineLoad !== null,
         unit: "%" 
       },
       totalOdometer: { 
-        value: formatOdometer(machinery.odometerTotal), 
+        value: formatOdometer(machinery.odometerTotal),
+        hasData: machinery.odometerTotal !== null,
         unit: "km" 
       },
       tripOdometer: { 
-        value: formatOdometer(machinery.odometerTrip), 
+        value: formatOdometer(machinery.odometerTrip),
+        hasData: machinery.odometerTrip !== null,
         unit: "km" 
       },
       logisticStatus: "En operación"
@@ -550,10 +586,14 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
     
     return {
       fuelConsumption: {
-        fuelUsed: machinery.fuelUsedGps ? `${machinery.fuelUsedGps.toFixed(1)} L` : "-- L",
-        instantConsumption: machinery.instantConsumption ? `${machinery.instantConsumption.toFixed(1)} L/h` : "-- L/h",
-        prediction: "-- L/h"
+        fuelUsed: machinery.fuelUsedGps !== null ? `${machinery.fuelUsedGps.toFixed(1)} L` : "No aplica",
+        instantConsumption: machinery.instantConsumption !== null ? `${machinery.instantConsumption.toFixed(1)} L/h` : "No aplica",
+        prediction: machinery.consumptionPrediction?.consumo_estimado_lh 
+          ? `${machinery.consumptionPrediction.consumo_estimado_lh.toFixed(2)} L/h`
+          : "No aplica"
       },
+      consumptionPrediction: machinery.consumptionPrediction || null,
+      consumptionComparison: machinery.consumptionComparison || null,
       obdFaults: machinery.obdFaults || [],
       events: {
         type: machinery.eventType,
@@ -742,18 +782,36 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   
                   {/* Sensor 1: Current speed */}
-                  <GaugeCard label="Velocidad actual" value={selectedMachineryData.currentSpeed.value} max={selectedMachineryData.currentSpeed.max} unit={selectedMachineryData.currentSpeed.unit} type="speed" />
+                  <GaugeCard 
+                    label="Velocidad actual" 
+                    value={selectedMachineryData.currentSpeed.value} 
+                    max={selectedMachineryData.currentSpeed.max} 
+                    unit={selectedMachineryData.currentSpeed.unit} 
+                    type="speed"
+                    threshold={selectedMachineryData.currentSpeed.max * 0.25}
+                    hasData={selectedMachineryData.currentSpeed.hasData}
+                  />
                   
                   {/* Sensor 2: Revolutions(RPM) */}
-                  <GaugeCard label="Revoluciones (RPM)" value={selectedMachineryData.rpm.value} max={selectedMachineryData.rpm.max} unit={selectedMachineryData.rpm.unit} type="rpm" alert={selectedMachineryData.rpm.alert} />
+                  <GaugeCard 
+                    label="Revoluciones (RPM)" 
+                    value={selectedMachineryData.rpm.value} 
+                    max={selectedMachineryData.rpm.max} 
+                    unit={selectedMachineryData.rpm.unit} 
+                    type="rpm" 
+                    alert={selectedMachineryData.rpm.alert}
+                    threshold={selectedMachineryData.rpm.max * 0.93}
+                    hasData={selectedMachineryData.rpm.hasData}
+                  />
 
                   {/* Sensor 3: Engine Temperature */}
+                  {selectedMachineryData.engineTemp.hasData ? (
                   <div 
                     className="p-4 rounded-lg border flex flex-col items-center justify-center min-h-[200px] transition-all duration-500"
                     style={{ 
-                      backgroundColor: selectedMachineryData.engineTemp.value > 110 ? 'rgba(239, 68, 68, 0.1)' : 'var(--color-background-secondary)',
-                      borderColor: selectedMachineryData.engineTemp.value > 110 ? '#EF4444' : 'var(--color-border)',
-                      boxShadow: selectedMachineryData.engineTemp.value > 110 ? '0 0 10px rgba(239, 68, 68, 0.2)' : 'none'
+                      backgroundColor: selectedMachineryData.engineTemp.value > selectedMachineryData.engineTemp.alertThreshold ? 'rgba(239, 68, 68, 0.1)' : 'var(--color-background-secondary)',
+                      borderColor: selectedMachineryData.engineTemp.value > selectedMachineryData.engineTemp.alertThreshold ? '#EF4444' : 'var(--color-border)',
+                      boxShadow: selectedMachineryData.engineTemp.value > selectedMachineryData.engineTemp.alertThreshold ? '0 0 10px rgba(239, 68, 68, 0.2)' : 'none'
                     }}
                   >
                     <p className="text-xs text-secondary mb-3">Temperatura del Motor</p>
@@ -804,19 +862,29 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                     </div>
                     <p 
                       className="text-2xl font-bold transition-colors duration-500"
-                      style={{ color: selectedMachineryData.engineTemp.value > 110 ? '#EF4444' : 'var(--color-primary)' }}
+                      style={{ color: selectedMachineryData.engineTemp.value > selectedMachineryData.engineTemp.alertThreshold ? '#EF4444' : 'var(--color-primary)' }}
                     >
                       {Math.min(Math.max(selectedMachineryData.engineTemp.value, -40), 130)}°C
                     </p>
                   </div>
+                  ) : (
+                  <div 
+                    className="p-4 rounded-lg border flex flex-col items-center justify-center min-h-[200px]"
+                    style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}
+                  >
+                    <p className="text-xs text-secondary mb-3">Temperatura del Motor</p>
+                    <p className="text-lg font-bold text-secondary">No aplica</p>
+                  </div>
+                  )}
 
                   {/* Sensor 4: Fuel Level */}
+                  {selectedMachineryData.fuelLevel.hasData ? (
                   <div 
                     className="p-4 rounded-lg border flex flex-col items-center justify-center min-h-[200px] transition-all duration-500"
                     style={{ 
-                      backgroundColor: selectedMachineryData.fuelLevel.value < 20 ? 'rgba(239, 68, 68, 0.1)' : 'var(--color-background-secondary)',
-                      borderColor: selectedMachineryData.fuelLevel.value < 20 ? '#EF4444' : 'var(--color-border)',
-                      boxShadow: selectedMachineryData.fuelLevel.value < 20 ? '0 0 10px rgba(239, 68, 68, 0.2)' : 'none'
+                      backgroundColor: selectedMachineryData.fuelLevel.value < selectedMachineryData.fuelLevel.alertThreshold ? 'rgba(239, 68, 68, 0.1)' : 'var(--color-background-secondary)',
+                      borderColor: selectedMachineryData.fuelLevel.value < selectedMachineryData.fuelLevel.alertThreshold ? '#EF4444' : 'var(--color-border)',
+                      boxShadow: selectedMachineryData.fuelLevel.value < selectedMachineryData.fuelLevel.alertThreshold ? '0 0 10px rgba(239, 68, 68, 0.2)' : 'none'
                     }}
                   >
                     <p className="text-xs text-secondary mb-2">Nivel de combustible</p>
@@ -853,7 +921,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                       <div 
                         className="absolute bottom-2 left-1/2 w-1 h-12 origin-bottom transition-all duration-700 ease-out"
                         style={{ 
-                          backgroundColor: selectedMachineryData.fuelLevel.value < 20 ? '#EF4444' : '#1F2937',
+                          backgroundColor: selectedMachineryData.fuelLevel.value < selectedMachineryData.fuelLevel.alertThreshold ? '#EF4444' : '#1F2937',
                           transform: `translateX(-50%) rotate(${Math.min(selectedMachineryData.fuelLevel.value, 100) / 100 * 180 - 90}deg)`,
                           borderRadius: '2px'
                         }}
@@ -862,29 +930,50 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                       {/* Centro de la aguja */}
                       <div 
                         className="absolute bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-white transition-colors duration-500"
-                        style={{ backgroundColor: selectedMachineryData.fuelLevel.value < 20 ? '#EF4444' : '#1F2937' }}
+                        style={{ backgroundColor: selectedMachineryData.fuelLevel.value < selectedMachineryData.fuelLevel.alertThreshold ? '#EF4444' : '#1F2937' }}
                       />
                     </div>
                     <p 
                       className="text-2xl font-bold mt-2 transition-colors duration-500"
-                      style={{ color: selectedMachineryData.fuelLevel.value < 20 ? '#EF4444' : 'var(--color-primary)' }}
+                      style={{ color: selectedMachineryData.fuelLevel.value < selectedMachineryData.fuelLevel.alertThreshold ? '#EF4444' : 'var(--color-primary)' }}
                     >
                       {Math.min(selectedMachineryData.fuelLevel.value, 100)}%
                     </p>
                     <p className="text-xs text-secondary">~36L / ~90L</p>
                   </div>
+                  ) : (
+                  <div 
+                    className="p-4 rounded-lg border flex flex-col items-center justify-center min-h-[200px]"
+                    style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}
+                  >
+                    <p className="text-xs text-secondary mb-2">Nivel de combustible</p>
+                    <p className="text-lg font-bold text-secondary">No aplica</p>
+                  </div>
+                  )}
 
                   {/* Sensor 5: Oil level */}
-                  <CircularProgress label="Nivel de aceite" value={selectedMachineryData.oilLoad.value} color="#F59E0B" />
+                  <CircularProgress 
+                    label="Nivel de aceite" 
+                    value={selectedMachineryData.oilLoad.value} 
+                    color="#F59E0B"
+                    hasData={selectedMachineryData.oilLoad.hasData}
+                  />
 
                   {/* Sensor 6: Engine load */}
-                  <CircularProgress label="Carga del motor" value={selectedMachineryData.engineLoad.value} color="#22C55E" />
+                  <CircularProgress 
+                    label="Carga del motor" 
+                    value={selectedMachineryData.engineLoad.value} 
+                    color="#22C55E"
+                    hasData={selectedMachineryData.engineLoad.hasData}
+                  />
 
                   {/* Sensor 7: Odometer */}
+                  {selectedMachineryData.totalOdometer.hasData || selectedMachineryData.tripOdometer.hasData ? (
                   <div className="p-4 rounded-lg border flex flex-col items-center justify-center min-h-[200px]" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
                     <p className="text-xs text-secondary mb-3">Odómetro</p>
                     
                     {/* Total */}
+                    {selectedMachineryData.totalOdometer.hasData && (
                     <div className="mb-3">
                       <p className="text-xs text-secondary mb-1 text-center">Total</p>
                       <div className="flex gap-0.5 bg-black p-2 rounded">
@@ -896,8 +985,10 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                         <div className="flex items-end ml-1 text-white text-xs font-bold pb-1">KM</div>
                       </div>
                     </div>
+                    )}
                     
                     {/* Trip */}
+                    {selectedMachineryData.tripOdometer.hasData && (
                     <div>
                       <p className="text-xs text-secondary mb-1 text-center">Trip</p>
                       <div className="flex gap-0.5 bg-black p-2 rounded">
@@ -909,18 +1000,29 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                         <div className="flex items-end ml-1 text-white text-xs font-bold pb-1">KM</div>
                       </div>
                     </div>
+                    )}
+
+                    {!selectedMachineryData.totalOdometer.hasData && !selectedMachineryData.tripOdometer.hasData && (
+                    <p className="text-lg font-bold text-secondary">No aplica</p>
+                    )}
                   </div>
+                  ) : (
+                  <div className="p-4 rounded-lg border flex flex-col items-center justify-center min-h-[200px]" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
+                    <p className="text-xs text-secondary mb-3">Odómetro</p>
+                    <p className="text-lg font-bold text-secondary">No aplica</p>
+                  </div>
+                  )}
 
                   {/* Sensor 8: Logistic status */}
                   <div className="p-4 rounded-lg border flex flex-col justify-center min-h-[200px]" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
                     <p className="text-xs text-secondary mb-2">Estado logístico</p>
-                    <select className="input-theme text-sm w-full mb-3" value={selectedMachineryData.logisticStatus} onChange={(e) => {}}>
+                    <select className="input-theme text-sm w-full mb-3 opacity-50 cursor-not-allowed" value={selectedMachineryData.logisticStatus} onChange={(e) => {}} disabled>
                       <option>Inactivo</option>
                       <option>En tránsito</option>
                       <option>En operación</option>
                       <option>Mantenimiento</option>
                     </select>
-                    <button className="btn-primary w-full py-2 text-sm rounded-lg font-medium">Actualizar Estado</button>
+
                   </div>
 
                 </div>
@@ -932,31 +1034,144 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 
                 {/* Fuel Consumption */}
-                <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
-                  <h3 className="text-sm font-semibold text-primary mb-4">Consumo de Combustible</h3>
-                  <div className="space-y-3 text-xs">
+                <div className="p-5 rounded-lg border" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
+                  <div className="mb-5 pb-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
+                    <h3 className="text-base font-bold text-primary">Consumo de Combustible</h3>
+                  </div>
+
+                  <div className="space-y-5 text-xs">
+                    {/* Métricas Principales - 3 Columnas */}
                     <div>
-                      <p className="text-secondary mb-1">Combustible usado:</p>
-                      <p className="text-lg font-bold text-primary">{additionalMetrics.fuelConsumption.fuelUsed}</p>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="p-3 rounded border" style={{ borderColor: 'var(--color-border)', backgroundColor: 'rgba(59, 130, 246, 0.08)' }}>
+                          <p className="text-secondary text-[11px] font-medium mb-2">Combustible Usado</p>
+                          <p className="text-lg font-bold text-primary">{additionalMetrics.fuelConsumption.fuelUsed}</p>
+                        </div>
+                        <div className="p-3 rounded border" style={{ borderColor: 'var(--color-border)', backgroundColor: 'rgba(34, 197, 94, 0.08)' }}>
+                          <p className="text-secondary text-[11px] font-medium mb-2">Consumo Instantáneo</p>
+                          <p className="text-lg font-bold text-primary">{additionalMetrics.fuelConsumption.instantConsumption}</p>
+                        </div>
+                        <div className="p-3 rounded border" style={{ borderColor: 'var(--color-border)', backgroundColor: 'rgba(245, 158, 11, 0.08)' }}>
+                          <p className="text-secondary text-[11px] font-medium mb-2">Predicción (L/h)</p>
+                          <p className="text-lg font-bold text-primary">{additionalMetrics.fuelConsumption.prediction}</p>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-secondary mb-1">Consumo instantáneo:</p>
-                      <p className="text-lg font-bold text-primary">{additionalMetrics.fuelConsumption.instantConsumption}</p>
-                    </div>
-                    <div>
-                      <p className="text-secondary mb-1">Predicción:</p>
-                      <p className="text-lg font-bold text-primary">{additionalMetrics.fuelConsumption.prediction}</p>
-                    </div>
-                    <div className="pt-2">
-                      <p className="text-secondary font-medium text-xs">Predicción en desarrollo</p>
-                    </div>
+
+                    {/* Predicción de Consumo */}
+                    {additionalMetrics.consumptionPrediction && (
+                      <div className="pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
+                        <p className="text-xs font-semibold text-primary mb-2 uppercase tracking-wide">Predicción de Consumo (IA)</p>
+                        <div className="grid grid-cols-1 gap-2">
+                          <div className="p-3 rounded border" style={{ borderColor: 'var(--color-border)', backgroundColor: 'rgba(59, 130, 246, 0.08)' }}>
+                            <p className="text-secondary text-[11px] font-medium mb-2">Consumo Estimado</p>
+                            <p className="text-lg font-bold text-primary">
+                              {additionalMetrics.consumptionPrediction.consumo_estimado_l?.toFixed(2) || "No aplica"} L
+                            </p>
+                            <p className="text-[11px] text-secondary mt-2 font-medium">
+                              {additionalMetrics.consumptionPrediction.consumo_estimado_lh?.toFixed(2) || "No aplica"} L/h
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Comparación Real vs Estimado */}
+                    {additionalMetrics.consumptionComparison && (
+                      <div className="pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
+                        <p className="text-xs font-semibold text-primary mb-3 uppercase tracking-wide">Comparativa: Real vs Estimado</p>
+                        <div className="space-y-3">
+                          {/* Fila 1: Consumo Real vs Estimado */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="p-3 rounded border" style={{ borderColor: 'var(--color-border)', backgroundColor: 'rgba(34, 197, 94, 0.08)' }}>
+                              <p className="text-secondary text-[11px] font-medium mb-2">Consumo Real</p>
+                              <p className="text-lg font-bold text-primary">
+                                {additionalMetrics.consumptionComparison.consumo_real_l?.toFixed(2) || "No aplica"} L
+                              </p>
+                            </div>
+                            <div className="p-3 rounded border" style={{ borderColor: 'var(--color-border)', backgroundColor: 'rgba(59, 130, 246, 0.08)' }}>
+                              <p className="text-secondary text-[11px] font-medium mb-2">Consumo Estimado</p>
+                              <p className="text-lg font-bold text-primary">
+                                {additionalMetrics.consumptionComparison.consumo_estimado_l?.toFixed(2) || "No aplica"} L
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Fila 2: Consumo Instantáneo Promedio */}
+                          <div className="p-3 rounded border" style={{ borderColor: 'var(--color-border)', backgroundColor: 'rgba(168, 85, 247, 0.08)' }}>
+                            <p className="text-secondary text-[11px] font-medium mb-2">Consumo Instantáneo Promedio</p>
+                            <p className="text-lg font-bold text-primary">
+                              {additionalMetrics.consumptionComparison.consumo_instantaneo_promedio_lh?.toFixed(2) || "No aplica"} L/h
+                            </p>
+                          </div>
+
+                          {/* Fila 3: Diferencia y Error */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="p-3 rounded border" style={{ borderColor: 'var(--color-border)', backgroundColor: 'rgba(239, 68, 68, 0.08)' }}>
+                              <p className="text-secondary text-[11px] font-medium mb-2">Diferencia Absoluta</p>
+                              <p className="text-lg font-bold text-primary">
+                                {additionalMetrics.consumptionComparison.diferencia_absoluta_l?.toFixed(2) || "No aplica"} L
+                              </p>
+                            </div>
+                            <div className={`p-3 rounded border`} style={{ 
+                              borderColor: 'var(--color-border)', 
+                              backgroundColor: additionalMetrics.consumptionComparison.error_porcentual > 20 
+                                ? 'rgba(239, 68, 68, 0.12)' 
+                                : 'rgba(34, 197, 94, 0.08)'
+                            }}>
+                              <p className="text-secondary text-[11px] font-medium mb-2">Error Porcentual</p>
+                              <p className={`text-lg font-bold ${
+                                additionalMetrics.consumptionComparison.error_porcentual > 20 
+                                  ? 'text-error' 
+                                  : 'text-success'
+                              }`}>
+                                {additionalMetrics.consumptionComparison.error_porcentual?.toFixed(2) || "No aplica"}%
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Fila 4: Información del Tanque */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="p-3 rounded border" style={{ borderColor: 'var(--color-border)', backgroundColor: 'rgba(59, 130, 246, 0.08)' }}>
+                              <p className="text-secondary text-[11px] font-medium mb-2">Nivel Inicial</p>
+                              <p className="text-lg font-bold text-primary">
+                                {additionalMetrics.consumptionComparison.fuel_level_inicial?.toFixed(2) || "No aplica"}%
+                              </p>
+                            </div>
+                            <div className="p-3 rounded border" style={{ borderColor: 'var(--color-border)', backgroundColor: 'rgba(59, 130, 246, 0.08)' }}>
+                              <p className="text-secondary text-[11px] font-medium mb-2">Nivel Actual</p>
+                              <p className="text-lg font-bold text-primary">
+                                {additionalMetrics.consumptionComparison.fuel_level_actual?.toFixed(2) || "No aplica"}%
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Fila 5: Capacidad y Duración */}
+                          <div className="grid grid-cols-1 gap-2">
+                            <div className="p-3 rounded border" style={{ borderColor: 'var(--color-border)', backgroundColor: 'rgba(168, 85, 247, 0.08)' }}>
+                              <p className="text-secondary text-[11px] font-medium mb-2">Duración Total</p>
+                              <p className="text-lg font-bold text-primary">
+                                {additionalMetrics.consumptionComparison.duracion_h?.toFixed(2) || "No aplica"} h
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Mensaje si no hay datos */}
+                    {!additionalMetrics.consumptionPrediction && !additionalMetrics.consumptionComparison && (
+                      <div className="p-4 rounded text-center text-secondary text-xs border" style={{ backgroundColor: 'rgba(156, 163, 175, 0.08)', borderColor: 'var(--color-border)' }}>
+                        <p className="font-medium">Sin datos de predicción o comparación disponibles</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* OBD Faults */}
                 <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
                   <h3 className="text-sm font-semibold text-primary mb-4">Fallas OBD</h3>
-                  <div className="space-y-3 text-xs max-h-[400px] overflow-y-auto">
+                  <div className="space-y-3 text-xs max-h-[100vh] overflow-y-auto">
                     {(() => {
                       const selectedImei = selectedMachinery !== null && machineries[selectedMachinery] ? machineries[selectedMachinery].imei : null;
                       const faults = selectedImei && obdFaultsHistory[selectedImei] ? obdFaultsHistory[selectedImei] : [];
@@ -994,7 +1209,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                 {/* G-Events */}
                 <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
                   <h3 className="text-sm font-semibold text-primary mb-4">Eventos G</h3>
-                  <div className="space-y-4 text-xs max-h-[400px] overflow-y-auto">
+                  <div className="space-y-4 text-xs max-h-[100vh] overflow-y-auto">
                     {(() => {
                       const selectedImei = selectedMachinery !== null && machineries[selectedMachinery] ? machineries[selectedMachinery].imei : null;
                       const events = selectedImei && gEventsHistory[selectedImei] ? gEventsHistory[selectedImei] : [];
