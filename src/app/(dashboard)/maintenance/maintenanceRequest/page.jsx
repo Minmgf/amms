@@ -77,6 +77,7 @@ const SolicitudesMantenimientoView = () => {
   const [requesterFilter, setRequesterFilter] = useState("");
   const [startDateFilter, setStartDateFilter] = useState("");
   const [endDateFilter, setEndDateFilter] = useState("");
+  const [dateRangeError, setDateRangeError] = useState("");
   const [filteredData, setFilteredData] = useState([]);
 
   // Datos de usuarios disponibles (esto vendría de la BD)
@@ -462,8 +463,44 @@ const SolicitudesMantenimientoView = () => {
     };
   }, []);
 
+  // Validar rango de fechas
+  const validateDateRange = (startDate, endDate) => {
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      if (start > end) {
+        setDateRangeError("La fecha inicial no puede ser posterior a la fecha final");
+        return false;
+      }
+    }
+    setDateRangeError("");
+    return true;
+  };
+
+  // Handlers para cambios de fecha con validación
+  const handleStartDateChange = (value) => {
+    setStartDateFilter(value);
+    validateDateRange(value, endDateFilter);
+  };
+
+  const handleEndDateChange = (value) => {
+    setEndDateFilter(value);
+    validateDateRange(startDateFilter, value);
+  };
+
   // Handlers para filtros
   const handleApplyFilters = () => {
+    // Validar antes de aplicar
+    if (!validateDateRange(startDateFilter, endDateFilter)) {
+      setErrorModal({
+        isOpen: true,
+        title: "Rango de fechas inválido",
+        message: "La fecha inicial debe ser anterior o igual a la fecha final. Por favor, corrija el rango de fechas antes de aplicar los filtros.",
+      });
+      return;
+    }
+    
     applyFilters();
     setIsFilterModalOpen(false);
   };
@@ -475,6 +512,7 @@ const SolicitudesMantenimientoView = () => {
     setRequesterFilter("");
     setStartDateFilter("");
     setEndDateFilter("");
+    setDateRangeError("");
     applyFilters();
   };
 
@@ -1120,8 +1158,11 @@ const SolicitudesMantenimientoView = () => {
                         <input
                           type="date"
                           value={startDateFilter}
-                          onChange={(e) => setStartDateFilter(e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent pr-12"
+                          max={endDateFilter || undefined}
+                          onChange={(e) => handleStartDateChange(e.target.value)}
+                          className={`w-full px-4 py-3 border rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent pr-12 ${
+                            dateRangeError ? 'border-red-500' : 'border-gray-300'
+                          }`}
                         />
                         <FaCalendarAlt className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
                       </div>
@@ -1134,13 +1175,22 @@ const SolicitudesMantenimientoView = () => {
                         <input
                           type="date"
                           value={endDateFilter}
-                          onChange={(e) => setEndDateFilter(e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent pr-12"
+                          min={startDateFilter || undefined}
+                          onChange={(e) => handleEndDateChange(e.target.value)}
+                          className={`w-full px-4 py-3 border rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent pr-12 ${
+                            dateRangeError ? 'border-red-500' : 'border-gray-300'
+                          }`}
                         />
                         <FaCalendarAlt className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
                       </div>
                     </div>
                   </div>
+                  {dateRangeError && (
+                    <div className="mt-2 flex items-center gap-2 text-red-600 text-sm">
+                      <FaExclamationTriangle className="w-4 h-4" />
+                      <span>{dateRangeError}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Solicitante */}

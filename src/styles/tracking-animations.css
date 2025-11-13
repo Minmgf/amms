@@ -1,0 +1,267 @@
+/* Professional Tracking Dashboard Animations */
+
+/* Fade In Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -110%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -100%);
+  }
+}
+
+/* Smooth Scale Animation for Cards */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Pulse Animation for Alerts */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Smooth Slide Animation */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Smooth Slide Animation Left */
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Smooth Slide Animation Right */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Bounce Animation for Important Values */
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+/* Glow Animation for Alerts */
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+  }
+}
+
+/* Smooth Color Transition */
+@keyframes colorShift {
+  0% {
+    color: var(--color-primary);
+  }
+  50% {
+    color: #EF4444;
+  }
+  100% {
+    color: var(--color-primary);
+  }
+}
+
+/* Gauge Needle Swing */
+@keyframes gaugeSwing {
+  0% {
+    transform: translateX(-50%) rotate(-90deg);
+  }
+  100% {
+    transform: translateX(-50%) rotate(90deg);
+  }
+}
+
+/* Smooth Rotation */
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Shimmer Loading Effect */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+/* Tooltip Animation */
+.tooltip-enter {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.tooltip-exit {
+  animation: fadeIn 0.3s ease-out reverse;
+}
+
+/* Card Animation */
+.card-animate {
+  animation: scaleIn 0.3s ease-out;
+}
+
+/* Alert Animation */
+.alert-animate {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* Value Update Animation */
+.value-update {
+  animation: bounce 0.4s ease-out;
+}
+
+/* Smooth Transitions for All Elements */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Gauge Card Specific */
+.gauge-card {
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.gauge-needle {
+  transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.gauge-arc {
+  transition: stroke-dasharray 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Circular Progress Specific */
+.circular-progress {
+  transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.progress-circle {
+  transition: stroke-dashoffset 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), stroke 0.5s ease;
+}
+
+/* Thermometer Specific */
+.thermometer-liquid {
+  transition: y 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Map Marker Animation */
+.map-marker {
+  transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+.map-marker:hover {
+  transform: scale(1.1);
+}
+
+/* Machinery Card Animation */
+.machinery-card {
+  animation: slideInUp 0.3s ease-out;
+  transition: all 0.3s ease;
+}
+
+.machinery-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Selected Machinery Card */
+.machinery-card.selected {
+  animation: pulse 1s ease-in-out;
+}
+
+/* Dashboard Container */
+.dashboard-container {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Section Headers */
+.section-header {
+  animation: slideInLeft 0.4s ease-out;
+}
+
+/* Info Cards */
+.info-card {
+  animation: slideInRight 0.4s ease-out;
+}
+
+/* Chart Container */
+.chart-container {
+  animation: fadeIn 0.6s ease-out;
+}
+
+/* Loading Skeleton */
+.skeleton-loading {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Responsive Animations */
+@media (max-width: 768px) {
+  .gauge-card {
+    animation: scaleIn 0.3s ease-out;
+  }
+
+  .machinery-card {
+    animation: slideInUp 0.2s ease-out;
+  }
+}
+
+/* Accessibility - Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,4 +1,4 @@
-import { apiAudit } from "@/lib/axios";
+import { apiAudit, apiMain } from "@/lib/axios";
 
 /**
  * Obtiene todos los eventos de auditoría
@@ -53,4 +53,35 @@ export const getMaintenanceScheduledHistory = async (machineryId) => {
     
     const { data } = await apiAudit.get("/audit-events", { params });
     return data;
+};
+
+/**
+ * Obtiene la lista de reportes de mantenimiento
+ * @returns {Promise} - Promesa con la lista de reportes de mantenimiento
+ */
+export const getMaintenanceReports = async () => {
+    const { data } = await apiMain.get("/maintenance_reports/list/");
+    return data;
+};
+
+/**
+ * Obtiene el detalle de un reporte de mantenimiento específico
+ * @param {string} idMaintenanceScheduling - ID del mantenimiento programado
+ * @returns {Promise} - Promesa con los detalles del reporte
+ */
+export const getMaintenanceReportDetail = async (idMaintenanceScheduling) => {
+    const { data } = await apiMain.get(`/maintenance_reports/${idMaintenanceScheduling}/detail/`);
+    return data;
+};
+
+/**
+ * Descarga el PDF de un reporte de mantenimiento
+ * @param {string} idMaintenanceScheduling - ID del mantenimiento programado
+ * @returns {Promise} - Promesa con el blob del PDF
+ */
+export const downloadMaintenanceReportPDF = async (idMaintenanceScheduling) => {
+    const response = await apiMain.get(`/maintenance_reports/${idMaintenanceScheduling}/download/`, {
+        responseType: 'blob'
+    });
+    return response.data;
 };

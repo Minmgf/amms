@@ -13,7 +13,8 @@ import TableList from '@/app/components/shared/TableList';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getScheduledMaintenanceList, getMaintenanceSchedulingStatuses, getMaintenanceTypes } from '@/services/maintenanceService';
 import { getUserInfo } from '@/services/authService';
-import MaintenanceReportModal from '@/app/components/maintenance/machineMaintenance/MaintenanceReportModal';
+import { downloadMaintenanceReportPDF } from '@/services/auditService';
+import MaintenanceReportModal from '@/app/components/scheduledMaintenance/MaintenanceReportModal';
 import PermissionGuard from '@/app/(auth)/PermissionGuard';
 
 const ScheduledMaintenancePage = () => {
@@ -27,6 +28,7 @@ const ScheduledMaintenancePage = () => {
     startDate: null,
     endDate: null
   });
+  const [dateRangeError, setDateRangeError] = useState('');
   const [globalFilter, setGlobalFilter] = useState('');
   const [filterModalOpen, setFilterModalOpen] = useState(false);
 
@@ -47,6 +49,7 @@ const ScheduledMaintenancePage = () => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [downloadingPDF, setDownloadingPDF] = useState(null);
 
 
   // Datos precargados para filtros
@@ -118,7 +121,7 @@ const ScheduledMaintenancePage = () => {
 
         const types = [
           ...new Set(
-            mappedData.map((item) => item.maintenance_type).filter(Boolean)
+            mappedData.map((item) => item.maintenance_type_name).filter(Boolean)
           )
         ];
 
@@ -199,6 +202,37 @@ const ScheduledMaintenancePage = () => {
     setCreateModalOpen(true);
   };
 
+  const handleDownloadReport = async (maintenanceId) => {
+    const maintenance = maintenanceData.find(m => m.id === maintenanceId);
+    
+    if (!maintenance?.id_maintenance_scheduling) {
+      setModalMessage('No se pudo obtener la información del reporte.');
+      setErrorOpen(true);
+      return;
+    }
+
+    setDownloadingPDF(maintenanceId);
+    try {
+      const pdfBlob = await downloadMaintenanceReportPDF(maintenance.id_maintenance_scheduling);
+      
+      // Crear URL del blob y descargar
+      const url = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `reporte_mantenimiento_${maintenance.id_maintenance_scheduling}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error al descargar el PDF:', error);
+      setModalMessage('Error al descargar el reporte. Por favor, intente nuevamente.');
+      setErrorOpen(true);
+    } finally {
+      setDownloadingPDF(null);
+    }
+  };
+
   // Funciones de callback para modales
   const handleModalSuccess = (message) => {
     setModalMessage(message);
@@ -215,15 +249,30 @@ const ScheduledMaintenancePage = () => {
   const ActionsCell = ({ maintenance }) => {
     return (
       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-        {/* Ver reporte - siempre disponible */}
-        {[13, 15].includes(maintenance.status_id) && (
+        {/* Ver reporte - solo para mantenimientos realizados (estado 15) */}
+        {maintenance.status_id === 15 && (
+          <PermissionGuard permission={128}>
+            <button
+              onClick={() => handleDownloadReport(maintenance.id)}
+              disabled={downloadingPDF === maintenance.id}
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600"
+              title="Descargar reporte del mantenimiento"
+            >
+              <FiEye className="w-3 h-3" /> 
+              {downloadingPDF === maintenance.id ? 'Descargando...' : 'Ver Reporte'}
+            </button>
+          </PermissionGuard>
+        )}
+
+        {/* Crear reporte - solo para mantenimientos programados (estado 13) */}
+        {maintenance.status_id === 13 && (
           <PermissionGuard permission={127}>
             <button
               onClick={() => handleViewReport(maintenance.id)}
-              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600"
-              title="Ver reporte del mantenimiento"
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 hover:border-green-500 hover:text-green-600 text-green-600"
+              title="Registrar reporte del mantenimiento"
             >
-              <FiEye className="w-3 h-3" /> Reporte
+              <FiCheck className="w-3 h-3" /> Reporte
             </button>
           </PermissionGuard>
         )}
@@ -233,7 +282,7 @@ const ScheduledMaintenancePage = () => {
           <PermissionGuard permission={126}>
             <button
               onClick={() => handleUpdateMaintenance(maintenance.id)}
-              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-green-300 hover:border-green-500 hover:text-green-600 text-green-600"
+              className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-blue-300 hover:border-blue-500 hover:text-blue-600 text-blue-600"
               title="Actualizar mantenimiento"
             >
               <FiEdit3 className="w-3 h-3" /> Actualizar
@@ -415,7 +464,7 @@ const ScheduledMaintenancePage = () => {
       // Filtros específicos
       const matchesStatus = statusFilter === '' || maintenance.status_name === statusFilter;
       const matchesTechnician = technicianFilter === '' || maintenance.technician === technicianFilter;
-      const matchesType = typeFilter === '' || maintenance.maintenance_type === typeFilter;
+      const matchesType = typeFilter === '' || maintenance.maintenance_type_name === typeFilter;
 
       return matchesGlobal && matchesStatus && matchesTechnician && matchesType;
     });
@@ -441,6 +490,32 @@ const ScheduledMaintenancePage = () => {
     const d = new Date(date);
     d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
     return d;
+  };
+
+  // Validar rango de fechas
+  const validateDateRange = (startDate, endDate) => {
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      if (start > end) {
+        setDateRangeError("La fecha inicial no puede ser posterior a la fecha final");
+        return false;
+      }
+    }
+    setDateRangeError("");
+    return true;
+  };
+
+  // Handler para cambios de rango de fechas con validación
+  const handleDateRangeChange = (field, value) => {
+    const newRange = {
+      ...selectedDateRange,
+      [field]: value
+    };
+    
+    setSelectedDateRange(newRange);
+    validateDateRange(newRange.startDate, newRange.endDate);
   };
 
 
@@ -579,7 +654,7 @@ const ScheduledMaintenancePage = () => {
       </div>
 
       {/* Sección del Calendario - Layout según mockup */}
-      <div className="card-theme rounded-lg shadow mb-6 max-w-6xl mx-auto">
+      <div className="card-theme rounded-lg shadow mb-6 max-w-3xl mx-auto">
         <div className="p-4">
           <h2 className="text-lg font-semibold parametrization-text mb-4">
             Calendario de Mantenimientos
@@ -599,7 +674,7 @@ const ScheduledMaintenancePage = () => {
             {/* Controles y Rango de Fechas - Columna Derecha */}
             <div className="space-y-4">
               {/* Información de fecha actual */}
-              <div className="card-secondary bg-accent rounded-lg p-4">
+              {/* <div className="card-secondary bg-accent rounded-lg p-4">
                 <h3 className="text-sm font-semibold text-white mb-2">Hoy</h3>
                 <p className="text-lg font-bold text-white">
                   {new Date().toLocaleDateString('es-ES', {
@@ -608,7 +683,7 @@ const ScheduledMaintenancePage = () => {
                     month: 'long'
                   })}
                 </p>
-              </div>
+              </div> */}
 
               {/* Controles de Rango de Fechas */}
               <div className="card-secondary rounded-lg p-4">
@@ -623,11 +698,9 @@ const ScheduledMaintenancePage = () => {
                     <input
                       type="date"
                       value={selectedDateRange.startDate || ''}
-                      onChange={(e) => setSelectedDateRange(prev => ({
-                        ...prev,
-                        startDate: e.target.value
-                      }))}
-                      className="parametrization-input text-sm"
+                      max={selectedDateRange.endDate || undefined}
+                      onChange={(e) => handleDateRangeChange('startDate', e.target.value)}
+                      className={`parametrization-input text-sm ${dateRangeError ? 'border-red-500' : ''}`}
                     />
                   </div>
 
@@ -639,14 +712,19 @@ const ScheduledMaintenancePage = () => {
                     <input
                       type="date"
                       value={selectedDateRange.endDate || ''}
-                      onChange={(e) => setSelectedDateRange(prev => ({
-                        ...prev,
-                        endDate: e.target.value
-                      }))}
                       min={selectedDateRange.startDate || undefined}
-                      className="parametrization-input text-sm"
+                      onChange={(e) => handleDateRangeChange('endDate', e.target.value)}
+                      className={`parametrization-input text-sm ${dateRangeError ? 'border-red-500' : ''}`}
                     />
                   </div>
+
+                  {/* Mensaje de error */}
+                  {dateRangeError && (
+                    <div className="flex items-center gap-2 text-red-600 text-xs bg-red-50 p-2 rounded">
+                      <FiX className="w-4 h-4" />
+                      <span>{dateRangeError}</span>
+                    </div>
+                  )}
 
                   {/* Botones de acción */}
                   <div className="flex gap-2">
@@ -654,6 +732,7 @@ const ScheduledMaintenancePage = () => {
                       onClick={() => {
                         const today = new Date().toISOString().split('T')[0];
                         setSelectedDateRange({ startDate: today, endDate: today });
+                        setDateRangeError('');
                       }}
                       className="flex-1 parametrization-button px-3 py-2 text-xs bg-accent text-white hover:bg-accent-hover transition-colors"
                     >
@@ -668,6 +747,7 @@ const ScheduledMaintenancePage = () => {
                           startDate: today.toISOString().split('T')[0],
                           endDate: nextWeek.toISOString().split('T')[0]
                         });
+                        setDateRangeError('');
                       }}
                       className="flex-1 parametrization-button px-3 py-2 text-xs bg-success text-white hover:bg-success-hover transition-colors"
                     >
@@ -685,13 +765,17 @@ const ScheduledMaintenancePage = () => {
                           startDate: firstDay.toISOString().split('T')[0],
                           endDate: lastDay.toISOString().split('T')[0]
                         });
+                        setDateRangeError('');
                       }}
                       className="flex-1 parametrization-button px-3 py-2 text-xs bg-warning text-white hover:bg-warning-hover transition-colors"
                     >
                       Este mes
                     </button>
                     <button
-                      onClick={() => setSelectedDateRange({ startDate: null, endDate: null })}
+                      onClick={() => {
+                        setSelectedDateRange({ startDate: null, endDate: null });
+                        setDateRangeError('');
+                      }}
                       className="flex-1 parametrization-button px-3 py-2 text-xs parametrization-text hover:bg-hover transition-colors"
                     >
                       Limpiar
@@ -886,10 +970,10 @@ const ScheduledMaintenancePage = () => {
           isOpen={reportModalOpen}
           onClose={() => setReportModalOpen(false)}
           maintenance={selectedMaintenance}
-          onSave={(reportData) => {
-
+          onSave={async (reportData) => {
             setReportModalOpen(false);
             handleModalSuccess('Reporte de mantenimiento guardado exitosamente');
+            await loadMaintenanceData(); // Recargar datos después de guardar
           }}
         />
       )}

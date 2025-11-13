@@ -39,9 +39,25 @@ const Calendar = ({ maintenanceData = [], selectedDateRange, onDateRangeChange, 
     const maintenancesByDate = {};
     
     maintenanceData.forEach(maintenance => {
-      const date = new Date(maintenance.maintenanceDate);
-      if (date.getFullYear() === monthData.year && date.getMonth() === monthData.month) {
-        const day = date.getDate();
+      // Parsear la fecha manualmente para evitar problemas de zona horaria
+      // Si la fecha viene en formato YYYY-MM-DD, extraer año, mes y día directamente
+      const dateStr = maintenance.maintenanceDate;
+      let year, month, day;
+      
+      if (typeof dateStr === 'string' && dateStr.includes('-')) {
+        const parts = dateStr.split('T')[0].split('-'); // Tomar solo la parte de fecha (YYYY-MM-DD)
+        year = parseInt(parts[0], 10);
+        month = parseInt(parts[1], 10) - 1; // Los meses en JS son 0-indexed
+        day = parseInt(parts[2], 10);
+      } else {
+        // Fallback al método original si el formato es diferente
+        const date = new Date(dateStr);
+        year = date.getFullYear();
+        month = date.getMonth();
+        day = date.getDate();
+      }
+      
+      if (year === monthData.year && month === monthData.month) {
         if (!maintenancesByDate[day]) {
           maintenancesByDate[day] = [];
         }
@@ -67,14 +83,24 @@ const Calendar = ({ maintenanceData = [], selectedDateRange, onDateRangeChange, 
     date.setHours(0, 0, 0, 0);
     
     const maintenances = monthMaintenances[day] || [];
+    
+    // Helper para parsear fecha sin problemas de zona horaria
+    const parseMaintenanceDate = (dateStr) => {
+      if (typeof dateStr === 'string' && dateStr.includes('-')) {
+        const parts = dateStr.split('T')[0].split('-');
+        return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      }
+      return new Date(dateStr);
+    };
+    
     const hasOverdue = maintenances.some(m => {
-      const mDate = new Date(m.maintenanceDate);
+      const mDate = parseMaintenanceDate(m.maintenanceDate);
       mDate.setHours(0, 0, 0, 0);
       return mDate < today;
     });
     
     const hasToday = maintenances.some(m => {
-      const mDate = new Date(m.maintenanceDate);
+      const mDate = parseMaintenanceDate(m.maintenanceDate);
       mDate.setHours(0, 0, 0, 0);
       return mDate.getTime() === today.getTime();
     });
@@ -258,28 +284,6 @@ const Calendar = ({ maintenanceData = [], selectedDateRange, onDateRangeChange, 
         </div>
       </div>
 
-      {/* Información del rango seleccionado */}
-      {(selectedDateRange.startDate || isSelectingRange) && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-blue-800">
-              {isSelectingRange ? (
-                `Selecciona la fecha final (inicio: ${new Date(tempStartDate).toLocaleDateString('es-ES')})`
-              ) : selectedDateRange.endDate ? (
-                `Rango: ${new Date(selectedDateRange.startDate).toLocaleDateString('es-ES')} - ${new Date(selectedDateRange.endDate).toLocaleDateString('es-ES')}`
-              ) : (
-                `Fecha seleccionada: ${new Date(selectedDateRange.startDate).toLocaleDateString('es-ES')}`
-              )}
-            </div>
-            <button
-              onClick={clearSelection}
-              className="text-blue-600 hover:text-blue-800 text-sm"
-            >
-              Limpiar
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Leyenda */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
@@ -319,9 +323,6 @@ const Calendar = ({ maintenanceData = [], selectedDateRange, onDateRangeChange, 
       </div>
 
       {/* Instrucciones */}
-      <div className="text-sm text-gray-600 text-center">
-        Haz clic en un día para seleccionar fecha de inicio, luego en otro día para seleccionar el rango
-      </div>
     </div>
   );
 };

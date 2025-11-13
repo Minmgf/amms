@@ -469,13 +469,20 @@ const ScheduleMaintenanceModal = ({ isOpen, onClose, onSubmit }) => {
                           })
                           .sort((a, b) => a.workloadScore - b.workloadScore)
                           .map((tech) => {
-                            let indicator = "🟢";
-                            if (tech.count >= 10) indicator = "🔴";
-                            else if (tech.count >= 5) indicator = "🟡";
+                            let statusText = "●";
+                            let statusColor = "green";
+                            if (tech.count >= 5) {
+                              statusText = "●";
+                              statusColor = "yellow";
+                            }
+                            if (tech.count >= 10) {
+                              statusText = "●";
+                              statusColor = "red";
+                            }
 
                             return (
                               <option key={tech.id} value={tech.id}>
-                                {indicator} {tech.name} ({tech.count} programados)
+                                {statusText} {tech.name} ({tech.count} programados)
                               </option>
                             );
                           })}
