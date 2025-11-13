@@ -1716,7 +1716,9 @@ export default function MultiStepFormModal({
   const prevStep = () => setStep((s) => Math.max(s - 1, 0));
 
   const goToStep = (targetStep) => {
-    if (completedSteps.includes(targetStep) || targetStep === 0) {
+    // En modo editar, permitir navegación libre a cualquier paso
+    // En modo crear, solo permitir navegar a pasos completados o al paso 0
+    if (isEditMode || completedSteps.includes(targetStep) || targetStep === 0) {
       setStep(targetStep);
     }
   };
@@ -2004,13 +2006,13 @@ export default function MultiStepFormModal({
                 <button
                   type="button"
                   onClick={() => goToStep(index)}
-                  disabled={!completedSteps.includes(index) && index !== 0}
+                  disabled={!isEditMode && !completedSteps.includes(index) && index !== 0}
                   className={`w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-xs sm:text-theme-sm font-theme-bold border-2 transition-all duration-300 ${isActive
                       ? "bg-accent text-white"
                       : isCompleted
                         ? "bg-success text-white border-success"
                         : "bg-surface text-secondary border-primary"
-                    } ${!completedSteps.includes(index) && index !== 0
+                    } ${!isEditMode && !completedSteps.includes(index) && index !== 0
                       ? "cursor-not-allowed opacity-50"
                       : "hover:shadow-md"
                     }`}
@@ -2118,13 +2120,13 @@ export default function MultiStepFormModal({
                 <button
                   type="button"
                   onClick={() => goToStep(index)}
-                  disabled={!completedSteps.includes(index) && index !== 0}
+                  disabled={!isEditMode && !completedSteps.includes(index) && index !== 0}
                   className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-theme-bold border-2 transition-all duration-300 ${isActive
                       ? "bg-accent text-white"
                       : isCompleted
                         ? "bg-success text-white border-success"
                         : "bg-surface text-secondary border-primary"
-                    } ${!completedSteps.includes(index) && index !== 0
+                    } ${!isEditMode && !completedSteps.includes(index) && index !== 0
                       ? "cursor-not-allowed opacity-50"
                       : ""
                     }`}
@@ -2312,7 +2314,7 @@ export default function MultiStepFormModal({
                 type="button"
                 aria-label="Preview Button"
                 onClick={prevStep}
-                disabled={step === 0 || isSubmittingStep}
+                disabled={(!isEditMode && step === 0) || isSubmittingStep}
                 className="btn-theme btn-secondary w-auto"
               >
                 Anterior
