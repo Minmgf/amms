@@ -8,7 +8,7 @@ import {
   getServiceTypes,
   getCurrencyUnits,
 } from "@/services/serviceService";
-import { getTributesName } from "@/services/billingService";
+import { authorization, getTributesNames } from "@/services/billingService";
 import {
   SuccessModal,
   ErrorModal,
@@ -70,10 +70,15 @@ export default function CreateEditServiceModal({
     loadInitialData();
     const getTokenBilling = async () => {
       try {
-        const response = await getTributesName();
-        setTributesNames(response.data.tributes);
+        const response = await authorization();
+        setBillingToken(response.access_token);
+
+        if (response.access_token) {
+          const tributes = await getTributesNames(response.access_token);
+          setTributesNames(tributes.data);
+        }
       } catch (error) {
-        console.error("Error al cargar tributos:", error);
+        console.error("Error en inicialización:", error);
       }
     };
     getTokenBilling();

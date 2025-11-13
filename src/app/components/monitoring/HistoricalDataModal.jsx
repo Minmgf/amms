@@ -57,6 +57,9 @@ const HistoricalDataModal = ({ isOpen, onClose, trackingCode = "SOL-2025-0072" }
       
       const data = await getHistoricalDataByRequest(trackingCode, filterParams);
       
+      console.log("📊 Datos históricos recibidos:", data);
+      console.log("📊 Estructura completa:", JSON.stringify(data, null, 2));
+      
       debugger; // 🔍 Inspecciona 'data' aquí
       
       setHistoricalData(data);
