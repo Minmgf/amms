@@ -1,13 +1,21 @@
 "use client";
 import React, { useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { FaTimes } from "react-icons/fa";
+import { FaTimes, FaFileCsv, FaFileExcel } from "react-icons/fa";
 import { HistoricalCharts } from "./HistoricalCharts";
 import { PerformanceChart, FuelConsumptionChart } from "./TrackingDashboardComponents";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { downloadTelemetryReport } from "@/services/monitoringService";
+import { SuccessModal, ErrorModal, WarningModal } from "@/app/components/shared/SuccessErrorModal";
 
 const RequestHistoricalModal = ({ isOpen, onClose, requestData }) => {
   const [activeTab, setActiveTab] = useState("historical");
+  const [isExporting, setIsExporting] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showWarningModal, setShowWarningModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [warningMessage, setWarningMessage] = useState("");
   const [temporalFilter, setTemporalFilter] = useState({
     startDate: "2025-01-15 08:30",
     endDate: "2025-01-15 14:30"
@@ -89,6 +97,76 @@ const RequestHistoricalModal = ({ isOpen, onClose, requestData }) => {
 
   const handleApplyTemporalFilter = () => {
     console.log("Applying temporal filter:", temporalFilter);
+  };
+
+  const handleExportData = async (format) => {
+    if (!requestInfo?.trackingCode) {
+      setWarningMessage("No hay código de solicitud disponible para exportar");
+      setShowWarningModal(true);
+      return;
+    }
+
+    setIsExporting(true);
+    
+    try {
+      const result = await downloadTelemetryReport(requestInfo.trackingCode, format);
+      console.log('Export result:', result);
+      
+      // Verificar si hay datos disponibles
+      if (result.success === false) {
+        console.log('No data available, showing warning:', result.message);
+        setWarningMessage(result.message);
+        setShowWarningModal(true);
+      } else {
+        console.log('Export successful');
+        setShowSuccessModal(true);
+      }
+    } catch (error) {
+      console.error(`Error exporting ${format.toUpperCase()} report:`, error);
+      console.log('Error response:', error.response);
+      console.log('Error response data:', error.response?.data);
+      
+      // Intentar leer el mensaje del backend
+      let backendMessage = null;
+      
+      // Si la respuesta es un blob, intentar leerlo como JSON
+      if (error.response?.data instanceof Blob) {
+        try {
+          const text = await error.response.data.text();
+          const jsonData = JSON.parse(text);
+          backendMessage = jsonData.message;
+          console.log('Parsed error message from blob:', backendMessage);
+        } catch (e) {
+          console.log('Could not parse blob as JSON');
+        }
+      } else if (error.response?.data?.message) {
+        backendMessage = error.response.data.message;
+      } else if (error.response?.data?.detail) {
+        backendMessage = error.response.data.detail;
+      }
+      
+      if (backendMessage) {
+        // Si el mensaje indica que no hay datos, usar warning en lugar de error
+        if (backendMessage.toLowerCase().includes('no hay datos')) {
+          setWarningMessage(backendMessage);
+          setShowWarningModal(true);
+        } else {
+          setErrorMessage(backendMessage);
+          setShowErrorModal(true);
+        }
+      } else if (error.response?.status === 204) {
+        setWarningMessage("No hay datos disponibles");
+        setShowWarningModal(true);
+      } else if (error.message) {
+        setErrorMessage(error.message);
+        setShowErrorModal(true);
+      } else {
+        setErrorMessage("Error al generar el reporte");
+        setShowErrorModal(true);
+      }
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -206,6 +284,26 @@ const RequestHistoricalModal = ({ isOpen, onClose, requestData }) => {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Export Buttons */}
+              <div className="flex justify-end gap-3 mt-4">
+                <button 
+                  className="btn-theme btn-secondary flex items-center gap-2 px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => handleExportData('csv')}
+                  disabled={isExporting}
+                >
+                  <FaFileCsv className="w-4 h-4" />
+                  {isExporting ? 'Exportando...' : 'Exportar CSV'}
+                </button>
+                <button 
+                  className="btn-theme btn-primary flex items-center gap-2 px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => handleExportData('excel')}
+                  disabled={isExporting}
+                >
+                  <FaFileExcel className="w-4 h-4" />
+                  {isExporting ? 'Exportando...' : 'Exportar Excel'}
+                </button>
               </div>
             </div>
 
@@ -448,6 +546,32 @@ const RequestHistoricalModal = ({ isOpen, onClose, requestData }) => {
           </div>
         </Dialog.Content>
       </Dialog.Portal>
+
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        title="Exportación Exitosa"
+        message="El reporte se ha generado y descargado correctamente."
+      />
+
+      {/* Error Modal */}
+      <ErrorModal
+        isOpen={showErrorModal}
+        onClose={() => setShowErrorModal(false)}
+        title="Error en la Exportación"
+        message={errorMessage}
+        buttonText="Cerrar"
+      />
+
+      {/* Warning Modal */}
+      <WarningModal
+        isOpen={showWarningModal}
+        onClose={() => setShowWarningModal(false)}
+        title="Sin Datos Disponibles"
+        message={warningMessage}
+        buttonText="Aceptar"
+      />
     </Dialog.Root>
   );
 };
