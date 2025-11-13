@@ -802,7 +802,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
             {selectedMachinery !== null && selectedMachineryData && (
               <div>
                 <h3 className="text-base font-bold text-primary mb-4">Sensores y Contadores del Vehículo</h3>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   
                   {/* Sensor 1: Current speed */}
                   <GaugeCard 
@@ -1065,7 +1065,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                   <div className="space-y-5 text-xs">
                     {/* Métricas Principales - 3 Columnas */}
                     <div>
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                         <div className="p-3 rounded border" style={{ borderColor: 'var(--color-border)', backgroundColor: 'rgba(59, 130, 246, 0.08)' }}>
                           <p className="text-secondary text-[11px] font-medium mb-2">Combustible Usado</p>
                           <p className="text-lg font-bold text-primary">{additionalMetrics.fuelConsumption.fuelUsed}</p>
@@ -1105,7 +1105,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                         <p className="text-xs font-semibold text-primary mb-3 uppercase tracking-wide">Comparativa: Real vs Estimado</p>
                         <div className="space-y-3">
                           {/* Fila 1: Consumo Real vs Estimado */}
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="p-3 rounded border" style={{ borderColor: 'var(--color-border)', backgroundColor: 'rgba(34, 197, 94, 0.08)' }}>
                               <p className="text-secondary text-[11px] font-medium mb-2">Consumo Real</p>
                               <p className="text-lg font-bold text-primary">
@@ -1129,7 +1129,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                           </div>
 
                           {/* Fila 3: Diferencia y Error */}
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="p-3 rounded border" style={{ borderColor: 'var(--color-border)', backgroundColor: 'rgba(239, 68, 68, 0.08)' }}>
                               <p className="text-secondary text-[11px] font-medium mb-2">Diferencia Absoluta</p>
                               <p className="text-lg font-bold text-primary">
@@ -1154,7 +1154,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                           </div>
 
                           {/* Fila 4: Información del Tanque */}
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="p-3 rounded border" style={{ borderColor: 'var(--color-border)', backgroundColor: 'rgba(59, 130, 246, 0.08)' }}>
                               <p className="text-secondary text-[11px] font-medium mb-2">Nivel Inicial</p>
                               <p className="text-lg font-bold text-primary">
