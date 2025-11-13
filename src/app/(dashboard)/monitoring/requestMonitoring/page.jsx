@@ -55,7 +55,7 @@ const RequestMonitoringPage = () => {
     setError(null);
     try {
       const response = await getRequestMonitoringList();
-      
+
       if (response.status && response.data) {
         // Mapear los datos del API a la estructura del componente
         const mappedData = response.data.map((item) => ({
@@ -253,7 +253,7 @@ const RequestMonitoringPage = () => {
                 </PermissionGuard>
               )}
               {isCompleted && (
-                <PermissionGuard permission={170}>
+                <PermissionGuard permission={172}>
                   <button
                     aria-label="View History Button"
                     onClick={() => handleViewHistory(request.tracking_code)}
@@ -339,11 +339,10 @@ const RequestMonitoringPage = () => {
             </div>
 
             <button
-              className={`parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit ${
-                activeFiltersCount > 0
+              className={`parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit ${activeFiltersCount > 0
                   ? "bg-blue-100 border-blue-300 text-blue-700"
                   : ""
-              }`}
+                }`}
               onClick={() => setFilterModalOpen(true)}
               aria-label="Filter Button"
             >
@@ -364,15 +363,16 @@ const RequestMonitoringPage = () => {
                 <FiX className="w-3 h-3" /> Limpiar filtros
               </button>
             )}
-
-            <button
-              onClick={handleOpenHistoricalModal}
-              className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit"
-              aria-label="Historical per Machine/Operator"
-            >
-              <FaHistory className="w-4 h-4" />
-              <span className="text-sm">Historial por Maquinaria/Operador</span>
-            </button>
+            <PermissionGuard permission={172}>
+              <button
+                onClick={handleOpenHistoricalModal}
+                className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit"
+                aria-label="Historical per Machine/Operator"
+              >
+                <FaHistory className="w-4 h-4" />
+                <span className="text-sm">Historial por Maquinaria/Operador</span>
+              </button>
+            </PermissionGuard>
           </div>
 
           {/* Table */}
@@ -461,7 +461,7 @@ const RequestMonitoringPage = () => {
       />
 
       {/* Historical Data Machine/Operator Modal */}
-      <HistoricalDataModal 
+      <HistoricalDataModal
         isOpen={isHistoricalModalOpen}
         onClose={() => setIsHistoricalModalOpen(false)}
       />
