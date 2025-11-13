@@ -1,11 +1,11 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { FaTimes, FaFileCsv, FaFileExcel } from "react-icons/fa";
-import { HistoricalCharts } from "./HistoricalCharts";
-import { PerformanceChart, FuelConsumptionChart } from "./TrackingDashboardComponents";
+import { HistoricalCharts, PerformanceChart, FuelConsumptionChart } from "./HistoricalCharts";
+import DynamicRouteMap from "./DynamicRouteMap";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { downloadTelemetryReport } from "@/services/monitoringService";
+import { downloadTelemetryReport, getHistoricalRequestData } from "@/services/monitoringService";
 import { SuccessModal, ErrorModal, WarningModal } from "@/app/components/shared/SuccessErrorModal";
 
 const RequestHistoricalModal = ({ isOpen, onClose, requestData }) => {
@@ -17,9 +17,15 @@ const RequestHistoricalModal = ({ isOpen, onClose, requestData }) => {
   const [errorMessage, setErrorMessage] = useState("");
   const [warningMessage, setWarningMessage] = useState("");
   const [temporalFilter, setTemporalFilter] = useState({
-    startDate: "2025-01-15 08:30",
-    endDate: "2025-01-15 14:30"
+    startDate: "",
+    endDate: ""
   });
+
+  // Estados para datos históricos
+  const [historicalData, setHistoricalData] = useState(null);
+  const [loadingHistoricalData, setLoadingHistoricalData] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingMessage, setLoadingMessage] = useState("");
 
   // Helper function to format dates
   const formatDate = (dateString) => {
@@ -31,13 +37,250 @@ const RequestHistoricalModal = ({ isOpen, onClose, requestData }) => {
     return `${day}/${month}/${year}`;
   };
 
+  // Función para cargar datos históricos de la solicitud
+  const loadHistoricalData = async () => {
+    if (!requestData?.tracking_code) return;
+    
+    setLoadingHistoricalData(true);
+    setLoadingProgress(0);
+    setLoadingMessage("Iniciando consulta de datos históricos...");
+    
+    // Simular progreso durante la carga
+    const progressInterval = setInterval(() => {
+      setLoadingProgress(prev => {
+        if (prev < 90) {
+          const increment = Math.random() * 15 + 5; // Incremento aleatorio entre 5-20%
+          const newProgress = Math.min(prev + increment, 90);
+          
+          // Actualizar mensaje según el progreso
+          if (newProgress < 30) {
+            setLoadingMessage("Conectando con el servidor...");
+          } else if (newProgress < 60) {
+            setLoadingMessage("Procesando datos de telemetría...");
+          } else if (newProgress < 90) {
+            setLoadingMessage("Generando gráficas y estadísticas...");
+          }
+          
+          return newProgress;
+        }
+        return prev;
+      });
+    }, 800);
+    
+    try {
+      const response = await getHistoricalRequestData(requestData.tracking_code);
+      
+      // Completar progreso
+      clearInterval(progressInterval);
+      setLoadingProgress(100);
+      setLoadingMessage("¡Datos cargados exitosamente!");
+      
+      setHistoricalData(response);
+      
+      // Extraer fechas del JSON para llenar el filtro temporal
+      if (response && Array.isArray(response) && response.length > 0) {
+        const allDataPoints = [];
+        
+        // Recopilar todos los data_points de todos los parámetros
+        response[0]?.parameters?.forEach(param => {
+          if (param.data_points && Array.isArray(param.data_points)) {
+            allDataPoints.push(...param.data_points);
+          }
+        });
+        
+        if (allDataPoints.length > 0) {
+          // Ordenar por fecha y obtener el rango completo
+          allDataPoints.sort((a, b) => new Date(a.registered_at) - new Date(b.registered_at));
+          
+          const startDate = allDataPoints[0].registered_at;
+          const endDate = allDataPoints[allDataPoints.length - 1].registered_at;
+          
+          // Formatear para datetime-local (YYYY-MM-DDTHH:MM:SS)
+          const formatForDateTimeLocal = (dateStr) => {
+            return dateStr.substring(0, 19);
+          };
+          
+          setTemporalFilter({
+            startDate: formatForDateTimeLocal(startDate),
+            endDate: formatForDateTimeLocal(endDate)
+          });
+        }
+      }
+      
+      // Pequeña pausa para mostrar el mensaje de éxito
+      setTimeout(() => {
+        setLoadingHistoricalData(false);
+        setLoadingProgress(0);
+        setLoadingMessage("");
+      }, 1000);
+      
+    } catch (error) {
+      clearInterval(progressInterval);
+      console.error("Error loading historical data:", error);
+      
+      // Verificar si es un error de timeout
+      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+        setErrorMessage("La consulta está tardando más de lo esperado. Por favor, intenta con un rango de fechas más pequeño o contacta al administrador.");
+      } else {
+        setErrorMessage("Error al cargar los datos históricos. Por favor, intenta nuevamente.");
+      }
+      
+      setShowErrorModal(true);
+      setLoadingHistoricalData(false);
+      setLoadingProgress(0);
+      setLoadingMessage("");
+    }
+  };
+
+  // Función para filtrar datos por rango temporal
+  const filterDataByTimeRange = (data, startDate, endDate) => {
+    if (!data || !Array.isArray(data) || data.length === 0) return data;
+    if (!startDate || !endDate) return data;
+
+    return data.map(item => ({
+      ...item,
+      parameters: item.parameters?.map(param => ({
+        ...param,
+        data_points: param.data_points?.filter(point => {
+          const pointTimeStr = point.registered_at.substring(0, 19);
+          return pointTimeStr >= startDate && pointTimeStr <= endDate;
+        }) || []
+      })) || []
+    }));
+  };
+
+  // Obtener datos filtrados por rango temporal
+  const getFilteredHistoricalData = () => {
+    if (!historicalData) return null;
+    
+    if (temporalFilter.startDate && temporalFilter.endDate) {
+      return filterDataByTimeRange(historicalData, temporalFilter.startDate, temporalFilter.endDate);
+    }
+    
+    return historicalData;
+  };
+
+  // Función para extraer datos específicos de parámetros
+  const getParameterData = (data, parameterName) => {
+    if (!data || !Array.isArray(data) || data.length === 0) return null;
+    
+    const parameter = data[0]?.parameters?.find(p => p.parameter_name === parameterName);
+    return parameter || null;
+  };
+
+  // Función para calcular porcentajes de estado de la maquinaria
+  const calculateMachineryStatePercentages = (data) => {
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      return { off: 0, on: 0, inMotion: 0 };
+    }
+
+    const ignitionParam = data[0]?.parameters?.find(p => p.parameter_name === "Estado de Ignición");
+    const movementParam = data[0]?.parameters?.find(p => p.parameter_name === "Estado de Movimiento");
+
+    if (!ignitionParam || !movementParam) {
+      return { off: 0, on: 0, inMotion: 0 };
+    }
+
+    const ignitionData = ignitionParam.data_points || [];
+    const movementData = movementParam.data_points || [];
+
+    const combinedData = ignitionData.map(ignitionPoint => {
+      const movementPoint = movementData.find(mp => 
+        mp.registered_at === ignitionPoint.registered_at
+      );
+      
+      return {
+        timestamp: ignitionPoint.registered_at,
+        ignition: ignitionPoint.data,
+        movement: movementPoint ? movementPoint.data : 0
+      };
+    });
+
+    if (combinedData.length === 0) {
+      return { off: 0, on: 0, inMotion: 0 };
+    }
+
+    let offCount = 0;
+    let onCount = 0;
+    let inMotionCount = 0;
+
+    combinedData.forEach(point => {
+      if (point.ignition === 0) {
+        offCount++;
+      } else if (point.ignition === 1 && point.movement === 0) {
+        onCount++;
+      } else if (point.ignition === 1 && point.movement === 1) {
+        inMotionCount++;
+      }
+    });
+
+    const total = combinedData.length;
+    return {
+      off: Math.round((offCount / total) * 100),
+      on: Math.round((onCount / total) * 100),
+      inMotion: Math.round((inMotionCount / total) * 100)
+    };
+  };
+
+  // Función para generar datos de gráfico de combustible
+  const generateFuelConsumptionData = (data) => {
+    const fuelParam = getParameterData(data, "Nivel de Combustible");
+    const consumptionParam = getParameterData(data, "Consumo instantáneo");
+    
+    if (!fuelParam || !consumptionParam) return [];
+    
+    return fuelParam.data_points.map((point, index) => {
+      const consumptionPoint = consumptionParam.data_points[index];
+      return {
+        time: point.registered_at.substring(11, 16),
+        fuelLevel: point.data,
+        consumption: consumptionPoint ? consumptionPoint.data : 0,
+        timestamp: point.registered_at
+      };
+    });
+  };
+
+  // Función para generar datos de gráfico de rendimiento
+  const generatePerformanceData = (data) => {
+    const speedParam = getParameterData(data, "Velocidad Actual");
+    const rpmParam = getParameterData(data, "Revoluciones (RPM)");
+    const tempParam = getParameterData(data, "Temperatura del Motor");
+    const loadParam = getParameterData(data, "Carga del Motor");
+    const eventsParam = getParameterData(data, "Eventos");
+    
+    if (!speedParam || !rpmParam || !tempParam || !loadParam) return [];
+    
+    return speedParam.data_points.map((point, index) => {
+      const rpmPoint = rpmParam.data_points[index];
+      const tempPoint = tempParam.data_points[index];
+      const loadPoint = loadParam.data_points[index];
+      
+      const eventPoint = eventsParam?.data_points.find(
+        e => e.registered_at === point.registered_at
+      );
+      
+      return {
+        time: point.registered_at.substring(11, 16),
+        speed: point.data,
+        rpm: rpmPoint ? rpmPoint.data : 0,
+        temperature: tempPoint ? tempPoint.data : 0,
+        engineLoad: loadPoint ? loadPoint.data : 0,
+        gEvent: eventPoint ? eventPoint.data : null,
+        timestamp: point.registered_at
+      };
+    });
+  };
+
+  // Obtener datos filtrados
+  const filteredHistoricalData = getFilteredHistoricalData();
+
   // Use actual request data if available, otherwise use mock data
   const requestInfo = requestData ? {
     trackingCode: requestData.tracking_code || "SOL-2025-001",
     client: requestData.legal_entity_name || requestData.client_name || "Cliente no disponible",
     startDate: requestData.scheduled_date ? formatDate(requestData.scheduled_date) : "N/A",
     endDate: requestData.completion_date ? formatDate(requestData.completion_date) : "N/A",
-    totalDistance: "150 km",
+    totalDistance: filteredHistoricalData ? `${filteredHistoricalData[0]?.total_distance_km || 0} km` : "150 km",
   } : {
     trackingCode: "SOL-2025-001",
     client: "Constructora El Dorado S.A.S",
@@ -46,58 +289,130 @@ const RequestHistoricalModal = ({ isOpen, onClose, requestData }) => {
     totalDistance: "150 km",
   };
 
-  // Mock data for machinery information
-  const machineryInfo = [
+  // Dynamic machinery information based on historical data
+  const machineryInfo = filteredHistoricalData ? [{
+    id: filteredHistoricalData[0]?.id_machinery || 1,
+    name: `${filteredHistoricalData[0]?.machinery_name || "Maquinaria"} (${filteredHistoricalData[0]?.serial_number || "N/A"})`,
+    totalOperatingTime: `${filteredHistoricalData[0]?.operating_time_hours || 0}h`,
+    averageSpeed: (() => {
+      const speedParam = getParameterData(filteredHistoricalData, "Velocidad Actual");
+      return speedParam ? `${parseFloat(speedParam.statistics.average).toFixed(2)} km/h` : "0.00 km/h";
+    })(),
+    averageConsumption: (() => {
+      const consumptionParam = getParameterData(filteredHistoricalData, "Consumo instantáneo");
+      return consumptionParam ? `${parseFloat(consumptionParam.statistics.average).toFixed(2)}L/h` : "0.00L/h";
+    })(),
+    effectiveWorkingHours: `${filteredHistoricalData[0]?.effective_working_hours || 0}h`,
+    operator: filteredHistoricalData[0]?.user_name || "N/A"
+  }] : [
     {
       id: 1,
       name: "Excavadora CAT 320",
       totalOperatingTime: "10h",
       averageSpeed: "20 km/h",
       averageConsumption: "14L/h",
-      effectiveWorkingHours: "7h"
-    },
-    {
-      id: 2,
-      name: "Bulldozer CAT D6T",
-      totalOperatingTime: "10h",
-      averageSpeed: "20 km/h",
-      averageConsumption: "14L/h",
-      effectiveWorkingHours: "7h"
-    },
-    {
-      id: 3,
-      name: "Volqueta Mercedes M2",
-      totalOperatingTime: "10h",
-      averageSpeed: "20 km/h",
-      averageConsumption: "14L/h",
-      effectiveWorkingHours: "7h"
+      effectiveWorkingHours: "7h",
+      operator: "N/A"
     }
   ];
 
-  // Mock data for time percentage chart
-  const timePercentageData = [
-    { machinery: 'Excavadora CAT 320', off: 15, on: 85, inMotion: 72 },
-    { machinery: 'Bulldozer CAT D6T', off: 23, on: 78, inMotion: 58 },
-    { machinery: 'Volqueta Mercedes M2', off: 18, on: 82, inMotion: 65 }
+  // Dynamic time percentage chart data
+  const timePercentageData = filteredHistoricalData ? (() => {
+    const percentages = calculateMachineryStatePercentages(filteredHistoricalData);
+    return [{
+      machinery: `${filteredHistoricalData[0]?.machinery_name || "Maquinaria"}`,
+      off: percentages.off,
+      on: percentages.on,
+      inMotion: percentages.inMotion
+    }];
+  })() : [
+    { machinery: 'Excavadora CAT 320', off: 15, on: 85, inMotion: 72 }
   ];
 
-  // Mock data for G-Events
-  const gEvents = [
+  // Dynamic G-Events data
+  const gEvents = filteredHistoricalData ? (() => {
+    const eventsParam = getParameterData(filteredHistoricalData, "Eventos");
+    const gValueParam = getParameterData(filteredHistoricalData, "Valor G de Evento");
+    
+    if (!eventsParam || !gValueParam) return [];
+    
+    return eventsParam.data_points.map((eventPoint, index) => {
+      const gValuePoint = gValueParam.data_points[index];
+      const gValue = gValuePoint ? (gValuePoint.data / 100).toFixed(1) : "0.0";
+      
+      return {
+        type: `Evento G ${Math.floor(eventPoint.data)}`,
+        date: new Date(eventPoint.registered_at).toLocaleString('es-ES'),
+        duration: "N/A",
+        intensity: `${gValue}G`
+      };
+    });
+  })() : [
     { type: "Intensidad de Frenado", date: "2024-01-17 10:30", duration: "30 min", intensity: "-0.8G" },
     { type: "Intensidad de Aceleración", date: "2024-01-17 10:30", duration: "10 min", intensity: "+0.9G" },
     { type: "Intensidad de Curva", date: "2024-01-17 10:30", duration: "15 min", intensity: "0.7G" }
   ];
 
-  // Mock data for OBD Faults
-  const obdFaults = [
+  // Dynamic OBD Faults data
+  const obdFaults = filteredHistoricalData ? (() => {
+    const allFaults = [];
+    
+    filteredHistoricalData[0]?.parameters?.forEach(param => {
+      param.data_points?.forEach(point => {
+        if (point.obd_fault && point.obd_fault_name) {
+          allFaults.push({
+            fault: point.obd_fault,
+            example: point.obd_fault_name,
+            date: new Date(point.registered_at).toLocaleString('es-ES')
+          });
+        }
+      });
+    });
+    
+    const uniqueFaults = allFaults.filter((fault, index, self) => 
+      index === self.findIndex(f => f.fault === fault.fault)
+    );
+    
+    return uniqueFaults.length > 0 ? uniqueFaults : [];
+  })() : [
     { fault: "P0171", example: "Ejemplo", date: "2024-01-11 17:30" },
     { fault: "P0177", example: "Ejemplo", date: "2024-01-11 17:32" },
     { fault: "P0401", example: "Ejemplo", date: "2024-01-11 18:30" }
   ];
 
+  // Datos para gráficos específicos
+  const fuelConsumptionChartData = filteredHistoricalData ? generateFuelConsumptionData(filteredHistoricalData) : [];
+  const performanceChartData = filteredHistoricalData ? generatePerformanceData(filteredHistoricalData) : [];
+
   const handleApplyTemporalFilter = () => {
     console.log("Applying temporal filter:", temporalFilter);
   };
+
+  // useEffect para cargar datos cuando se abre el modal
+  useEffect(() => {
+    if (isOpen && requestData?.tracking_code) {
+      loadHistoricalData();
+    }
+  }, [isOpen, requestData?.tracking_code]);
+
+  // Función para limpiar datos al cerrar el modal
+  const clearModalData = () => {
+    setHistoricalData(null);
+    setTemporalFilter({
+      startDate: "",
+      endDate: ""
+    });
+    setLoadingHistoricalData(false);
+    setLoadingProgress(0);
+    setLoadingMessage("");
+  };
+
+  // Limpiar datos cuando se cierra el modal
+  useEffect(() => {
+    if (!isOpen) {
+      clearModalData();
+    }
+  }, [isOpen]);
 
   const handleExportData = async (format) => {
     if (!requestInfo?.trackingCode) {
@@ -181,13 +496,53 @@ const RequestHistoricalModal = ({ isOpen, onClose, requestData }) => {
               Datos Históricos
             </Dialog.Title>
             <Dialog.Close asChild>
-              <button aria-label="Cerrar modal" className="p-2 text-secondary hover:text-primary rounded-full transition-colors cursor-pointer" onClick={onClose}>
+              <button 
+                aria-label="Cerrar modal" 
+                className={`p-2 rounded-full transition-colors ${
+                  loadingHistoricalData 
+                    ? 'text-gray-400 cursor-not-allowed' 
+                    : 'text-secondary hover:text-primary cursor-pointer'
+                }`}
+                onClick={loadingHistoricalData ? undefined : onClose}
+                disabled={loadingHistoricalData}
+                title={loadingHistoricalData ? "No se puede cerrar mientras se cargan los datos" : "Cerrar modal"}
+              >
                 <FaTimes className="w-5 h-5" />
               </button>
             </Dialog.Close>
           </div>
 
           <Dialog.Description className="sr-only">Panel de monitoreo de datos históricos de la solicitud</Dialog.Description>
+
+          {/* Pantalla de carga minimalista */}
+          {loadingHistoricalData && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}>
+              <div className="text-center p-6 rounded-xl max-w-sm mx-4" style={{ backgroundColor: 'var(--color-background)', backdropFilter: 'blur(10px)' }}>
+                {/* Spinner minimalista */}
+                <div className="relative mx-auto mb-4 w-12 h-12">
+                  <div 
+                    className="absolute inset-0 rounded-full border-2 border-t-transparent animate-spin"
+                    style={{ borderColor: 'var(--color-primary)' }}
+                  ></div>
+                </div>
+                
+                {/* Mensaje simple */}
+                <h3 className="text-base font-medium text-primary mb-2">Cargando datos...</h3>
+                <p className="text-sm text-secondary">{loadingMessage}</p>
+                
+                {/* Barra de progreso minimalista */}
+                <div className="w-full bg-gray-200 rounded-full h-1 mt-4">
+                  <div 
+                    className="h-1 rounded-full transition-all duration-500 ease-out"
+                    style={{ 
+                      width: `${loadingProgress}%`,
+                      backgroundColor: 'var(--color-primary)'
+                    }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="p-6 space-y-6">
             
@@ -254,37 +609,49 @@ const RequestHistoricalModal = ({ isOpen, onClose, requestData }) => {
             {/* Machinery Information */}
             <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
               <h3 className="text-sm font-semibold text-primary mb-4">Información de Maquinaria</h3>
-              <div className="space-y-4">
-                {machineryInfo.map((machinery) => (
-                  <div key={machinery.id} className="flex gap-4 items-start p-3 rounded-lg border" style={{ borderColor: 'var(--color-border)' }}>
-                    <div className="w-16 h-16 rounded flex-shrink-0" style={{ backgroundColor: 'var(--color-background-tertiary)' }}>
-                      <div className="w-full h-full flex items-center justify-center text-secondary text-xs">IMG</div>
+              
+              {loadingHistoricalData ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  <span className="ml-3 text-secondary">Cargando datos históricos...</span>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {machineryInfo.map((machinery) => (
+                    <div key={machinery.id} className="flex gap-4 items-start p-3 rounded-lg border" style={{ borderColor: 'var(--color-border)' }}>
+                      <div className="w-16 h-16 rounded flex-shrink-0" style={{ backgroundColor: 'var(--color-background-tertiary)' }}>
+                        <div className="w-full h-full flex items-center justify-center text-secondary text-xs">IMG</div>
+                      </div>
+                      <div className="flex-1 grid grid-cols-2 md:grid-cols-6 gap-3 text-xs">
+                        <div>
+                          <p className="text-secondary mb-1">Nombre</p>
+                          <p className="text-primary font-medium">{machinery.name}</p>
+                        </div>
+                        <div>
+                          <p className="text-secondary mb-1">Operador</p>
+                          <p className="text-primary font-medium">{machinery.operator}</p>
+                        </div>
+                        <div>
+                          <p className="text-secondary mb-1">Tiempo total de operación</p>
+                          <p className="text-primary font-medium">{machinery.totalOperatingTime}</p>
+                        </div>
+                        <div>
+                          <p className="text-secondary mb-1">Velocidad promedio</p>
+                          <p className="text-primary font-medium">{machinery.averageSpeed}</p>
+                        </div>
+                        <div>
+                          <p className="text-secondary mb-1">Consumo promedio</p>
+                          <p className="text-primary font-medium">{machinery.averageConsumption}</p>
+                        </div>
+                        <div>
+                          <p className="text-secondary mb-1">Horas efectivas de trabajo</p>
+                          <p className="text-primary font-medium">{machinery.effectiveWorkingHours}</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex-1 grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
-                      <div>
-                        <p className="text-secondary mb-1">Nombre</p>
-                        <p className="text-primary font-medium">{machinery.name}</p>
-                      </div>
-                      <div>
-                        <p className="text-secondary mb-1">Tiempo total de operación</p>
-                        <p className="text-primary font-medium">{machinery.totalOperatingTime}</p>
-                      </div>
-                      <div>
-                        <p className="text-secondary mb-1">Velocidad promedio</p>
-                        <p className="text-primary font-medium">{machinery.averageSpeed}</p>
-                      </div>
-                      <div>
-                        <p className="text-secondary mb-1">Consumo promedio</p>
-                        <p className="text-primary font-medium">{machinery.averageConsumption}</p>
-                      </div>
-                      <div>
-                        <p className="text-secondary mb-1">Horas efectivas de trabajo</p>
-                        <p className="text-primary font-medium">{machinery.effectiveWorkingHours}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
 
               {/* Export Buttons */}
               <div className="flex justify-end gap-3 mt-4">
@@ -385,7 +752,14 @@ const RequestHistoricalModal = ({ isOpen, onClose, requestData }) => {
               {/* Historical Charts Tab */}
               {activeTab === "historical" && (
                 <div>
-                  <HistoricalCharts />
+                  {loadingHistoricalData ? (
+                    <div className="flex items-center justify-center py-16">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                      <span className="ml-4 text-secondary">Cargando gráficas históricas...</span>
+                    </div>
+                  ) : (
+                    <HistoricalCharts data={filteredHistoricalData} />
+                  )}
                 </div>
               )}
 
@@ -395,13 +769,27 @@ const RequestHistoricalModal = ({ isOpen, onClose, requestData }) => {
                   {/* Fuel Consumption Information */}
                   <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
                     <h3 className="text-base font-semibold text-primary mb-4">Información de Consumo de Combustible</h3>
-                    <FuelConsumptionChart />
+                    {loadingHistoricalData ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        <span className="ml-3 text-secondary">Cargando datos de combustible...</span>
+                      </div>
+                    ) : (
+                      <FuelConsumptionChart data={fuelConsumptionChartData} />
+                    )}
                   </div>
 
                   {/* Performance Information */}
                   <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
                     <h3 className="text-base font-semibold text-primary mb-4">Información de Rendimiento</h3>
-                    <PerformanceChart />
+                    {loadingHistoricalData ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        <span className="ml-3 text-secondary">Cargando datos de rendimiento...</span>
+                      </div>
+                    ) : (
+                      <PerformanceChart data={performanceChartData} />
+                    )}
                   </div>
 
                   {/* Chart Information */}
@@ -480,65 +868,21 @@ const RequestHistoricalModal = ({ isOpen, onClose, requestData }) => {
               {/* Interactive Map Tab */}
               {activeTab === "map" && (
                 <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
-                  <div className="w-full h-[500px] flex items-center justify-center relative overflow-hidden rounded-lg" style={{ backgroundColor: '#D1D5DB' }}>
-                    {/* Map placeholder */}
-                    <p className="text-sm text-secondary">Mapa</p>
-                    
-                    {/* Example route visualization */}
-                    <svg className="absolute inset-0 w-full h-full" viewBox="0 0 600 500">
-                      {/* Outbound route (green) */}
-                      <path 
-                        d="M 50 450 L 200 400" 
-                        stroke="#22C55E" 
-                        strokeWidth="4" 
-                        fill="none"
-                      />
-                      
-                      {/* Working route (blue) */}
-                      <path 
-                        d="M 200 400 L 250 200 L 300 200 L 300 100 L 350 100 L 350 200 L 400 200 L 400 100 L 450 100" 
-                        stroke="#3B82F6" 
-                        strokeWidth="4" 
-                        fill="none"
-                      />
-                      
-                      {/* Return route (red) */}
-                      <path 
-                        d="M 450 100 L 450 300 L 200 300" 
-                        stroke="#EF4444" 
-                        strokeWidth="4" 
-                        fill="none"
-                      />
-                      
-                      {/* Start marker (green) */}
-                      <circle cx="50" cy="450" r="8" fill="white" stroke="#22C55E" strokeWidth="3" />
-                      
-                      {/* Intermediate markers (blue) */}
-                      <circle cx="200" cy="400" r="8" fill="white" stroke="#3B82F6" strokeWidth="3" />
-                      <circle cx="450" cy="100" r="8" fill="white" stroke="#3B82F6" strokeWidth="3" />
-                      
-                      {/* End marker (red) */}
-                      <circle cx="200" cy="300" r="8" fill="white" stroke="#EF4444" strokeWidth="3" />
-                    </svg>
-
-                    {/* Legend */}
-                    <div className="absolute bottom-4 left-4 p-3 rounded shadow-lg bg-white">
-                      <div className="flex items-center gap-6 text-xs">
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-1 rounded" style={{ backgroundColor: '#22C55E' }}></div>
-                          <span className="text-gray-700">Salida</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-1 rounded" style={{ backgroundColor: '#3B82F6' }}></div>
-                          <span className="text-gray-700">Trabajando</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-1 rounded" style={{ backgroundColor: '#EF4444' }}></div>
-                          <span className="text-gray-700">Retorno</span>
-                        </div>
+                  <h3 className="text-base font-semibold text-primary mb-4">Mapa de Rutas</h3>
+                  {loadingHistoricalData ? (
+                    <div className="w-full h-[500px] flex items-center justify-center bg-gray-100 rounded-lg">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-3"></div>
+                        <p className="text-secondary">Cargando datos del mapa...</p>
                       </div>
                     </div>
-                  </div>
+                  ) : filteredHistoricalData ? (
+                    <DynamicRouteMap requestData={filteredHistoricalData} />
+                  ) : (
+                    <div className="w-full h-[500px] flex items-center justify-center bg-gray-100 rounded-lg">
+                      <p className="text-gray-600">No hay datos disponibles para mostrar en el mapa</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
