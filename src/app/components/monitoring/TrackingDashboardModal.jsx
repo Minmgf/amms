@@ -4,9 +4,10 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { FaTimes, FaSignal, FaMapMarkerAlt } from "react-icons/fa";
 import { MdPowerSettingsNew, MdDirectionsCar, MdLocationOn } from "react-icons/md";
 import { GaugeCard, CircularProgress, PerformanceChart, FuelConsumptionChart, MapTooltip, RealTimeMap } from "./TrackingDashboardComponents";
+import { ErrorModal } from "@/app/components/shared/SuccessErrorModal";
 import { useTrackingWebSocket } from "@/hooks/useTrackingWebSocket";
 import { getRequestDetails } from "@/services/requestService";
-import "./tracking-animations.css";
+import "@/styles/tracking-animations.css";
 
 const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
   const [selectedMachinery, setSelectedMachinery] = useState(0);
@@ -20,6 +21,126 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
   // Estado para almacenar datos históricos de cada maquinaria
   const [historicalData, setHistoricalData] = useState({});
   
+  // Estado para datos formateados de las gráficas
+  const [chartData, setChartData] = useState({});
+  
+  // Estado para histórico de fallas OBD
+  const [obdFaultsHistory, setObdFaultsHistory] = useState({});
+  
+  // Estado para histórico de eventos G
+  const [gEventsHistory, setGEventsHistory] = useState({});
+  
+  // Estado para modal de error de timeout
+  const [isTimeoutErrorOpen, setIsTimeoutErrorOpen] = useState(false);
+  const [timeoutErrorMessage, setTimeoutErrorMessage] = useState("");
+  
+  // Cargar datos históricos desde localStorage al montar el componente
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const storedData = localStorage.getItem('telemetry_historical_data');
+        if (storedData) {
+          const parsedData = JSON.parse(storedData);
+          setHistoricalData(parsedData);
+          console.log('📊 Datos históricos cargados desde localStorage:', Object.keys(parsedData).length, 'maquinarias');
+        }
+        
+        const storedOBD = localStorage.getItem('telemetry_obd_faults_history');
+        if (storedOBD) {
+          const parsedOBD = JSON.parse(storedOBD);
+          setObdFaultsHistory(parsedOBD);
+          console.log('🔧 Histórico de fallas OBD cargado');
+        }
+        
+        const storedGEvents = localStorage.getItem('telemetry_g_events_history');
+        if (storedGEvents) {
+          const parsedGEvents = JSON.parse(storedGEvents);
+          setGEventsHistory(parsedGEvents);
+          console.log('📍 Histórico de eventos G cargado');
+        }
+      } catch (error) {
+        console.warn('⚠️ Error al cargar datos históricos desde localStorage:', error);
+      }
+    }
+  }, []);
+  
+  // Guardar datos históricos en localStorage cuando se actualizan
+  useEffect(() => {
+    if (typeof window !== 'undefined' && Object.keys(historicalData).length > 0) {
+      try {
+        localStorage.setItem('telemetry_historical_data', JSON.stringify(historicalData));
+        console.log('💾 Datos históricos guardados en localStorage');
+      } catch (error) {
+        console.warn('⚠️ Error al guardar datos históricos en localStorage:', error);
+      }
+    }
+  }, [historicalData]);
+  
+  // Guardar histórico de fallas OBD en localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined' && Object.keys(obdFaultsHistory).length > 0) {
+      try {
+        localStorage.setItem('telemetry_obd_faults_history', JSON.stringify(obdFaultsHistory));
+        console.log('💾 Histórico de fallas OBD guardado en localStorage');
+      } catch (error) {
+        console.warn('⚠️ Error al guardar histórico de fallas OBD:', error);
+      }
+    }
+  }, [obdFaultsHistory]);
+  
+  // Guardar histórico de eventos G en localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined' && Object.keys(gEventsHistory).length > 0) {
+      try {
+        localStorage.setItem('telemetry_g_events_history', JSON.stringify(gEventsHistory));
+        console.log('💾 Histórico de eventos G guardado en localStorage');
+      } catch (error) {
+        console.warn('⚠️ Error al guardar histórico de eventos G:', error);
+      }
+    }
+  }, [gEventsHistory]);
+  
+  // Función para limpiar datos históricos
+  const clearHistoricalData = () => {
+    setHistoricalData({});
+    setChartData({});
+    setObdFaultsHistory({});
+    setGEventsHistory({});
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('telemetry_historical_data');
+      localStorage.removeItem('telemetry_obd_faults_history');
+      localStorage.removeItem('telemetry_g_events_history');
+      console.log('🗑️ Todos los datos históricos eliminados');
+    }
+  };
+  
+  // Función para generar datos de prueba
+  const generateTestData = () => {
+    const testImei = '357894561234567';
+    const testData = [];
+    
+    // Generar 15 puntos de datos de prueba (más puntos para mejor visualización)
+    for (let i = 0; i < 15; i++) {
+      const timestamp = new Date(Date.now() - (14 - i) * 30000).toISOString(); // Cada 30 segundos
+      testData.push({
+        timestamp,
+        speed: Math.floor(Math.random() * 60) + 80, // 80-140 km/h
+        rpm: Math.floor(Math.random() * 1000) + 3500, // 3500-4500 RPM
+        engineTemp: Math.floor(Math.random() * 20) + 90, // 90-110°C
+        fuelLevel: Math.floor(Math.random() * 30) + 50, // 50-80%
+        fuelUsedGps: 150 + Math.random() * 20,
+        instantConsumption: Math.random() * 10 + 15, // 15-25 L/h
+        eventType: Math.random() > 0.7 ? Math.floor(Math.random() * 3) + 1 : null,
+        eventGValue: Math.random() > 0.7 ? Math.floor(Math.random() * 30) + 10 : 0,
+        engineLoad: Math.floor(Math.random() * 40) + 30
+      });
+    }
+    
+    console.log('🧪 Datos de prueba generados:', testData);
+    setHistoricalData({ [testImei]: testData });
+    console.log('✅ historicalData actualizado con datos de prueba');
+  };
+  
   // Extraer IMEIs de las maquinarias de la solicitud
   const machineryImeis = useMemo(() => {
     if (!requestDetails || !requestDetails.machineries) return null;
@@ -28,11 +149,55 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
       .map(m => m.telemetry_device_imei);
   }, [requestDetails]);
   
-  // Hook de WebSocket de telemetría con filtro de IMEIs
-  const { machineriesData, connectionStatus, reconnect, alerts } = useTrackingWebSocket({ 
+  // Hook de WebSocket de telemetría con filtro de IMEIs y request ID
+  // El requestId debe ser el Código de Seguimiento (tracking_code)
+  const requestId = requestData?.tracking_code || requestData?.id;
+  const { machineriesData, connectionStatus, reconnect, alerts, timeoutMessage } = useTrackingWebSocket({ 
+    requestId: requestId,
     imeiFilter: machineryImeis
   });
+
+  // Mostrar modal de error cuando hay timeout
+  useEffect(() => {
+    if (timeoutMessage) {
+      console.log('⏰ Timeout recibido:', timeoutMessage);
+      const errorMsg = `No se han recibido datos para la solicitud ${timeoutMessage.request_id} en ${timeoutMessage.timeout_seconds} segundos. La conexión se ha cerrado.`;
+      setTimeoutErrorMessage(errorMsg);
+      setIsTimeoutErrorOpen(true);
+    }
+  }, [timeoutMessage]);
+
+  // Debug: Verificar si el WebSocket está recibiendo datos
+  useEffect(() => {
+    console.log('🔍 Estado WebSocket:', {
+      requestId,
+      connectionStatus,
+      machineriesDataKeys: Object.keys(machineriesData),
+      machineriesDataLength: Object.keys(machineriesData).length,
+      firstMachinery: Object.values(machineriesData)[0],
+      machineryImeis,
+      requestData: {
+        id: requestData?.id,
+        tracking_code: requestData?.tracking_code
+      },
+      timeoutMessage
+    });
+  }, [machineriesData, connectionStatus, requestId, machineryImeis, requestData, timeoutMessage]);
   
+  // Limpiar datos históricos cuando cambia la solicitud
+  useEffect(() => {
+    if (requestData && requestData.id) {
+      console.log('🔄 Solicitud cambió a:', requestData.id);
+      // Limpiar datos históricos para evitar mezclar datos de diferentes solicitudes
+      setHistoricalData({});
+      setChartData({});
+      setObdFaultsHistory({});
+      setGEventsHistory({});
+      setSelectedMachinery(0);
+      console.log('🗑️ Datos históricos limpiados para la nueva solicitud');
+    }
+  }, [requestData?.id]);
+
   // Cargar detalles de la solicitud cuando se abre el modal
   useEffect(() => {
     const loadRequestDetails = async () => {
@@ -56,31 +221,55 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
 
   // Almacenar datos históricos cuando llegan del WebSocket
   useEffect(() => {
-    if (!machineriesData || Object.keys(machineriesData).length === 0) return;
+    if (!machineriesData || Object.keys(machineriesData).length === 0) {
+      console.log('⏭️ Sin datos del WebSocket para procesar');
+      return;
+    }
+
+    console.log('📊 Datos recibidos del WebSocket:', machineriesData);
+    console.log('📈 Datos históricos actuales antes de actualizar:', historicalData);
 
     setHistoricalData(prev => {
       const newData = { ...prev };
+      let dataAdded = false;
       
       Object.entries(machineriesData).forEach(([imei, data]) => {
+        console.log(`🔄 Procesando datos para IMEI ${imei}:`, {
+          speed: data.speed,
+          rpm: data.rpm,
+          fuelLevel: data.fuelLevel,
+          instantConsumption: data.instantConsumption,
+          timestamp: data.timestamp
+        });
+        
         if (!newData[imei]) {
           newData[imei] = [];
+          console.log(`📝 Creando array para IMEI ${imei}`);
         }
         
         // Agregar nuevo punto de datos con timestamp
         const dataPoint = {
           timestamp: data.timestamp || new Date().toISOString(),
-          speed: data.speed || 0,
-          rpm: data.rpm || 0,
-          engineTemp: data.engineTemp || 0,
-          fuelLevel: data.fuelLevel || 0,
-          fuelUsedGps: data.fuelUsedGps || 0,
-          instantConsumption: data.instantConsumption || 0,
+          speed: data.speed !== null && data.speed !== undefined ? data.speed : 0,
+          rpm: data.rpm !== null && data.rpm !== undefined ? data.rpm : 0,
+          engineTemp: data.engineTemp !== null && data.engineTemp !== undefined ? data.engineTemp : 0,
+          fuelLevel: data.fuelLevel !== null && data.fuelLevel !== undefined ? data.fuelLevel : 0,
+          fuelUsedGps: data.fuelUsedGps !== null && data.fuelUsedGps !== undefined ? data.fuelUsedGps : 0,
+          instantConsumption: data.instantConsumption !== null && data.instantConsumption !== undefined ? data.instantConsumption : 0,
           eventType: data.eventType || null,
           eventGValue: data.eventGValue || 0,
-          engineLoad: data.engineLoad || 0
+          engineLoad: data.engineLoad !== null && data.engineLoad !== undefined ? data.engineLoad : 0
         };
         
-        newData[imei].push(dataPoint);
+        // Verificar si el último punto tiene el mismo timestamp (evitar duplicados)
+        const lastPoint = newData[imei][newData[imei].length - 1];
+        if (!lastPoint || lastPoint.timestamp !== dataPoint.timestamp) {
+          newData[imei].push(dataPoint);
+          dataAdded = true;
+          console.log(`✅ Datos agregados para ${imei}. Total puntos: ${newData[imei].length}`);
+        } else {
+          console.log(`⏭️ Datos duplicados ignorados para ${imei} (mismo timestamp: ${dataPoint.timestamp})`);
+        }
         
         // Mantener solo los últimos 50 puntos (aproximadamente 25 minutos de datos)
         if (newData[imei].length > 50) {
@@ -88,9 +277,183 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
         }
       });
       
+      console.log('📊 Datos históricos después de actualizar:', newData);
       return newData;
     });
   }, [machineriesData]);
+
+  // Almacenar histórico de fallas OBD y eventos G
+  useEffect(() => {
+    if (!machineriesData || Object.keys(machineriesData).length === 0) return;
+
+    setObdFaultsHistory(prev => {
+      const newOBDData = { ...prev };
+      
+      Object.entries(machineriesData).forEach(([imei, data]) => {
+        if (data.obdFaults && Array.isArray(data.obdFaults) && data.obdFaults.length > 0) {
+          if (!newOBDData[imei]) {
+            newOBDData[imei] = [];
+          }
+          
+          data.obdFaults.forEach(faultCode => {
+            // faultCode es un string como "P0135"
+            const faultWithTimestamp = {
+              code: faultCode,
+              timestamp: data.timestamp || new Date().toISOString(),
+              imei
+            };
+            
+            // Evitar duplicados - buscar por código y timestamp
+            const isDuplicate = newOBDData[imei].some(f => 
+              f.code === faultCode && f.timestamp === faultWithTimestamp.timestamp
+            );
+            
+            if (!isDuplicate) {
+              // Agregar al inicio (nuevos primero)
+              newOBDData[imei].unshift(faultWithTimestamp);
+              console.log(`🔧 Falla OBD agregada para ${imei}:`, faultCode);
+            }
+          });
+          
+          // Mantener solo los últimos 50 registros
+          if (newOBDData[imei].length > 50) {
+            newOBDData[imei] = newOBDData[imei].slice(0, 50);
+          }
+        }
+      });
+      
+      return newOBDData;
+    });
+
+    setGEventsHistory(prev => {
+      const newGEventsData = { ...prev };
+      
+      Object.entries(machineriesData).forEach(([imei, data]) => {
+        // Solo agregar si hay un evento válido (eventType no es null)
+        if (data.eventType !== null && data.eventType !== undefined && data.eventType !== 0) {
+          if (!newGEventsData[imei]) {
+            newGEventsData[imei] = [];
+          }
+          
+          const gEvent = {
+            timestamp: data.timestamp || new Date().toISOString(),
+            eventType: data.eventType,
+            eventGValue: data.eventGValue || 0,
+            imei
+          };
+          
+          // Evitar duplicados por timestamp y tipo de evento
+          const isDuplicate = newGEventsData[imei].some(e => 
+            e.eventType === gEvent.eventType && e.timestamp === gEvent.timestamp
+          );
+          
+          if (!isDuplicate) {
+            // Agregar al inicio (nuevos primero)
+            newGEventsData[imei].unshift(gEvent);
+            console.log(`📍 Evento G agregado para ${imei}:`, data.eventType, 'G-Value:', data.eventGValue);
+          }
+          
+          // Mantener solo los últimos 50 registros
+          if (newGEventsData[imei].length > 50) {
+            newGEventsData[imei] = newGEventsData[imei].slice(0, 50);
+          }
+        }
+      });
+      
+      return newGEventsData;
+    });
+  }, [machineriesData]);
+
+  // Debug: Verificar históricos de OBD y eventos G
+  useEffect(() => {
+    console.log('🔧 Histórico OBD actual:', obdFaultsHistory);
+    console.log('📍 Histórico Eventos G actual:', gEventsHistory);
+  }, [obdFaultsHistory, gEventsHistory]);
+
+  // Formatear datos para las gráficas cuando se actualizan los datos históricos
+  useEffect(() => {
+    if (!historicalData || Object.keys(historicalData).length === 0) return;
+
+    console.log('🔄 Formateando datos para gráficas...', historicalData);
+
+    const formattedChartData = {};
+    
+    Object.entries(historicalData).forEach(([imei, dataPoints]) => {
+      console.log(`📈 Formateando ${dataPoints.length} puntos para IMEI ${imei}`);
+      
+      // Formatear datos para gráfica de rendimiento (Velocidad vs RPM)
+      const performanceData = dataPoints.map(point => {
+        const time = new Date(point.timestamp);
+        const timeStr = time.toLocaleTimeString('es-CO', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          second: '2-digit'
+        });
+        
+        // Determinar el tipo de evento para el marcador
+        let event = null;
+        if (point.eventType === 1) event = 'acceleration';
+        else if (point.eventType === 2) event = 'braking';
+        else if (point.eventType === 3) event = 'curve';
+        else if (point.speed > 0 && point.rpm > 0) event = 'motion';
+        else if (point.speed === 0 && point.rpm > 0) event = 'stationary';
+        else event = 'off';
+        
+        return {
+          time: timeStr,
+          speed: point.speed,
+          rpm: point.rpm,
+          event: event,
+          eventGValue: point.eventGValue,
+          timestamp: point.timestamp
+        };
+      });
+      
+      // Formatear datos para gráfica de consumo de combustible
+      const fuelConsumptionData = dataPoints.map(point => {
+        const time = new Date(point.timestamp);
+        const timeStr = time.toLocaleTimeString('es-CO', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          second: '2-digit'
+        });
+        
+        return {
+          time: timeStr,
+          fuelLevel: point.fuelLevel,
+          consumption: point.instantConsumption,
+          fuelUsedGps: point.fuelUsedGps,
+          timestamp: point.timestamp
+        };
+      });
+      
+      formattedChartData[imei] = {
+        performance: performanceData,
+        fuelConsumption: fuelConsumptionData
+      };
+      
+      console.log(`✅ Gráficas formateadas para ${imei}:`, {
+        performancePoints: performanceData.length,
+        fuelPoints: fuelConsumptionData.length
+      });
+    });
+    
+    setChartData(formattedChartData);
+    console.log('📊 Datos de gráficas actualizados:', formattedChartData);
+    console.log('📊 chartData state actualizado con', Object.keys(formattedChartData).length, 'IMEIs');
+  }, [historicalData]);
+
+  // Debug: Verificar chartData
+  useEffect(() => {
+    console.log('🔍 chartData actual:', chartData);
+    console.log('🔍 chartData keys:', Object.keys(chartData));
+    Object.entries(chartData).forEach(([imei, data]) => {
+      console.log(`🔍 IMEI ${imei}:`, {
+        performancePoints: data.performance?.length || 0,
+        fuelPoints: data.fuelConsumption?.length || 0
+      });
+    });
+  }, [chartData]);
 
   // Helper function to format dates
   const formatDate = (dateString) => {
@@ -137,9 +500,9 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
       return {
         id: index + 1,
         imei: imei,
-        serial: machineryInfo?.machinery_serial || imei,
-        name: machineryInfo?.machinery_name || `Maquinaria ${imei.slice(-4)}`,
-        operator: machineryInfo?.operator_name || "Operador asignado",
+        serial: data.serialNumber || machineryInfo?.machinery_serial || imei,
+        name: data.machineryName || machineryInfo?.machinery_name || `Maquinaria ${imei.slice(-4)}`,
+        operator: data.operatorName || machineryInfo?.operator_name || "Operador asignado",
         implement: machineryInfo?.implement_name || "Sin implemento",
         photo: machineryInfo?.machinery_photo || null,
         currentSpeed: data.speed !== null ? `${data.speed} km/h` : "0 km/h",
@@ -186,8 +549,8 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
     
     return {
       currentSpeed: { 
-        value: machinery.rpm !== null ? parseInt(machinery.currentSpeed) : 0, 
-        max: 200, 
+        value: machinery.currentSpeed !== null && machinery.currentSpeed !== "0 km/h" ? parseInt(machinery.currentSpeed) : 0, 
+        max: 180, 
         unit: "km/h" 
       },
       rpm: { 
@@ -290,6 +653,7 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
   };
 
   return (
+    <>
     <Dialog.Root open={isOpen} onOpenChange={onClose}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/60 z-[60]" />
@@ -377,9 +741,14 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
               </div>
 
               {/* FILA 3.2: Real Time Ubication */}
-              <div>
+              <div className="relative z-0 overflow-hidden">
                 <h3 className="text-sm font-semibold text-primary mb-3">Ubicación en Tiempo Real</h3>
-                <RealTimeMap machineries={machineries} />
+                <div className="overflow-hidden rounded-lg">
+                  <RealTimeMap 
+                    machineries={machineries} 
+                    selectedMachinery={selectedMachinery !== null && machineries[selectedMachinery] ? machineries[selectedMachinery] : null}
+                  />
+                </div>
                 
                 {/* Legend */}
                 <div className="mt-3 p-3 rounded-lg border text-xs" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
@@ -636,54 +1005,84 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                 {/* OBD Faults */}
                 <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
                   <h3 className="text-sm font-semibold text-primary mb-4">Fallas OBD</h3>
-                  <div className="space-y-3 text-xs">
-                    {additionalMetrics.obdFaults.length === 0 ? (
-                      <p className="text-center text-secondary py-4">Sin fallas OBD detectadas</p>
-                    ) : additionalMetrics.obdFaults.map((faultCode, index) => (
-                      <div key={index} className="pb-3 border-b last:border-b-0" style={{ borderColor: 'var(--color-border)' }}>
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <div className="w-1 h-8 bg-error rounded"></div>
-                            <div>
-                              <p className="font-bold text-error text-sm">{faultCode}</p>
-                              <p className="text-[10px] text-secondary">Código OBD detectado</p>
+                  <div className="space-y-3 text-xs max-h-[400px] overflow-y-auto">
+                    {(() => {
+                      const selectedImei = selectedMachinery !== null && machineries[selectedMachinery] ? machineries[selectedMachinery].imei : null;
+                      const faults = selectedImei && obdFaultsHistory[selectedImei] ? obdFaultsHistory[selectedImei] : [];
+                      
+                      console.log('🔍 OBD Debug:', {
+                        selectedMachinery,
+                        selectedImei,
+                        machineries: machineries.map(m => ({ id: m.id, imei: m.imei })),
+                        obdFaultsHistory,
+                        faults
+                      });
+                      
+                      return faults.length === 0 ? (
+                        <p className="text-center text-secondary py-4">Sin fallas OBD detectadas</p>
+                      ) : faults.map((fault, index) => (
+                        <div key={index} className="pb-3 border-b last:border-b-0" style={{ borderColor: 'var(--color-border)' }}>
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-1 h-8 bg-error rounded"></div>
+                              <div>
+                                <p className="font-bold text-error text-sm">{fault.code || 'Código desconocido'}</p>
+                                <p className="text-[10px] text-secondary">{fault.description || 'Falla OBD detectada'}</p>
+                              </div>
                             </div>
+                            <span className="text-[10px] text-secondary whitespace-nowrap">
+                              {new Date(fault.timestamp).toLocaleString('es-CO')}
+                            </span>
                           </div>
-                          <span className="text-[10px] text-secondary whitespace-nowrap">{new Date().toLocaleString('es-CO')}</span>
                         </div>
-                      </div>
-                    ))}
+                      ));
+                    })()}
                   </div>
                 </div>
 
                 {/* G-Events */}
                 <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
                   <h3 className="text-sm font-semibold text-primary mb-4">Eventos G</h3>
-                  <div className="space-y-4 text-xs">
-                    {additionalMetrics.events.type === null || additionalMetrics.events.gValue === null ? (
-                      <p className="text-center text-secondary py-4">Sin eventos G detectados</p>
-                    ) : (
-                      <div>
-                        <div className="flex items-start justify-between mb-1">
-                          <span className="text-primary font-medium">
-                            {additionalMetrics.events.type === 1 ? 'Aceleración' : 
-                             additionalMetrics.events.type === 2 ? 'Frenado' : 
-                             additionalMetrics.events.type === 3 ? 'Curva' : 
-                             'Evento'}
-                          </span>
-                          <span className="text-secondary text-[10px]">{new Date().toLocaleString('es-CO')}</span>
+                  <div className="space-y-4 text-xs max-h-[400px] overflow-y-auto">
+                    {(() => {
+                      const selectedImei = selectedMachinery !== null && machineries[selectedMachinery] ? machineries[selectedMachinery].imei : null;
+                      const events = selectedImei && gEventsHistory[selectedImei] ? gEventsHistory[selectedImei] : [];
+                      
+                      console.log('🔍 G-Events Debug:', {
+                        selectedMachinery,
+                        selectedImei,
+                        machineries: machineries.map(m => ({ id: m.id, imei: m.imei })),
+                        gEventsHistory,
+                        events
+                      });
+                      
+                      return events.length === 0 ? (
+                        <p className="text-center text-secondary py-4">Sin eventos G detectados</p>
+                      ) : events.map((event, index) => (
+                        <div key={index} className="pb-3 border-b last:border-b-0" style={{ borderColor: 'var(--color-border)' }}>
+                          <div className="flex items-start justify-between mb-1">
+                            <span className="text-primary font-medium">
+                              {event.eventType === 1 ? 'Aceleración' : 
+                               event.eventType === 2 ? 'Frenado' : 
+                               event.eventType === 3 ? 'Curva' : 
+                               'Evento'}
+                            </span>
+                            <span className="text-secondary text-[10px]">
+                              {new Date(event.timestamp).toLocaleString('es-CO')}
+                            </span>
+                          </div>
+                          <div className="text-secondary">
+                            Intensidad: <span className={`font-bold ${
+                              event.eventType === 2 ? 'text-error' : 
+                              event.eventType === 1 ? 'text-warning' : 
+                              'text-primary'
+                            }`}>
+                              {event.eventGValue}G
+                            </span>
+                          </div>
                         </div>
-                        <div className="text-secondary">
-                          Intensidad: <span className={`font-bold ${
-                            additionalMetrics.events.type === 2 ? 'text-error' : 
-                            additionalMetrics.events.type === 1 ? 'text-warning' : 
-                            'text-primary'
-                          }`}>
-                            {additionalMetrics.events.gValue}G
-                          </span>
-                        </div>
-                      </div>
-                    )}
+                      ));
+                    })()}
                   </div>
                 </div>
               </div>
@@ -692,27 +1091,68 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
             {/* FILA 6: Gráficas con tabs */}
             {selectedMachinery !== null && (
               <div>
-                <div className="flex gap-1 mb-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
-                  <button onClick={() => setActiveTab("performance")} className={`px-4 py-2 text-sm font-medium transition-colors relative ${activeTab === "performance" ? 'text-primary' : 'text-secondary hover:text-primary'}`}>
-                    Información de Rendimiento
-                    {activeTab === "performance" && <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ backgroundColor: 'var(--color-primary)' }} />}
-                  </button>
-                  <button onClick={() => setActiveTab("fuel")} className={`px-4 py-2 text-sm font-medium transition-colors relative ${activeTab === "fuel" ? 'text-primary' : 'text-secondary hover:text-primary'}`}>
-                    Información de Consumo de Combustible
-                    {activeTab === "fuel" && <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ backgroundColor: 'var(--color-primary)' }} />}
-                  </button>
+                <div className="flex gap-1 mb-3 border-b justify-between items-center" style={{ borderColor: 'var(--color-border)' }}>
+                  <div className="flex gap-1">
+                    <button onClick={() => setActiveTab("performance")} className={`px-4 py-2 text-sm font-medium transition-colors relative ${activeTab === "performance" ? 'text-primary' : 'text-secondary hover:text-primary'}`}>
+                      Información de Rendimiento
+                      {activeTab === "performance" && <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ backgroundColor: 'var(--color-primary)' }} />}
+                    </button>
+                    <button onClick={() => setActiveTab("fuel")} className={`px-4 py-2 text-sm font-medium transition-colors relative ${activeTab === "fuel" ? 'text-primary' : 'text-secondary hover:text-primary'}`}>
+                      Información de Consumo de Combustible
+                      {activeTab === "fuel" && <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ backgroundColor: 'var(--color-primary)' }} />}
+                    </button>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={clearHistoricalData}
+                      className="px-3 py-1 text-xs text-secondary hover:text-error border border-secondary hover:border-error rounded transition-colors"
+                      title="Limpiar datos históricos"
+                    >
+                      Limpiar Datos
+                    </button>
+                  </div>
                 </div>
 
                 <div className="p-4 rounded-lg border min-h-[400px]" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
-                  {activeTab === "performance" ? (
-                    <PerformanceChart 
-                      historicalData={selectedMachinery && machineries[selectedMachinery]?.imei ? historicalData[machineries[selectedMachinery].imei] || [] : []}
-                    />
-                  ) : (
-                    <FuelConsumptionChart 
-                      historicalData={selectedMachinery && machineries[selectedMachinery]?.imei ? historicalData[machineries[selectedMachinery].imei] || [] : []}
-                    />
-                  )}
+                  {(() => {
+                    const selectedImei = selectedMachinery && machineries[selectedMachinery]?.imei;
+                    
+                    // Si no hay datos para el IMEI seleccionado, usar el primer IMEI disponible
+                    let performanceData = [];
+                    let fuelData = [];
+                    let activeImei = selectedImei;
+                    
+                    if (selectedImei && chartData[selectedImei]) {
+                      performanceData = chartData[selectedImei]?.performance || [];
+                      fuelData = chartData[selectedImei]?.fuelConsumption || [];
+                    } else if (Object.keys(chartData).length > 0) {
+                      // Usar el primer IMEI disponible si el seleccionado no tiene datos
+                      activeImei = Object.keys(chartData)[0];
+                      performanceData = chartData[activeImei]?.performance || [];
+                      fuelData = chartData[activeImei]?.fuelConsumption || [];
+                      console.log('⚠️ Usando IMEI alternativo:', activeImei);
+                    }
+                    
+                    console.log('🎨 Renderizando gráficas:', {
+                      selectedMachinery,
+                      selectedImei,
+                      activeImei,
+                      activeTab,
+                      performanceDataPoints: performanceData.length,
+                      fuelDataPoints: fuelData.length,
+                      chartDataKeys: Object.keys(chartData)
+                    });
+                    
+                    return activeTab === "performance" ? (
+                      <PerformanceChart 
+                        data={performanceData}
+                      />
+                    ) : (
+                      <FuelConsumptionChart 
+                        data={fuelData}
+                      />
+                    );
+                  })()}
                 </div>
               </div>
             )}
@@ -728,6 +1168,16 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
         />
       </Dialog.Portal>
     </Dialog.Root>
+
+    {/* Modal de Error - Timeout del WebSocket */}
+    <ErrorModal
+      isOpen={isTimeoutErrorOpen}
+      onClose={() => setIsTimeoutErrorOpen(false)}
+      title="Conexión Perdida"
+      message={timeoutErrorMessage}
+      buttonText="Cerrar"
+    />
+    </>
   );
 };
 
