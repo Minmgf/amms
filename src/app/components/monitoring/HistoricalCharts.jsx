@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, Legend, Scatter, ReferenceDot } from 'recharts';
 
 // Función para reducir datos cuando hay demasiados puntos
 const reduceDataPoints = (dataPoints, maxPoints = 50) => {
@@ -35,11 +35,24 @@ export const PerformanceChart = ({ data: chartData }) => {
   // Custom Tooltip
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      const getEventText = (eventType) => {
+        switch(eventType) {
+          case 1: return 'Aceleración';
+          case 2: return 'Frenado';
+          case 3: return 'Curva';
+          default: return null;
+        }
+      };
+
       return (
         <div className="p-3 rounded border shadow-lg" style={{ backgroundColor: 'var(--color-background)', borderColor: '#3B82F6' }}>
-          <p className="text-xs font-bold text-primary mb-2">{payload[0].payload.time}</p>
-          <p className="text-xs text-secondary">Velocidad: <span className="text-primary font-medium">{payload[0].value} km/h</span></p>
-          <p className="text-xs text-secondary">RPM: <span className="text-primary font-medium">{payload[1].value}</span></p>
+          <p className="text-xs font-bold text-primary mb-2">{data.time}</p>
+          <p className="text-xs text-secondary">Velocidad: <span className="text-primary font-medium">{data.speed} km/h</span></p>
+          <p className="text-xs text-secondary">RPM: <span className="text-primary font-medium">{data.rpm}</span></p>
+          {data.gEvent && (
+            <p className="text-xs text-secondary">Evento G: <span className="text-primary font-medium">{getEventText(data.gEvent)}</span></p>
+          )}
         </div>
       );
     }
@@ -49,19 +62,25 @@ export const PerformanceChart = ({ data: chartData }) => {
   return (
     <div>
       {/* Header con leyenda */}
-      <div className="mb-4 flex items-center justify-between">
-        <span className="text-sm font-medium text-primary">Velocidad (Km/h)</span>
-        <div className="flex items-center gap-4">
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium text-primary">Velocidad (Km/h)</span>
+          <span className="text-sm font-medium text-primary">RPM</span>
+        </div>
+        <div className="flex items-center justify-center gap-6 text-xs">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#3B82F6' }}></div>
-            <span className="text-xs text-secondary">Velocidad</span>
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#FF6B35' }}></div>
+            <span className="text-secondary">Aceleración</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#22C55E' }}></div>
-            <span className="text-xs text-secondary">RPM</span>
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#EF4444' }}></div>
+            <span className="text-secondary">Frenado</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#8B5CF6' }}></div>
+            <span className="text-secondary">Curva</span>
           </div>
         </div>
-        <span className="text-sm font-medium text-primary">RPM</span>
       </div>
 
       <ResponsiveContainer width="100%" height={400}>
@@ -104,8 +123,28 @@ export const PerformanceChart = ({ data: chartData }) => {
             strokeWidth={2}
             fillOpacity={1} 
             fill="url(#colorSpeed)"
-            dot={{ r: 3, fill: '#3B82F6' }}
-            activeDot={{ r: 6 }}
+            dot={(props) => {
+              const { cx, cy, payload } = props;
+              if (!payload.gEvent) return <circle cx={cx} cy={cy} r={3} fill="#3B82F6" />;
+              
+              const eventColors = {
+                1: '#FF6B35', // Aceleración - Naranja
+                2: '#EF4444', // Frenado - Rojo
+                3: '#8B5CF6'  // Curva - Púrpura
+              };
+              
+              return (
+                <circle 
+                  cx={cx} 
+                  cy={cy} 
+                  r={8} 
+                  fill={eventColors[payload.gEvent]} 
+                  stroke="#FFFFFF" 
+                  strokeWidth={2}
+                />
+              );
+            }}
+            activeDot={false}
           />
           <Area 
             yAxisId="right"

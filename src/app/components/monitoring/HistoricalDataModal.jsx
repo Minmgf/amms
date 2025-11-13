@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { FaTimes } from "react-icons/fa";
 import { HistoricalCharts, PerformanceChart, FuelConsumptionChart } from "./HistoricalCharts";
+import DynamicRouteMap from "./DynamicRouteMap";
 import TableList from "../shared/TableList";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { getMachineryList } from "@/services/machineryService";
@@ -136,22 +137,30 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
     {
       accessorKey: "actions",
       header: "Detalle",
-      cell: ({ row }) => (
-        <button
-          onClick={() => {
-            setSelectedRequest(row.original);
-            // Cargar datos específicos de la solicitud
-            const requestCode = row.original.originalData.code;
-            // Extraer el primer ID de maquinaria y operador de los arrays
-            const machineryId = row.original.originalData.id_machineries?.[0]?.id;
-            const operatorId = row.original.originalData.id_operators?.[0]?.id;
-            loadRequestData(requestCode, machineryId, operatorId);
-          }}
-          className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-        >
-          Ver detalles
-        </button>
-      )
+      cell: ({ row }) => {
+        const machineries = row.original.originalData.id_machineries || [];
+        const operatorId = row.original.originalData.id_operators?.[0]?.id;
+        
+        return (
+          <div className="flex flex-wrap gap-1">
+            {machineries.map((machinery, index) => (
+              <button
+                key={`${row.original.id}-${machinery.id}`}
+                onClick={() => {
+                  setSelectedRequest(row.original);
+                  // Cargar datos específicos de la solicitud con la maquinaria seleccionada
+                  const requestCode = row.original.originalData.code;
+                  loadRequestData(requestCode, machinery.id, operatorId);
+                }}
+                className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                title={`Ver detalles de ${machinery.name} (${machinery.serial})`}
+              >
+                {machinery.name}
+              </button>
+            ))}
+          </div>
+        );
+      }
     }
   ];
 
@@ -246,10 +255,7 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
     return fuelParam.data_points.map((point, index) => {
       const consumptionPoint = consumptionParam.data_points[index];
       return {
-        time: new Date(point.registered_at).toLocaleTimeString('es-ES', { 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        }),
+        time: point.registered_at.substring(11, 16), // Extraer HH:MM directamente del string
         fuelLevel: point.data,
         consumption: consumptionPoint ? consumptionPoint.data : 0,
         timestamp: point.registered_at
@@ -263,6 +269,7 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
     const rpmParam = getParameterData(data, "Revoluciones (RPM)");
     const tempParam = getParameterData(data, "Temperatura del Motor");
     const loadParam = getParameterData(data, "Carga del Motor");
+    const eventsParam = getParameterData(data, "Eventos");
     
     if (!speedParam || !rpmParam || !tempParam || !loadParam) return [];
     
@@ -271,15 +278,18 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
       const tempPoint = tempParam.data_points[index];
       const loadPoint = loadParam.data_points[index];
       
+      // Buscar evento G correspondiente por timestamp
+      const eventPoint = eventsParam?.data_points.find(
+        e => e.registered_at === point.registered_at
+      );
+      
       return {
-        time: new Date(point.registered_at).toLocaleTimeString('es-ES', { 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        }),
+        time: point.registered_at.substring(11, 16), // Extraer HH:MM directamente del string
         speed: point.data,
         rpm: rpmPoint ? rpmPoint.data : 0,
         temperature: tempPoint ? tempPoint.data : 0,
         engineLoad: loadPoint ? loadPoint.data : 0,
+        gEvent: eventPoint ? eventPoint.data : null, // 1=aceleración, 2=frenado, 3=curva
         timestamp: point.registered_at
       };
     });
@@ -490,7 +500,6 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
     setLoadingRequestData(true);
     try {
       const response = await getRequestData(requestCode, machineryId, operatorId);
-      console.log("Request detail data:", response);
       setRequestDetailData(response);
       
       // Extraer fechas del JSON para llenar el filtro temporal
@@ -533,8 +542,6 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
   };
 
   const handleApplyTemporalFilter = () => {
-    console.log("Applying temporal filter:", temporalFilter);
-    // Los datos se filtran automáticamente a través de getFilteredRequestData()
   };
 
   // Función para cargar datos iniciales
@@ -1027,65 +1034,16 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
                   {/* Interactive Map Tab */}
                   {activeTab === "map" && (
                     <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-background-secondary)', borderColor: 'var(--color-border)' }}>
-                      <div className="w-full h-[500px] flex items-center justify-center relative overflow-hidden rounded-lg" style={{ backgroundColor: '#D1D5DB' }}>
-                        {/* Map placeholder */}
-                        <p className="text-sm text-secondary">Mapa</p>
-
-                        {/* Example route visualization */}
-                        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 600 500">
-                          {/* Outbound route (green) */}
-                          <path
-                            d="M 50 450 L 200 400"
-                            stroke="#22C55E"
-                            strokeWidth="4"
-                            fill="none"
-                          />
-
-                          {/* Working route (blue) */}
-                          <path
-                            d="M 200 400 L 250 200 L 300 200 L 300 100 L 350 100 L 350 200 L 400 200 L 400 100 L 450 100"
-                            stroke="#3B82F6"
-                            strokeWidth="4"
-                            fill="none"
-                          />
-
-                          {/* Return route (red) */}
-                          <path
-                            d="M 450 100 L 450 300 L 200 300"
-                            stroke="#EF4444"
-                            strokeWidth="4"
-                            fill="none"
-                          />
-
-                          {/* Start marker (green) */}
-                          <circle cx="50" cy="450" r="8" fill="white" stroke="#22C55E" strokeWidth="3" />
-
-                          {/* Intermediate markers (blue) */}
-                          <circle cx="200" cy="400" r="8" fill="white" stroke="#3B82F6" strokeWidth="3" />
-                          <circle cx="450" cy="100" r="8" fill="white" stroke="#3B82F6" strokeWidth="3" />
-
-                          {/* End marker (red) */}
-                          <circle cx="200" cy="300" r="8" fill="white" stroke="#EF4444" strokeWidth="3" />
-                        </svg>
-
-                        {/* Legend */}
-                        <div className="absolute bottom-4 left-4 p-3 rounded shadow-lg bg-white">
-                          <div className="flex items-center gap-6 text-xs">
-                            <div className="flex items-center gap-2">
-                              <div className="w-4 h-1 rounded" style={{ backgroundColor: '#22C55E' }}></div>
-                              <span className="text-gray-700">Salida</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="w-4 h-1 rounded" style={{ backgroundColor: '#3B82F6' }}></div>
-                              <span className="text-gray-700">Trabajando</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="w-4 h-1 rounded" style={{ backgroundColor: '#EF4444' }}></div>
-                              <span className="text-gray-700">Retorno</span>
-                            </div>
-                          </div>
+                      <h3 className="text-base font-semibold text-primary mb-4">Mapa de Rutas</h3>
+                      {filteredRequestData ? (
+                        <>
+                          <DynamicRouteMap requestData={filteredRequestData} />
+                        </>
+                      ) : (
+                        <div className="w-full h-[500px] flex items-center justify-center bg-gray-100 rounded-lg">
+                          <p className="text-gray-600">Selecciona una solicitud para ver las rutas en el mapa</p>
                         </div>
-                      </div>
+                      )}
                     </div>
                   )}
                 </div>
