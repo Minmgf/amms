@@ -455,11 +455,7 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
   } : null;
 
   const handleApplyFilters = async () => {
-    if (!filters.machinery && !filters.operator) {
-      alert("Por favor selecciona al menos una maquinaria o un operador");
-      return;
-    }
-
+    
     // Limpiar solicitud seleccionada y datos relacionados al aplicar nuevos filtros
     setSelectedRequest(null);
     setRequestDetailData(null);
@@ -481,15 +477,6 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
       setFilteredData(response);
     } catch (error) {
       console.error("Error applying filters:", error);
-
-      // Manejo específico de errores
-      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-        alert("La consulta está tomando más tiempo del esperado. Los datos pueden ser muy extensos. Por favor intenta con un rango de fechas más específico.");
-      } else if (error.response?.status === 500) {
-        alert("Error del servidor. Por favor intenta de nuevo en unos momentos.");
-      } else {
-        alert("Error al aplicar filtros. Verifica tu conexión e intenta de nuevo.");
-      }
     } finally {
       setLoadingFilters(false);
     }
