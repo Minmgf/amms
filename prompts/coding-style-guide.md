@@ -221,6 +221,7 @@ Radix UI es la librería fundamental que utilizamos para construir cualquier tip
 -   **Accesibilidad y Pruebas:** Todo elemento interactivo (botones, enlaces, inputs, etc.) debe tener un atributo `aria-label` descriptivo. Esto es fundamental para la accesibilidad y facilita la creación de pruebas automatizadas.
 -   **Dependencias Externas:** No se deben agregar nuevas librerías o paquetes (`npm install`) sin consultarlo previamente y obtener la aprobación del líder técnico. Esto previene la inclusión de dependencias innecesarias o conflictivas.
 -   **Parametrización:** Antes de escribir valores fijos en el código (conocido como "hardcodear"), siempre pregúntate si esos valores podrían cambiar en el futuro. La mayoría de las opciones en este sistema son parametrizables. En lugar de valores fijos, usa props o consume los datos desde un servicio. Si tienes dudas, consulta el código existente o pregunta directamente antes de continuar.
+- **Usa siempre los colores estilos de los temas, para que sean parametrizable**
 
 ---
 

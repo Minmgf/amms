@@ -3,6 +3,7 @@ import { CiFilter } from 'react-icons/ci'
 import { FaDownload } from 'react-icons/fa'
 import TableList from '@/app/components/shared/TableList'
 import MaintenancePerformedFiltersModal from '@/app/components/machinery/history/MaintenancePerformedFiltersModal'
+import { downloadMaintenanceReportPDF } from '@/services/auditService'
 
 const fallbackPerformed = [
   {
@@ -38,12 +39,13 @@ const formatDateTime = (value) => {
          date.toLocaleTimeString('es-ES', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase()
 }
 
-const MaintenancePerformedSection = ({ performedMaint }) => {
+const MaintenancePerformedSection = ({ performedMaint, loading = false }) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false)
+  const [downloadingPDF, setDownloadingPDF] = useState(null) // Para trackear qué PDF se está descargando
 
-  const performedData = Array.isArray(performedMaint) && performedMaint.length > 0 ? performedMaint : fallbackPerformed
+  const performedData = Array.isArray(performedMaint) ? performedMaint : []
 
   const filteredPerformedData = useMemo(() => {
     return performedData.filter(record => {
@@ -83,18 +85,28 @@ const MaintenancePerformedSection = ({ performedMaint }) => {
     },
     {
       id: 'pdf',
-      cell: ({ row }) => (
-        <a
-          href={row.original.pdfUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-3 py-1 border border-gray-200 rounded-lg text-red-500 hover:bg-gray-100 transition-colors"
-          aria-label="Descargar PDF"
-        >
-          <FaDownload className="w-4 h-4" />
-          <span className="font-semibold text-sm">PDF</span>
-        </a>
-      )
+      cell: ({ row }) => {
+        const isDownloading = downloadingPDF === row.original.id
+        const hasIdMaintenanceScheduling = row.original.idMaintenanceScheduling
+        
+        return (
+          <button
+            onClick={() => hasIdMaintenanceScheduling && handleDownloadPDF(row.original.idMaintenanceScheduling, row.original.id)}
+            disabled={!hasIdMaintenanceScheduling || isDownloading}
+            className={`inline-flex items-center gap-2 px-3 py-1 border border-gray-200 rounded-lg transition-colors ${
+              hasIdMaintenanceScheduling && !isDownloading
+                ? 'text-red-500 hover:bg-gray-100 cursor-pointer'
+                : 'text-gray-400 cursor-not-allowed'
+            }`}
+            aria-label={isDownloading ? 'Descargando PDF...' : 'Descargar PDF'}
+          >
+            <FaDownload className={`w-4 h-4 ${isDownloading ? 'animate-spin' : ''}`} />
+            <span className="font-semibold text-sm">
+              {isDownloading ? 'Descargando...' : 'PDF'}
+            </span>
+          </button>
+        )
+      }
     }
   ], [])
 
@@ -105,7 +117,40 @@ const MaintenancePerformedSection = ({ performedMaint }) => {
     )
   }
 
-  const technicians = ['Cristiano Ronaldo', 'Ousmane Dembélé', 'Juan Andres Pete']
+  const handleDownloadPDF = async (idMaintenanceScheduling, reportId) => {
+    if (!idMaintenanceScheduling) {
+      console.error('ID de mantenimiento programado no disponible')
+      return
+    }
+
+    setDownloadingPDF(reportId)
+    try {
+      const pdfBlob = await downloadMaintenanceReportPDF(idMaintenanceScheduling)
+      
+      // Crear URL del blob y descargar
+      const url = window.URL.createObjectURL(pdfBlob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `reporte_mantenimiento_${idMaintenanceScheduling}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Error al descargar el PDF:', error)
+      alert('Error al descargar el reporte. Por favor, intente nuevamente.')
+    } finally {
+      setDownloadingPDF(null)
+    }
+  }
+
+  // Extraer técnicos únicos de los datos reales
+  const technicians = useMemo(() => {
+    const techs = performedData
+      .map(record => record.assignedTechnician)
+      .filter(Boolean)
+    return [...new Set(techs)].sort()
+  }, [performedData])
 
   return (
     <div className="space-y-6">
@@ -117,19 +162,35 @@ const MaintenancePerformedSection = ({ performedMaint }) => {
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Buscar"
             className="input-theme pl-4"
+            aria-label="Buscar en mantenimientos realizados"
           />
         </div>
-        <button onClick={() => setIsFiltersModalOpen(true)} className="inline-flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-primary hover:border-accent hover:text-accent transition-colors">
+        <button 
+          onClick={() => setIsFiltersModalOpen(true)} 
+          className="inline-flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-primary hover:border-accent hover:text-accent transition-colors"
+          aria-label="Abrir filtros de mantenimientos realizados"
+        >
           <CiFilter className="w-5 h-5" /> Filtrar por
         </button>
       </div>
-      <TableList
-        columns={columns}
-        data={filteredPerformedData}
-        globalFilter={searchQuery}
-        onGlobalFilterChange={setSearchQuery}
-        globalFilterFn={globalFilterFn}
-      />
+      
+      <div className="rounded-xl p-0">
+        {!loading && performedData.length === 0 ? (
+          <div className="flex items-center justify-center py-12 text-secondary text-sm">
+            No hay mantenimientos realizados registrados para esta maquinaria.
+          </div>
+        ) : (
+          <TableList
+            columns={columns}
+            data={filteredPerformedData}
+            loading={loading}
+            globalFilter={searchQuery}
+            onGlobalFilterChange={setSearchQuery}
+            globalFilterFn={globalFilterFn}
+            pageSizeOptions={[5, 10, 20]}
+          />
+        )}
+      </div>
       <MaintenancePerformedFiltersModal
         isOpen={isFiltersModalOpen}
         onClose={() => setIsFiltersModalOpen(false)}

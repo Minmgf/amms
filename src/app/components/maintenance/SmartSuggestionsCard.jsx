@@ -6,7 +6,9 @@ import {
   FaUser,
   FaExclamationTriangle,
   FaCheckCircle,
+  FaCircle,
 } from "react-icons/fa";
+import { MdCircle } from "react-icons/md";
 
 /**
  * SmartSuggestionCard - Componente autónomo con lógica de sugerencias inteligentes
@@ -249,12 +251,13 @@ const SmartSuggestionCard = ({
 
   // Función auxiliar para obtener icono de prioridad
   const getPriorityIcon = (priority) => {
+    const iconClass = "w-3 h-3 inline-block";
     const icons = {
-      Alta: "🔴",
-      Media: "🟡",
-      Baja: "🟢",
+      Alta: <FaCircle className={`${iconClass} text-red-500`} />,
+      Media: <FaCircle className={`${iconClass} text-yellow-500`} />,
+      Baja: <FaCircle className={`${iconClass} text-green-500`} />,
     };
-    return icons[priority] || "⚪";
+    return icons[priority] || <FaCircle className={`${iconClass} text-gray-400`} />;
   };
 
   // Formatear fecha legible
