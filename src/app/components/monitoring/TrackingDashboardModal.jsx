@@ -142,10 +142,15 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
   
   // Hook de WebSocket de telemetría con filtro de IMEIs y request ID
   // El requestId debe ser el Código de Seguimiento (tracking_code)
+  // Solo inicializar WebSocket si la solicitud está en proceso (ID 21)
   const requestId = requestData?.tracking_code || requestData?.id;
+  const statusId = requestData?.request_status_id || requestData?.status_id;
+  const isRequestActive = statusId === 21;
+  
   const { machineriesData, connectionStatus, reconnect, alerts, timeoutMessage } = useTrackingWebSocket({ 
-    requestId: requestId,
-    imeiFilter: machineryImeis
+    requestId: isRequestActive ? requestId : null, // Solo pasar requestId si está activa
+    imeiFilter: isRequestActive ? machineryImeis : null, // Solo pasar IMEIs si está activa
+    enabled: isRequestActive // Parámetro para habilitar/deshabilitar el WebSocket
   });
 
   // Mostrar modal de error cuando hay timeout
@@ -675,6 +680,24 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                 <div className="col-span-2 md:col-span-4"><p className="text-secondary mb-1">Nombre del lugar</p><p className="text-primary font-medium">{requestInfo.placeName}</p></div>
               </div>
             </div>
+
+            {/* Advertencia para solicitudes no activas */}
+            {!isRequestActive && (
+              <div className="p-4 rounded-lg border border-orange-300 bg-orange-50">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
+                    <span className="text-orange-600 text-sm">⚠️</span>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-orange-800">Solicitud Finalizada</h4>
+                    <p className="text-xs text-orange-700 mt-1">
+                      Esta solicitud está finalizada, por lo que no se pueden recibir datos de telemetría en tiempo real. 
+                      Para ver datos históricos, usa el botón "Ver Historial" en la lista de solicitudes.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* FILA 3: Dos columnas - Machinery Information + Real Time Ubication */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
