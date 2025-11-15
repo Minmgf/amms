@@ -15,7 +15,16 @@ export const getDataMacineryhOperator = async (filters = {}) => {
 };
 
 export const getRequestData = async (requestCode, machineryId, operatorId) => {
-  const { data } = await apiMain.get(`/data/${requestCode}/by_request/?machinery_id=${machineryId}&operator_id=${operatorId}`);
+  const { data } = await apiMain.get(`/data/${requestCode}/by_request/?machinery_id=${machineryId}&operator_id=${operatorId}`, {
+    timeout: 300000 // 5 minutos timeout para datos históricos
+  });
+  return data;
+};
+
+export const getHistoricalRequestData = async (requestCode) => {
+  const { data } = await apiMain.get(`/data/${requestCode}/by_request/`, {
+    timeout: 300000 // 5 minutos timeout para datos históricos
+  });
   return data;
 };
 

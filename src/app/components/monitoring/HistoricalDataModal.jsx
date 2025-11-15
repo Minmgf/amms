@@ -58,6 +58,8 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
   // Estado para datos específicos de la solicitud
   const [requestDetailData, setRequestDetailData] = useState(null);
   const [loadingRequestData, setLoadingRequestData] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingMessage, setLoadingMessage] = useState("");
 
   const [temporalFilter, setTemporalFilter] = useState({
     startDate: "",
@@ -485,8 +487,38 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
   // Función para cargar datos específicos de la solicitud
   const loadRequestData = async (requestCode, machineryId, operatorId) => {
     setLoadingRequestData(true);
+    setLoadingProgress(0);
+    setLoadingMessage("Iniciando consulta de datos de la solicitud...");
+    
+    // Simular progreso durante la carga
+    const progressInterval = setInterval(() => {
+      setLoadingProgress(prev => {
+        if (prev < 90) {
+          const increment = Math.random() * 15 + 5; // Incremento aleatorio entre 5-20%
+          const newProgress = Math.min(prev + increment, 90);
+          
+          // Actualizar mensaje según el progreso
+          if (newProgress < 30) {
+            setLoadingMessage("Conectando con el servidor...");
+          } else if (newProgress < 60) {
+            setLoadingMessage("Procesando datos de la solicitud...");
+          } else if (newProgress < 90) {
+            setLoadingMessage("Generando gráficas y estadísticas...");
+          }
+          
+          return newProgress;
+        }
+        return prev;
+      });
+    }, 800);
+    
     try {
       const response = await getRequestData(requestCode, machineryId, operatorId);
+      
+      // Completar progreso
+      clearInterval(progressInterval);
+      setLoadingProgress(100);
+      setLoadingMessage("¡Datos cargados exitosamente!");
       setRequestDetailData(response);
       
       // Extraer fechas del JSON para llenar el filtro temporal
@@ -521,10 +553,20 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
           });
         }
       }
+      
+      // Pequeña pausa para mostrar el mensaje de éxito
+      setTimeout(() => {
+        setLoadingRequestData(false);
+        setLoadingProgress(0);
+        setLoadingMessage("");
+      }, 1000);
+      
     } catch (error) {
+      clearInterval(progressInterval);
       console.error("Error loading request data:", error);
-    } finally {
       setLoadingRequestData(false);
+      setLoadingProgress(0);
+      setLoadingMessage("");
     }
   };
 
@@ -597,6 +639,8 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
     setLoadingFilters(false);
     setLoadingData(false);
     setLoadingRequestData(false);
+    setLoadingProgress(0);
+    setLoadingMessage("");
   };
 
   // useEffect para cargar datos cuando se abre el modal
@@ -615,6 +659,48 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
         <Dialog.Overlay className="fixed inset-0 bg-black/60 z-[60]" />
         <Dialog.Content className="modal-theme fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] w-[95vw] max-w-[1400px] max-h-[95vh] overflow-y-auto">
 
+          {/* Pantalla de carga minimalista */}
+          {loadingRequestData && (
+            <div 
+              className="sticky top-0 left-0 right-0 bottom-0 z-[80] flex items-center justify-center h-screen w-full" 
+              style={{ 
+                backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                position: 'fixed',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: '95vw',
+                maxWidth: '1400px',
+                maxHeight: '95vh'
+              }}
+            >
+              <div className="text-center p-6 rounded-xl max-w-sm mx-4" style={{ backgroundColor: 'var(--color-background)', backdropFilter: 'blur(10px)' }}>
+                {/* Spinner minimalista */}
+                <div className="relative mx-auto mb-4 w-12 h-12">
+                  <div 
+                    className="absolute inset-0 rounded-full border-2 border-t-transparent animate-spin"
+                    style={{ borderColor: 'var(--color-primary)' }}
+                  ></div>
+                </div>
+                
+                {/* Mensaje simple */}
+                <h3 className="text-base font-medium text-primary mb-2">Cargando datos...</h3>
+                <p className="text-sm text-secondary">{loadingMessage}</p>
+                
+                {/* Barra de progreso minimalista */}
+                <div className="w-full bg-gray-200 rounded-full h-1 mt-4">
+                  <div 
+                    className="h-1 rounded-full transition-all duration-500 ease-out"
+                    style={{ 
+                      width: `${loadingProgress}%`,
+                      backgroundColor: 'var(--color-primary)'
+                    }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b sticky top-0 modal-theme z-10" style={{ borderColor: 'var(--color-border)' }}>
             <Dialog.Title className="text-xl font-semibold text-primary">
@@ -623,11 +709,17 @@ const HistoricalDataModal = ({ isOpen, onClose }) => {
             <Dialog.Close asChild>
               <button 
                 aria-label="Cerrar modal" 
-                className="p-2 text-secondary hover:text-primary rounded-full transition-colors cursor-pointer" 
-                onClick={() => {
+                className={`p-2 rounded-full transition-colors ${
+                  loadingRequestData 
+                    ? 'text-gray-400 cursor-not-allowed' 
+                    : 'text-secondary hover:text-primary cursor-pointer'
+                }`}
+                onClick={loadingRequestData ? undefined : () => {
                   clearModalData();
                   onClose();
                 }}
+                disabled={loadingRequestData}
+                title={loadingRequestData ? "No se puede cerrar mientras se cargan los datos" : "Cerrar modal"}
               >
                 <FaTimes className="w-5 h-5" />
               </button>

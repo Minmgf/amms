@@ -127,7 +127,17 @@ export const useTrackingWebSocket = (options = {}) => {
         return;
       }
 
-      const { imei, timestamp, data: telemetryData, alerts: messageAlerts, serial_number, machinery_name, operator_name } = data;
+      const { 
+        imei, 
+        timestamp, 
+        data: telemetryData, 
+        alerts: messageAlerts, 
+        serial_number, 
+        machinery_name, 
+        operator_name,
+        consumption_prediction,
+        consumption_comparison
+      } = data;
       
       // Filtrar por IMEI si se especifica un filtro
       if (imeiFilter && Array.isArray(imeiFilter) && imeiFilter.length > 0) {
@@ -174,6 +184,9 @@ export const useTrackingWebSocket = (options = {}) => {
         odometerTrip: telemetryData.odometer_trip !== undefined ? telemetryData.odometer_trip : null,
         eventType: telemetryData.event_type !== undefined ? telemetryData.event_type : null,
         eventGValue: telemetryData.event_g_value !== undefined ? telemetryData.event_g_value : null,
+        // Predicciones y comparación de consumo
+        consumptionPrediction: consumption_prediction || null,
+        consumptionComparison: consumption_comparison || null,
         // Datos sin procesar para referencia
         raw: telemetryData
       };

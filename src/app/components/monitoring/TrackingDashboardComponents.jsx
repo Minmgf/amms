@@ -41,7 +41,23 @@ const createCustomIcon = (color) => {
 };
 
 // Gauge Card Component (Velocímetro/Tacómetro)
-export const GaugeCard = ({ label, value, max, unit, type, alert }) => {
+export const GaugeCard = ({ label, value, max, unit, type, alert, threshold, hasData = true }) => {
+  // Si no hay datos, mostrar "No aplica"
+  if (!hasData) {
+    return (
+      <div
+        className="p-4 rounded-lg border flex flex-col items-center justify-center min-h-[200px] transition-all duration-500"
+        style={{
+          backgroundColor: 'var(--color-background-secondary)',
+          borderColor: 'var(--color-border)',
+        }}
+      >
+        <p className="text-xs text-secondary mb-3">{label}</p>
+        <p className="text-lg font-bold text-secondary">No aplica</p>
+      </div>
+    );
+  }
+
   // Valor real sin limitar (para mostrar)
   const realValue = value || 0;
   
@@ -60,8 +76,16 @@ export const GaugeCard = ({ label, value, max, unit, type, alert }) => {
     return 'var(--color-primary)';
   };
 
-  // Determinar si hay alerta basado en umbrales (usando valor real)
-  const hasAlert = alert || (type === 'speed' && realValue > 45) || (type === 'rpm' && realValue > 2800);
+  // Determinar si hay alerta basado en umbrales dinámicos o valores por defecto
+  const getAlertThreshold = () => {
+    if (threshold) return threshold;
+    if (type === 'speed') return max * 0.25; // 25% del máximo
+    if (type === 'rpm') return max * 0.93; // 93% del máximo
+    return max;
+  };
+
+  const alertThreshold = getAlertThreshold();
+  const hasAlert = alert || realValue > alertThreshold;
 
   return (
     <div 
@@ -151,7 +175,23 @@ export const GaugeCard = ({ label, value, max, unit, type, alert }) => {
 };
 
 // Circular Progress Component
-export const CircularProgress = ({ label, value, color = "#3B82F6", alert = false }) => {
+export const CircularProgress = ({ label, value, color = "#3B82F6", alert = false, hasData = true }) => {
+  // Si no hay datos, mostrar "No aplica"
+  if (!hasData) {
+    return (
+      <div
+        className="p-4 rounded-lg border flex flex-col items-center justify-center min-h-[200px] transition-all duration-500"
+        style={{
+          backgroundColor: 'var(--color-background-secondary)',
+          borderColor: 'var(--color-border)',
+        }}
+      >
+        <p className="text-xs text-secondary mb-3">{label}</p>
+        <p className="text-lg font-bold text-secondary">No aplica</p>
+      </div>
+    );
+  }
+
   // Valor real sin limitar (para mostrar)
   const realValue = value || 0;
   
@@ -619,11 +659,17 @@ export const RealTimeMap = ({ machineries = [], selectedMachinery = null }) => {
     if (!isClient || !mapInstanceRef.current || !selectedMachinery) return;
 
     const machinery = machineries.find(m => m.id === selectedMachinery.id);
-    if (!machinery || !machinery.location?.lat || !machinery.location?.lng) return;
+    if (!machinery) return;
+    
+    // Validar que la ubicación existe y tiene coordenadas válidas
+    if (!machinery.location || !machinery.location.lat || !machinery.location.lng) return;
 
-    // Centrar el mapa en la maquinaria seleccionada
-    const L = require('leaflet');
-    mapInstanceRef.current.setView([machinery.location.lat, machinery.location.lng], 13);
+    try {
+      // Centrar el mapa en la maquinaria seleccionada
+      mapInstanceRef.current.setView([machinery.location.lat, machinery.location.lng], 13);
+    } catch (error) {
+      console.error('Error al centrar el mapa:', error);
+    }
   }, [machineries, selectedMachinery, isClient]);
 
   if (!machineries || machineries.length === 0) {

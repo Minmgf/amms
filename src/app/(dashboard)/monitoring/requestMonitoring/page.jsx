@@ -55,7 +55,7 @@ const RequestMonitoringPage = () => {
     setError(null);
     try {
       const response = await getRequestMonitoringList();
-      
+
       if (response.status && response.data) {
         // Mapear los datos del API a la estructura del componente
         const mappedData = response.data.map((item) => ({
@@ -145,23 +145,41 @@ const RequestMonitoringPage = () => {
     applyFilters();
   };
 
-  // Función para ver monitoreo en tiempo real
+  // Función para ver monitoreo en tiempo real (solo para solicitudes EN PROCESO)
   const handleViewMonitoring = (requestCode) => {
-    // Buscar los datos completos de la solicitud
-    const request = data.find(req => req.tracking_code === requestCode);
+    // Buscar los datos completos de la solicitud (buscar por tracking_code o code)
+    const request = data.find(req => req.tracking_code === requestCode || req.code === requestCode);
     if (request) {
-      setSelectedRequest(request);
-      setIsTrackingModalOpen(true);
+      // Validar que la solicitud esté en proceso (ID 21) antes de abrir el modal de tracking
+      const statusId = request.request_status_id || request.status_id;
+      if (statusId === 21) {
+        setSelectedRequest(request);
+        setIsTrackingModalOpen(true);
+      } else {
+        // Si la solicitud no está en proceso, mostrar mensaje de advertencia
+        setModalTitle("Acción no disponible");
+        setModalMessage("El monitoreo en tiempo real solo está disponible para solicitudes en proceso. Para solicitudes finalizadas, usa 'Ver Historial'.");
+        setIsErrorModalOpen(true);
+      }
     }
   };
 
-  // Función para ver historial de monitoreo
+  // Función para ver historial de monitoreo (solo para solicitudes FINALIZADAS)
   const handleViewHistory = (requestCode) => {
-    // Buscar los datos completos de la solicitud
-    const request = data.find(req => req.tracking_code === requestCode);
+    // Buscar los datos completos de la solicitud (buscar por tracking_code o code)
+    const request = data.find(req => req.tracking_code === requestCode || req.code === requestCode);
     if (request) {
-      setSelectedRequest(request);
-      setIsRequestHistoricalModalOpen(true);
+      // Validar que la solicitud esté finalizada (ID 22) antes de abrir el modal histórico
+      const statusId = request.request_status_id || request.status_id;
+      if (statusId === 22) {
+        setSelectedRequest(request);
+        setIsRequestHistoricalModalOpen(true);
+      } else {
+        // Si la solicitud está en proceso, mostrar mensaje de advertencia
+        setModalTitle("Acción no disponible");
+        setModalMessage("El historial de datos solo está disponible para solicitudes finalizadas. Para solicitudes en proceso, usa 'Ver Monitoreo'.");
+        setIsErrorModalOpen(true);
+      }
     }
   };
 
@@ -235,8 +253,10 @@ const RequestMonitoringPage = () => {
         header: "Acciones",
         cell: (info) => {
           const request = info.row.original;
-          const isCompleted = request.status_id === 22; // Finalizada
-          const isInProcess = request.status_id === 21; // En proceso
+          // Manejar ambos campos posibles para el estado
+          const statusId = request.request_status_id || request.status_id;
+          const isCompleted = statusId === 22; // Finalizada
+          const isInProcess = statusId === 21; // En proceso          
 
           return (
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -244,7 +264,7 @@ const RequestMonitoringPage = () => {
                 <PermissionGuard permission={170}>
                   <button
                     aria-label="View Monitoring Button"
-                    onClick={() => handleViewMonitoring(request.tracking_code)}
+                    onClick={() => handleViewMonitoring(request.tracking_code || request.code)}
                     className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600 text-gray-700"
                     title="Ver monitoreo"
                   >
@@ -253,10 +273,10 @@ const RequestMonitoringPage = () => {
                 </PermissionGuard>
               )}
               {isCompleted && (
-                <PermissionGuard permission={170}>
+                <PermissionGuard permission={172}>
                   <button
                     aria-label="View History Button"
-                    onClick={() => handleViewHistory(request.tracking_code)}
+                    onClick={() => handleViewHistory(request.tracking_code || request.code)}
                     className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
                     title="Ver historial de monitoreo"
                   >
@@ -339,11 +359,10 @@ const RequestMonitoringPage = () => {
             </div>
 
             <button
-              className={`parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit ${
-                activeFiltersCount > 0
+              className={`parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit ${activeFiltersCount > 0
                   ? "bg-blue-100 border-blue-300 text-blue-700"
                   : ""
-              }`}
+                }`}
               onClick={() => setFilterModalOpen(true)}
               aria-label="Filter Button"
             >
@@ -364,15 +383,16 @@ const RequestMonitoringPage = () => {
                 <FiX className="w-3 h-3" /> Limpiar filtros
               </button>
             )}
-
-            <button
-              onClick={handleOpenHistoricalModal}
-              className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit"
-              aria-label="Historical per Machine/Operator"
-            >
-              <FaHistory className="w-4 h-4" />
-              <span className="text-sm">Historial por Maquinaria/Operador</span>
-            </button>
+            <PermissionGuard permission={172}>
+              <button
+                onClick={handleOpenHistoricalModal}
+                className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit"
+                aria-label="Historical per Machine/Operator"
+              >
+                <FaHistory className="w-4 h-4" />
+                <span className="text-sm">Historial por Maquinaria/Operador</span>
+              </button>
+            </PermissionGuard>
           </div>
 
           {/* Table */}
@@ -461,7 +481,7 @@ const RequestMonitoringPage = () => {
       />
 
       {/* Historical Data Machine/Operator Modal */}
-      <HistoricalDataModal 
+      <HistoricalDataModal
         isOpen={isHistoricalModalOpen}
         onClose={() => setIsHistoricalModalOpen(false)}
       />
