@@ -388,28 +388,11 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
         fuelConsumption: fuelConsumptionData
       };
       
-      console.log(`✅ Gráficas formateadas para ${imei}:`, {
-        performancePoints: performanceData.length,
-        fuelPoints: fuelConsumptionData.length
-      });
     });
     
     setChartData(formattedChartData);
-    console.log('📊 Datos de gráficas actualizados:', formattedChartData);
-    console.log('📊 chartData state actualizado con', Object.keys(formattedChartData).length, 'IMEIs');
   }, [historicalData]);
 
-  // Debug: Verificar chartData
-  useEffect(() => {
-    console.log('🔍 chartData actual:', chartData);
-    console.log('🔍 chartData keys:', Object.keys(chartData));
-    Object.entries(chartData).forEach(([imei, data]) => {
-      console.log(`🔍 IMEI ${imei}:`, {
-        performancePoints: data.performance?.length || 0,
-        fuelPoints: data.fuelConsumption?.length || 0
-      });
-    });
-  }, [chartData]);
 
   // Helper function to format dates
   const formatDate = (dateString) => {
@@ -1273,13 +1256,6 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                       const selectedImei = selectedMachinery !== null && machineries[selectedMachinery] ? machineries[selectedMachinery].imei : null;
                       const faults = selectedImei && obdFaultsHistory[selectedImei] ? obdFaultsHistory[selectedImei] : [];
                       
-                      console.log('🔍 OBD Debug:', {
-                        selectedMachinery,
-                        selectedImei,
-                        machineries: machineries.map(m => ({ id: m.id, imei: m.imei })),
-                        obdFaultsHistory,
-                        faults
-                      });
                       
                       return faults.length === 0 ? (
                         <p className="text-center text-secondary py-4">Sin fallas OBD detectadas</p>
@@ -1311,13 +1287,6 @@ const TrackingDashboardModal = ({ isOpen, onClose, requestData }) => {
                       const selectedImei = selectedMachinery !== null && machineries[selectedMachinery] ? machineries[selectedMachinery].imei : null;
                       const events = selectedImei && gEventsHistory[selectedImei] ? gEventsHistory[selectedImei] : [];
                       
-                      console.log('🔍 G-Events Debug:', {
-                        selectedMachinery,
-                        selectedImei,
-                        machineries: machineries.map(m => ({ id: m.id, imei: m.imei })),
-                        gEventsHistory,
-                        events
-                      });
                       
                       return events.length === 0 ? (
                         <p className="text-center text-secondary py-4">Sin eventos G detectados</p>
