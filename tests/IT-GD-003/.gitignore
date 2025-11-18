@@ -1,0 +1,22 @@
+# Archivos generados
+screenshots/
+reports/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Entornos
+venv/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# Sistema
+.DS_Store
+Thumbs.db
