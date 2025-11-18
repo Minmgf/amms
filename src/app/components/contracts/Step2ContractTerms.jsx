@@ -35,13 +35,6 @@ export default function Step2ContractTerms() {
     { id: 3, name: "Mensual" },
   ];
 
-  const terminationNoticePeriodOptions = [
-    { id: 1, name: "15 días" },
-    { id: 2, name: "30 días" },
-    { id: 3, name: "60 días" },
-    { id: 4, name: "90 días" },
-  ];
-
   return (
     <div className="space-y-4 sm:space-y-6">
       <h3 className="text-lg sm:text-theme-lg font-theme-semibold text-primary mb-4">
@@ -213,7 +206,7 @@ export default function Step2ContractTerms() {
         </div>
       )}
 
-      {/* Segunda fila: Trial period, Vacation days, Cumulative?, Effective from */}
+      {/* Segunda fila: Trial period, Vacation days, Cumulative?, Effective from (condicional) */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6">
         {/* Trial period */}
         <div>
@@ -336,38 +329,40 @@ export default function Step2ContractTerms() {
           )}
         </div>
 
-        {/* Effective from */}
-        <div>
-          <label
-            htmlFor="effectiveFrom"
-            className="block text-theme-sm font-theme-medium text-primary mb-2"
-          >
-            Efectivo desde
-            <span className="text-red-500 ml-1">*</span>
-          </label>
-          <input
-            id="effectiveFrom"
-            type="date"
-            {...register("effectiveFrom", {
-              required: "Este campo es obligatorio",
-            })}
-            className={`input-theme w-full ${
-              errors.effectiveFrom ? "border-red-500" : ""
-            }`}
-            style={{
-              backgroundColor: "var(--color-surface)",
-              borderColor: errors.effectiveFrom
-                ? "#EF4444"
-                : "var(--color-border)",
-              color: "var(--color-text-primary)",
-            }}
-          />
-          {errors.effectiveFrom && (
-            <p className="text-red-500 text-xs mt-1">
-              {errors.effectiveFrom.message}
-            </p>
-          )}
-        </div>
+        {/* Effective from - Solo aparece si cumulative es "yes" */}
+        {cumulative === "yes" && (
+          <div>
+            <label
+              htmlFor="effectiveFrom"
+              className="block text-theme-sm font-theme-medium text-primary mb-2"
+            >
+              Efectivo desde
+              <span className="text-red-500 ml-1">*</span>
+            </label>
+            <input
+              id="effectiveFrom"
+              type="date"
+              {...register("effectiveFrom", {
+                required: cumulative === "yes" ? "Este campo es obligatorio" : false,
+              })}
+              className={`input-theme w-full ${
+                errors.effectiveFrom ? "border-red-500" : ""
+              }`}
+              style={{
+                backgroundColor: "var(--color-surface)",
+                borderColor: errors.effectiveFrom
+                  ? "#EF4444"
+                  : "var(--color-border)",
+                color: "var(--color-text-primary)",
+              }}
+            />
+            {errors.effectiveFrom && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.effectiveFrom.message}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Tercera fila: Vacation grant frequency, Maximum disability days, Maximum overtime */}
@@ -537,13 +532,19 @@ export default function Step2ContractTerms() {
             htmlFor="terminationNoticePeriod"
             className="block text-theme-sm font-theme-medium text-primary mb-2"
           >
-            Período de preaviso de terminación
+            Tiempo de aviso de terminación
             <span className="text-red-500 ml-1">*</span>
           </label>
-          <select
+          <input
             id="terminationNoticePeriod"
+            type="number"
+            min="0"
             {...register("terminationNoticePeriod", {
               required: "Este campo es obligatorio",
+              min: {
+                value: 0,
+                message: "Debe ser mayor o igual a 0",
+              },
             })}
             className={`input-theme w-full ${
               errors.terminationNoticePeriod ? "border-red-500" : ""
@@ -555,14 +556,8 @@ export default function Step2ContractTerms() {
                 : "var(--color-border)",
               color: "var(--color-text-primary)",
             }}
-          >
-            <option value="">Seleccione un período</option>
-            {terminationNoticePeriodOptions.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.name}
-              </option>
-            ))}
-          </select>
+            placeholder="Días"
+          />
           {errors.terminationNoticePeriod && (
             <p className="text-red-500 text-xs mt-1">
               {errors.terminationNoticePeriod.message}

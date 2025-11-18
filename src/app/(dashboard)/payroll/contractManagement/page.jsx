@@ -1,5 +1,6 @@
 "use client";
 import ContractDetail from "@/app/components/contractManagement/contractDetail/ContractDetail";
+import AddContractModal from "@/app/components/contracts/AddContractModal";
 import { useEffect, useMemo, useState } from "react";
 import { FiSearch, FiFilter, FiEdit2, FiTrash2, FiPlus, FiX, FiEye } from "react-icons/fi";
 import { FaCalendar, FaCheckCircle, FaDollarSign, FaFileContract } from "react-icons/fa";
@@ -746,6 +747,22 @@ const ContractManagementPage = () => {
         onExport={(format) => { setModalTitle("Exportar"); setModalMessage(`Export solicitado: ${format} (pendiente de implementar)`); setIsSuccessModalOpen(true); }}
         themeColors={{}}
         canViewContract={true}
+      />
+
+      <AddContractModal
+        isOpen={isContractFormModalOpen}
+        onClose={() => { 
+          setIsContractFormModalOpen(false); 
+          setSelectedContract(null); 
+          setContractFormMode("add"); 
+        }}
+        contractToEdit={contractFormMode === "edit" ? selectedContract : null}
+        onSuccess={() => {
+          setIsContractFormModalOpen(false);
+          setSelectedContract(null);
+          setContractFormMode("add");
+          loadInitialData(); // Recargar los datos
+        }}
       />
     </>
   );

@@ -220,7 +220,6 @@ export default function AddContractModal({
       "trialPeriod",
       "vacationDays",
       "cumulative",
-      "effectiveFrom",
       "vacationGrantFrequency",
       "maximumDisabilityDays",
       "maximumOvertime",
@@ -248,6 +247,18 @@ export default function AddContractModal({
     if (salaryType === "hourly" || salaryType === "daily") {
       if (!currentValues.contractedAmount || currentValues.contractedAmount === "") {
         methods.setError("contractedAmount", {
+          type: "required",
+          message: "Este campo es obligatorio",
+        });
+        return false;
+      }
+    }
+
+    // Validar campo condicional: effectiveFrom (Solo si cumulative es "yes")
+    const cumulative = currentValues.cumulative;
+    if (cumulative === "yes") {
+      if (!currentValues.effectiveFrom || currentValues.effectiveFrom === "") {
+        methods.setError("effectiveFrom", {
           type: "required",
           message: "Este campo es obligatorio",
         });
