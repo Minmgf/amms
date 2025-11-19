@@ -186,9 +186,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           permissions: [],
         },
         {
-          name: "Novedades",
+          name: "Empleados",
           icon: <FaClipboardCheck />,
-          path: "/payroll/novelty",
+          path: "/payroll/employees",
           permissions: [],
         },
         {
