@@ -7,7 +7,7 @@ import Step3Deductions from "./Step3Deductions";
 import Step4Increments from "./Step4Increments";
 import { useTheme } from "@/contexts/ThemeContext";
 import { FiX } from "react-icons/fi";
-import { SuccessModal, ErrorModal, ConfirmModal } from "../shared/SuccessErrorModal";
+import { SuccessModal, ErrorModal, ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
 
 export default function AddContractModal({
   isOpen,

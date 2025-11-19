@@ -2,7 +2,7 @@
 import { useFormContext, useFieldArray } from "react-hook-form";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
 import { useState } from "react";
-import { ConfirmModal } from "../shared/SuccessErrorModal";
+import { ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
 
 export default function Step3Deductions() {
   const {

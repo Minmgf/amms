@@ -2,7 +2,7 @@
 import AddClientModal from "@/app/components/request/clients/AddClientModal";
 import DetailsRequestModal from "@/app/components/request/services/DetailsRequestModal";
 import TrackingDashboardModal from "@/app/components/monitoring/TrackingDashboardModal";
-import AddContractModal from "@/app/components/contracts/AddContractModal";
+import AddContractModal from "@/app/components/payroll/contractManagement/contracts/AddContractModal";
 import RegisterEmployeeModal from "@/app/components/payroll/human-resources/employees/RegisterEmployeeModal";
 import { useState } from "react";
 import HistoricalDataModal from "@/app/components/monitoring/HistoricalDataModal";
