@@ -1,6 +1,6 @@
 "use client";
-import ContractDetail from "@/app/components/contractManagement/contractDetail/ContractDetail";
-import AddContractModal from "@/app/components/contracts/AddContractModal";
+import ContractDetail from "@/app/components/payroll/contractManagement/contractDetail/ContractDetail";
+import AddContractModal from "@/app/components/payroll/contractManagement/contracts/AddContractModal";
 import { useEffect, useMemo, useState } from "react";
 import { FiSearch, FiFilter, FiEdit2, FiTrash2, FiPlus, FiX, FiEye } from "react-icons/fi";
 import { FaCalendar, FaCheckCircle, FaDollarSign, FaFileContract } from "react-icons/fa";
