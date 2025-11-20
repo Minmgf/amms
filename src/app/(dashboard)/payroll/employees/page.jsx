@@ -7,6 +7,7 @@ import TableList from "@/app/components/shared/TableList";
 import { createColumnHelper } from "@tanstack/react-table";
 import { useTheme } from "@/contexts/ThemeContext";
 import RegisterEmployeeModal from "@/app/components/payroll/human-resources/employees/RegisterEmployeeModal";
+import EmployeeDetailModal from "@/app/components/payroll/human-resources/employees/EmployeeDetailModal";
 
 const EmployeesPage = () => {
   useTheme();
@@ -18,6 +19,8 @@ const EmployeesPage = () => {
 
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedEmployeeForDetail, setSelectedEmployeeForDetail] = useState(null);
 
   const [searchType, setSearchType] = useState("document");
   const [advancedSearchText, setAdvancedSearchText] = useState("");
@@ -191,6 +194,7 @@ const EmployeesPage = () => {
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               <button
                 aria-label="Ver detalles del empleado"
+                onClick={() => handleViewDetails(employee)}
                 className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600 text-gray-700"
               >
                 <FiEye className="w-3 h-3" /> Ver
@@ -285,6 +289,19 @@ const EmployeesPage = () => {
     setSuccessOpen(true);
   };
 
+  const handleViewDetails = (employee) => {
+    setSelectedEmployeeForDetail(employee);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleEditEmployee = () => {
+    setIsDetailModalOpen(false);
+    // TODO: Open edit modal or navigate to edit page
+    setModalTitle("Editar empleado");
+    setModalMessage("Redirigir a la vista de edición del empleado (pendiente de integración).");
+    setSuccessOpen(true);
+  };
+
   const noResultsByFilter =
     !loading && displayData.length === 0 && employees.length > 0 && (globalFilter || activeFiltersCount > 0);
 
@@ -364,6 +381,7 @@ const EmployeesPage = () => {
             globalFilter={globalFilter}
             onGlobalFilterChange={setGlobalFilter}
             pageSizeOptions={[10, 25, 50, 100]}
+            onRowDoubleClick={handleViewDetails}
           />
 
           {noResultsByFilter && (
@@ -455,6 +473,13 @@ const EmployeesPage = () => {
         onClose={() => setErrorOpen(false)}
         title={modalTitle || "Error"}
         message={modalMessage}
+      />
+
+      <EmployeeDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        employeeId={selectedEmployeeForDetail?.id}
+        onEdit={handleEditEmployee}
       />
     </>
   );
