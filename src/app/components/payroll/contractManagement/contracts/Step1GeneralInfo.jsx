@@ -16,6 +16,15 @@ export default function Step1GeneralInfo() {
   const maxDescriptionLength = 100;
 
   // TODO: Datos temporales MOCK - Reemplazar con servicios
+  
+  // PARAMETRIZABLE: Departamentos
+  const departmentOptions = [
+    { id: 1, name: "Administración" },
+    { id: 2, name: "Operaciones" },
+    { id: 3, name: "Recursos Humanos" },
+    { id: 4, name: "Tecnología" },
+  ];
+
   // PARAMETRIZABLE: Debe usar getChargesDepartments(id_employee_department)
   const chargeOptions = [
     { id: 1, name: "Gerente" },
@@ -62,8 +71,47 @@ export default function Step1GeneralInfo() {
         Información general
       </h3>
 
-      {/* Primera fila: Cargo y Descripción */}
+      {/* Primera fila: Departamento y Cargo */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+        {/* Departamento */}
+        <div>
+          <label
+            htmlFor="department"
+            className="block text-theme-sm font-theme-medium text-primary mb-2"
+          >
+            Departamento
+            <span className="text-red-500 ml-1">*</span>
+          </label>
+          <select
+            id="department"
+            {...register("department", {
+              required: "Este campo es obligatorio",
+            })}
+            className={`input-theme w-full ${
+              errors.department ? "border-red-500" : ""
+            }`}
+            style={{
+              backgroundColor: "var(--color-surface)",
+              borderColor: errors.department
+                ? "#EF4444"
+                : "var(--color-border)",
+              color: "var(--color-text-primary)",
+            }}
+          >
+            <option value="">Seleccione un departamento</option>
+            {departmentOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.name}
+              </option>
+            ))}
+          </select>
+          {errors.department && (
+            <p className="text-red-500 text-xs mt-1">
+              {errors.department.message}
+            </p>
+          )}
+        </div>
+
         {/* Cargo */}
         <div>
           <label
@@ -102,48 +150,48 @@ export default function Step1GeneralInfo() {
             </p>
           )}
         </div>
+      </div>
 
-        {/* Descripción */}
-        <div>
-          <label
-            htmlFor="description"
-            className="block text-theme-sm font-theme-medium text-primary mb-2"
-          >
-            Descripción
-          </label>
-          <div className="relative">
-            <textarea
-              id="description"
-              {...register("description", {
-                maxLength: {
-                  value: maxDescriptionLength,
-                  message: `Máximo ${maxDescriptionLength} caracteres`,
-                },
-              })}
-              rows={3}
-              maxLength={maxDescriptionLength}
-              className={`input-theme w-full resize-none ${
-                errors.description ? "border-red-500" : ""
-              }`}
-              style={{
-                backgroundColor: "var(--color-surface)",
-                borderColor: errors.description
-                  ? "#EF4444"
-                  : "var(--color-border)",
-                color: "var(--color-text-primary)",
-              }}
-              placeholder="Ingrese una descripción"
-            />
-            <div className="absolute bottom-2 right-2 text-xs text-secondary">
-              {description.length}/{maxDescriptionLength} caracteres
-            </div>
+      {/* Segunda fila: Descripción */}
+      <div>
+        <label
+          htmlFor="description"
+          className="block text-theme-sm font-theme-medium text-primary mb-2"
+        >
+          Descripción
+        </label>
+        <div className="relative">
+          <textarea
+            id="description"
+            {...register("description", {
+              maxLength: {
+                value: maxDescriptionLength,
+                message: `Máximo ${maxDescriptionLength} caracteres`,
+              },
+            })}
+            rows={3}
+            maxLength={maxDescriptionLength}
+            className={`input-theme w-full resize-none ${
+              errors.description ? "border-red-500" : ""
+            }`}
+            style={{
+              backgroundColor: "var(--color-surface)",
+              borderColor: errors.description
+                ? "#EF4444"
+                : "var(--color-border)",
+              color: "var(--color-text-primary)",
+            }}
+            placeholder="Ingrese una descripción"
+          />
+          <div className="absolute bottom-2 right-2 text-xs text-secondary">
+            {description.length}/{maxDescriptionLength} caracteres
           </div>
-          {errors.description && (
-            <p className="text-red-500 text-xs mt-1">
-              {errors.description.message}
-            </p>
-          )}
         </div>
+        {errors.description && (
+          <p className="text-red-500 text-xs mt-1">
+            {errors.description.message}
+          </p>
+        )}
       </div>
 
       {/* Segunda fila: Tipo de contrato, Fecha de inicio, Fecha de fin */}

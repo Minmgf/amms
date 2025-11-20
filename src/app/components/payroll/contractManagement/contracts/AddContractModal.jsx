@@ -27,6 +27,7 @@ export default function AddContractModal({
 
   const defaultValues = {
     // Step 1 - General Information
+    department: "",
     charge: "",
     description: "",
     contractType: "",
@@ -82,6 +83,7 @@ export default function AddContractModal({
       // Cargar datos en modo edición
       const mappedData = {
         // Paso 1
+        department: contractToEdit.department || "",
         charge: contractToEdit.charge || "",
         description: contractToEdit.description || "",
         contractType: contractToEdit.contractType || "",
@@ -134,6 +136,7 @@ export default function AddContractModal({
     
     // Campos obligatorios básicos
     const requiredFields = [
+      "department",
       "charge",
       "contractType",
       "startDate",
