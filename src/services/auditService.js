@@ -8,6 +8,11 @@ export const getAudit = async () => {
     return data;
 };
 
+export const getContractHistory = async (code) => {
+    const { data } = await apiAudit.get(`audit-events?object_id=${code}`);
+    return data;
+};
+
 /**
  * Obtiene el historial de cambios de una maquinaria específica
  * @param {number|string} machineryId - ID de la maquinaria
