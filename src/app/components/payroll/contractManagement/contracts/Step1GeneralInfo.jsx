@@ -1,8 +1,11 @@
 "use client";
 import { useFormContext } from "react-hook-form";
-import { useState } from "react";
-// TODO: Importar servicios cuando se integre
-// import { getDepartments, getChargesDepartments, getActiveTypesByCategory } from "@/services/parametrizationService";
+import { useState, useEffect } from "react";
+import {
+  getActiveDepartments,
+  getActiveCharges,
+  getActiveTypes
+} from "@/services/contractService";
 
 export default function Step1GeneralInfo() {
   const {
@@ -13,56 +16,112 @@ export default function Step1GeneralInfo() {
 
   const description = watch("description") || "";
   const paymentFrequency = watch("paymentFrequency") || "";
+  const selectedDepartment = watch("department") || "";
+  const selectedCharge = watch("charge") || "";
+  const selectedContractType = watch("contractType") || "";
+  const selectedWorkday = watch("workday") || "";
+  const selectedWorkModality = watch("workModality") || "";
   const maxDescriptionLength = 100;
 
-  // TODO: Datos temporales MOCK - Reemplazar con servicios
-  
-  // PARAMETRIZABLE: Departamentos
-  const departmentOptions = [
-    { id: 1, name: "Administración" },
-    { id: 2, name: "Operaciones" },
-    { id: 3, name: "Recursos Humanos" },
-    { id: 4, name: "Tecnología" },
-  ];
+  // Estados para datos dinámicos
+  const [departmentOptions, setDepartmentOptions] = useState([]);
+  const [chargeOptions, setChargeOptions] = useState([]);
+  const [contractTypeOptions, setContractTypeOptions] = useState([]);
+  const [workdayOptions, setWorkdayOptions] = useState([]);
+  const [workModalityOptions, setWorkModalityOptions] = useState([]);
+  const [isLoadingDepartments, setIsLoadingDepartments] = useState(false);
+  const [isLoadingCharges, setIsLoadingCharges] = useState(false);
+  const [isLoadingTypes, setIsLoadingTypes] = useState(false);
 
-  // PARAMETRIZABLE: Debe usar getChargesDepartments(id_employee_department)
-  const chargeOptions = [
-    { id: 1, name: "Gerente" },
-    { id: 2, name: "Supervisor" },
-    { id: 3, name: "Operario" },
-    { id: 4, name: "Técnico" },
-  ];
+  // Cargar departamentos al montar el componente
+  useEffect(() => {
+    const loadDepartments = async () => {
+      try {
+        setIsLoadingDepartments(true);
+        const response = await getActiveDepartments();
+        const departments = response.data.map(dept => ({
+          id: dept.id_employee_department,
+          name: dept.name
+        }));
+        setDepartmentOptions(departments);
+      } catch (error) {
+        console.error("Error al cargar datos del Step 1:", error);
+      } finally {
+        setIsLoadingDepartments(false);
+      }
+    };
 
-  // PARAMETRIZABLE: Debe usar getActiveTypesByCategory(idTypeCategory)
-  // Tipos: Indefinido, A término fijo, Obra labor, etc.
-  const contractTypeOptions = [
-    { id: 1, name: "Indefinido" },
-    { id: 2, name: "A término fijo" },
-    { id: 3, name: "Obra labor" },
-    { id: 4, name: "Prestación de servicios" },
-  ];
+    loadDepartments();
+  }, []);
+
+  // Cargar tipos de contrato, jornada laboral y modalidad de trabajo al montar
+  useEffect(() => {
+    const loadTypes = async () => {
+      try {
+        setIsLoadingTypes(true);
+
+        // Tipo de contrato - Categoría 15
+        const contractTypes = await getActiveTypes(15);
+        setContractTypeOptions(contractTypes.map(type => ({
+          id: type.id_types,
+          name: type.name
+        })));
+
+        // Jornada laboral - Categoría 16
+        const workdays = await getActiveTypes(16);
+        setWorkdayOptions(workdays.map(type => ({
+          id: type.id_types,
+          name: type.name
+        })));
+
+        // Modalidad de trabajo - Categoría 17
+        const workModalities = await getActiveTypes(17);
+        setWorkModalityOptions(workModalities.map(type => ({
+          id: type.id_types,
+          name: type.name
+        })));
+      } catch (error) {
+        console.error("Error al cargar datos del Step 1:", error);
+      } finally {
+        setIsLoadingTypes(false);
+      }
+    };
+
+    loadTypes();
+  }, []);
+
+  // Cargar cargos cuando cambie el departamento seleccionado
+  useEffect(() => {
+    const loadCharges = async () => {
+      if (!selectedDepartment) {
+        setChargeOptions([]);
+        return;
+      }
+
+      try {
+        setIsLoadingCharges(true);
+        const charges = await getActiveCharges(selectedDepartment);
+        setChargeOptions(charges.map(charge => ({
+          id: charge.id_employee_charge,
+          name: charge.name
+        })));
+      } catch (error) {
+        console.error("Error al cargar datos del Step 1:", error);
+        setChargeOptions([]);
+      } finally {
+        setIsLoadingCharges(false);
+      }
+    };
+
+    loadCharges();
+  }, [selectedDepartment]);
 
   // Frecuencia de pago: diario, semanal, quincenal, mensual
   const paymentFrequencyOptions = [
-    { id: "daily", name: "Diario" },
-    { id: "weekly", name: "Semanal" },
-    { id: "biweekly", name: "Quincenal" },
-    { id: "monthly", name: "Mensual" },
-  ];
-
-  // PARAMETRIZABLE: Jornada laboral
-  const workdayOptions = [
-    { id: 1, name: "Lunes a Viernes" },
-    { id: 2, name: "Lunes a Sábado" },
-    { id: 3, name: "Rotativo" },
-    { id: 4, name: "Turnos" },
-  ];
-
-  // PARAMETRIZABLE: Modalidad de trabajo
-  const workModalityOptions = [
-    { id: 1, name: "Presencial" },
-    { id: 2, name: "Remoto" },
-    { id: 3, name: "Híbrido" },
+    { id: "diario", name: "Diario" },
+    { id: "semanal", name: "Semanal" },
+    { id: "quincenal", name: "Quincenal" },
+    { id: "mensual", name: "Mensual" },
   ];
 
   return (
@@ -87,6 +146,7 @@ export default function Step1GeneralInfo() {
             {...register("department", {
               required: "Este campo es obligatorio",
             })}
+            value={selectedDepartment}
             className={`input-theme w-full ${
               errors.department ? "border-red-500" : ""
             }`}
@@ -126,6 +186,7 @@ export default function Step1GeneralInfo() {
             {...register("charge", {
               required: "Este campo es obligatorio",
             })}
+            value={selectedCharge}
             className={`input-theme w-full ${
               errors.charge ? "border-red-500" : ""
             }`}
@@ -210,6 +271,7 @@ export default function Step1GeneralInfo() {
             {...register("contractType", {
               required: "Este campo es obligatorio",
             })}
+            value={selectedContractType}
             className={`input-theme w-full ${
               errors.contractType ? "border-red-500" : ""
             }`}
@@ -345,7 +407,7 @@ export default function Step1GeneralInfo() {
 
         {/* Campos condicionales según frecuencia de pago */}
         {/* Si es SEMANAL: mostrar "Día de pago" */}
-        {paymentFrequency === "weekly" && (
+        {paymentFrequency === "semanal" && (
           <div className="md:col-span-2">
             <label
               htmlFor="paymentDay"
@@ -357,7 +419,7 @@ export default function Step1GeneralInfo() {
             <select
               id="paymentDay"
               {...register("paymentDay", {
-                required: paymentFrequency === "weekly" ? "Este campo es obligatorio" : false,
+                required: paymentFrequency === "semanal" ? "Este campo es obligatorio" : false,
               })}
               className={`input-theme w-full ${
                 errors.paymentDay ? "border-red-500" : ""
@@ -371,13 +433,13 @@ export default function Step1GeneralInfo() {
               }}
             >
               <option value="">Seleccione un día</option>
-              <option value="monday">Lunes</option>
-              <option value="tuesday">Martes</option>
-              <option value="wednesday">Miércoles</option>
-              <option value="thursday">Jueves</option>
-              <option value="friday">Viernes</option>
-              <option value="saturday">Sábado</option>
-              <option value="sunday">Domingo</option>
+              <option value="1">Lunes</option>
+              <option value="2">Martes</option>
+              <option value="3">Miércoles</option>
+              <option value="4">Jueves</option>
+              <option value="5">Viernes</option>
+              <option value="6">Sábado</option>
+              <option value="7">Domingo</option>
             </select>
             {errors.paymentDay && (
               <p className="text-red-500 text-xs mt-1">
@@ -388,7 +450,7 @@ export default function Step1GeneralInfo() {
         )}
 
         {/* Si es MENSUAL: mostrar "Fecha de pago" */}
-        {paymentFrequency === "monthly" && (
+        {paymentFrequency === "mensual" && (
           <div className="md:col-span-2">
             <label
               htmlFor="paymentDate"
@@ -403,7 +465,7 @@ export default function Step1GeneralInfo() {
               min="1"
               max="31"
               {...register("paymentDate", {
-                required: paymentFrequency === "monthly" ? "Este campo es obligatorio" : false,
+                required: paymentFrequency === "mensual" ? "Este campo es obligatorio" : false,
                 min: { value: 1, message: "Debe ser entre 1 y 31" },
                 max: { value: 31, message: "Debe ser entre 1 y 31" },
               })}
@@ -428,7 +490,7 @@ export default function Step1GeneralInfo() {
         )}
 
         {/* Si es QUINCENAL: mostrar "Primera fecha" y "Segunda fecha" */}
-        {paymentFrequency === "biweekly" && (
+        {paymentFrequency === "quincenal" && (
           <>
             <div>
               <label
@@ -444,7 +506,7 @@ export default function Step1GeneralInfo() {
                 min="1"
                 max="31"
                 {...register("firstPaymentDate", {
-                  required: paymentFrequency === "biweekly" ? "Este campo es obligatorio" : false,
+                  required: paymentFrequency === "quincenal" ? "Este campo es obligatorio" : false,
                   min: { value: 1, message: "Debe ser entre 1 y 31" },
                   max: { value: 31, message: "Debe ser entre 1 y 31" },
                 })}
@@ -480,7 +542,7 @@ export default function Step1GeneralInfo() {
                 min="1"
                 max="31"
                 {...register("secondPaymentDate", {
-                  required: paymentFrequency === "biweekly" ? "Este campo es obligatorio" : false,
+                  required: paymentFrequency === "quincenal" ? "Este campo es obligatorio" : false,
                   min: { value: 1, message: "Debe ser entre 1 y 31" },
                   max: { value: 31, message: "Debe ser entre 1 y 31" },
                 })}
@@ -553,6 +615,7 @@ export default function Step1GeneralInfo() {
           <select
             id="workday"
             {...register("workday")}
+            value={selectedWorkday}
             className={`input-theme w-full ${
               errors.workday ? "border-red-500" : ""
             }`}
@@ -589,6 +652,7 @@ export default function Step1GeneralInfo() {
           <select
             id="workModality"
             {...register("workModality")}
+            value={selectedWorkModality}
             className={`input-theme w-full ${
               errors.workModality ? "border-red-500" : ""
             }`}
