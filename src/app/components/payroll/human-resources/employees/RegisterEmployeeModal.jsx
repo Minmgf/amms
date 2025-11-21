@@ -4,6 +4,8 @@ import { FiX, FiUser, FiMail, FiPhone, FiMapPin, FiBriefcase, FiCalendar, FiEdit
 import { useTheme } from "@/contexts/ThemeContext";
 import { SuccessModal, ErrorModal, ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
 import AddContractModal from "@/app/components/payroll/contractManagement/contracts/AddContractModal";
+import * as employeeService from "@/services/employeeService";
+import * as locationService from "@/services/locationService";
 
 /**
  * RegisterEmployeeModal Component
@@ -51,6 +53,7 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [userExists, setUserExists] = useState(false);
+  const [existingUserId, setExistingUserId] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
@@ -58,49 +61,23 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
   const [isContractModalOpen, setIsContractModalOpen] = useState(false);
   const [contractTemplateToEdit, setContractTemplateToEdit] = useState(null);
 
-  // Mock data - Estados parametrizables (vendrá del endpoint)
-  const [identificationTypes] = useState([
-    { id: 1, code: "CC", name: "Cédula de Ciudadanía" },
-    { id: 2, code: "CE", name: "Cédula de Extranjería" },
-    { id: 3, code: "PAS", name: "Pasaporte" },
-    { id: 4, code: "NIT", name: "NIT" }
-  ]);
+  // Estados parametrizables (cargados desde el endpoint)
+  const [identificationTypes, setIdentificationTypes] = useState([]);
+  const [genders, setGenders] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [positions, setPositions] = useState([]);
+  const [allPositions, setAllPositions] = useState([]); // Almacena todas las posiciones
+  const [contracts, setContracts] = useState([]);
 
-  const [genders] = useState([
-    { id: 1, name: "Masculino" },
-    { id: 2, name: "Femenino" },
-    { id: 3, name: "Otro" }
-  ]);
+  // Datos de ubicación (cargados desde la API)
+  const [countries, setCountries] = useState([]);
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
 
-  const [countries] = useState([
-    { id: 1, name: "Colombia", code: "CO" },
-    { id: 2, name: "Venezuela", code: "VE" },
-    { id: 3, name: "Ecuador", code: "EC" }
-  ]);
-
-  const [departments] = useState([
-    { id: 1, name: "Recursos Humanos" },
-    { id: 2, name: "Operaciones" },
-    { id: 3, name: "Mantenimiento" },
-    { id: 4, name: "Administración" }
-  ]);
-
-  const [positions] = useState([
-    { id: 1, name: "Gerente", departmentId: 4 },
-    { id: 2, name: "Analista", departmentId: 1 },
-    { id: 3, name: "Operador", departmentId: 2 },
-    { id: 4, name: "Técnico", departmentId: 3 }
-  ]);
-
-  const [contracts] = useState([
-    { id: 1, name: "Contrato Indefinido - Gerencial", departmentId: 4, positionId: 1 },
-    { id: 2, name: "Contrato Fijo - Analista", departmentId: 1, positionId: 2 },
-    { id: 3, name: "Contrato Temporal - Operador", departmentId: 2, positionId: 3 }
-  ]);
-
-  // Limpiar formulario al abrir/cerrar
+  // Limpiar formulario y cargar datos parametrizables al abrir/cerrar
   useEffect(() => {
     if (isOpen) {
+      // Limpiar formulario
       setFormData({
         firstName: "",
         secondName: "",
@@ -124,45 +101,118 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
       });
       setErrors({});
       setUserExists(false);
+      setExistingUserId(null);
+
+      // Cargar datos parametrizables
+      loadParametrizableData();
     }
   }, [isOpen]);
 
+  // Función para cargar todos los datos parametrizables
+  const loadParametrizableData = async () => {
+    setLoading(true);
+    try {
+      const [
+        documentTypesData,
+        gendersData,
+        departmentsData,
+        countriesData
+      ] = await Promise.all([
+        employeeService.getDocumentTypes(),
+        employeeService.getGenders(),
+        employeeService.getDepartments(),
+        locationService.getCountries()
+      ]);
+
+      if (documentTypesData.success) {
+        setIdentificationTypes(documentTypesData.data || []);
+      }
+
+      if (gendersData.success) {
+        setGenders(gendersData.data || []);
+      }
+
+      if (departmentsData.success) {
+        setDepartments(departmentsData.data || []);
+      }
+
+      if (countriesData) {
+        setCountries(countriesData || []);
+      }
+    } catch (error) {
+      console.error("Error cargando datos parametrizables:", error);
+      setErrorMessage("Error al cargar los datos del formulario. Por favor, intente nuevamente.");
+      setShowErrorModal(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Buscar usuario existente por documento
   const searchUserByDocument = async (documentNumber) => {
-    if (!documentNumber || documentNumber.length < 5) return;
+    if (!documentNumber || documentNumber.length < 5) {
+      setUserExists(false);
+      setExistingUserId(null);
+      return;
+    }
     
     setLoading(true);
     try {
-      // TODO: Implementar llamada al endpoint
-      // Simulación de búsqueda
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await employeeService.getUserByDocument(documentNumber);
       
-      // Simulación: si el documento es "12345678" existe el usuario
-      if (documentNumber === "12345678") {
+      if (response && response.success && response.data) {
+        // Usuario encontrado - precargar datos
         setUserExists(true);
+        setExistingUserId(response.data.id);
+        
         setFormData(prev => ({
           ...prev,
-          firstName: "Juan",
-          secondName: "Carlos",
-          firstLastName: "Pérez",
-          secondLastName: "González",
-          email: "juan.perez@example.com",
-          phoneNumber: "3001234567",
-          country: "1",
-          address: "Calle 123 #45-67"
+          firstName: response.data.name || "",
+          firstLastName: response.data.first_last_name || "",
+          secondLastName: response.data.second_last_name || "",
+          identificationType: response.data.type_document?.toString() || "",
+          email: response.data.email || "",
+          phoneNumber: response.data.phone || "",
+          address: response.data.address || "",
+          gender: response.data.gender_id?.toString() || "",
+          birthDate: response.data.birthday || "",
+          country: response.data.country || "",
+          state: response.data.department || "",
+          city: response.data.city?.toString() || "" // Ya viene como ID
         }));
+        
+        // Cargar estados y ciudades si hay datos de ubicación
+        if (response.data.country) {
+          const selectedCountry = countries.find(c => c.name === response.data.country);
+          if (selectedCountry && selectedCountry.iso2) {
+            const statesData = await locationService.getStates(selectedCountry.iso2);
+            setStates(statesData || []);
+            
+            if (response.data.department) {
+              const selectedState = statesData?.find(s => s.name === response.data.department);
+              if (selectedState && selectedState.iso2) {
+                const citiesData = await locationService.getCities(selectedCountry.iso2, selectedState.iso2);
+                setCities(citiesData || []);
+              }
+            }
+          }
+        }
       } else {
+        // Usuario no encontrado
         setUserExists(false);
+        setExistingUserId(null);
       }
     } catch (error) {
       console.error("Error buscando usuario:", error);
+      setUserExists(false);
+      setExistingUserId(null);
     } finally {
       setLoading(false);
     }
   };
 
   // Manejar cambios en el formulario
-  const handleInputChange = (field, value) => {
+  const handleInputChange = async (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
     // Limpiar error del campo
@@ -175,9 +225,73 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
       searchUserByDocument(value);
     }
 
-    // Filtrar contratos por departamento y cargo
-    if (field === "department" || field === "position") {
+    // Cargar posiciones cuando se selecciona departamento
+    if (field === "department" && value) {
+      setFormData(prev => ({ ...prev, position: "", associatedContract: "" }));
+      setPositions([]);
+      setContracts([]);
+      
+      try {
+        const response = await employeeService.getPositions(value);
+        if (response.success) {
+          setAllPositions(response.data || []);
+          setPositions(response.data || []);
+        }
+      } catch (error) {
+        console.error("Error cargando posiciones:", error);
+      }
+    }
+
+    // Cargar contratos cuando se selecciona posición
+    if (field === "position" && value) {
       setFormData(prev => ({ ...prev, associatedContract: "" }));
+      setContracts([]);
+      
+      try {
+        const response = await employeeService.getEstablishedContracts(value);
+        if (response.success) {
+          setContracts(response.data || []);
+        }
+      } catch (error) {
+        console.error("Error cargando contratos:", error);
+      }
+    }
+
+    // Cargar estados cuando se selecciona país
+    if (field === "country" && value) {
+      setFormData(prev => ({ ...prev, state: "", city: "" }));
+      setStates([]);
+      setCities([]);
+      
+      try {
+        // Buscar el código ISO2 del país seleccionado
+        const selectedCountry = countries.find(c => c.name === value || c.iso2 === value);
+        if (selectedCountry && selectedCountry.iso2) {
+          const statesData = await locationService.getStates(selectedCountry.iso2);
+          setStates(statesData || []);
+        }
+      } catch (error) {
+        console.error("Error cargando estados:", error);
+      }
+    }
+
+    // Cargar ciudades cuando se selecciona estado
+    if (field === "state" && value) {
+      setFormData(prev => ({ ...prev, city: "" }));
+      setCities([]);
+      
+      try {
+        // Buscar el país y estado seleccionados
+        const selectedCountry = countries.find(c => c.name === formData.country || c.iso2 === formData.country);
+        const selectedState = states.find(s => s.name === value || s.iso2 === value);
+        
+        if (selectedCountry && selectedCountry.iso2 && selectedState && selectedState.iso2) {
+          const citiesData = await locationService.getCities(selectedCountry.iso2, selectedState.iso2);
+          setCities(citiesData || []);
+        }
+      } catch (error) {
+        console.error("Error cargando ciudades:", error);
+      }
     }
   };
 
@@ -188,23 +302,66 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
   };
 
   // Abrir modal de edición de contrato (cuando hay contrato seleccionado)
-  const handleOpenEditContract = () => {
+  const handleOpenEditContract = async () => {
     if (!formData.associatedContract) return;
 
-    const selectedContract = contracts.find(
-      (contract) => String(contract.id) === String(formData.associatedContract)
-    );
+    try {
+      setLoading(true);
+      
+      // Obtener los detalles del contrato desde la API
+      const contractDetails = await employeeService.getEstablishedContractDetails(
+        formData.associatedContract
+      );
 
-    if (!selectedContract) {
-      return;
+      if (!contractDetails) {
+        setErrorMessage("No se pudieron cargar los detalles del contrato");
+        setShowErrorModal(true);
+        return;
+      }
+
+      // Preparar template con los datos del contrato para el modal de edición
+      const templateForEdit = {
+        // Información general
+        department: formData.department,
+        charge: formData.position,
+        description: contractDetails.description || "",
+        contractType: contractDetails.contract_type?.toString() || "",
+        startDate: contractDetails.start_date || "",
+        endDate: contractDetails.end_date || "",
+        paymentFrequency: contractDetails.payment_frequency_type || "",
+        minimumHours: contractDetails.minimum_hours?.toString() || "",
+        workday: contractDetails.workday_type?.toString() || "",
+        workModality: contractDetails.work_mode_type?.toString() || "",
+        
+        // Términos del contrato
+        salaryType: contractDetails.salary_type || "",
+        baseSalary: contractDetails.salary_base?.toString() || "",
+        currency: contractDetails.currency_type || "",
+        trialPeriod: contractDetails.trial_period_days?.toString() || "",
+        vacationDays: contractDetails.vacation_days?.toString() || "",
+        cumulative: contractDetails.cumulative_vacation ? "yes" : "no",
+        effectiveFrom: contractDetails.start_cumulative_vacation || "",
+        vacationGrantFrequency: contractDetails.vacation_frequency_days?.toString() || "",
+        maximumDisabilityDays: contractDetails.maximum_disability_days?.toString() || "",
+        maximumOvertime: contractDetails.overtime?.toString() || "",
+        overtimePeriod: contractDetails.overtime_period || "",
+        terminationNoticePeriod: contractDetails.notice_period_days?.toString() || "",
+        
+        // Pagos, deducciones e incrementos
+        contract_payments: contractDetails.contract_payments || [],
+        established_deductions: contractDetails.established_deductions || [],
+        established_increases: contractDetails.established_increases || []
+      };
+
+      setContractTemplateToEdit(templateForEdit);
+      setIsContractModalOpen(true);
+    } catch (error) {
+      console.error("Error cargando detalles del contrato:", error);
+      setErrorMessage("Error al cargar los detalles del contrato");
+      setShowErrorModal(true);
+    } finally {
+      setLoading(false);
     }
-
-    const templateForEdit = {
-      description: selectedContract.name,
-    };
-
-    setContractTemplateToEdit(templateForEdit);
-    setIsContractModalOpen(true);
   };
 
   // Validar formulario
@@ -268,14 +425,135 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
 
     setLoading(true);
     try {
-      // TODO: Implementar llamada al endpoint
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Simulación de éxito
-      setShowSuccessModal(true);
-      if (onSuccess) onSuccess();
+      let userId = existingUserId;
+
+      // Paso 1: Crear o actualizar usuario si es necesario
+      if (userExists && existingUserId) {
+        // Actualizar usuario existente si hay cambios
+        const userData = {
+          name: formData.firstName,
+          first_last_name: formData.firstLastName,
+          second_last_name: formData.secondLastName || null,
+          type_document_id: parseInt(formData.identificationType),
+          date_issuance_document: formData.birthDate, // Nota: ajustar si hay campo separado
+          birthday: formData.birthDate,
+          gender_id: parseInt(formData.gender),
+          country: formData.country,
+          department: formData.state,
+          city: parseInt(formData.city) || null,
+          address: formData.address,
+          phone: formData.phoneNumber || null
+        };
+
+        await employeeService.updateUser(existingUserId, userData);
+      } else {
+        // Crear nuevo usuario
+        const userData = {
+          name: formData.firstName,
+          first_last_name: formData.firstLastName,
+          second_last_name: formData.secondLastName || null,
+          type_document_id: parseInt(formData.identificationType),
+          document_number: formData.identificationNumber,
+          date_issuance_document: formData.birthDate, // Nota: ajustar según requerimientos
+          birthday: formData.birthDate,
+          gender_id: parseInt(formData.gender),
+          country: formData.country,
+          department: formData.state,
+          city: parseInt(formData.city) || null,
+          address: formData.address,
+          phone: formData.phoneNumber || null
+        };
+
+        const createUserResponse = await employeeService.createUser(userData);
+        if (createUserResponse.success && createUserResponse.data) {
+          userId = createUserResponse.data.id;
+        } else {
+          throw new Error("No se pudo crear el usuario");
+        }
+      }
+
+      // Paso 2: Obtener detalles del contrato seleccionado
+      const contractDetailsResponse = await employeeService.getEstablishedContractDetails(
+        formData.associatedContract
+      );
+
+      if (!contractDetailsResponse || !contractDetailsResponse.contract_code) {
+        throw new Error("No se pudieron obtener los detalles del contrato");
+      }
+
+      const contractDetails = contractDetailsResponse;
+
+      // Paso 3: Preparar datos del empleado con contrato
+      const employeeData = {
+        id_user: userId,
+        email: formData.email || null,
+        observation: formData.noveltyDescription,
+        id_employee_charge: parseInt(formData.position),
+        contract: [
+          {
+            description: contractDetails.description || "",
+            contract_type: contractDetails.contract_type,
+            start_date: contractDetails.start_date,
+            end_date: contractDetails.end_date || null,
+            payment_frequency_type: contractDetails.payment_frequency_type,
+            minimum_hours: contractDetails.minimum_hours,
+            workday_type: contractDetails.workday_type,
+            work_mode_type: contractDetails.work_mode_type,
+            salary_type: contractDetails.salary_type,
+            salary_base: contractDetails.salary_base,
+            currency_type: contractDetails.currency_type,
+            trial_period_days: contractDetails.trial_period_days,
+            vacation_days: contractDetails.vacation_days,
+            vacation_frequency_days: contractDetails.vacation_frequency_days,
+            cumulative_vacation: contractDetails.cumulative_vacation,
+            start_cumulative_vacation: contractDetails.start_cumulative_vacation || null,
+            maximum_disability_days: contractDetails.maximum_disability_days,
+            overtime: contractDetails.overtime,
+            overtime_period: contractDetails.overtime_period,
+            notice_period_days: contractDetails.notice_period_days,
+            contract_payments: contractDetails.contract_payments || [],
+            established_deductions: contractDetails.established_deductions || [],
+            established_increases: contractDetails.established_increases || []
+          }
+        ]
+      };
+
+      // Paso 4: Crear empleado
+      const createEmployeeResponse = await employeeService.createEmployee(employeeData);
+
+      if (createEmployeeResponse.success) {
+        setShowSuccessModal(true);
+        if (onSuccess) onSuccess();
+      } else {
+        throw new Error(createEmployeeResponse.message || "Error al crear el empleado");
+      }
     } catch (error) {
-      setErrorMessage("Error al registrar el empleado. Por favor, intente nuevamente.");
+      console.error("Error al registrar empleado:", error);
+      
+      let errorMsg = "Error al registrar el empleado. Por favor, intente nuevamente.";
+      
+      // Manejar errores específicos del backend
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        if (errorData.errors) {
+          // Construir mensaje de error detallado
+          const errorMessages = [];
+          Object.entries(errorData.errors).forEach(([field, messages]) => {
+            if (Array.isArray(messages)) {
+              errorMessages.push(`${field}: ${messages.join(", ")}`);
+            }
+          });
+          errorMsg = errorMessages.length > 0 
+            ? errorMessages.join("\n") 
+            : errorData.message || errorMsg;
+        } else if (errorData.message) {
+          errorMsg = errorData.message;
+        }
+      } else if (error.message) {
+        errorMsg = error.message;
+      }
+      
+      setErrorMessage(errorMsg);
       setShowErrorModal(true);
     } finally {
       setLoading(false);
@@ -297,17 +575,6 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
     setShowConfirmModal(false);
     onClose();
   };
-
-  // Filtrar posiciones por departamento
-  const filteredPositions = positions.filter(pos => 
-    !formData.department || pos.departmentId === parseInt(formData.department)
-  );
-
-  // Filtrar contratos por departamento y posición
-  const filteredContracts = contracts.filter(contract => 
-    (!formData.department || contract.departmentId === parseInt(formData.department)) &&
-    (!formData.position || contract.positionId === parseInt(formData.position))
-  );
 
   if (!isOpen) return null;
 
@@ -532,7 +799,7 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
                     >
                       <option value="">Seleccione país</option>
                       {countries.map(country => (
-                        <option key={country.id} value={country.id}>
+                        <option key={country.iso2} value={country.name}>
                           {country.name}
                         </option>
                       ))}
@@ -551,7 +818,11 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
                       disabled={!formData.country}
                     >
                       <option value="">Seleccione departamento/estado</option>
-                      {/* TODO: Cargar estados según país seleccionado */}
+                      {states.map(state => (
+                        <option key={state.iso2} value={state.name}>
+                          {state.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -566,7 +837,11 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
                       disabled={!formData.state}
                     >
                       <option value="">Seleccione ciudad</option>
-                      {/* TODO: Cargar ciudades según estado seleccionado */}
+                      {cities.map(city => (
+                        <option key={city.id} value={city.id}>
+                          {city.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -625,7 +900,7 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
                       disabled={!formData.department}
                     >
                       <option value="">Seleccione cargo</option>
-                      {filteredPositions.map(pos => (
+                      {positions.map(pos => (
                         <option key={pos.id} value={pos.id}>
                           {pos.name}
                         </option>
@@ -643,12 +918,12 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
                         value={formData.associatedContract}
                         onChange={(e) => handleInputChange("associatedContract", e.target.value)}
                         className={`input-theme flex-1 ${errors.associatedContract ? 'border-red-500' : ''}`}
-                        disabled={!formData.department || !formData.position}
+                        disabled={!formData.position}
                       >
                         <option value="">Seleccione contrato</option>
-                        {filteredContracts.map(contract => (
-                          <option key={contract.id} value={contract.id}>
-                            {contract.name}
+                        {contracts.map(contract => (
+                          <option key={contract.id || contract.contract_code} value={contract.id || contract.contract_code}>
+                            {contract.contract_code} - {contract.contract_type_name}
                           </option>
                         ))}
                       </select>
