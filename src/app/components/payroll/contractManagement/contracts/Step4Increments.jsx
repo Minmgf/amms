@@ -1,8 +1,9 @@
 "use client";
 import { useFormContext, useFieldArray } from "react-hook-form";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
+import { getIncreaseTypes } from "@/services/contractService";
 
 export default function Step4Increments() {
   const {
@@ -18,37 +19,50 @@ export default function Step4Increments() {
 
   const [selectedRows, setSelectedRows] = useState([]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [incrementNameOptions, setIncrementNameOptions] = useState([]);
+  const [loadingIncrements, setLoadingIncrements] = useState(true);
 
-  // Datos temporales para los selects - deberían venir de servicios
-  const incrementNameOptions = [
-    { id: 1, name: "Bonificación" },
-    { id: 2, name: "Prima" },
-    { id: 3, name: "Comisión" },
-    { id: 4, name: "Auxilio de transporte" },
-    { id: 5, name: "Auxilio de alimentación" },
-  ];
+  // Cargar tipos de incremento desde el servicio
+  useEffect(() => {
+    const fetchIncreaseTypes = async () => {
+      try {
+        setLoadingIncrements(true);
+        const data = await getIncreaseTypes();
+        console.log("Tipos de incremento cargados:", data);
+        setIncrementNameOptions(data || []);
+      } catch (error) {
+        console.error("Error al cargar tipos de incremento:", error);
+        setIncrementNameOptions([]);
+      } finally {
+        setLoadingIncrements(false);
+      }
+    };
 
+    fetchIncreaseTypes();
+  }, []);
+
+  // Opciones de tipo de monto (según especificación del backend)
   const incrementTypeOptions = [
-    { id: 1, name: "Porcentual" },
-    { id: 2, name: "Fijo" },
+    { id: "Porcentaje", name: "Porcentaje" },
+    { id: "fijo", name: "Fijo" },
   ];
 
+  // Opciones de aplicación (según especificación del backend)
   const applicationOptions = [
-    { id: 1, name: "Salario base" },
-    { id: 2, name: "Salario total" },
-    { id: 3, name: "Horas extras" },
+    { id: "SalarioBase", name: "Salario Base" },
+    { id: "SalarioFinal", name: "Salario Final" },
   ];
 
   const handleAddIncrement = () => {
     append({
-      name: "",
-      type: "",
-      amount: "",
-      application: "",
-      startDate: "",
-      endDate: "",
+      increase_type: "",
+      amount_type: "",
+      amount_value: "",
+      application_increase_type: "",
+      start_date_increase: "",
+      end_date_increase: "",
       description: "",
-      quantity: "1",
+      amount: "",
     });
   };
 
@@ -149,7 +163,11 @@ export default function Step4Increments() {
           </div>
 
           {/* Filas de incrementos */}
-          {fields.length === 0 ? (
+          {loadingIncrements ? (
+            <div className="text-center py-8 text-secondary">
+              <p>Cargando tipos de incremento...</p>
+            </div>
+          ) : fields.length === 0 ? (
             <div className="text-center py-8 text-secondary">
               <p>No hay incrementos añadidos</p>
               <p className="text-sm mt-2">Haz clic en "Añadir incremento" para comenzar</p>
@@ -177,45 +195,48 @@ export default function Step4Increments() {
                   />
                 </div>
 
-                {/* Name */}
+                {/* Name - increase_type */}
                 <div>
                   <select
-                    {...register(`increments.${index}.name`, {
+                    {...register(`increments.${index}.increase_type`, {
                       required: "Requerido",
                     })}
                     className={`input-theme w-full text-sm ${
-                      errors.increments?.[index]?.name ? "border-red-500" : ""
+                      errors.increments?.[index]?.increase_type ? "border-red-500" : ""
                     }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: errors.increments?.[index]?.name
+                      borderColor: errors.increments?.[index]?.increase_type
                         ? "#EF4444"
                         : "var(--color-border)",
                       color: "var(--color-text-primary)",
                       padding: "0.375rem 0.5rem",
                     }}
+                    disabled={loadingIncrements}
                   >
-                    <option value="">Seleccionar</option>
+                    <option value="">
+                      {loadingIncrements ? "Cargando..." : "Seleccionar"}
+                    </option>
                     {incrementNameOptions.map((option) => (
-                      <option key={option.id} value={option.id}>
+                      <option key={option.id_types} value={option.id_types}>
                         {option.name}
                       </option>
                     ))}
                   </select>
                 </div>
 
-                {/* Type */}
+                {/* Type - amount_type */}
                 <div>
                   <select
-                    {...register(`increments.${index}.type`, {
+                    {...register(`increments.${index}.amount_type`, {
                       required: "Requerido",
                     })}
                     className={`input-theme w-full text-sm ${
-                      errors.increments?.[index]?.type ? "border-red-500" : ""
+                      errors.increments?.[index]?.amount_type ? "border-red-500" : ""
                     }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: errors.increments?.[index]?.type
+                      borderColor: errors.increments?.[index]?.amount_type
                         ? "#EF4444"
                         : "var(--color-border)",
                       color: "var(--color-text-primary)",
@@ -231,22 +252,22 @@ export default function Step4Increments() {
                   </select>
                 </div>
 
-                {/* Amount */}
+                {/* Amount - amount_value */}
                 <div>
                   <input
                     type="number"
                     step="0.01"
                     min="0"
-                    {...register(`increments.${index}.amount`, {
+                    {...register(`increments.${index}.amount_value`, {
                       required: "Requerido",
                       min: { value: 0, message: "Debe ser >= 0" },
                     })}
                     className={`input-theme w-full text-sm ${
-                      errors.increments?.[index]?.amount ? "border-red-500" : ""
+                      errors.increments?.[index]?.amount_value ? "border-red-500" : ""
                     }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: errors.increments?.[index]?.amount
+                      borderColor: errors.increments?.[index]?.amount_value
                         ? "#EF4444"
                         : "var(--color-border)",
                       color: "var(--color-text-primary)",
@@ -256,18 +277,18 @@ export default function Step4Increments() {
                   />
                 </div>
 
-                {/* Application */}
+                {/* Application - application_increase_type */}
                 <div>
                   <select
-                    {...register(`increments.${index}.application`, {
+                    {...register(`increments.${index}.application_increase_type`, {
                       required: "Requerido",
                     })}
                     className={`input-theme w-full text-sm ${
-                      errors.increments?.[index]?.application ? "border-red-500" : ""
+                      errors.increments?.[index]?.application_increase_type ? "border-red-500" : ""
                     }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: errors.increments?.[index]?.application
+                      borderColor: errors.increments?.[index]?.application_increase_type
                         ? "#EF4444"
                         : "var(--color-border)",
                       color: "var(--color-text-primary)",
@@ -283,19 +304,19 @@ export default function Step4Increments() {
                   </select>
                 </div>
 
-                {/* Start Date */}
+                {/* Start Date - start_date_increase */}
                 <div>
                   <input
                     type="date"
-                    {...register(`increments.${index}.startDate`, {
+                    {...register(`increments.${index}.start_date_increase`, {
                       required: "Requerido",
                     })}
                     className={`input-theme w-full text-sm ${
-                      errors.increments?.[index]?.startDate ? "border-red-500" : ""
+                      errors.increments?.[index]?.start_date_increase ? "border-red-500" : ""
                     }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: errors.increments?.[index]?.startDate
+                      borderColor: errors.increments?.[index]?.start_date_increase
                         ? "#EF4444"
                         : "var(--color-border)",
                       color: "var(--color-text-primary)",
@@ -304,19 +325,19 @@ export default function Step4Increments() {
                   />
                 </div>
 
-                {/* End Date */}
+                {/* End Date - end_date_increase */}
                 <div>
                   <input
                     type="date"
-                    {...register(`increments.${index}.endDate`, {
+                    {...register(`increments.${index}.end_date_increase`, {
                       required: "Requerido",
                     })}
                     className={`input-theme w-full text-sm ${
-                      errors.increments?.[index]?.endDate ? "border-red-500" : ""
+                      errors.increments?.[index]?.end_date_increase ? "border-red-500" : ""
                     }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: errors.increments?.[index]?.endDate
+                      borderColor: errors.increments?.[index]?.end_date_increase
                         ? "#EF4444"
                         : "var(--color-border)",
                       color: "var(--color-text-primary)",
@@ -341,27 +362,27 @@ export default function Step4Increments() {
                   />
                 </div>
 
-                {/* Quantity */}
+                {/* Quantity - amount */}
                 <div>
                   <input
                     type="number"
-                    min="1"
-                    {...register(`increments.${index}.quantity`, {
-                      required: "Requerido",
-                      min: { value: 1, message: "Debe ser >= 1" },
+                    step="0.01"
+                    min="0"
+                    {...register(`increments.${index}.amount`, {
+                      min: { value: 0, message: "Debe ser >= 0" },
                     })}
                     className={`input-theme w-full text-sm ${
-                      errors.increments?.[index]?.quantity ? "border-red-500" : ""
+                      errors.increments?.[index]?.amount ? "border-red-500" : ""
                     }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: errors.increments?.[index]?.quantity
+                      borderColor: errors.increments?.[index]?.amount
                         ? "#EF4444"
                         : "var(--color-border)",
                       color: "var(--color-text-primary)",
                       padding: "0.375rem 0.5rem",
                     }}
-                    placeholder="1"
+                    placeholder="0.00"
                   />
                 </div>
               </div>
