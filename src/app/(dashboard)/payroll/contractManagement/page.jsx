@@ -32,7 +32,6 @@ const ContractManagementPage = () => {
   const [endDateFilter, setEndDateFilter] = useState("");
   const [minSalaryFilter, setMinSalaryFilter] = useState("");
   const [maxSalaryFilter, setMaxSalaryFilter] = useState("");
-  const [paymentModalityFilter, setPaymentModalityFilter] = useState("");
   const [filteredData, setFilteredData] = useState([]);
 
   // Estado de modales
@@ -50,7 +49,7 @@ const ContractManagementPage = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [data, contractTypeFilter, statusFilter, startDateFilter, endDateFilter, minSalaryFilter, maxSalaryFilter, paymentModalityFilter]);
+  }, [data, contractTypeFilter, statusFilter, startDateFilter, endDateFilter, minSalaryFilter, maxSalaryFilter]);
 
   const loadInitialData = async () => {
     setLoading(true);
@@ -105,9 +104,6 @@ const ContractManagementPage = () => {
     if (maxSalaryFilter) {
       filtered = filtered.filter((contract) => parseFloat(contract.salary_base) <= parseFloat(maxSalaryFilter));
     }
-    if (paymentModalityFilter) {
-      filtered = filtered.filter((contract) => contract.payment_modality_id === parseInt(paymentModalityFilter));
-    }
 
     setFilteredData(filtered);
   };
@@ -145,7 +141,6 @@ const ContractManagementPage = () => {
     setEndDateFilter("");
     setMinSalaryFilter("");
     setMaxSalaryFilter("");
-    setPaymentModalityFilter("");
     applyFilters();
   };
 
@@ -216,13 +211,13 @@ const ContractManagementPage = () => {
     if (!selectedContract) return;
 
     try {
-      const response = await toggleContractStatus(selectedContract.id_contract);
+      const response = await toggleContractStatus(selectedContract.contract_code);
       
       if (response.success) {
         // Actualizar el contrato en la lista
         setData(prevData =>
           prevData.map(contract =>
-            contract.id_contract === selectedContract.id_contract
+            contract.contract_code === selectedContract.contract_code
               ? { 
                   ...contract, 
                   status_id: contract.status_id === 1 ? 2 : 1,
@@ -260,13 +255,13 @@ const ContractManagementPage = () => {
     if (!selectedContract) return;
 
     try {
-      const response = await toggleContractStatus(selectedContract.id_contract);
+      const response = await toggleContractStatus(selectedContract.contract_code);
       
       if (response.success) {
         // Actualizar el contrato en la lista
         setData(prevData =>
           prevData.map(contract =>
-            contract.id_contract === selectedContract.id_contract
+            contract.contract_code === selectedContract.contract_code
               ? { 
                   ...contract, 
                   status_id: contract.status_id === 1 ? 2 : 1,
@@ -366,7 +361,7 @@ const ContractManagementPage = () => {
               {/* <PermissionGuard permission={201}> */}
                 <button
                   aria-label="View Details Button"
-                  onClick={() => handleOpenContractFormModal("view", info.getValue())}
+                  onClick={() => handleOpenContractFormModal("view", contract.contract_code)}
                   className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600 text-gray-700"
                   title="Ver detalles"
                 >
@@ -376,7 +371,7 @@ const ContractManagementPage = () => {
               {/* <PermissionGuard permission={202}> */}
                 <button
                   aria-label="Edit Button"
-                  onClick={() => handleOpenContractFormModal("edit", info.getValue())}
+                  onClick={() => handleOpenContractFormModal("edit", contract.contract_code)}
                   className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
                   title="Editar contrato"
                 >
@@ -415,7 +410,7 @@ const ContractManagementPage = () => {
   );
 
   const displayData = useMemo(() => {
-    let finalData = contractTypeFilter || statusFilter || startDateFilter || endDateFilter || minSalaryFilter || maxSalaryFilter || paymentModalityFilter ? filteredData : data;
+    let finalData = contractTypeFilter || statusFilter || startDateFilter || endDateFilter || minSalaryFilter || maxSalaryFilter ? filteredData : data;
 
     if (globalFilter.trim() !== "") {
       const searchTerm = globalFilter.toLowerCase();
@@ -427,9 +422,9 @@ const ContractManagementPage = () => {
     }
 
     return finalData;
-  }, [data, filteredData, contractTypeFilter, statusFilter, startDateFilter, endDateFilter, minSalaryFilter, maxSalaryFilter, paymentModalityFilter, globalFilter]);
+  }, [data, filteredData, contractTypeFilter, statusFilter, startDateFilter, endDateFilter, minSalaryFilter, maxSalaryFilter, globalFilter]);
 
-  const activeFiltersCount = [contractTypeFilter, statusFilter, startDateFilter, endDateFilter, minSalaryFilter, maxSalaryFilter, paymentModalityFilter].filter(Boolean).length;
+  const activeFiltersCount = [contractTypeFilter, statusFilter, startDateFilter, endDateFilter, minSalaryFilter, maxSalaryFilter].filter(Boolean).length;
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -583,18 +578,6 @@ const ContractManagementPage = () => {
             <input type="number" value={maxSalaryFilter} onChange={(e) => setMaxSalaryFilter(e.target.value)} placeholder="0" className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent" />
           </div>
 
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-primary mb-3">
-              <FaDollarSign className="inline w-4 h-4 mr-2" />
-              Modalidad de Pago
-            </label>
-            <select value={paymentModalityFilter} onChange={(e) => setPaymentModalityFilter(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none">
-              <option value="">Todas las modalidades</option>
-              {uniquePaymentModalities.map((modality) => (
-                <option key={modality.id} value={modality.id}>{modality.name}</option>
-              ))}
-            </select>
-          </div>
         </div>
       </FilterModal>
 

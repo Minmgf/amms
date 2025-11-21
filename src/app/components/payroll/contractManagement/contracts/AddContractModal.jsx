@@ -1097,7 +1097,10 @@ export default function AddContractModal({
   const isLastStep = step === steps.length - 1;
 
   return (
-    <div className="modal-overlay" style={{ padding: "var(--spacing-sm)" }}>
+    <div
+      className="modal-overlay"
+      style={{ padding: "var(--spacing-sm)", zIndex: 60 }}
+    >
       <div
         className="modal-theme"
         style={{
@@ -1122,7 +1125,7 @@ export default function AddContractModal({
               <button
                 type="button"
                 onClick={handleCloseAttempt}
-                className="text-secondary hover:text-primary"
+                className="text-secondary hover:text-primary cursor-pointer"
                 aria-label="Close Modal"
               >
                 <FiX size={18} />

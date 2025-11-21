@@ -10,7 +10,7 @@ import { apiMain } from "@/lib/axios";
  */
 export const getContracts = async () => {
   try {
-    const response = await apiMain.get("/contracts/");
+    const response = await apiMain.get("/established_contracts/list/");
     return response.data;
   } catch (error) {
     console.error("Error al obtener contratos:", error);

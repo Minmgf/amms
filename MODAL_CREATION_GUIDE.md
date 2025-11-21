@@ -1028,6 +1028,119 @@ Patrón estándar para mostrar información con iconos:
 </div>
 ```
 
+### 5. **Estilos Parametrizables con el Sistema de Temas**
+
+Los modales deben seguir las reglas globales del sistema de temas para que sean **100% parametrizables**:
+
+- **Usar siempre** clases temáticas definidas en `theme.css` (`card-theme`, `modal-theme`, `btn-theme`, `input-theme`, `text-*`, `bg-*`, `border-*`).
+- **Nunca** usar colores fijos como `bg-white`, `text-gray-900`, `bg-blue-500`, `border-gray-200`, etc.
+- Recordar la regla de la guía de estilo: *"Usa siempre los colores estilos de los temas, para que sean parametrizable"*.
+
+```jsx
+<div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+  <div className="modal-theme card-theme rounded-theme-lg w-full max-w-4xl max-h-[95vh] overflow-hidden">
+    {/* Header temático */}
+    <div className="flex items-center justify-between p-6 border-b border-primary">
+      <h2 className="text-2xl font-bold text-primary">Título del modal</h2>
+      <button
+        onClick={onClose}
+        className="p-2 hover:bg-hover rounded-full transition-colors"
+        aria-label="Cerrar modal"
+      >
+        <FiX className="w-6 h-6 text-secondary" />
+      </button>
+    </div>
+
+    {/* Contenido scrollable */}
+    <div className="flex-1 overflow-y-auto max-h-[calc(95vh-90px)] bg-surface">
+      {/* Campos e información del modal */}
+    </div>
+  </div>
+</div>
+```
+
+#### 5.1. Colores de estados usando clases temáticas
+
+En vez de devolver clases con colores fijos, se deben usar las clases **semánticas** del tema (`bg-success`, `bg-warning`, `bg-error`, `text-success`, `text-error`, etc.).
+
+```jsx
+// ❌ NO usar colores fijos
+const getStatusColorById = (id, type = "status") => {
+  if (type === "client") {
+    switch (id) {
+      case 1: return "bg-green-100 text-green-800";
+      case 2: return "bg-red-100 text-red-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  }
+  return "bg-gray-100 text-gray-800";
+};
+
+// ✅ Sí usar clases del tema (parametrizables)
+const getStatusThemeClassesById = (id, type = "status") => {
+  if (type === "client") {
+    switch (id) {
+      case 1: return "bg-success text-success";      // Activo
+      case 2: return "bg-error text-error";          // Inactivo
+      default: return "bg-surface text-secondary";
+    }
+  }
+
+  if (type === "request") {
+    switch (id) {
+      case 13: return "bg-success text-success";     // Finalizada
+      case 14: return "bg-accent text-primary";      // En proceso
+      case 15: return "bg-error text-error";         // Cancelada
+      case 16: return "bg-warning text-warning";     // Pendiente
+      default: return "bg-surface text-secondary";
+    }
+  }
+
+  return "bg-surface text-secondary";
+};
+
+// Uso en el modal
+const status = getStatusById(item.status_id, statuses);
+
+<span
+  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+    getStatusThemeClassesById(item.status_id, "request")
+  }`}
+>
+  {status?.name || "N/A"}
+</span>
+```
+
+#### 5.2. Uso de `useTheme` y variables CSS
+
+Para casos avanzados donde el modal necesite estilos muy específicos (por ejemplo, un color de acento propio del módulo), se puede combinar el sistema de temas con variables CSS.
+
+```jsx
+import { useTheme } from "@/contexts/ThemeContext";
+
+const ExampleThemedModal = ({ isOpen, onClose }) => {
+  const { currentTheme } = useTheme();
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+      <div
+        className="modal-theme card-theme rounded-theme-lg max-w-3xl w-full"
+        style={{
+          // Ejemplo: variable CSS derivada del tema actual
+          "--modal-accent": currentTheme.colors?.custom || "#000000",
+        }}
+      >
+        {/* Contenido del modal */}
+      </div>
+    </div>
+  );
+};
+```
+
+**Regla general:** todo color o estilo que deba poder cambiarse desde la parametrización debe provenir del sistema de temas (`THEME_SYSTEM_README.md`) o de variables CSS derivadas de `currentTheme`, **nunca** de clases Tailwind con colores fijos.
+
 ## 📊 Manejo de Estados
 
 ### 1. **Estados Parametrizables**
