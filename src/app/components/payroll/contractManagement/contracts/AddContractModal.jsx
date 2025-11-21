@@ -393,7 +393,14 @@ export default function AddContractModal({
     // Validar cada deducción
     let hasErrors = false;
     deductions.forEach((deduction, index) => {
-      const requiredFields = ["name", "type", "amount", "application", "startDate", "endDate", "quantity"];
+      const requiredFields = [
+        "deduction_type",
+        "amount_type",
+        "amount_value",
+        "application_deduction_type",
+        "start_date_deduction",
+        "end_date_deductions"
+      ];
       
       requiredFields.forEach((field) => {
         const value = deduction[field];
@@ -407,12 +414,12 @@ export default function AddContractModal({
       });
 
       // Validar que la fecha de fin sea posterior a la fecha de inicio
-      if (deduction.startDate && deduction.endDate) {
-        const startDate = new Date(deduction.startDate);
-        const endDate = new Date(deduction.endDate);
+      if (deduction.start_date_deduction && deduction.end_date_deductions) {
+        const startDate = new Date(deduction.start_date_deduction);
+        const endDate = new Date(deduction.end_date_deductions);
         
         if (endDate <= startDate) {
-          methods.setError(`deductions.${index}.endDate`, {
+          methods.setError(`deductions.${index}.end_date_deductions`, {
             type: "validate",
             message: "Debe ser posterior a la fecha de inicio",
           });
@@ -420,20 +427,20 @@ export default function AddContractModal({
         }
       }
 
-      // Validar que amount sea mayor o igual a 0
-      if (deduction.amount !== "" && parseFloat(deduction.amount) < 0) {
-        methods.setError(`deductions.${index}.amount`, {
+      // Validar que amount_value sea mayor o igual a 0
+      if (deduction.amount_value !== "" && parseFloat(deduction.amount_value) < 0) {
+        methods.setError(`deductions.${index}.amount_value`, {
           type: "validate",
           message: "Debe ser >= 0",
         });
         hasErrors = true;
       }
 
-      // Validar que quantity sea mayor o igual a 1
-      if (deduction.quantity !== "" && parseInt(deduction.quantity) < 1) {
-        methods.setError(`deductions.${index}.quantity`, {
+      // Validar que amount sea mayor o igual a 0
+      if (deduction.amount !== "" && deduction.amount !== undefined && parseFloat(deduction.amount) < 0) {
+        methods.setError(`deductions.${index}.amount`, {
           type: "validate",
-          message: "Debe ser >= 1",
+          message: "Debe ser >= 0",
         });
         hasErrors = true;
       }
@@ -455,7 +462,14 @@ export default function AddContractModal({
     // Validar cada incremento
     let hasErrors = false;
     increments.forEach((increment, index) => {
-      const requiredFields = ["name", "type", "amount", "application", "startDate", "endDate", "quantity"];
+      const requiredFields = [
+        "increase_type",
+        "amount_type",
+        "amount_value",
+        "application_increase_type",
+        "start_date_increase",
+        "end_date_increase"
+      ];
       
       requiredFields.forEach((field) => {
         const value = increment[field];
@@ -469,12 +483,12 @@ export default function AddContractModal({
       });
 
       // Validar que la fecha de fin sea posterior a la fecha de inicio
-      if (increment.startDate && increment.endDate) {
-        const startDate = new Date(increment.startDate);
-        const endDate = new Date(increment.endDate);
+      if (increment.start_date_increase && increment.end_date_increase) {
+        const startDate = new Date(increment.start_date_increase);
+        const endDate = new Date(increment.end_date_increase);
         
         if (endDate <= startDate) {
-          methods.setError(`increments.${index}.endDate`, {
+          methods.setError(`increments.${index}.end_date_increase`, {
             type: "validate",
             message: "Debe ser posterior a la fecha de inicio",
           });
@@ -482,20 +496,20 @@ export default function AddContractModal({
         }
       }
 
-      // Validar que amount sea mayor o igual a 0
-      if (increment.amount !== "" && parseFloat(increment.amount) < 0) {
-        methods.setError(`increments.${index}.amount`, {
+      // Validar que amount_value sea mayor o igual a 0
+      if (increment.amount_value !== "" && parseFloat(increment.amount_value) < 0) {
+        methods.setError(`increments.${index}.amount_value`, {
           type: "validate",
           message: "Debe ser >= 0",
         });
         hasErrors = true;
       }
 
-      // Validar que quantity sea mayor o igual a 1
-      if (increment.quantity !== "" && parseInt(increment.quantity) < 1) {
-        methods.setError(`increments.${index}.quantity`, {
+      // Validar que amount sea mayor o igual a 0
+      if (increment.amount !== "" && increment.amount !== undefined && parseFloat(increment.amount) < 0) {
+        methods.setError(`increments.${index}.amount`, {
           type: "validate",
-          message: "Debe ser >= 1",
+          message: "Debe ser >= 0",
         });
         hasErrors = true;
       }
