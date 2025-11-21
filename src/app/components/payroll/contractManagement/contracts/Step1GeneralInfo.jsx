@@ -1,7 +1,11 @@
 "use client";
 import { useFormContext } from "react-hook-form";
 import { useState, useEffect } from "react";
-import { getActiveDepartments, getActiveChargesDepartments, getActiveTypesByCategory } from "@/services/parametrizationService";
+import {
+  getActiveDepartments,
+  getActiveCharges,
+  getActiveTypes
+} from "@/services/contractService";
 
 export default function Step1GeneralInfo() {
   const {
@@ -13,6 +17,10 @@ export default function Step1GeneralInfo() {
   const description = watch("description") || "";
   const paymentFrequency = watch("paymentFrequency") || "";
   const selectedDepartment = watch("department") || "";
+  const selectedCharge = watch("charge") || "";
+  const selectedContractType = watch("contractType") || "";
+  const selectedWorkday = watch("workday") || "";
+  const selectedWorkModality = watch("workModality") || "";
   const maxDescriptionLength = 100;
 
   // Estados para datos dinámicos
@@ -23,6 +31,7 @@ export default function Step1GeneralInfo() {
   const [workModalityOptions, setWorkModalityOptions] = useState([]);
   const [isLoadingDepartments, setIsLoadingDepartments] = useState(false);
   const [isLoadingCharges, setIsLoadingCharges] = useState(false);
+  const [isLoadingTypes, setIsLoadingTypes] = useState(false);
 
   // Cargar departamentos al montar el componente
   useEffect(() => {
@@ -30,14 +39,13 @@ export default function Step1GeneralInfo() {
       try {
         setIsLoadingDepartments(true);
         const response = await getActiveDepartments();
-        // response.data contiene el array de departamentos
         const departments = response.data.map(dept => ({
           id: dept.id_employee_department,
           name: dept.name
         }));
         setDepartmentOptions(departments);
       } catch (error) {
-        console.error("Error al cargar departamentos:", error);
+        console.error("Error al cargar datos del Step 1:", error);
       } finally {
         setIsLoadingDepartments(false);
       }
@@ -50,28 +58,32 @@ export default function Step1GeneralInfo() {
   useEffect(() => {
     const loadTypes = async () => {
       try {
+        setIsLoadingTypes(true);
+
         // Tipo de contrato - Categoría 15
-        const contractTypes = await getActiveTypesByCategory(15);
+        const contractTypes = await getActiveTypes(15);
         setContractTypeOptions(contractTypes.map(type => ({
           id: type.id_types,
           name: type.name
         })));
 
         // Jornada laboral - Categoría 16
-        const workdays = await getActiveTypesByCategory(16);
+        const workdays = await getActiveTypes(16);
         setWorkdayOptions(workdays.map(type => ({
           id: type.id_types,
           name: type.name
         })));
 
         // Modalidad de trabajo - Categoría 17
-        const workModalities = await getActiveTypesByCategory(17);
+        const workModalities = await getActiveTypes(17);
         setWorkModalityOptions(workModalities.map(type => ({
           id: type.id_types,
           name: type.name
         })));
       } catch (error) {
-        console.error("Error al cargar tipos:", error);
+        console.error("Error al cargar datos del Step 1:", error);
+      } finally {
+        setIsLoadingTypes(false);
       }
     };
 
@@ -88,13 +100,13 @@ export default function Step1GeneralInfo() {
 
       try {
         setIsLoadingCharges(true);
-        const charges = await getActiveChargesDepartments(selectedDepartment);
+        const charges = await getActiveCharges(selectedDepartment);
         setChargeOptions(charges.map(charge => ({
           id: charge.id_employee_charge,
           name: charge.name
         })));
       } catch (error) {
-        console.error("Error al cargar cargos:", error);
+        console.error("Error al cargar datos del Step 1:", error);
         setChargeOptions([]);
       } finally {
         setIsLoadingCharges(false);
@@ -134,6 +146,7 @@ export default function Step1GeneralInfo() {
             {...register("department", {
               required: "Este campo es obligatorio",
             })}
+            value={selectedDepartment}
             className={`input-theme w-full ${
               errors.department ? "border-red-500" : ""
             }`}
@@ -173,6 +186,7 @@ export default function Step1GeneralInfo() {
             {...register("charge", {
               required: "Este campo es obligatorio",
             })}
+            value={selectedCharge}
             className={`input-theme w-full ${
               errors.charge ? "border-red-500" : ""
             }`}
@@ -257,6 +271,7 @@ export default function Step1GeneralInfo() {
             {...register("contractType", {
               required: "Este campo es obligatorio",
             })}
+            value={selectedContractType}
             className={`input-theme w-full ${
               errors.contractType ? "border-red-500" : ""
             }`}
@@ -600,6 +615,7 @@ export default function Step1GeneralInfo() {
           <select
             id="workday"
             {...register("workday")}
+            value={selectedWorkday}
             className={`input-theme w-full ${
               errors.workday ? "border-red-500" : ""
             }`}
@@ -636,6 +652,7 @@ export default function Step1GeneralInfo() {
           <select
             id="workModality"
             {...register("workModality")}
+            value={selectedWorkModality}
             className={`input-theme w-full ${
               errors.workModality ? "border-red-500" : ""
             }`}

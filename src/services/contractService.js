@@ -137,3 +137,51 @@ export const updateEstablishedContract = async (contractCode, payload) => {
     throw error;
   }
 };
+
+// =============================================================================
+// DATOS PARA FORMULARIOS DE CONTRATOS
+// =============================================================================
+
+/**
+ * Obtener departamentos activos
+ * @returns {Promise} - Lista de departamentos activos
+ */
+export const getActiveDepartments = async () => {
+  try {
+    const { data } = await apiMain.get("/employee_departments/list/active/");
+    return data;
+  } catch (error) {
+    console.error("Error al obtener departamentos activos:", error);
+    throw error;
+  }
+};
+
+/**
+ * Obtener cargos activos de un departamento
+ * @param {number} departmentId - ID del departamento
+ * @returns {Promise} - Lista de cargos del departamento
+ */
+export const getActiveCharges = async (departmentId) => {
+  try {
+    const { data } = await apiMain.get(`/employee_charges/list/active/${departmentId}/`);
+    return data;
+  } catch (error) {
+    console.error("Error al obtener cargos activos:", error);
+    throw error;
+  }
+};
+
+/**
+ * Obtener tipos activos por categoría
+ * @param {number} categoryId - ID de la categoría
+ * @returns {Promise} - Lista de tipos de la categoría
+ */
+export const getActiveTypes = async (categoryId) => {
+  try {
+    const { data } = await apiMain.get(`/types/list/active/${categoryId}/`);
+    return data;
+  } catch (error) {
+    console.error("Error al obtener tipos activos:", error);
+    throw error;
+  }
+};

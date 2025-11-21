@@ -8,8 +8,13 @@ import Step4Increments from "./Step4Increments";
 import { useTheme } from "@/contexts/ThemeContext";
 import { FiX } from "react-icons/fi";
 import { SuccessModal, ErrorModal, ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
-import { createEstablishedContract, getContractDetail, updateEstablishedContract } from "@/services/contractService";
-import { getActiveDepartments, getActiveChargesDepartments } from "@/services/parametrizationService";
+import {
+  createEstablishedContract,
+  getContractDetail,
+  updateEstablishedContract,
+  getActiveDepartments,
+  getActiveCharges
+} from "@/services/contractService";
 
 export default function AddContractModal({
   isOpen,
@@ -26,6 +31,7 @@ export default function AddContractModal({
   const [modalMessage, setModalMessage] = useState("");
   const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
   const [isLoadingContract, setIsLoadingContract] = useState(false);
+  const [pendingData, setPendingData] = useState(null);
   const { getCurrentTheme } = useTheme();
 
   const defaultValues = {
@@ -91,47 +97,44 @@ export default function AddContractModal({
           
           // Obtener el detalle del contrato desde el endpoint
           const contractData = await getContractDetail(contractToEdit.contract_code);
-          console.log("Datos del contrato cargados:", contractData);
 
-          // Obtener el departamento buscando en todos los departamentos activos
+          // Obtener el departamento del cargo
           let departmentId = "";
+          let chargeData = null;
+
           if (contractData.id_employee_charge) {
             try {
               // Obtener todos los departamentos activos
               const departmentsResponse = await getActiveDepartments();
               const departments = departmentsResponse.data;
-              console.log("Departamentos activos:", departments);
-              
-              // Buscar en cada departamento hasta encontrar el cargo
+
+              // Estrategia: Buscar en cada departamento hasta encontrar el cargo
+              // Esto es necesario porque el endpoint de cargos no retorna el id_employee_department
               for (const dept of departments) {
                 try {
-                  const charges = await getActiveChargesDepartments(dept.id_employee_department);
+                  const charges = await getActiveCharges(dept.id_employee_department);
                   const chargeFound = charges.find(
                     charge => charge.id_employee_charge === contractData.id_employee_charge
                   );
-                  
+
                   if (chargeFound) {
                     departmentId = String(dept.id_employee_department);
-                    console.log("Departamento encontrado:", dept.name, "ID:", departmentId);
-                    break; // Salir del loop cuando encontremos el cargo
+                    chargeData = chargeFound;
+                    break;
                   }
                 } catch (err) {
-                  console.warn(`Error al buscar en departamento ${dept.id_employee_department}:`, err);
+                  // Continuar buscando en otros departamentos
                 }
               }
-              
-              if (!departmentId) {
-                console.warn("No se encontró el departamento para el cargo:", contractData.id_employee_charge);
-              }
             } catch (error) {
-              console.error("Error al obtener departamentos:", error);
+              console.error("Error al cargar datos del contrato:", error);
             }
           }
 
           // Mapear datos del backend al formato del formulario
           const mappedData = {
             // Paso 1 - Generalidades
-            department: departmentId,
+            department: departmentId, // ID del departamento encontrado
             charge: contractData.id_employee_charge ? String(contractData.id_employee_charge) : "",
             description: contractData.description || "",
             contractType: contractData.contract_type ? String(contractData.contract_type) : "",
@@ -197,26 +200,10 @@ export default function AddContractModal({
             amount: i.amount ? String(i.amount) : "",
           }));
 
-          console.log("Datos mapeados preparados:", mappedData);
-          console.log("Resumen Step 1:");
-          console.log("- Department ID:", mappedData.department);
-          console.log("- Charge ID:", mappedData.charge);
-          console.log("- Contract Type:", mappedData.contractType);
-          console.log("- Payment Frequency:", mappedData.paymentFrequency);
-          console.log("- Payment Day:", mappedData.paymentDay);
-          console.log("- Workday:", mappedData.workday);
-          console.log("- Work Modality:", mappedData.workModality);
-
-          // Esperar 2 segundos para que:
-          // 1. Los departamentos se carguen (useEffect en Step1)
-          // 2. El departamento se seleccione
-          // 3. Los cargos se carguen según el departamento seleccionado
-          // 4. Todos los demás selectores carguen sus opciones
-          setTimeout(() => {
-            methods.reset(mappedData);
-            setIsLoadingContract(false);
-            console.log("✅ Datos aplicados al formulario después de 2 segundos");
-          }, 2000);
+          // Aplicar datos al formulario
+          setPendingData(mappedData);
+          methods.reset(mappedData);
+          setIsLoadingContract(false);
         } catch (error) {
           console.error("Error al cargar datos del contrato:", error);
           setModalMessage("Error al cargar los datos del contrato");
