@@ -203,6 +203,8 @@ export default function AddContractModal({
           // Aplicar datos al formulario
           setPendingData(mappedData);
           methods.reset(mappedData);
+          // Limpiar errores de validación después de resetear
+          methods.clearErrors();
           setIsLoadingContract(false);
         } catch (error) {
           console.error("Error al cargar datos del contrato:", error);

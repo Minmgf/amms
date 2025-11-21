@@ -185,3 +185,18 @@ export const getActiveTypes = async (categoryId) => {
     throw error;
   }
 };
+
+/**
+ * Obtener unidades activas por categoría
+ * @param {number} categoryId - ID de la categoría de unidades
+ * @returns {Promise} - Lista de unidades de la categoría
+ */
+export const getActiveUnits = async (categoryId) => {
+  try {
+    const { data } = await apiMain.get(`/units/active/${categoryId}/`);
+    return data;
+  } catch (error) {
+    console.error("Error al obtener unidades activas:", error);
+    throw error;
+  }
+};
