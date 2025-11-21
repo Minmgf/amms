@@ -1,8 +1,9 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { FiX, FiUser, FiMail, FiPhone, FiMapPin, FiBriefcase, FiCalendar } from "react-icons/fi";
+import { FiX, FiUser, FiMail, FiPhone, FiMapPin, FiBriefcase, FiCalendar, FiEdit2 } from "react-icons/fi";
 import { useTheme } from "@/contexts/ThemeContext";
 import { SuccessModal, ErrorModal, ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
+import AddContractModal from "@/app/components/payroll/contractManagement/contracts/AddContractModal";
 
 /**
  * RegisterEmployeeModal Component
@@ -54,6 +55,8 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isContractModalOpen, setIsContractModalOpen] = useState(false);
+  const [contractTemplateToEdit, setContractTemplateToEdit] = useState(null);
 
   // Mock data - Estados parametrizables (vendrá del endpoint)
   const [identificationTypes] = useState([
@@ -178,6 +181,32 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
     }
   };
 
+  // Abrir modal de creación de contrato
+  const handleOpenCreateContract = () => {
+    setContractTemplateToEdit(null);
+    setIsContractModalOpen(true);
+  };
+
+  // Abrir modal de edición de contrato (cuando hay contrato seleccionado)
+  const handleOpenEditContract = () => {
+    if (!formData.associatedContract) return;
+
+    const selectedContract = contracts.find(
+      (contract) => String(contract.id) === String(formData.associatedContract)
+    );
+
+    if (!selectedContract) {
+      return;
+    }
+
+    const templateForEdit = {
+      description: selectedContract.name,
+    };
+
+    setContractTemplateToEdit(templateForEdit);
+    setIsContractModalOpen(true);
+  };
+
   // Validar formulario
   const validateForm = () => {
     const newErrors = {};
@@ -294,7 +323,7 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
             <h2 className="text-2xl font-bold text-primary">Nuevo Empleado</h2>
             <button
               onClick={handleCancel}
-              className="p-2 hover:bg-hover rounded-full transition-colors"
+              className="p-2 hover:bg-hover rounded-full transition-colors cursor-pointer"
               aria-label="Cerrar modal"
             >
               <FiX className="w-6 h-6 text-secondary" />
@@ -609,7 +638,7 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
                     <label className="block text-sm font-medium text-secondary mb-2">
                       Contrato asociado *
                     </label>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap sm:flex-nowrap">
                       <select
                         value={formData.associatedContract}
                         onChange={(e) => handleInputChange("associatedContract", e.target.value)}
@@ -625,12 +654,22 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
                       </select>
                       <button
                         type="button"
-                        className="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors whitespace-nowrap flex items-center gap-2"
-                        onClick={() => {/* TODO: Abrir modal de crear contrato */}}
+                        className="btn-theme btn-primary whitespace-nowrap flex items-center gap-2"
+                        onClick={handleOpenCreateContract}
                       >
                         <FiBriefcase className="w-4 h-4" />
-                        Nuevo Contrato
+                        Crear contrato
                       </button>
+                      {formData.associatedContract && (
+                        <button
+                          type="button"
+                          className="btn-theme btn-secondary whitespace-nowrap flex items-center gap-2"
+                          onClick={handleOpenEditContract}
+                        >
+                          <FiEdit2 className="w-4 h-4" />
+                          Editar contrato
+                        </button>
+                      )}
                     </div>
                     {errors.associatedContract && <p className="text-red-500 text-xs mt-1">{errors.associatedContract}</p>}
                   </div>
@@ -656,20 +695,20 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 transition-colors flex-1 font-medium"
+                  className="btn-theme btn-error flex-1"
                   disabled={loading}
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors flex-1 font-medium disabled:opacity-50"
+                  className="btn-theme btn-primary flex-1 disabled:opacity-50"
                   disabled={loading}
                 >
                   {loading ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2 inline-block" />
-                      {loading ? "Registrando..." : "Registrar"}
+                      Registrando...
                     </>
                   ) : (
                     "Registrar"
@@ -710,6 +749,15 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
         title="Error de Registro"
         message={errorMessage}
         buttonText="Intentar de Nuevo"
+      />
+
+      <AddContractModal
+        isOpen={isContractModalOpen}
+        onClose={() => setIsContractModalOpen(false)}
+        contractToEdit={contractTemplateToEdit}
+        onSuccess={() => {
+          setIsContractModalOpen(false);
+        }}
       />
     </>
   );
