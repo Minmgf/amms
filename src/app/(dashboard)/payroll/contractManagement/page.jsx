@@ -32,7 +32,6 @@ const ContractManagementPage = () => {
   const [endDateFilter, setEndDateFilter] = useState("");
   const [minSalaryFilter, setMinSalaryFilter] = useState("");
   const [maxSalaryFilter, setMaxSalaryFilter] = useState("");
-  const [paymentModalityFilter, setPaymentModalityFilter] = useState("");
   const [filteredData, setFilteredData] = useState([]);
 
   // Estado de modales
@@ -50,99 +49,34 @@ const ContractManagementPage = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [data, contractTypeFilter, statusFilter, startDateFilter, endDateFilter, minSalaryFilter, maxSalaryFilter, paymentModalityFilter]);
+  }, [data, contractTypeFilter, statusFilter, startDateFilter, endDateFilter, minSalaryFilter, maxSalaryFilter]);
 
   const loadInitialData = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Simulación de datos hasta que el servicio esté listo
-      const mockContracts = [
-        {
-          id_contract: 1,
-          contract_code: "CON-OPERATOR-0001",
-          employee_name: "Cristiano Ronaldo",
-          contract_type_id: 1,
-          contract_type_name: "Fixed term",
-          start_date: "2025-03-14T21:23:00",
-          end_date: "2025-10-14T21:25:00",
-          status_id: 1,
-          status_name: "Activo",
-          salary: 30000,
-          payment_modality_id: 1,
-          payment_modality_name: "Por hora",
-        },
-        {
-          id_contract: 2,
-          contract_code: "CON-OPERATOR-0002",
-          employee_name: "Lionel Messi",
-          contract_type_id: 2,
-          contract_type_name: "Indefinido",
-          start_date: "2024-01-15T08:00:00",
-          end_date: null,
-          status_id: 1,
-          status_name: "Activo",
-          salary: 5000000,
-          payment_modality_id: 2,
-          payment_modality_name: "Mensual",
-        },
-        {
-          id_contract: 3,
-          contract_code: "CON-OPERATOR-0003",
-          employee_name: "Neymar Jr",
-          contract_type_id: 1,
-          contract_type_name: "Fixed term",
-          start_date: "2024-06-01T09:00:00",
-          end_date: "2025-12-31T18:00:00",
-          status_id: 1,
-          status_name: "Activo",
-          salary: 25000,
-          payment_modality_id: 1,
-          payment_modality_name: "Por hora",
-        },
-        {
-          id_contract: 4,
-          contract_code: "CON-OPERATOR-0004",
-          employee_name: "Kylian Mbappé",
-          contract_type_id: 3,
-          contract_type_name: "Obra o labor",
-          start_date: "2024-08-20T10:00:00",
-          end_date: "2025-02-20T18:00:00",
-          status_id: 2,
-          status_name: "Finalizado",
-          salary: 4500000,
-          payment_modality_id: 2,
-          payment_modality_name: "Mensual",
-        },
-        {
-          id_contract: 5,
-          contract_code: "CON-OPERATOR-0005",
-          employee_name: "Erling Haaland",
-          contract_type_id: 2,
-          contract_type_name: "Indefinido",
-          start_date: "2023-11-01T08:30:00",
-          end_date: null,
-          status_id: 1,
-          status_name: "Activo",
-          salary: 6000000,
-          payment_modality_id: 2,
-          payment_modality_name: "Mensual",
-        },
-      ];
-      
-      // Simulación de delay para mostrar el loading
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setData(mockContracts);
-      
-      // Descomentar cuando el servicio esté listo:
-      // const response = await getContracts();
-      // if (response && Array.isArray(response)) {
-      //   setData(response);
-      // } else {
-      //   setError("No se pudieron cargar los contratos.");
-      //   setData([]);
-      // }
+      const response = await getContracts();
+      if (response && response.success && Array.isArray(response.data)) {
+        // Map API response to component expected format
+        const mappedContracts = response.data.map((contract, index) => ({
+          id_contract: `${contract.contract_code}_${index}`, // Create unique identifier using contract_code + index
+          contract_code: contract.contract_code,
+          employee_name: "N/A", // Employee name not provided in API response
+          contract_type_id: contract.contract_type,
+          contract_type_name: contract.contract_type_name,
+          start_date: contract.start_date,
+          end_date: contract.end_date,
+          status_id: contract.established_contract_status,
+          status_name: contract.established_contract_status_name,
+          salary: contract.salary_base,
+          payment_modality_id: null, // Not provided in API response
+          payment_modality_name: "N/A", // Not provided in API response
+        }));
+        setData(mappedContracts);
+      } else {
+        setError("No se pudieron cargar los contratos.");
+        setData([]);
+      }
     } catch (err) {
       console.error("Error loading contracts:", err);
       setError("Error al conectar con el servidor.");
@@ -183,9 +117,6 @@ const ContractManagementPage = () => {
     if (maxSalaryFilter) {
       filtered = filtered.filter((contract) => parseFloat(contract.salary) <= parseFloat(maxSalaryFilter));
     }
-    if (paymentModalityFilter) {
-      filtered = filtered.filter((contract) => contract.payment_modality_id === parseInt(paymentModalityFilter));
-    }
 
     setFilteredData(filtered);
   };
@@ -202,11 +133,6 @@ const ContractManagementPage = () => {
     return Array.from(uniqueMap.values());
   }, [data]);
 
-  const uniquePaymentModalities = useMemo(() => {
-    const modalities = data.map((contract) => ({ id: contract.payment_modality_id, name: contract.payment_modality_name }));
-    const uniqueMap = new Map(modalities.map((m) => [m.id, m]));
-    return Array.from(uniqueMap.values());
-  }, [data]);
 
   const handleApplyFilters = () => {
     applyFilters();
@@ -220,7 +146,6 @@ const ContractManagementPage = () => {
     setEndDateFilter("");
     setMinSalaryFilter("");
     setMaxSalaryFilter("");
-    setPaymentModalityFilter("");
     applyFilters();
   };
 
@@ -230,12 +155,12 @@ const ContractManagementPage = () => {
       setSelectedContract(null);
       setIsContractFormModalOpen(true);
     } else if (mode === "view") {
-      const contract = data.find((c) => c.id_contract === contractId);
+      const contract = data.find((c) => c.contract_code === contractId);
       setSelectedContract(contract);
       setIsContractDetailsOpen(true);
     } else {
       // edit
-      const contract = data.find((c) => c.id_contract === contractId);
+      const contract = data.find((c) => c.contract_code === contractId);
       setContractFormMode(mode);
       setSelectedContract(contract);
       setIsContractFormModalOpen(true);
@@ -254,12 +179,12 @@ const ContractManagementPage = () => {
     try {
       // Intentar eliminar el contrato directamente
       // El backend validará automáticamente si tiene asociaciones
-      const response = await deleteContract(selectedContract.id_contract);
+      const response = await deleteContract(selectedContract.contract_code);
       
       if (response.success) {
         // Eliminación exitosa - remover contrato de la lista
         setData(prevData =>
-          prevData.filter(contract => contract.id_contract !== selectedContract.id_contract)
+          prevData.filter(contract => contract.contract_code !== selectedContract.contract_code)
         );
 
         // Mostrar modal de éxito
@@ -301,13 +226,13 @@ const ContractManagementPage = () => {
     if (!selectedContract) return;
 
     try {
-      const response = await toggleContractStatus(selectedContract.id_contract);
+      const response = await toggleContractStatus(selectedContract.contract_code);
       
       if (response.success) {
         // Actualizar el contrato en la lista
         setData(prevData =>
           prevData.map(contract =>
-            contract.id_contract === selectedContract.id_contract
+            contract.contract_code === selectedContract.contract_code
               ? { 
                   ...contract, 
                   status_id: contract.status_id === 1 ? 2 : 1,
@@ -345,13 +270,13 @@ const ContractManagementPage = () => {
     if (!selectedContract) return;
 
     try {
-      const response = await toggleContractStatus(selectedContract.id_contract);
+      const response = await toggleContractStatus(selectedContract.contract_code);
       
       if (response.success) {
         // Actualizar el contrato en la lista
         setData(prevData =>
           prevData.map(contract =>
-            contract.id_contract === selectedContract.id_contract
+            contract.contract_code === selectedContract.contract_code
               ? { 
                   ...contract, 
                   status_id: contract.status_id === 1 ? 2 : 1,
@@ -381,12 +306,12 @@ const ContractManagementPage = () => {
 
   const deleteConfirmMessage = useMemo(() => {
     if (!selectedContract) return "";
-    return `¿Está seguro que desea eliminar el contrato "${selectedContract?.contract_code}" de ${selectedContract?.employee_name}?`;
+    return `¿Está seguro que desea eliminar el contrato "${selectedContract?.contract_code}"?`;
   }, [selectedContract]);
 
   const activateConfirmMessage = useMemo(() => {
     if (!selectedContract) return "";
-    return `¿Está seguro que desea activar el contrato "${selectedContract?.contract_code}" de ${selectedContract?.employee_name}?`;
+    return `¿Está seguro que desea activar el contrato "${selectedContract?.contract_code}"?`;
   }, [selectedContract]);
 
   const columnHelper = createColumnHelper();
@@ -399,7 +324,7 @@ const ContractManagementPage = () => {
       }),
       columnHelper.accessor("employee_name", {
         header: "Nombre del Empleado",
-        cell: (info) => <div className="text-secondary">{info.getValue()}</div>,
+        cell: (info) => <div className="text-secondary">{info.getValue() || "N/A"}</div>,
       }),
       columnHelper.accessor("contract_type_name", {
         header: "Tipo de Contrato",
@@ -439,7 +364,9 @@ const ContractManagementPage = () => {
           return (
             <div className="text-secondary">
               ${parseFloat(salary).toLocaleString("es-CO")}
-              <span className="text-xs text-gray-500 ml-1">({payment_modality})</span>
+              {payment_modality && payment_modality !== "N/A" && (
+                <span className="text-xs text-gray-500 ml-1">({payment_modality})</span>
+              )}
             </div>
           );
         },
@@ -456,7 +383,7 @@ const ContractManagementPage = () => {
               {/* <PermissionGuard permission={201}> */}
                 <button
                   aria-label="View Details Button"
-                  onClick={() => handleOpenContractFormModal("view", info.getValue())}
+                  onClick={() => handleOpenContractFormModal("view", contract.contract_code)}
                   className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600 text-gray-700"
                   title="Ver detalles"
                 >
@@ -466,7 +393,7 @@ const ContractManagementPage = () => {
               {/* <PermissionGuard permission={202}> */}
                 <button
                   aria-label="Edit Button"
-                  onClick={() => handleOpenContractFormModal("edit", info.getValue())}
+                  onClick={() => handleOpenContractFormModal("edit", contract.contract_code)}
                   className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
                   title="Editar contrato"
                 >
@@ -505,22 +432,21 @@ const ContractManagementPage = () => {
   );
 
   const displayData = useMemo(() => {
-    let finalData = contractTypeFilter || statusFilter || startDateFilter || endDateFilter || minSalaryFilter || maxSalaryFilter || paymentModalityFilter ? filteredData : data;
+    let finalData = contractTypeFilter || statusFilter || startDateFilter || endDateFilter || minSalaryFilter || maxSalaryFilter ? filteredData : data;
 
     if (globalFilter.trim() !== "") {
       const searchTerm = globalFilter.toLowerCase();
       finalData = finalData.filter(
         (contract) =>
-          contract.employee_name?.toLowerCase().includes(searchTerm) ||
           contract.contract_code?.toLowerCase().includes(searchTerm) ||
           contract.contract_type_name?.toLowerCase().includes(searchTerm)
       );
     }
 
     return finalData;
-  }, [data, filteredData, contractTypeFilter, statusFilter, startDateFilter, endDateFilter, minSalaryFilter, maxSalaryFilter, paymentModalityFilter, globalFilter]);
+  }, [data, filteredData, contractTypeFilter, statusFilter, startDateFilter, endDateFilter, minSalaryFilter, maxSalaryFilter, globalFilter]);
 
-  const activeFiltersCount = [contractTypeFilter, statusFilter, startDateFilter, endDateFilter, minSalaryFilter, maxSalaryFilter, paymentModalityFilter].filter(Boolean).length;
+  const activeFiltersCount = [contractTypeFilter, statusFilter, startDateFilter, endDateFilter, minSalaryFilter, maxSalaryFilter].filter(Boolean).length;
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -547,7 +473,7 @@ const ContractManagementPage = () => {
                 <FiSearch className="text-secondary w-4 h-4 mr-2" />
                 <input
                   type="text"
-                  placeholder="Buscar por empleado, código o tipo..."
+                  placeholder="Buscar por código o tipo..."
                   value={globalFilter}
                   onChange={(e) => setGlobalFilter(e.target.value)}
                   className="flex-1 outline-none bg-transparent"
@@ -674,18 +600,6 @@ const ContractManagementPage = () => {
             <input type="number" value={maxSalaryFilter} onChange={(e) => setMaxSalaryFilter(e.target.value)} placeholder="0" className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent" />
           </div>
 
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-primary mb-3">
-              <FaDollarSign className="inline w-4 h-4 mr-2" />
-              Modalidad de Pago
-            </label>
-            <select value={paymentModalityFilter} onChange={(e) => setPaymentModalityFilter(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent appearance-none">
-              <option value="">Todas las modalidades</option>
-              {uniquePaymentModalities.map((modality) => (
-                <option key={modality.id} value={modality.id}>{modality.name}</option>
-              ))}
-            </select>
-          </div>
         </div>
       </FilterModal>
 
