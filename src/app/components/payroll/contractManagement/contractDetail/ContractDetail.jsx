@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { getContractDetail } from "@/services/contractService";
+import { getContractHistory } from "@/services/auditService";
 
 /**
  * Multistep modal (structure-only) for HU-CON-005 — Contract Detail Viewer
@@ -29,6 +30,8 @@ export default function ContractDetail({
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   useEffect(() => {
     const loadDetail = async () => {
@@ -53,6 +56,25 @@ export default function ContractDetail({
     loadDetail();
   }, [isOpen, contractData?.contract_code]);
 
+  useEffect(() => {
+    const loadHistory = async () => {
+      if (!isOpen || !contractData?.contract_code || activeTab !== 4) return;
+
+      try {
+        setHistoryLoading(true);
+        const historyData = await getContractHistory(contractData.contract_code);
+        setHistory(historyData);
+      } catch (err) {
+        console.error("Error al cargar el historial:", err);
+        setHistory([]);
+      } finally {
+        setHistoryLoading(false);
+      }
+    };
+
+    loadHistory();
+  }, [isOpen, contractData?.contract_code, activeTab]);
+
   const formatDate = (value) => {
     if (!value) return "";
     try {
@@ -75,6 +97,73 @@ export default function ContractDetail({
       currency: "USD",
       minimumFractionDigits: 2,
     }).format(Number(value));
+  };
+
+  const formatDateTime = (value) => {
+    if (!value) return "";
+    try {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+      return date.toLocaleString("es-ES", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+    } catch {
+      return value;
+    }
+  };
+
+  const formatDiff = (diff) => {
+    if (!diff || typeof diff !== 'object') return "Sin cambios";
+    
+    const changes = [];
+    
+    if (diff.created && Object.keys(diff.created).length > 0) {
+      changes.push("Creación del contrato");
+    }
+    
+    if (diff.changed && Object.keys(diff.changed).length > 0) {
+      const changedDetails = [];
+      
+      Object.entries(diff.changed).forEach(([field, change]) => {
+        if (change && typeof change === 'object' && change.from !== undefined && change.to !== undefined) {
+          // Formatear valores según el tipo de campo
+          let fromValue = change.from;
+          let toValue = change.to;
+          
+          // Formatear fechas si el campo contiene "date"
+          if (field.includes('date') || field.includes('_date')) {
+            fromValue = formatDate(change.from);
+            toValue = formatDate(change.to);
+          }
+          
+          // Formatear montos si el campo contiene "salary" o "amount"
+          if (field.includes('salary') || field.includes('amount')) {
+            fromValue = formatCurrency(change.from);
+            toValue = formatCurrency(change.to);
+          }
+          
+          changedDetails.push(`${field}: ${fromValue} → ${toValue}`);
+        } else {
+          changedDetails.push(`${field}: modificado`);
+        }
+      });
+      
+      if (changedDetails.length > 0) {
+        changes.push(`Cambios: ${changedDetails.join("; ")}`);
+      }
+    }
+    
+    if (diff.removed && Object.keys(diff.removed).length > 0) {
+      const removedFields = Object.keys(diff.removed);
+      changes.push(`Eliminó: ${removedFields.join(", ")}`);
+    }
+    
+    return changes.length > 0 ? changes.join(" | ") : "Sin cambios";
   };
 
   const tabs = [
@@ -379,52 +468,118 @@ export default function ContractDetail({
     </section>
   );
 
-  const HistoryTab = () => (
-    <section className="p-theme-lg">
-      <div className="card-theme">
-        <h3 className="text-theme-lg font-theme-semibold text-primary mb-6">Historial del Contrato</h3>
-        
-        <div className="space-y-1">
-          {/* Timeline events */}
-          <div className="flex items-start py-3 border-l-4 border-red-500 pl-4">
-            <div className="flex-1">
-              <div className="text-theme-sm font-theme-semibold text-primary">Desactivación</div>
-            </div>
-            <div className="flex-1">
-              <div className="text-theme-sm text-secondary">
-                <span className="font-theme-semibold text-primary">Usuario Responsable: </span>
-              </div>
-            </div>
-            <div className="text-theme-sm text-secondary text-right"></div>
-          </div>
+  const HistoryTab = () => {
+    const getOperationColor = (operation) => {
+      switch (operation) {
+        case 'CREATE':
+          return 'border-green-500';
+        case 'UPDATE':
+          return 'border-yellow-500';
+        case 'DELETE':
+          return 'border-red-500';
+        default:
+          return 'border-gray-500';
+      }
+    };
+
+    const getOperationName = (operation) => {
+      switch (operation) {
+        case 'CREATE':
+          return 'Creation';
+        case 'UPDATE':
+          return 'Modification';
+        case 'DELETE':
+          return 'Deactivation';
+        default:
+          return operation;
+      }
+    };
+
+    return (
+      <section className="p-theme-lg">
+        <div className="card-theme">
+          <h3 className="text-theme-lg font-theme-semibold text-primary mb-6">Contract History</h3>
           
-          <div className="flex items-start py-3 border-l-4 border-yellow-500 pl-4">
-            <div className="flex-1">
-              <div className="text-theme-sm font-theme-semibold text-primary">Modificación</div>
+          {historyLoading ? (
+            <div className="text-center py-8">
+              <p className="text-theme-sm text-secondary">Cargando historial...</p>
             </div>
-            <div className="flex-1">
-              <div className="text-theme-sm text-secondary">
-                <span className="font-theme-semibold text-primary">Usuario Responsable: </span>
-              </div>
+          ) : history.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-theme-sm text-secondary">No hay historial disponible para este contrato.</p>
             </div>
-            <div className="text-theme-sm text-secondary text-right"></div>
-          </div>
-          
-          <div className="flex items-start py-3 border-l-4 border-green-500 pl-4">
-            <div className="flex-1">
-              <div className="text-theme-sm font-theme-semibold text-primary">Creación</div>
+          ) : (
+            <div className="space-y-4">
+              {history.map((event, index) => (
+                <div key={event.event_id || index} className={`flex items-start py-3 border-l-4 ${getOperationColor(event.operation)} pl-4`}>
+                  <div className="flex-1">
+                    <div className="text-theme-sm font-theme-semibold text-primary mb-1">
+                      {getOperationName(event.operation)}
+                    </div>
+                    {event.operation === 'UPDATE' && event.diff?.changed && (
+                      <div className="text-theme-xs text-secondary">
+                        {Object.entries(event.diff.changed).map(([field, change], idx) => {
+                          if (change && typeof change === 'object' && change.from !== undefined && change.to !== undefined) {
+                            let fromValue = change.from;
+                            let toValue = change.to;
+                            
+                            // Manejar valores complejos (arrays, objetos)
+                            if (typeof fromValue === 'object') {
+                              fromValue = Array.isArray(fromValue) ? `${fromValue.length} items` : 'object';
+                            }
+                            if (typeof toValue === 'object') {
+                              toValue = Array.isArray(toValue) ? `${toValue.length} items` : 'object';
+                            }
+                            
+                            // Formatear fechas
+                            if (field.includes('date') || field.includes('_date')) {
+                              if (typeof change.from === 'string') fromValue = formatDate(change.from);
+                              if (typeof change.to === 'string') toValue = formatDate(change.to);
+                            }
+                            
+                            // Formatear montos
+                            if (field.includes('salary') || field.includes('amount')) {
+                              if (typeof change.from === 'number') fromValue = formatCurrency(change.from);
+                              if (typeof change.to === 'number') toValue = formatCurrency(change.to);
+                            }
+
+                            // Traducir nombres de campos comunes
+                            let fieldName = field;
+                            if (field === 'minimum_hours') fieldName = 'Minimum Hours';
+                            if (field === 'vacation_days') fieldName = 'Vacation Days';
+                            if (field === 'start_date') fieldName = 'Start Date';
+                            if (field === 'end_date') fieldName = 'End Date';
+                            if (field === 'established_deductions') fieldName = 'Deductions';
+                            if (field === 'established_increases') fieldName = 'Increases';
+                            
+                            return (
+                              <div key={idx} className="mb-1">
+                                <span className="font-medium">{fieldName}:</span> {String(fromValue)} → {String(toValue)}
+                              </div>
+                            );
+                          }
+                          return null;
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-theme-sm text-secondary">
+                      <span className="font-theme-semibold text-primary">Responsible User: </span>
+                      {event.actor_name}
+                    </div>
+                  </div>
+                  <div className="text-theme-sm text-secondary text-right">
+                    {formatDateTime(event.ts)}
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="flex-1">
-              <div className="text-theme-sm text-secondary">
-                <span className="font-theme-semibold text-primary">Usuario Responsable: </span>
-              </div>
-            </div>
-            <div className="text-theme-sm text-secondary text-right"></div>
-          </div>
+          )}
         </div>
-      </div>
-    </section>
-  );
+      </section>
+    );
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
