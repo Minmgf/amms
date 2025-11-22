@@ -263,13 +263,7 @@ export default function EmployeeDetailModal({
                                 item.action === "contract_change" ? "parametrization-badge-4" :
                                 "parametrization-badge-10"
                               }`}>
-                                {item.action === "creation"
-                                  ? "Creación"
-                                  : item.action === "update"
-                                  ? "Actualización"
-                                  : item.action === "contract_change"
-                                  ? "Cambio de contrato"
-                                  : item.action || "Otro"}
+                                {item.action}
                               </span>
                             </div>
                           ))}
