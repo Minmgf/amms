@@ -21,6 +21,8 @@ const EmployeesPage = () => {
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedEmployeeForDetail, setSelectedEmployeeForDetail] = useState(null);
+  const [registerModalMode, setRegisterModalMode] = useState("create");
+  const [employeeIdToEdit, setEmployeeIdToEdit] = useState(null);
 
   const [searchType, setSearchType] = useState("document");
   const [advancedSearchText, setAdvancedSearchText] = useState("");
@@ -294,12 +296,11 @@ const EmployeesPage = () => {
     setIsDetailModalOpen(true);
   };
 
-  const handleEditEmployee = () => {
+  const handleEditEmployee = (employeeData) => {
     setIsDetailModalOpen(false);
-    // TODO: Open edit modal or navigate to edit page
-    setModalTitle("Editar empleado");
-    setModalMessage("Redirigir a la vista de edición del empleado (pendiente de integración).");
-    setSuccessOpen(true);
+    setRegisterModalMode("edit");
+    setEmployeeIdToEdit(employeeData?.id || selectedEmployeeForDetail?.id);
+    setIsRegisterModalOpen(true);
   };
 
   const noResultsByFilter =
@@ -445,8 +446,14 @@ const EmployeesPage = () => {
 
       <RegisterEmployeeModal
         isOpen={isRegisterModalOpen}
-        onClose={() => setIsRegisterModalOpen(false)}
+        onClose={() => {
+          setIsRegisterModalOpen(false);
+          setRegisterModalMode("create");
+          setEmployeeIdToEdit(null);
+        }}
         onSuccess={loadEmployees}
+        mode={registerModalMode}
+        employeeId={employeeIdToEdit}
       />
 
       <ConfirmModal

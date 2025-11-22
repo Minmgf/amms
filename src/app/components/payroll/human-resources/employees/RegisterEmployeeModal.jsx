@@ -9,17 +9,26 @@ import * as locationService from "@/services/locationService";
 
 /**
  * RegisterEmployeeModal Component
- * 
- * Modal para registrar un nuevo empleado con datos personales, de contacto y laborales
- * Basado en HU-EMP-001
- * 
+ *
+ * Modal para registrar o editar un empleado con datos personales, de contacto y laborales
+ * Basado en HU-EMP-001 (Creación) y HU-EMP-009 (Edición)
+ *
  * @param {Object} props
  * @param {boolean} props.isOpen - Controla si el modal está abierto
  * @param {Function} props.onClose - Función para cerrar el modal
- * @param {Function} props.onSuccess - Función llamada cuando se registra exitosamente
+ * @param {Function} props.onSuccess - Función llamada cuando se registra/actualiza exitosamente
+ * @param {string} props.mode - Modo del modal: "create" o "edit" (default: "create")
+ * @param {number} props.employeeId - ID del empleado (requerido en modo "edit")
  */
-const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
+const RegisterEmployeeModal = ({
+  isOpen,
+  onClose,
+  onSuccess,
+  mode = "create",
+  employeeId = null
+}) => {
   const { getCurrentTheme } = useTheme();
+  const isEditMode = mode === "edit";
 
   // Estados del formulario
   const [formData, setFormData] = useState({
@@ -75,40 +84,49 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
 
+  // Estado para almacenar ID de usuario (necesario para actualización)
+  const [userId, setUserId] = useState(null);
+
   // Limpiar formulario y cargar datos parametrizables al abrir/cerrar
   useEffect(() => {
     if (isOpen) {
-      // Limpiar formulario
-      setFormData({
-        firstName: "",
-        secondName: "",
-        firstLastName: "",
-        secondLastName: "",
-        identificationType: "",
-        identificationNumber: "",
-        dateIssuance: "",
-        gender: "",
-        birthDate: "",
-        email: "",
-        phoneNumber: "",
-        countryCode: "+57",
-        country: "",
-        state: "",
-        city: "",
-        address: "",
-        department: "",
-        position: "",
-        associatedContract: "",
-        noveltyDescription: ""
-      });
-      setErrors({});
-      setUserExists(false);
-      setExistingUserId(null);
+      if (isEditMode && employeeId) {
+        // Modo edición: cargar datos del empleado
+        loadEmployeeDataForEdit();
+      } else {
+        // Modo creación: limpiar formulario
+        setFormData({
+          firstName: "",
+          secondName: "",
+          firstLastName: "",
+          secondLastName: "",
+          identificationType: "",
+          identificationNumber: "",
+          dateIssuance: "",
+          gender: "",
+          birthDate: "",
+          email: "",
+          phoneNumber: "",
+          countryCode: "+57",
+          country: "",
+          state: "",
+          city: "",
+          address: "",
+          department: "",
+          position: "",
+          associatedContract: "",
+          noveltyDescription: ""
+        });
+        setErrors({});
+        setUserExists(false);
+        setExistingUserId(null);
+        setUserId(null);
+      }
 
       // Cargar datos parametrizables
       loadParametrizableData();
     }
-  }, [isOpen]);
+  }, [isOpen, isEditMode, employeeId]);
 
   // Función para cargar todos los datos parametrizables
   const loadParametrizableData = async () => {
@@ -144,6 +162,101 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
     } catch (error) {
       console.error("Error cargando datos parametrizables:", error);
       setErrorMessage("Error al cargar los datos del formulario. Por favor, intente nuevamente.");
+      setShowErrorModal(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Función para cargar datos del empleado en modo edición (HU-EMP-009)
+  const loadEmployeeDataForEdit = async () => {
+    setLoading(true);
+    try {
+      // 1. Obtener detalles del empleado
+      const employeeDetails = await employeeService.getEmployeeDetails(employeeId);
+
+      if (!employeeDetails) {
+        throw new Error("No se pudieron cargar los detalles del empleado");
+      }
+
+      // 2. Obtener información del usuario
+      const userIdFromEmployee = employeeDetails.id_user;
+      setUserId(userIdFromEmployee);
+      setExistingUserId(userIdFromEmployee);
+      setUserExists(true);
+
+      const userData = await employeeService.getUserById(userIdFromEmployee);
+      const userInfo = userData.success && userData.data && userData.data.length > 0
+        ? userData.data[0]
+        : null;
+
+      if (!userInfo) {
+        throw new Error("No se pudo cargar la información del usuario");
+      }
+
+      // 3. Obtener contrato actual
+      const contractData = await employeeService.getLatestEmployeeContract(employeeId);
+
+      // 4. Separar nombre completo en primer y segundo nombre
+      const fullName = userInfo.name || "";
+      const nameParts = fullName.trim().split(/\s+/);
+      const firstName = nameParts[0] || "";
+      const secondName = nameParts.slice(1).join(" ") || "";
+
+      // 5. Precargar formulario con datos del empleado
+      setFormData({
+        firstName: firstName,
+        secondName: secondName,
+        firstLastName: userInfo.first_last_name || "",
+        secondLastName: userInfo.second_last_name || "",
+        identificationType: userInfo.type_document_id?.toString() || "",
+        identificationNumber: userInfo.document_number?.toString() || "",
+        dateIssuance: userInfo.date_issuance_document?.split('T')[0] || "",
+        gender: userInfo.gender_id?.toString() || "",
+        birthDate: userInfo.birthday?.split('T')[0] || "",
+        email: employeeDetails.email || userInfo.email || "",
+        phoneNumber: userInfo.phone || "",
+        countryCode: "+57",
+        country: userInfo.country || "",
+        state: userInfo.department || "",
+        city: userInfo.city?.toString() || "",
+        address: userInfo.address || "",
+        department: employeeDetails.id_employee_department?.toString() || "",
+        position: contractData?.id_employee_charge?.toString() || "",
+        associatedContract: contractData?.contract_code || "",
+        noveltyDescription: ""
+      });
+
+      // 6. Cargar posiciones según departamento
+      if (employeeDetails.id_employee_department) {
+        const positionsData = await employeeService.getPositions(employeeDetails.id_employee_department);
+        if (positionsData.success) {
+          setAllPositions(positionsData.data || []);
+          setPositions(positionsData.data || []);
+        }
+      }
+
+      // 7. Cargar estados y ciudades según país
+      if (userInfo.country) {
+        const selectedCountry = countries.find(c => c.name === userInfo.country);
+        if (selectedCountry && selectedCountry.iso2) {
+          const statesData = await locationService.getStates(selectedCountry.iso2);
+          setStates(statesData || []);
+
+          if (userInfo.department) {
+            const selectedState = statesData?.find(s => s.name === userInfo.department);
+            if (selectedState && selectedState.iso2) {
+              const citiesData = await locationService.getCities(selectedCountry.iso2, selectedState.iso2);
+              setCities(citiesData || []);
+            }
+          }
+        }
+      }
+
+      setErrors({});
+    } catch (error) {
+      console.error("Error cargando datos del empleado para edición:", error);
+      setErrorMessage("Error al cargar los datos del empleado. Por favor, intente nuevamente.");
       setShowErrorModal(true);
     } finally {
       setLoading(false);
@@ -468,13 +581,11 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
   // Manejar envío del formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     setLoading(true);
     try {
-      let userId = existingUserId;
-
       // Limpiar número de teléfono (solo dígitos) antes de enviar al backend
       const cleanPhoneNumber = formData.phoneNumber
         ? formData.phoneNumber.replace(/[\s\-()]/g, '')
@@ -486,111 +597,129 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
         ? `${formData.firstName} ${formData.secondName}`.trim()
         : formData.firstName;
 
-      // Paso 1: Crear o actualizar usuario si es necesario
-      if (userExists && existingUserId) {
-        // Actualizar usuario existente si hay cambios
-        const userData = {
-          name: fullName,
-          first_last_name: formData.firstLastName,
-          second_last_name: formData.secondLastName || null,
-          type_document_id: parseInt(formData.identificationType),
-          date_issuance_document: formData.dateIssuance,
-          birthday: formData.birthDate,
-          gender_id: parseInt(formData.gender),
-          country: formData.country,
-          department: formData.state,
-          city: parseInt(formData.city),
-          address: formData.address,
-          phone: cleanPhoneNumber
-        };
-
-        await employeeService.updateUser(existingUserId, userData);
-      } else {
-        // Crear nuevo usuario
-        const userData = {
-          name: fullName,
-          first_last_name: formData.firstLastName,
-          second_last_name: formData.secondLastName || null,
-          type_document_id: parseInt(formData.identificationType),
-          document_number: formData.identificationNumber,
-          date_issuance_document: formData.dateIssuance,
-          birthday: formData.birthDate,
-          gender_id: parseInt(formData.gender),
-          country: formData.country,
-          department: formData.state,
-          city: parseInt(formData.city),
-          address: formData.address,
-          phone: cleanPhoneNumber
-        };
-
-        const createUserResponse = await employeeService.createUser(userData);
-        if (createUserResponse.success && createUserResponse.data) {
-          userId = createUserResponse.data.id;
-        } else {
-          throw new Error("No se pudo crear el usuario");
-        }
-      }
-
-      // Paso 2: Obtener detalles del contrato seleccionado
-      const contractDetailsResponse = await employeeService.getEstablishedContractDetails(
-        formData.associatedContract
-      );
-
-      if (!contractDetailsResponse || !contractDetailsResponse.contract_code) {
-        throw new Error("No se pudieron obtener los detalles del contrato");
-      }
-
-      const contractDetails = contractDetailsResponse;
-
-      // Paso 3: Preparar datos del empleado con contrato
-      const employeeData = {
-        id_user: userId,
-        email: formData.email || null,
-        observation: formData.noveltyDescription,
-        id_employee_charge: parseInt(formData.position),
-        contract: [
-          {
-            description: contractDetails.description || "",
-            contract_type: contractDetails.contract_type,
-            start_date: contractDetails.start_date,
-            end_date: contractDetails.end_date || null,
-            payment_frequency_type: contractDetails.payment_frequency_type,
-            minimum_hours: contractDetails.minimum_hours,
-            workday_type: contractDetails.workday_type,
-            work_mode_type: contractDetails.work_mode_type,
-            salary_type: contractDetails.salary_type,
-            salary_base: contractDetails.salary_base,
-            currency_type: contractDetails.currency_type,
-            trial_period_days: contractDetails.trial_period_days,
-            vacation_days: contractDetails.vacation_days,
-            vacation_frequency_days: contractDetails.vacation_frequency_days,
-            cumulative_vacation: contractDetails.cumulative_vacation,
-            start_cumulative_vacation: contractDetails.start_cumulative_vacation || null,
-            maximum_disability_days: contractDetails.maximum_disability_days,
-            overtime: contractDetails.overtime,
-            overtime_period: contractDetails.overtime_period,
-            notice_period_days: contractDetails.notice_period_days,
-            contract_payments: contractDetails.contract_payments || [],
-            established_deductions: contractDetails.established_deductions || [],
-            established_increases: contractDetails.established_increases || []
-          }
-        ]
+      // Preparar datos del usuario
+      const userData = {
+        name: fullName,
+        first_last_name: formData.firstLastName,
+        second_last_name: formData.secondLastName || null,
+        type_document_id: parseInt(formData.identificationType),
+        date_issuance_document: formData.dateIssuance,
+        birthday: formData.birthDate,
+        gender_id: parseInt(formData.gender),
+        country: formData.country,
+        department: formData.state,
+        city: parseInt(formData.city),
+        address: formData.address,
+        phone: cleanPhoneNumber
       };
 
-      // Paso 4: Crear empleado
-      const createEmployeeResponse = await employeeService.createEmployee(employeeData);
+      if (isEditMode) {
+        // ============ MODO EDICIÓN (HU-EMP-009) ============
 
-      if (createEmployeeResponse.success) {
-        setShowSuccessModal(true);
-        if (onSuccess) onSuccess();
+        // Paso 1: Actualizar usuario
+        await employeeService.updateUser(userId, userData);
+
+        // Paso 2: Actualizar empleado
+        const employeeUpdateData = {
+          email: formData.email || null,
+          id_employee_charge: parseInt(formData.position),
+          observation: formData.noveltyDescription
+        };
+
+        const updateResponse = await employeeService.updateEmployee(employeeId, employeeUpdateData);
+
+        if (updateResponse || updateResponse?.message) {
+          setShowSuccessModal(true);
+          if (onSuccess) onSuccess();
+        } else {
+          throw new Error("Error al actualizar el empleado");
+        }
+
       } else {
-        throw new Error(createEmployeeResponse.message || "Error al crear el empleado");
+        // ============ MODO CREACIÓN (HU-EMP-001) ============
+
+        let userIdForEmployee = existingUserId;
+
+        // Paso 1: Crear o actualizar usuario
+        if (userExists && existingUserId) {
+          // Actualizar usuario existente si hay cambios
+          await employeeService.updateUser(existingUserId, userData);
+        } else {
+          // Crear nuevo usuario
+          const createUserData = {
+            ...userData,
+            document_number: formData.identificationNumber
+          };
+
+          const createUserResponse = await employeeService.createUser(createUserData);
+          if (createUserResponse.success && createUserResponse.data) {
+            userIdForEmployee = createUserResponse.data.id;
+          } else {
+            throw new Error("No se pudo crear el usuario");
+          }
+        }
+
+        // Paso 2: Obtener detalles del contrato seleccionado
+        const contractDetailsResponse = await employeeService.getEstablishedContractDetails(
+          formData.associatedContract
+        );
+
+        if (!contractDetailsResponse || !contractDetailsResponse.contract_code) {
+          throw new Error("No se pudieron obtener los detalles del contrato");
+        }
+
+        const contractDetails = contractDetailsResponse;
+
+        // Paso 3: Preparar datos del empleado con contrato
+        const employeeData = {
+          id_user: userIdForEmployee,
+          email: formData.email || null,
+          observation: formData.noveltyDescription,
+          id_employee_charge: parseInt(formData.position),
+          contract: [
+            {
+              description: contractDetails.description || "",
+              contract_type: contractDetails.contract_type,
+              start_date: contractDetails.start_date,
+              end_date: contractDetails.end_date || null,
+              payment_frequency_type: contractDetails.payment_frequency_type,
+              minimum_hours: contractDetails.minimum_hours,
+              workday_type: contractDetails.workday_type,
+              work_mode_type: contractDetails.work_mode_type,
+              salary_type: contractDetails.salary_type,
+              salary_base: contractDetails.salary_base,
+              currency_type: contractDetails.currency_type,
+              trial_period_days: contractDetails.trial_period_days,
+              vacation_days: contractDetails.vacation_days,
+              vacation_frequency_days: contractDetails.vacation_frequency_days,
+              cumulative_vacation: contractDetails.cumulative_vacation,
+              start_cumulative_vacation: contractDetails.start_cumulative_vacation || null,
+              maximum_disability_days: contractDetails.maximum_disability_days,
+              overtime: contractDetails.overtime,
+              overtime_period: contractDetails.overtime_period,
+              notice_period_days: contractDetails.notice_period_days,
+              contract_payments: contractDetails.contract_payments || [],
+              established_deductions: contractDetails.established_deductions || [],
+              established_increases: contractDetails.established_increases || []
+            }
+          ]
+        };
+
+        // Paso 4: Crear empleado
+        const createEmployeeResponse = await employeeService.createEmployee(employeeData);
+
+        if (createEmployeeResponse.success) {
+          setShowSuccessModal(true);
+          if (onSuccess) onSuccess();
+        } else {
+          throw new Error(createEmployeeResponse.message || "Error al crear el empleado");
+        }
       }
     } catch (error) {
-      console.error("Error al registrar empleado:", error);
-      
-      let errorMsg = "Error al registrar el empleado. Por favor, intente nuevamente.";
-      
+      console.error(`Error al ${isEditMode ? 'actualizar' : 'registrar'} empleado:`, error);
+
+      let errorMsg = `Error al ${isEditMode ? 'actualizar' : 'registrar'} el empleado. Por favor, intente nuevamente.`;
+
       // Manejar errores específicos del backend
       if (error.response?.data) {
         const errorData = error.response.data;
@@ -600,8 +729,8 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
           Object.entries(errorData.errors).forEach(([field, messages]) => {
             if (Array.isArray(messages)) {
               const errorText = messages.join(", ");
-              
-              // Mensajes específicos según la HU-EMP-001
+
+              // Mensajes específicos según la HU
               if (field === "id_user" && errorText.includes("asociado a otro empleado")) {
                 errorMessages.push("El número de documento ya se encuentra registrado.");
               } else if (field === "email" && errorText.includes("Ya existe")) {
@@ -615,8 +744,8 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
               }
             }
           });
-          errorMsg = errorMessages.length > 0 
-            ? errorMessages.join("\n") 
+          errorMsg = errorMessages.length > 0
+            ? errorMessages.join("\n")
             : errorData.message || errorMsg;
         } else if (errorData.message) {
           errorMsg = errorData.message;
@@ -624,7 +753,7 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
       } else if (error.message) {
         errorMsg = error.message;
       }
-      
+
       setErrorMessage(errorMsg);
       setShowErrorModal(true);
     } finally {
@@ -659,7 +788,9 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
         <div className="card-theme rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-primary">
-            <h2 className="text-2xl font-bold text-primary">Nuevo Empleado</h2>
+            <h2 className="text-2xl font-bold text-primary">
+              {isEditMode ? "Editar Empleado" : "Nuevo Empleado"}
+            </h2>
             <button
               onClick={handleCancel}
               className="p-2 hover:bg-hover rounded-full transition-colors cursor-pointer"
@@ -758,17 +889,19 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
 
                   <div>
                     <label className="block text-sm font-medium text-secondary mb-2">
-                      Número de identificación *
+                      Número de identificación * {isEditMode && "(Solo lectura)"}
                     </label>
                     <input
                       type="text"
                       value={formData.identificationNumber}
                       onChange={(e) => handleInputChange("identificationNumber", e.target.value)}
-                      className={`input-theme ${errors.identificationNumber ? 'border-red-500' : ''}`}
+                      className={`input-theme ${errors.identificationNumber ? 'border-red-500' : ''} ${isEditMode ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed' : ''}`}
                       placeholder="Ingrese número de identificación"
+                      disabled={isEditMode}
+                      readOnly={isEditMode}
                     />
                     {errors.identificationNumber && <p className="text-red-500 text-xs mt-1">{errors.identificationNumber}</p>}
-                    {userExists && (
+                    {userExists && !isEditMode && (
                       <p className="text-blue-600 text-xs mt-1">✓ Usuario encontrado - datos precargados</p>
                     )}
                   </div>
@@ -999,44 +1132,52 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
 
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-medium text-secondary mb-2">
-                      Contrato asociado *
+                      Contrato asociado * {isEditMode && "(Solo lectura)"}
                     </label>
-                    <div className="flex gap-2 flex-wrap sm:flex-nowrap">
-                      <select
-                        value={formData.associatedContract}
-                        onChange={(e) => handleInputChange("associatedContract", e.target.value)}
-                        className={`input-theme flex-1 ${errors.associatedContract ? 'border-red-500' : ''}`}
-                        disabled={!formData.position}
-                      >
-                        <option value="">Seleccione contrato</option>
-                        {contracts.map(contract => (
-                          <option key={contract.id || contract.contract_code} value={contract.id || contract.contract_code}>
-                            {contract.contract_code} - {contract.contract_type_name}
-                          </option>
-                        ))}
-                        {/* ⚠️ WORKAROUND: Se usa contract.id || contract.contract_code porque
-                            el backend NO retorna el campo 'id' en el listado de contratos.
-                            Ver employeeService.js para más detalles sobre este problema. */}
-                      </select>
-                      <button
-                        type="button"
-                        className="btn-theme btn-primary whitespace-nowrap flex items-center gap-2"
-                        onClick={handleOpenCreateContract}
-                      >
-                        <FiBriefcase className="w-4 h-4" />
-                        Crear contrato
-                      </button>
-                      {formData.associatedContract && (
+                    {isEditMode ? (
+                      // En modo edición: mostrar contrato como solo lectura
+                      <div className="input-theme bg-gray-100 dark:bg-gray-800 cursor-not-allowed flex items-center">
+                        <span className="text-secondary">{formData.associatedContract || "Sin contrato"}</span>
+                      </div>
+                    ) : (
+                      // En modo creación: permitir seleccionar y editar contrato
+                      <div className="flex gap-2 flex-wrap sm:flex-nowrap">
+                        <select
+                          value={formData.associatedContract}
+                          onChange={(e) => handleInputChange("associatedContract", e.target.value)}
+                          className={`input-theme flex-1 ${errors.associatedContract ? 'border-red-500' : ''}`}
+                          disabled={!formData.position}
+                        >
+                          <option value="">Seleccione contrato</option>
+                          {contracts.map(contract => (
+                            <option key={contract.id || contract.contract_code} value={contract.id || contract.contract_code}>
+                              {contract.contract_code} - {contract.contract_type_name}
+                            </option>
+                          ))}
+                          {/* ⚠️ WORKAROUND: Se usa contract.id || contract.contract_code porque
+                              el backend NO retorna el campo 'id' en el listado de contratos.
+                              Ver employeeService.js para más detalles sobre este problema. */}
+                        </select>
                         <button
                           type="button"
-                          className="btn-theme btn-secondary whitespace-nowrap flex items-center gap-2"
-                          onClick={handleOpenEditContract}
+                          className="btn-theme btn-primary whitespace-nowrap flex items-center gap-2"
+                          onClick={handleOpenCreateContract}
                         >
-                          <FiEdit2 className="w-4 h-4" />
-                          Editar contrato
+                          <FiBriefcase className="w-4 h-4" />
+                          Crear contrato
                         </button>
-                      )}
-                    </div>
+                        {formData.associatedContract && (
+                          <button
+                            type="button"
+                            className="btn-theme btn-secondary whitespace-nowrap flex items-center gap-2"
+                            onClick={handleOpenEditContract}
+                          >
+                            <FiEdit2 className="w-4 h-4" />
+                            Editar contrato
+                          </button>
+                        )}
+                      </div>
+                    )}
                     {errors.associatedContract && <p className="text-red-500 text-xs mt-1">{errors.associatedContract}</p>}
                   </div>
 
@@ -1074,10 +1215,10 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
                   {loading ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2 inline-block" />
-                      Registrando...
+                      {isEditMode ? "Actualizando..." : "Registrando..."}
                     </>
                   ) : (
-                    "Registrar"
+                    isEditMode ? "Guardar Cambios" : "Registrar"
                   )}
                 </button>
               </div>
@@ -1105,14 +1246,16 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
           setShowSuccessModal(false);
           onClose();
         }}
-        title="Empleado Registrado"
-        message="Empleado registrado correctamente y contrato asociado exitosamente."
+        title={isEditMode ? "Empleado Actualizado" : "Empleado Registrado"}
+        message={isEditMode
+          ? "La información del empleado se ha actualizado correctamente."
+          : "Empleado registrado correctamente y contrato asociado exitosamente."}
       />
 
       <ErrorModal
         isOpen={showErrorModal}
         onClose={() => setShowErrorModal(false)}
-        title="Error de Registro"
+        title={isEditMode ? "Error de Actualización" : "Error de Registro"}
         message={errorMessage}
         buttonText="Intentar de Nuevo"
       />

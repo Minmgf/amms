@@ -263,7 +263,13 @@ export default function EmployeeDetailModal({
                                 item.action === "contract_change" ? "parametrization-badge-4" :
                                 "parametrization-badge-10"
                               }`}>
-                                {item.action}
+                                {item.action === "creation"
+                                  ? "Creación"
+                                  : item.action === "update"
+                                  ? "Actualización"
+                                  : item.action === "contract_change"
+                                  ? "Cambio de contrato"
+                                  : item.action || "Otro"}
                               </span>
                             </div>
                           ))}
@@ -277,11 +283,11 @@ export default function EmployeeDetailModal({
               {/* Footer */}
               <div className="flex justify-end gap-3 p-theme-lg border-t border-primary bg-surface">
                 <button
-                  onClick={onEdit}
+                  onClick={() => onEdit?.(employeeData)}
                   className="btn-theme btn-primary gap-2"
                 >
                   <FiEdit className="w-4 h-4" />
-                  Editar
+                  Editar información
                 </button>
               </div>
             </>

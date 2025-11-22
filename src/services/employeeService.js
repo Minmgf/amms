@@ -302,6 +302,52 @@ export const createEstablishedContract = async (contractData) => {
   }
 };
 
+/**
+ * Update an existing employee (HU-EMP-009)
+ * @param {number} employeeId - Employee ID
+ * @param {Object} employeeData - Employee data to update
+ * @returns {Promise<Object>} Updated employee
+ */
+export const updateEmployee = async (employeeId, employeeData) => {
+  try {
+    const response = await apiMain.patch(`/employees/${employeeId}/update-employee/`, employeeData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating employee:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get latest employee contract (HU-EMP-009)
+ * @param {number} employeeId - Employee ID
+ * @returns {Promise<Object>} Latest contract details
+ */
+export const getLatestEmployeeContract = async (employeeId) => {
+  try {
+    const response = await apiMain.get(`/employees/${employeeId}/latest_employee_contract/`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching latest employee contract:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get user information by ID (HU-EMP-009)
+ * @param {number} userId - User ID
+ * @returns {Promise<Object>} User information
+ */
+export const getUserById = async (userId) => {
+  try {
+    const response = await apiUsers.get(`/users/${userId}/`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user by ID:', error);
+    throw error;
+  }
+};
+
 // =============================================================================
 // Mock data for development
 // =============================================================================
