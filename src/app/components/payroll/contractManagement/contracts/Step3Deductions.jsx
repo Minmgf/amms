@@ -1,8 +1,9 @@
 "use client";
 import { useFormContext, useFieldArray } from "react-hook-form";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
-import { useState } from "react";
-import { ConfirmModal } from "../shared/SuccessErrorModal";
+import { useState, useEffect } from "react";
+import { ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
+import { getDeductionTypes } from "@/services/contractService";
 
 export default function Step3Deductions() {
   const {
@@ -18,37 +19,50 @@ export default function Step3Deductions() {
 
   const [selectedRows, setSelectedRows] = useState([]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [deductionNameOptions, setDeductionNameOptions] = useState([]);
+  const [loadingDeductions, setLoadingDeductions] = useState(true);
 
-  // Datos temporales para los selects - deberían venir de servicios
-  const deductionNameOptions = [
-    { id: 1, name: "Salud" },
-    { id: 2, name: "Pensión" },
-    { id: 3, name: "Fondo de Solidaridad" },
-    { id: 4, name: "Retención en la fuente" },
-    { id: 5, name: "Préstamo" },
-  ];
+  // Cargar tipos de deducción desde el servicio
+  useEffect(() => {
+    const fetchDeductionTypes = async () => {
+      try {
+        setLoadingDeductions(true);
+        const data = await getDeductionTypes();
+        console.log("Tipos de deducción cargados:", data);
+        setDeductionNameOptions(data || []);
+      } catch (error) {
+        console.error("Error al cargar tipos de deducción:", error);
+        setDeductionNameOptions([]);
+      } finally {
+        setLoadingDeductions(false);
+      }
+    };
 
+    fetchDeductionTypes();
+  }, []);
+
+  // Opciones de tipo de monto (según especificación del backend)
   const deductionTypeOptions = [
-    { id: 1, name: "Porcentual" },
-    { id: 2, name: "Fijo" },
+    { id: "Porcentaje", name: "Porcentaje" },
+    { id: "fijo", name: "Fijo" },
   ];
 
+  // Opciones de aplicación (según especificación del backend)
   const applicationOptions = [
-    { id: 1, name: "Salario base" },
-    { id: 2, name: "Salario total" },
-    { id: 3, name: "Horas extras" },
+    { id: "SalarioBase", name: "Salario Base" },
+    { id: "SalarioFinal", name: "Salario Final" },
   ];
 
   const handleAddDeduction = () => {
     append({
-      name: "",
-      type: "",
-      amount: "",
-      application: "",
-      startDate: "",
-      endDate: "",
+      deduction_type: "",
+      amount_type: "",
+      amount_value: "",
+      application_deduction_type: "",
+      start_date_deduction: "",
+      end_date_deductions: "",
       description: "",
-      quantity: "1",
+      amount: "",
     });
   };
 
@@ -151,7 +165,11 @@ export default function Step3Deductions() {
           </div>
 
           {/* Filas de deducciones */}
-          {fields.length === 0 ? (
+          {loadingDeductions ? (
+            <div className="text-center py-8 text-secondary">
+              <p>Cargando tipos de deducción...</p>
+            </div>
+          ) : fields.length === 0 ? (
             <div className="text-center py-8 text-secondary">
               <p>No hay deducciones añadidas</p>
               <p className="text-sm mt-2">Haz clic en "Añadir deducción" para comenzar</p>
@@ -179,45 +197,48 @@ export default function Step3Deductions() {
                   />
                 </div>
 
-                {/* Name */}
+                {/* Name - deduction_type */}
                 <div>
                   <select
-                    {...register(`deductions.${index}.name`, {
+                    {...register(`deductions.${index}.deduction_type`, {
                       required: "Requerido",
                     })}
                     className={`input-theme w-full text-sm ${
-                      errors.deductions?.[index]?.name ? "border-red-500" : ""
+                      errors.deductions?.[index]?.deduction_type ? "border-red-500" : ""
                     }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: errors.deductions?.[index]?.name
+                      borderColor: errors.deductions?.[index]?.deduction_type
                         ? "#EF4444"
                         : "var(--color-border)",
                       color: "var(--color-text-primary)",
                       padding: "0.375rem 0.5rem",
                     }}
+                    disabled={loadingDeductions}
                   >
-                    <option value="">Seleccionar</option>
+                    <option value="">
+                      {loadingDeductions ? "Cargando..." : "Seleccionar"}
+                    </option>
                     {deductionNameOptions.map((option) => (
-                      <option key={option.id} value={option.id}>
+                      <option key={option.id_types} value={option.id_types}>
                         {option.name}
                       </option>
                     ))}
                   </select>
                 </div>
 
-                {/* Type */}
+                {/* Type - amount_type */}
                 <div>
                   <select
-                    {...register(`deductions.${index}.type`, {
+                    {...register(`deductions.${index}.amount_type`, {
                       required: "Requerido",
                     })}
                     className={`input-theme w-full text-sm ${
-                      errors.deductions?.[index]?.type ? "border-red-500" : ""
+                      errors.deductions?.[index]?.amount_type ? "border-red-500" : ""
                     }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: errors.deductions?.[index]?.type
+                      borderColor: errors.deductions?.[index]?.amount_type
                         ? "#EF4444"
                         : "var(--color-border)",
                       color: "var(--color-text-primary)",
@@ -233,22 +254,22 @@ export default function Step3Deductions() {
                   </select>
                 </div>
 
-                {/* Amount */}
+                {/* Amount - amount_value */}
                 <div>
                   <input
                     type="number"
                     step="0.01"
                     min="0"
-                    {...register(`deductions.${index}.amount`, {
+                    {...register(`deductions.${index}.amount_value`, {
                       required: "Requerido",
                       min: { value: 0, message: "Debe ser >= 0" },
                     })}
                     className={`input-theme w-full text-sm ${
-                      errors.deductions?.[index]?.amount ? "border-red-500" : ""
+                      errors.deductions?.[index]?.amount_value ? "border-red-500" : ""
                     }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: errors.deductions?.[index]?.amount
+                      borderColor: errors.deductions?.[index]?.amount_value
                         ? "#EF4444"
                         : "var(--color-border)",
                       color: "var(--color-text-primary)",
@@ -258,18 +279,18 @@ export default function Step3Deductions() {
                   />
                 </div>
 
-                {/* Application */}
+                {/* Application - application_deduction_type */}
                 <div>
                   <select
-                    {...register(`deductions.${index}.application`, {
+                    {...register(`deductions.${index}.application_deduction_type`, {
                       required: "Requerido",
                     })}
                     className={`input-theme w-full text-sm ${
-                      errors.deductions?.[index]?.application ? "border-red-500" : ""
+                      errors.deductions?.[index]?.application_deduction_type ? "border-red-500" : ""
                     }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: errors.deductions?.[index]?.application
+                      borderColor: errors.deductions?.[index]?.application_deduction_type
                         ? "#EF4444"
                         : "var(--color-border)",
                       color: "var(--color-text-primary)",
@@ -285,19 +306,19 @@ export default function Step3Deductions() {
                   </select>
                 </div>
 
-                {/* Start Date */}
+                {/* Start Date - start_date_deduction */}
                 <div>
                   <input
                     type="date"
-                    {...register(`deductions.${index}.startDate`, {
+                    {...register(`deductions.${index}.start_date_deduction`, {
                       required: "Requerido",
                     })}
                     className={`input-theme w-full text-sm ${
-                      errors.deductions?.[index]?.startDate ? "border-red-500" : ""
+                      errors.deductions?.[index]?.start_date_deduction ? "border-red-500" : ""
                     }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: errors.deductions?.[index]?.startDate
+                      borderColor: errors.deductions?.[index]?.start_date_deduction
                         ? "#EF4444"
                         : "var(--color-border)",
                       color: "var(--color-text-primary)",
@@ -306,19 +327,19 @@ export default function Step3Deductions() {
                   />
                 </div>
 
-                {/* End Date */}
+                {/* End Date - end_date_deductions */}
                 <div>
                   <input
                     type="date"
-                    {...register(`deductions.${index}.endDate`, {
+                    {...register(`deductions.${index}.end_date_deductions`, {
                       required: "Requerido",
                     })}
                     className={`input-theme w-full text-sm ${
-                      errors.deductions?.[index]?.endDate ? "border-red-500" : ""
+                      errors.deductions?.[index]?.end_date_deductions ? "border-red-500" : ""
                     }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: errors.deductions?.[index]?.endDate
+                      borderColor: errors.deductions?.[index]?.end_date_deductions
                         ? "#EF4444"
                         : "var(--color-border)",
                       color: "var(--color-text-primary)",
@@ -343,27 +364,27 @@ export default function Step3Deductions() {
                   />
                 </div>
 
-                {/* Quantity */}
+                {/* Quantity - amount */}
                 <div>
                   <input
                     type="number"
-                    min="1"
-                    {...register(`deductions.${index}.quantity`, {
-                      required: "Requerido",
-                      min: { value: 1, message: "Debe ser >= 1" },
+                    step="0.01"
+                    min="0"
+                    {...register(`deductions.${index}.amount`, {
+                      min: { value: 0, message: "Debe ser >= 0" },
                     })}
                     className={`input-theme w-full text-sm ${
-                      errors.deductions?.[index]?.quantity ? "border-red-500" : ""
+                      errors.deductions?.[index]?.amount ? "border-red-500" : ""
                     }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: errors.deductions?.[index]?.quantity
+                      borderColor: errors.deductions?.[index]?.amount
                         ? "#EF4444"
                         : "var(--color-border)",
                       color: "var(--color-text-primary)",
                       padding: "0.375rem 0.5rem",
                     }}
-                    placeholder="1"
+                    placeholder="0.00"
                   />
                 </div>
               </div>
