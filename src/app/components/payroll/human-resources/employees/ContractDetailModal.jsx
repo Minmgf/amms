@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { FiX, FiArrowLeft, FiEdit, FiPause, FiPlay } from "react-icons/fi";
 import { getContractDetails, getContractHistory } from "@/services/employeeService";
+import EndContractModal from "./EndContractModal";
 
 export default function ContractDetailModal({
   isOpen,
@@ -14,6 +15,8 @@ export default function ContractDetailModal({
   const [contractHistory, setContractHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showEndContractModal, setShowEndContractModal] = useState(false);
+  const [endContractLoading, setEndContractLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen && contractData?.id) {
@@ -73,6 +76,41 @@ export default function ContractDetailModal({
       currency: "COP",
       minimumFractionDigits: 0
     }).format(amount);
+  };
+
+  // Funciones para manejar la finalización del contrato
+  const handleEndContract = () => {
+    setShowEndContractModal(true);
+  };
+
+  const handleEndContractConfirm = async (formData) => {
+    setEndContractLoading(true);
+    try {
+      // Aquí iría la llamada al servicio para finalizar el contrato
+      console.log("Finalizando contrato con datos:", formData);
+      
+      // Simular llamada al API
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Cerrar modal y actualizar datos
+      setShowEndContractModal(false);
+      
+      // Recargar detalles del contrato para reflejar el nuevo estado
+      await loadContractDetails();
+      
+      // Mostrar mensaje de éxito (aquí podrías usar un toast o modal de éxito)
+      alert("Contrato finalizado exitosamente");
+      
+    } catch (error) {
+      console.error("Error al finalizar contrato:", error);
+      alert("Error al finalizar el contrato. Intente nuevamente.");
+    } finally {
+      setEndContractLoading(false);
+    }
+  };
+
+  const handleEndContractCancel = () => {
+    setShowEndContractModal(false);
   };
 
   const isActiveContract = contractDetails?.status === "Active" || contractDetails?.status === "Activo";
@@ -135,7 +173,11 @@ export default function ContractDetailModal({
                     <FiEdit className="w-4 h-4" />
                     Corrección de Contrato
                   </button>
-                  <button className="btn-theme btn-primary gap-2">
+                  <button 
+                    className="btn-theme btn-primary gap-2"
+                    onClick={handleEndContract}
+                    disabled={endContractLoading}
+                  >
                     <FiPause className="w-4 h-4" />
                     Terminar Contrato
                   </button>
@@ -353,6 +395,23 @@ export default function ContractDetailModal({
           </>
         ) : null}
       </div>
+
+      {/* Modal de finalización de contrato */}
+      <EndContractModal
+        isOpen={showEndContractModal}
+        onClose={handleEndContractCancel}
+        onConfirm={handleEndContractConfirm}
+        contractData={contractData}
+        employeeData={employeeData}
+        terminationReasons={[
+          { id: "1", name: "Terminación por mutuo acuerdo" },
+          { id: "2", name: "Terminación por vencimiento del término" },
+          { id: "3", name: "Terminación por justa causa" },
+          { id: "4", name: "Renuncia del empleado" },
+          { id: "5", name: "Despido sin justa causa" }
+        ]}
+        loading={endContractLoading}
+      />
     </div>
   );
 }
