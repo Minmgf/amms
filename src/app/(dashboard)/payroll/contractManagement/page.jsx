@@ -6,7 +6,7 @@ import { FiSearch, FiFilter, FiEdit2, FiTrash2, FiPlus, FiX, FiEye } from "react
 import { FaCalendar, FaCheckCircle, FaDollarSign, FaFileContract } from "react-icons/fa";
 import { SuccessModal, ErrorModal, ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
 import FilterModal from "@/app/components/shared/FilterModal";
-import { getContracts, deleteContract, toggleContractStatus } from "@/services/contractService";
+import { deleteContract, toggleContractStatus, getEstablishedContracts } from "@/services/contractService";
 import { useTheme } from "@/contexts/ThemeContext";
 import TableList from "@/app/components/shared/TableList";
 import { createColumnHelper } from "@tanstack/react-table";
@@ -55,24 +55,11 @@ const ContractManagementPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await getContracts();
-      if (response && response.success && Array.isArray(response.data)) {
-        // Map API response to component expected format
-        const mappedContracts = response.data.map((contract, index) => ({
-          id_contract: `${contract.contract_code}_${index}`, // Create unique identifier using contract_code + index
-          contract_code: contract.contract_code,
-          employee_name: "N/A", // Employee name not provided in API response
-          contract_type_id: contract.contract_type,
-          contract_type_name: contract.contract_type_name,
-          start_date: contract.start_date,
-          end_date: contract.end_date,
-          status_id: contract.established_contract_status,
-          status_name: contract.established_contract_status_name,
-          salary: contract.salary_base,
-          payment_modality_id: null, // Not provided in API response
-          payment_modality_name: "N/A", // Not provided in API response
-        }));
-        setData(mappedContracts);
+      const response = await getEstablishedContracts();
+      console.log("Contratos cargados:", response);
+
+      if (response.success && Array.isArray(response.data)) {
+        setData(response.data);
       } else {
         setError("No se pudieron cargar los contratos.");
         setData([]);
@@ -90,10 +77,10 @@ const ContractManagementPage = () => {
     let filtered = data;
 
     if (contractTypeFilter) {
-      filtered = filtered.filter((contract) => contract.contract_type_id === parseInt(contractTypeFilter));
+      filtered = filtered.filter((contract) => contract.contract_type === parseInt(contractTypeFilter));
     }
     if (statusFilter) {
-      filtered = filtered.filter((contract) => contract.status_id === parseInt(statusFilter));
+      filtered = filtered.filter((contract) => contract.established_contract_status === parseInt(statusFilter));
     }
     if (startDateFilter) {
       filtered = filtered.filter((contract) => {
@@ -112,27 +99,35 @@ const ContractManagementPage = () => {
       });
     }
     if (minSalaryFilter) {
-      filtered = filtered.filter((contract) => parseFloat(contract.salary) >= parseFloat(minSalaryFilter));
+      filtered = filtered.filter((contract) => parseFloat(contract.salary_base) >= parseFloat(minSalaryFilter));
     }
     if (maxSalaryFilter) {
-      filtered = filtered.filter((contract) => parseFloat(contract.salary) <= parseFloat(maxSalaryFilter));
+      filtered = filtered.filter((contract) => parseFloat(contract.salary_base) <= parseFloat(maxSalaryFilter));
     }
 
     setFilteredData(filtered);
   };
 
   const uniqueContractTypes = useMemo(() => {
-    const types = data.map((contract) => ({ id: contract.contract_type_id, name: contract.contract_type_name }));
+    const types = data.map((contract) => ({ id: contract.contract_type, name: contract.contract_type_name }));
     const uniqueMap = new Map(types.map((t) => [t.id, t]));
     return Array.from(uniqueMap.values());
   }, [data]);
 
   const uniqueStatuses = useMemo(() => {
-    const statuses = data.map((contract) => ({ id: contract.status_id, name: contract.status_name }));
+    const statuses = data.map((contract) => ({ id: contract.established_contract_status, name: contract.established_contract_status_name }));
     const uniqueMap = new Map(statuses.map((s) => [s.id, s]));
     return Array.from(uniqueMap.values());
   }, [data]);
 
+  // TODO: El backend no devuelve payment_modality en el endpoint de lista
+  // Comentar hasta que esté disponible
+  const uniquePaymentModalities = useMemo(() => {
+    // const modalities = data.map((contract) => ({ id: contract.payment_modality_id, name: contract.payment_modality_name }));
+    // const uniqueMap = new Map(modalities.map((m) => [m.id, m]));
+    // return Array.from(uniqueMap.values());
+    return []; // Retornar array vacío por ahora
+  }, [data]);
 
   const handleApplyFilters = () => {
     applyFilters();
@@ -149,18 +144,18 @@ const ContractManagementPage = () => {
     applyFilters();
   };
 
-  const handleOpenContractFormModal = (mode, contractId = null) => {
+  const handleOpenContractFormModal = (mode, contractCode = null) => {
     if (mode === "add") {
       setContractFormMode("add");
       setSelectedContract(null);
       setIsContractFormModalOpen(true);
     } else if (mode === "view") {
-      const contract = data.find((c) => c.contract_code === contractId);
+      const contract = data.find((c) => c.contract_code === contractCode);
       setSelectedContract(contract);
       setIsContractDetailsOpen(true);
     } else {
       // edit
-      const contract = data.find((c) => c.contract_code === contractId);
+      const contract = data.find((c) => c.contract_code === contractCode);
       setContractFormMode(mode);
       setSelectedContract(contract);
       setIsContractFormModalOpen(true);
@@ -177,38 +172,34 @@ const ContractManagementPage = () => {
     if (!selectedContract) return;
 
     try {
-      // Intentar eliminar el contrato directamente
-      // El backend validará automáticamente si tiene asociaciones
+      // Intentar eliminación física del contrato
       const response = await deleteContract(selectedContract.contract_code);
-      
-      if (response.success) {
-        // Eliminación exitosa - remover contrato de la lista
-        setData(prevData =>
-          prevData.filter(contract => contract.contract_code !== selectedContract.contract_code)
-        );
 
-        // Mostrar modal de éxito
+      if (response.success) {
+        // Eliminación exitosa - recargar datos
+        await loadInitialData();
+
         setModalTitle("Eliminación Exitosa");
         setModalMessage(response.message || "El contrato ha sido eliminado exitosamente.");
         setIsSuccessModalOpen(true);
+        setSelectedContract(null);
       }
     } catch (error) {
       console.error("Error deleting contract:", error);
       
+      // Verificar si el error es por información relacionada (400 o 409)
       if (error.response?.status === 400 || error.response?.status === 409) {
-        // Contrato tiene asociaciones - ofrecer desactivarlo
-        setModalTitle("Contrato con Asociaciones");
-        setModalMessage(
-          error.response?.data?.message || 
-          "Este contrato está asociado con registros de nómina, pagos o empleados y no puede ser eliminado. ¿Desea desactivarlo en su lugar? Esto lo ocultará de futuros formularios."
-        );
+        // El contrato tiene información relacionada - ofrecer desactivación
+        setModalTitle("Contrato con Información Asociada");
+        setModalMessage("Este contrato tiene información asociada (nómina, deducciones, historial u otros registros). Se procederá a su desactivación.");
         setIsConfirmDeactivateOpen(true);
+        // No limpiar selectedContract aquí porque se necesita para la desactivación
       } else {
         // Otro tipo de error
         setModalTitle("Error");
         setModalMessage(
           error.response?.data?.message || 
-          "Ocurrió un error al eliminar el contrato. Por favor, inténtelo de nuevo."
+          "No se pudo completar la eliminación del contrato. Intente nuevamente o contacte al administrador."
         );
         setIsErrorModalOpen(true);
         setSelectedContract(null);
@@ -229,30 +220,20 @@ const ContractManagementPage = () => {
       const response = await toggleContractStatus(selectedContract.contract_code);
       
       if (response.success) {
-        // Actualizar el contrato en la lista
-        setData(prevData =>
-          prevData.map(contract =>
-            contract.contract_code === selectedContract.contract_code
-              ? { 
-                  ...contract, 
-                  status_id: contract.status_id === 1 ? 2 : 1,
-                  status_name: contract.status_id === 1 ? "Finalizado" : "Activo"
-                }
-              : contract
-          )
-        );
+        // Activación exitosa - recargar datos
+        await loadInitialData();
 
-        // Mostrar modal de éxito
-        setModalTitle("Estado Actualizado");
-        setModalMessage(response.message || "El estado del contrato ha sido actualizado exitosamente.");
+        // Mostrar modal de éxito con mensaje específico para activación
+        setModalTitle("Contrato Activado");
+        setModalMessage(response.message || "El contrato ha sido activado exitosamente y puede recibir nuevas modificaciones.");
         setIsSuccessModalOpen(true);
       }
     } catch (error) {
-      console.error("Error toggling contract status:", error);
+      console.error("Error activating contract:", error);
       setModalTitle("Error");
       setModalMessage(
         error.response?.data?.message || 
-        "Ocurrió un error al cambiar el estado del contrato. Por favor, inténtelo de nuevo."
+        "No se pudo completar la activación del contrato. Intente nuevamente o contacte al administrador."
       );
       setIsErrorModalOpen(true);
     } finally {
@@ -273,30 +254,20 @@ const ContractManagementPage = () => {
       const response = await toggleContractStatus(selectedContract.contract_code);
       
       if (response.success) {
-        // Actualizar el contrato en la lista
-        setData(prevData =>
-          prevData.map(contract =>
-            contract.contract_code === selectedContract.contract_code
-              ? { 
-                  ...contract, 
-                  status_id: contract.status_id === 1 ? 2 : 1,
-                  status_name: contract.status_id === 1 ? "Finalizado" : "Activo"
-                }
-              : contract
-          )
-        );
+        // Desactivación exitosa - recargar datos
+        await loadInitialData();
 
-        // Mostrar modal de éxito
-        setModalTitle("Estado Actualizado");
-        setModalMessage(response.message || "El estado del contrato ha sido actualizado exitosamente.");
+        // Mostrar modal de éxito con mensaje específico para desactivación
+        setModalTitle("Contrato Desactivado");
+        setModalMessage(response.message || "El contrato ha sido desactivado exitosamente. Permanecerá disponible únicamente para consulta histórica o auditoría.");
         setIsSuccessModalOpen(true);
       }
     } catch (error) {
-      console.error("Error toggling contract status:", error);
+      console.error("Error deactivating contract:", error);
       setModalTitle("Error");
       setModalMessage(
         error.response?.data?.message || 
-        "Ocurrió un error al cambiar el estado del contrato. Por favor, inténtelo de nuevo."
+        "No se pudo completar la desactivación del contrato. Intente nuevamente o contacte al administrador."
       );
       setIsErrorModalOpen(true);
     } finally {
@@ -306,12 +277,17 @@ const ContractManagementPage = () => {
 
   const deleteConfirmMessage = useMemo(() => {
     if (!selectedContract) return "";
-    return `¿Está seguro que desea eliminar el contrato "${selectedContract?.contract_code}"?`;
+    return `¿Está seguro de eliminar este contrato? Esta acción eliminará definitivamente el registro y no podrá deshacerse.`;
   }, [selectedContract]);
 
   const activateConfirmMessage = useMemo(() => {
     if (!selectedContract) return "";
-    return `¿Está seguro que desea activar el contrato "${selectedContract?.contract_code}"?`;
+    return `¿Está seguro que desea activar el contrato "${selectedContract?.contract_code}"? El contrato podrá recibir nuevas deducciones, incrementos o modificaciones.`;
+  }, [selectedContract]);
+
+  const deactivateConfirmMessage = useMemo(() => {
+    if (!selectedContract) return "";
+    return `¿Está seguro que desea desactivar el contrato "${selectedContract?.contract_code}"? El contrato permanecerá disponible únicamente para consulta histórica.`;
   }, [selectedContract]);
 
   const columnHelper = createColumnHelper();
@@ -321,10 +297,6 @@ const ContractManagementPage = () => {
       columnHelper.accessor("contract_code", {
         header: "Código del Contrato",
         cell: (info) => <div className="text-primary font-medium">{info.getValue()}</div>,
-      }),
-      columnHelper.accessor("employee_name", {
-        header: "Nombre del Empleado",
-        cell: (info) => <div className="text-secondary">{info.getValue() || "N/A"}</div>,
       }),
       columnHelper.accessor("contract_type_name", {
         header: "Tipo de Contrato",
@@ -342,11 +314,11 @@ const ContractManagementPage = () => {
           </div>
         ),
       }),
-      columnHelper.accessor("status_id", {
+      columnHelper.accessor("established_contract_status", {
         header: "Estado",
         cell: (info) => {
           const status_id = info.getValue();
-          const status_name = info.row.original.status_name;
+          const status_name = info.row.original.established_contract_status_name;
           return (
             <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
               status_id === 1 ? "bg-green-100 text-green-800" : "bg-pink-100 text-pink-800"
@@ -356,26 +328,23 @@ const ContractManagementPage = () => {
           );
         },
       }),
-      columnHelper.accessor("salary", {
-        header: "Salario",
+      columnHelper.accessor("salary_base", {
+        header: "Salario Base",
         cell: (info) => {
           const salary = info.getValue();
-          const payment_modality = info.row.original.payment_modality_name;
           return (
             <div className="text-secondary">
               ${parseFloat(salary).toLocaleString("es-CO")}
-              {payment_modality && payment_modality !== "N/A" && (
-                <span className="text-xs text-gray-500 ml-1">({payment_modality})</span>
-              )}
             </div>
           );
         },
       }),
-      columnHelper.accessor("id_contract", {
+      columnHelper.accessor("contract_code", {
         header: "Acciones",
+        id: "actions",
         cell: (info) => {
           const contract = info.row.original;
-          const isActive = contract.status_id === 1;
+          const isActive = contract.established_contract_status === 1;
 
           return (
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -473,7 +442,7 @@ const ContractManagementPage = () => {
                 <FiSearch className="text-secondary w-4 h-4 mr-2" />
                 <input
                   type="text"
-                  placeholder="Buscar por código o tipo..."
+                  placeholder="Buscar por código o tipo de contrato..."
                   value={globalFilter}
                   onChange={(e) => setGlobalFilter(e.target.value)}
                   className="flex-1 outline-none bg-transparent"
@@ -631,8 +600,8 @@ const ContractManagementPage = () => {
         isOpen={isConfirmDeactivateOpen}
         onClose={() => { setIsConfirmDeactivateOpen(false); setSelectedContract(null); }}
         onConfirm={handleConfirmDeactivate}
-        title={modalTitle}
-        message={modalMessage}
+        title="Confirmar Desactivación"
+        message={deactivateConfirmMessage}
         confirmText="Desactivar"
         cancelText="Cancelar"
         confirmColor="btn-primary"

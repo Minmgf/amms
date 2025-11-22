@@ -1,7 +1,7 @@
 "use client";
 import { useFormContext } from "react-hook-form";
-// TODO: Importar servicios cuando se integre
-// import { getUnitsByCategory } from "@/services/parametrizationService";
+import { useState, useEffect } from "react";
+import { getActiveUnits } from "@/services/contractService";
 
 export default function Step2ContractTerms() {
   const {
@@ -12,28 +12,45 @@ export default function Step2ContractTerms() {
 
   const cumulative = watch("cumulative");
   const salaryModality = watch("salaryType") || "";
+  const selectedSalaryType = watch("salaryType") || "";
+  const selectedCurrency = watch("currency") || "";
+  const selectedOvertimePeriod = watch("overtimePeriod") || "";
 
-  // TODO: Datos temporales MOCK - Reemplazar con servicios
-  // Modalidad salarial (fija, no parametrizable)
+  // Estados para opciones dinámicas
+  const [currencyOptions, setCurrencyOptions] = useState([]);
+
+  // Modalidad salarial (enumeración fija del backend)
   const salaryTypeOptions = [
-    { id: "hourly", name: "Por horas" },
-    { id: "daily", name: "Por días" },
-    { id: "monthly", name: "Mensual fijo" },
+    { id: "Por horas", name: "Por horas" },
+    { id: "Por días", name: "Por días" },
+    { id: "Mensual fijo", name: "Mensual fijo" },
   ];
 
-  // PARAMETRIZABLE: Debe usar getUnitsByCategory(10) para monedas
-  const currencyOptions = [
-    { id: 18, name: "USD", symbol: "USD - Dólar Estadounidense" },
-    { id: 19, name: "COP", symbol: "COP - Pesos Colombianos" },
-    { id: 20, name: "EUR", symbol: "EUR - Euro" },
-    { id: 21, name: "MXN", symbol: "MXN - Peso Mexicano" },
-  ];
-
+  // Período de horas extras (enumeración fija del backend)
   const overtimePeriodOptions = [
-    { id: 1, name: "Diario" },
-    { id: 2, name: "Semanal" },
-    { id: 3, name: "Mensual" },
+    { id: "dia", name: "Día" },
+    { id: "semana", name: "Semana" },
+    { id: "mes", name: "Mes" },
   ];
+
+  // Cargar monedas (Categoría 10 - unidades de moneda)
+  useEffect(() => {
+    const loadCurrencies = async () => {
+      try {
+        const response = await getActiveUnits(10);
+        // response.data contiene el array de unidades
+        setCurrencyOptions(response.data.map(currency => ({
+          id: currency.id_units,
+          name: currency.name,
+          symbol: currency.symbol
+        })));
+      } catch (error) {
+        console.error("Error al cargar datos del Step 2:", error);
+      }
+    };
+
+    loadCurrencies();
+  }, []);
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -57,6 +74,7 @@ export default function Step2ContractTerms() {
             {...register("salaryType", {
               required: "Este campo es obligatorio",
             })}
+            value={selectedSalaryType}
             className={`input-theme w-full ${
               errors.salaryType ? "border-red-500" : ""
             }`}
@@ -136,6 +154,7 @@ export default function Step2ContractTerms() {
             {...register("currency", {
               required: "Este campo es obligatorio",
             })}
+            value={selectedCurrency}
             className={`input-theme w-full ${
               errors.currency ? "border-red-500" : ""
             }`}
@@ -163,15 +182,15 @@ export default function Step2ContractTerms() {
       </div>
 
       {/* Campo condicional: Cantidad de horas/días contratados */}
-      {(salaryModality === "hourly" || salaryModality === "daily") && (
+      {(salaryModality === "Por horas" || salaryModality === "Por días") && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
           <div>
             <label
               htmlFor="contractedAmount"
               className="block text-theme-sm font-theme-medium text-primary mb-2"
             >
-              {salaryModality === "hourly" 
-                ? "Cantidad de horas contratadas" 
+              {salaryModality === "Por horas"
+                ? "Cantidad de horas contratadas"
                 : "Cantidad de días contratados"}
               <span className="text-red-500 ml-1">*</span>
             </label>
@@ -180,8 +199,8 @@ export default function Step2ContractTerms() {
               type="number"
               min="1"
               {...register("contractedAmount", {
-                required: (salaryModality === "hourly" || salaryModality === "daily") 
-                  ? "Este campo es obligatorio" 
+                required: (salaryModality === "Por horas" || salaryModality === "Por días")
+                  ? "Este campo es obligatorio"
                   : false,
                 min: { value: 1, message: "Debe ser mayor a 0" },
               })}
@@ -195,7 +214,7 @@ export default function Step2ContractTerms() {
                   : "var(--color-border)",
                 color: "var(--color-text-primary)",
               }}
-              placeholder={salaryModality === "hourly" ? "Ej: 160 horas" : "Ej: 20 días"}
+              placeholder={salaryModality === "Por horas" ? "Ej: 160 horas" : "Ej: 20 días"}
             />
             {errors.contractedAmount && (
               <p className="text-red-500 text-xs mt-1">
@@ -501,6 +520,7 @@ export default function Step2ContractTerms() {
             {...register("overtimePeriod", {
               required: "Este campo es obligatorio",
             })}
+            value={selectedOvertimePeriod}
             className={`input-theme w-full ${
               errors.overtimePeriod ? "border-red-500" : ""
             }`}
