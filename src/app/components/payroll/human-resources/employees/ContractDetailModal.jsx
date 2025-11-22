@@ -133,7 +133,7 @@ export default function ContractDetailModal({
                 <div className="flex justify-center gap-3 mb-6">
                   <button className="btn-theme btn-primary gap-2">
                     <FiEdit className="w-4 h-4" />
-                    Corrección de Contrato
+                    Cambiar Contrato
                   </button>
                   <button className="btn-theme btn-primary gap-2">
                     <FiPause className="w-4 h-4" />
@@ -146,7 +146,7 @@ export default function ContractDetailModal({
                 </div>
               )}
 
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Column - Contract History */}
                 <div className="lg:col-span-1">
                   <div className="card-theme">
@@ -218,7 +218,7 @@ export default function ContractDetailModal({
                 </div>
 
                 {/* Right Column - Contract Details */}
-                <div className="lg:col-span-3 space-y-6">
+                <div className="lg:col-span-2 space-y-6">
                   {/* General Information */}
                   <div className="card-theme">
                     <h3 className="text-theme-lg font-theme-semibold text-primary mb-4">
