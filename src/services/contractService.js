@@ -5,27 +5,13 @@ import { apiMain } from "@/lib/axios";
 // =============================================================================
 
 /**
- * Obtener lista de contratos registrados
- * @returns {Promise} - Lista de contratos
- */
-export const getContracts = async () => {
-  try {
-    const response = await apiMain.get("/established_contracts/list/");
-    return response.data;
-  } catch (error) {
-    console.error("Error al obtener contratos:", error);
-    throw error;
-  }
-};
-
-/**
  * Eliminar contrato
- * @param {number} contractId - ID del contrato a eliminar
+ * @param {number} contractCode - ID del contrato a eliminar
  * @returns {Promise} - Respuesta del servidor
  */
-export const deleteContract = async (contractId) => {
+export const deleteContract = async (contractCode) => {
   try {
-    const { data } = await apiMain.delete(`/contracts/${contractId}/`);
+    const { data } = await apiMain.delete(`/established_contracts/${contractCode}/`);
     return data;
   } catch (error) {
     throw error;
@@ -34,12 +20,12 @@ export const deleteContract = async (contractId) => {
 
 /**
  * Alternar estado del contrato (activar/desactivar)
- * @param {number} contractId - ID del contrato
+ * @param {number} contractCode - ID del contrato
  * @returns {Promise} - Respuesta del servidor
  */
-export const toggleContractStatus = async (contractId) => {
+export const toggleContractStatus = async (contractCode) => {
   try {
-    const { data } = await apiMain.patch(`/contracts/${contractId}/toggle-status/`);
+    const { data } = await apiMain.patch(`/established_contracts/${contractCode}/toggle-status/`);
     return data;
   } catch (error) {
     throw error;
