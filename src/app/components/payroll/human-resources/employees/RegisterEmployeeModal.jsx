@@ -4,20 +4,37 @@ import { FiX, FiUser, FiMail, FiPhone, FiMapPin, FiBriefcase, FiCalendar, FiEdit
 import { useTheme } from "@/contexts/ThemeContext";
 import { SuccessModal, ErrorModal, ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
 import AddContractModal from "@/app/components/payroll/contractManagement/contracts/AddContractModal";
+import { updateEmployee } from "@/services/employeeService";
+import { getCountries, getStates, getCities } from "@/services/locationService";
 
 /**
  * RegisterEmployeeModal Component
- * 
+ *
  * Modal para registrar un nuevo empleado con datos personales, de contacto y laborales
- * Basado en HU-EMP-001
- * 
+ * Basado en HU-EMP-001 y HU-EMP-009
+ *
  * @param {Object} props
  * @param {boolean} props.isOpen - Controla si el modal está abierto
  * @param {Function} props.onClose - Función para cerrar el modal
  * @param {Function} props.onSuccess - Función llamada cuando se registra exitosamente
+ * @param {string} props.mode - Modo del modal: "create" o "edit"
+ * @param {Object} props.employeeData - Datos del empleado para modo edición
+ * @param {Function} props.onValidateDocument - Función para validar si documento existe (recibe documentNumber, retorna boolean)
+ * @param {boolean} props.canCreate - Si el usuario tiene permiso para crear empleados
+ * @param {boolean} props.canEdit - Si el usuario tiene permiso para editar empleados
  */
-const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
+const RegisterEmployeeModal = ({
+  isOpen,
+  onClose,
+  onSuccess,
+  mode = "create",
+  employeeData = null,
+  onValidateDocument = null,
+  canCreate = true,
+  canEdit = true
+}) => {
   const { getCurrentTheme } = useTheme();
+  const isEditMode = mode === "edit";
 
   // Estados del formulario
   const [formData, setFormData] = useState({
@@ -72,11 +89,9 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
     { id: 3, name: "Otro" }
   ]);
 
-  const [countries] = useState([
-    { id: 1, name: "Colombia", code: "CO" },
-    { id: 2, name: "Venezuela", code: "VE" },
-    { id: 3, name: "Ecuador", code: "EC" }
-  ]);
+  const [countries, setCountries] = useState([]);
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
 
   const [departments] = useState([
     { id: 1, name: "Recursos Humanos" },
@@ -98,34 +113,205 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
     { id: 3, name: "Contrato Temporal - Operador", departmentId: 2, positionId: 3 }
   ]);
 
-  // Limpiar formulario al abrir/cerrar
+  // Cargar países desde el servicio de localización cuando se abre el modal
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) return;
+
+    const fetchCountries = async () => {
+      try {
+        const data = await getCountries();
+        const mappedCountries = Array.isArray(data)
+          ? data.map((country) => ({
+              id: country.iso2 || country.id || country.code,
+              code: country.iso2 || country.code,
+              name: country.name,
+            }))
+          : [];
+        setCountries(mappedCountries);
+      } catch (error) {
+        console.error("Error cargando países:", error);
+        setCountries([]);
+      }
+    };
+
+    fetchCountries();
+  }, [isOpen]);
+
+  // Limpiar formulario al abrir/cerrar y precargar datos en modo edición
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (isEditMode && employeeData) {
+      let firstName = employeeData.firstName || "";
+      let secondName = employeeData.secondName || "";
+      let firstLastName = employeeData.firstLastName || "";
+      let secondLastName = employeeData.secondLastName || "";
+
+      // Si el backend envía primer y segundo nombre concatenados en firstName
+      if (firstName && !secondName) {
+        const nameParts = String(firstName).trim().split(/\s+/);
+        if (nameParts.length > 1) {
+          firstName = nameParts[0];
+          secondName = nameParts.slice(1).join(" ");
+        }
+      }
+
+      if (!firstName && employeeData.fullName) {
+        const parts = String(employeeData.fullName).split(" ");
+        firstName = parts[0] || "";
+        if (!secondName && parts.length > 3) {
+          secondName = parts[1] || "";
+        }
+        if (!firstLastName && parts.length > 1) {
+          firstLastName = parts[parts.length - 2] || "";
+        }
+        if (!secondLastName && parts.length > 2) {
+          secondLastName = parts[parts.length - 1] || "";
+        }
+      }
+
+      let identificationType = "";
+      if (employeeData.identificationTypeId) {
+        identificationType = String(employeeData.identificationTypeId);
+      } else if (employeeData.documentType) {
+        const typeMatch = identificationTypes.find(
+          (type) =>
+            type.name === employeeData.documentType ||
+            type.code === employeeData.documentType
+        );
+        if (typeMatch) identificationType = String(typeMatch.id);
+      }
+
+      let gender = "";
+      if (employeeData.genderId) {
+        gender = String(employeeData.genderId);
+      } else if (employeeData.gender) {
+        const normalizedGender = String(employeeData.gender).toLowerCase();
+        const genderMatch = genders.find(
+          (item) => item.name.toLowerCase() === normalizedGender
+        );
+        if (genderMatch) gender = String(genderMatch.id);
+      }
+
+      let country = "";
+      if (employeeData.countryCode) {
+        country = String(employeeData.countryCode);
+      } else if (employeeData.country) {
+        const countryMatch = countries.find(
+          (item) =>
+            item.name === employeeData.country ||
+            item.code === employeeData.country
+        );
+        if (countryMatch) country = String(countryMatch.code);
+      }
+
+      let department = "";
+      if (employeeData.departmentId) {
+        department = String(employeeData.departmentId);
+      } else if (employeeData.department) {
+        const departmentMatch = departments.find(
+          (item) => item.name === employeeData.department
+        );
+        if (departmentMatch) department = String(departmentMatch.id);
+      }
+
+      let position = "";
+      if (employeeData.positionId) {
+        position = String(employeeData.positionId);
+      } else if (employeeData.position) {
+        const positionMatch = positions.find(
+          (item) => item.name === employeeData.position
+        );
+        if (positionMatch) position = String(positionMatch.id);
+      }
+
+      let phoneNumber = "";
+      if (employeeData.phone) {
+        phoneNumber = String(employeeData.phone).replace(/\D/g, "");
+      }
+
       setFormData({
-        firstName: "",
-        secondName: "",
-        firstLastName: "",
-        secondLastName: "",
-        identificationType: "",
-        identificationNumber: "",
-        gender: "",
-        birthDate: "",
-        email: "",
-        phoneNumber: "",
+        firstName,
+        secondName,
+        firstLastName,
+        secondLastName,
+        identificationType,
+        identificationNumber: employeeData.document ? String(employeeData.document) : "",
+        gender,
+        birthDate: employeeData.birthDate || "",
+        email: employeeData.email || "",
+        phoneNumber,
         countryCode: "+57",
-        country: "",
-        state: "",
-        city: "",
-        address: "",
-        department: "",
-        position: "",
-        associatedContract: "",
+        country,
+        state: employeeData.state || "",
+        city: employeeData.city || "",
+        address: employeeData.address || "",
+        department,
+        position,
+        // Usar el código de contrato para edición; si el backend usa otro campo, ajustarlo aquí
+        associatedContract: employeeData.contractCode
+          ? String(employeeData.contractCode)
+          : employeeData.contractId
+            ? String(employeeData.contractId)
+            : "",
         noveltyDescription: ""
       });
       setErrors({});
       setUserExists(false);
+      if (country) {
+        loadStates(country);
+      }
+      return;
     }
-  }, [isOpen]);
+
+    setFormData({
+      firstName: "",
+      secondName: "",
+      firstLastName: "",
+      secondLastName: "",
+      identificationType: "",
+      identificationNumber: "",
+      gender: "",
+      birthDate: "",
+      email: "",
+      phoneNumber: "",
+      countryCode: "+57",
+      country: "",
+      state: "",
+      city: "",
+      address: "",
+      department: "",
+      position: "",
+      associatedContract: "",
+      noveltyDescription: ""
+    });
+    setErrors({});
+    setUserExists(false);
+  }, [isOpen, isEditMode, employeeData, countries]);
+
+  // Cuando se edita, una vez cargados los estados, mapear el nombre del estado al código
+  useEffect(() => {
+    if (!isOpen || !isEditMode || !employeeData || !formData.country || states.length === 0) {
+      return;
+    }
+
+    const matchedState = states.find(
+      (state) =>
+        state.name === employeeData.state ||
+        state.code === employeeData.state
+    );
+
+    if (!matchedState || formData.state === matchedState.code) {
+      return;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      state: matchedState.code,
+    }));
+
+    loadCities(formData.country, matchedState.code);
+  }, [isOpen, isEditMode, employeeData, formData.country, formData.state, states]);
 
   // Buscar usuario existente por documento
   const searchUserByDocument = async (documentNumber) => {
@@ -161,6 +347,60 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
     }
   };
 
+  // Cargar estados/departamentos según país seleccionado
+  const loadStates = async (countryCode) => {
+    if (!countryCode) {
+      setStates([]);
+      setCities([]);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data = await getStates(countryCode);
+      const mappedStates = Array.isArray(data)
+        ? data.map((state) => ({
+            id: state.iso2 || state.id,
+            code: state.iso2 || state.id,
+            name: state.name,
+          }))
+        : [];
+      setStates(mappedStates);
+      setCities([]);
+    } catch (error) {
+      console.error("Error cargando departamentos/estados:", error);
+      setStates([]);
+      setCities([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Cargar ciudades según país y estado seleccionados
+  const loadCities = async (countryCode, stateCode) => {
+    if (!countryCode || !stateCode) {
+      setCities([]);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data = await getCities(countryCode, stateCode);
+      const mappedCities = Array.isArray(data)
+        ? data.map((city) => ({
+            id: city.id || city.name,
+            name: city.name,
+          }))
+        : [];
+      setCities(mappedCities);
+    } catch (error) {
+      console.error("Error cargando ciudades:", error);
+      setCities([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Manejar cambios en el formulario
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -171,8 +411,28 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
     }
 
     // Buscar usuario si es número de documento
-    if (field === "identificationNumber") {
+    if (field === "identificationNumber" && !isEditMode) {
       searchUserByDocument(value);
+    }
+
+    // Actualizar jerarquía de ubicación
+    if (field === "country") {
+      setFormData(prev => ({ ...prev, state: "", city: "" }));
+      if (value) {
+        loadStates(value);
+      } else {
+        setStates([]);
+        setCities([]);
+      }
+    }
+
+    if (field === "state") {
+      setFormData(prev => ({ ...prev, city: "" }));
+      if (formData.country && value) {
+        loadCities(formData.country, value);
+      } else {
+        setCities([]);
+      }
     }
 
     // Filtrar contratos por departamento y cargo
@@ -195,12 +455,15 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
       (contract) => String(contract.id) === String(formData.associatedContract)
     );
 
-    if (!selectedContract) {
+    // Preferir el contract_code si viene desde backend, de lo contrario usar el valor seleccionado
+    const contractCode = selectedContract?.contract_code || formData.associatedContract;
+
+    if (!contractCode) {
       return;
     }
 
     const templateForEdit = {
-      description: selectedContract.name,
+      contract_code: contractCode,
     };
 
     setContractTemplateToEdit(templateForEdit);
@@ -219,10 +482,31 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
     if (!formData.gender) newErrors.gender = "El género es obligatorio";
     if (!formData.birthDate) newErrors.birthDate = "La fecha de nacimiento es obligatoria";
     if (!formData.country) newErrors.country = "El país es obligatorio";
+    if (!formData.state) newErrors.state = "El estado/departamento es obligatorio";
+    if (!formData.city) newErrors.city = "La ciudad es obligatoria";
     if (!formData.department) newErrors.department = "El departamento es obligatorio";
     if (!formData.position) newErrors.position = "El cargo es obligatorio";
-    if (!formData.associatedContract) newErrors.associatedContract = "Debe seleccionar un contrato";
+    // En creación, el contrato es obligatorio. En edición, debe existir pero ya viene precargado
+    if (!formData.associatedContract) {
+      if (isEditMode) {
+        newErrors.associatedContract = "El empleado debe tener un contrato asociado";
+      } else {
+        newErrors.associatedContract = "Debe seleccionar un contrato";
+      }
+    }
     if (!formData.noveltyDescription.trim()) newErrors.noveltyDescription = "La descripción de la novedad es obligatoria";
+
+    if (formData.noveltyDescription && formData.noveltyDescription.length > 255) {
+      newErrors.noveltyDescription = "La descripción de la novedad no puede superar 255 caracteres";
+    }
+
+    // Validar documento duplicado (solo en modo creación)
+    if (!isEditMode && formData.identificationNumber.trim() && onValidateDocument) {
+      const isDuplicate = onValidateDocument(formData.identificationNumber.trim());
+      if (isDuplicate) {
+        newErrors.identificationNumber = "El número de documento ya se encuentra registrado";
+      }
+    }
 
     // Validar mayoría de edad
     if (formData.birthDate) {
@@ -230,11 +514,11 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
       const birthDate = new Date(formData.birthDate);
       let age = today.getFullYear() - birthDate.getFullYear();
       const monthDiff = today.getMonth() - birthDate.getMonth();
-      
+
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
         age--;
       }
-      
+
       if (age < 18) {
         newErrors.birthDate = "El empleado debe ser mayor de edad";
       }
@@ -263,19 +547,44 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
   // Manejar envío del formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
+    // Validar permisos según el modo
+    if (isEditMode && !canEdit) {
+      setErrorMessage("No tiene permisos para editar empleados");
+      setShowErrorModal(true);
+      return;
+    }
+
+    if (!isEditMode && !canCreate) {
+      setErrorMessage("No tiene permisos para crear empleados");
+      setShowErrorModal(true);
+      return;
+    }
+
     if (!validateForm()) return;
 
     setLoading(true);
     try {
-      // TODO: Implementar llamada al endpoint
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      if (isEditMode && employeeData?.id) {
+        await updateEmployee(employeeData.id, {
+          formData,
+          noveltyDescription: formData.noveltyDescription,
+          actionType: "employee_update"
+        });
+      } else {
+        // TODO: Implementar llamada real al endpoint de creación
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+
       // Simulación de éxito
       setShowSuccessModal(true);
       if (onSuccess) onSuccess();
     } catch (error) {
-      setErrorMessage("Error al registrar el empleado. Por favor, intente nuevamente.");
+      setErrorMessage(
+        isEditMode
+          ? "Error al actualizar la información del empleado. Por favor, intente nuevamente."
+          : "Error al registrar el empleado. Por favor, intente nuevamente."
+      );
       setShowErrorModal(true);
     } finally {
       setLoading(false);
@@ -320,7 +629,7 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
         <div className="card-theme rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-primary">
-            <h2 className="text-2xl font-bold text-primary">Nuevo Empleado</h2>
+            <h2 className="text-2xl font-bold text-primary">{isEditMode ? "Editar empleado" : "Nuevo Empleado"}</h2>
             <button
               onClick={handleCancel}
               className="p-2 hover:bg-hover rounded-full transition-colors cursor-pointer"
@@ -427,6 +736,8 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
                       onChange={(e) => handleInputChange("identificationNumber", e.target.value)}
                       className={`input-theme ${errors.identificationNumber ? 'border-red-500' : ''}`}
                       placeholder="Ingrese número de identificación"
+                      readOnly={isEditMode}
+                      disabled={isEditMode}
                     />
                     {errors.identificationNumber && <p className="text-red-500 text-xs mt-1">{errors.identificationNumber}</p>}
                     {userExists && (
@@ -532,7 +843,7 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
                     >
                       <option value="">Seleccione país</option>
                       {countries.map(country => (
-                        <option key={country.id} value={country.id}>
+                        <option key={country.id} value={country.code}>
                           {country.name}
                         </option>
                       ))}
@@ -542,32 +853,42 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
 
                   <div>
                     <label className="block text-sm font-medium text-secondary mb-2">
-                      Departamento/Estado
+                      Departamento/Estado *
                     </label>
                     <select
                       value={formData.state}
                       onChange={(e) => handleInputChange("state", e.target.value)}
-                      className="input-theme"
+                      className={`input-theme ${errors.state ? 'border-red-500' : ''}`}
                       disabled={!formData.country}
                     >
                       <option value="">Seleccione departamento/estado</option>
-                      {/* TODO: Cargar estados según país seleccionado */}
+                      {states.map((state) => (
+                        <option key={state.id} value={state.code}>
+                          {state.name}
+                        </option>
+                      ))}
                     </select>
+                    {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state}</p>}
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-secondary mb-2">
-                      Ciudad
+                      Ciudad *
                     </label>
                     <select
                       value={formData.city}
                       onChange={(e) => handleInputChange("city", e.target.value)}
-                      className="input-theme"
+                      className={`input-theme ${errors.city ? 'border-red-500' : ''}`}
                       disabled={!formData.state}
                     >
                       <option value="">Seleccione ciudad</option>
-                      {/* TODO: Cargar ciudades según estado seleccionado */}
+                      {cities.map((city) => (
+                        <option key={city.id} value={city.name}>
+                          {city.name}
+                        </option>
+                      ))}
                     </select>
+                    {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
                   </div>
 
                   <div>
@@ -636,42 +957,57 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
 
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-medium text-secondary mb-2">
-                      Contrato asociado *
+                      Contrato asociado * {isEditMode && <span className="text-xs text-gray-500">(solo lectura)</span>}
                     </label>
                     <div className="flex gap-2 flex-wrap sm:flex-nowrap">
                       <select
                         value={formData.associatedContract}
                         onChange={(e) => handleInputChange("associatedContract", e.target.value)}
                         className={`input-theme flex-1 ${errors.associatedContract ? 'border-red-500' : ''}`}
-                        disabled={!formData.department || !formData.position}
+                        disabled={isEditMode || !formData.department || !formData.position}
                       >
-                        <option value="">Seleccione contrato</option>
+                        <option value="">
+                          {!formData.department || !formData.position
+                            ? "Seleccione primero departamento y cargo"
+                            : filteredContracts.length === 0
+                            ? "No hay contratos disponibles - Crear uno nuevo"
+                            : "Seleccione contrato"}
+                        </option>
                         {filteredContracts.map(contract => (
                           <option key={contract.id} value={contract.id}>
                             {contract.name}
                           </option>
                         ))}
                       </select>
-                      <button
-                        type="button"
-                        className="btn-theme btn-primary whitespace-nowrap flex items-center gap-2"
-                        onClick={handleOpenCreateContract}
-                      >
-                        <FiBriefcase className="w-4 h-4" />
-                        Crear contrato
-                      </button>
-                      {formData.associatedContract && (
-                        <button
-                          type="button"
-                          className="btn-theme btn-secondary whitespace-nowrap flex items-center gap-2"
-                          onClick={handleOpenEditContract}
-                        >
-                          <FiEdit2 className="w-4 h-4" />
-                          Editar contrato
-                        </button>
+                      {!isEditMode && (
+                        <>
+                          <button
+                            type="button"
+                            className="btn-theme btn-primary whitespace-nowrap flex items-center gap-2"
+                            onClick={handleOpenCreateContract}
+                          >
+                            <FiBriefcase className="w-4 h-4" />
+                            Crear contrato
+                          </button>
+                          {formData.associatedContract && (
+                            <button
+                              type="button"
+                              className="btn-theme btn-secondary whitespace-nowrap flex items-center gap-2"
+                              onClick={handleOpenEditContract}
+                            >
+                              <FiEdit2 className="w-4 h-4" />
+                              Editar contrato
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                     {errors.associatedContract && <p className="text-red-500 text-xs mt-1">{errors.associatedContract}</p>}
+                    {!isEditMode && filteredContracts.length === 0 && formData.department && formData.position && (
+                      <p className="text-yellow-600 text-xs mt-1">
+                        ⚠️ No hay contratos disponibles para este departamento y cargo. Debe seleccionar o crear un contrato antes de guardar.
+                      </p>
+                    )}
                   </div>
 
                   <div className="sm:col-span-2">
@@ -683,7 +1019,10 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
                       onChange={(e) => handleInputChange("noveltyDescription", e.target.value)}
                       className={`input-theme ${errors.noveltyDescription ? 'border-red-500' : ''}`}
                       rows={4}
-                      placeholder="Ingrese descripción de la novedad o justificación para el registro del empleado"
+                      placeholder={isEditMode
+                        ? "Ingrese descripción de la novedad o justificación para la actualización de la información del empleado"
+                        : "Ingrese descripción de la novedad o justificación para el registro del empleado"
+                      }
                     />
                     {errors.noveltyDescription && <p className="text-red-500 text-xs mt-1">{errors.noveltyDescription}</p>}
                   </div>
@@ -703,15 +1042,16 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
                 <button
                   type="submit"
                   className="btn-theme btn-primary flex-1 disabled:opacity-50"
-                  disabled={loading}
+                  disabled={loading || (isEditMode && !canEdit) || (!isEditMode && !canCreate)}
+                  title={(isEditMode && !canEdit) ? "No tiene permisos para editar empleados" : (!isEditMode && !canCreate) ? "No tiene permisos para crear empleados" : ""}
                 >
                   {loading ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2 inline-block" />
-                      Registrando...
+                      {isEditMode ? "Guardando cambios..." : "Registrando..."}
                     </>
                   ) : (
-                    "Registrar"
+                    isEditMode ? "Guardar cambios" : "Registrar"
                   )}
                 </button>
               </div>
@@ -726,7 +1066,7 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
         onClose={() => setShowConfirmModal(false)}
         onConfirm={confirmCancel}
         title="Confirmar Acción"
-        message="¿Desea descartar los datos ingresados? Los cambios no se guardarán."
+        message={isEditMode ? "¿Desea descartar los cambios realizados? Los datos no se guardarán." : "¿Desea descartar los datos ingresados? Los cambios no se guardarán."}
         confirmText="Confirmar"
         cancelText="Cancelar"
         confirmColor="btn-primary"
@@ -739,14 +1079,18 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
           setShowSuccessModal(false);
           onClose();
         }}
-        title="Empleado Registrado"
-        message="Empleado registrado correctamente y contrato asociado con éxito."
+        title={isEditMode ? "Cambios guardados" : "Empleado Registrado"}
+        message={
+          isEditMode
+            ? "La información del empleado se actualizó correctamente y la novedad fue registrada."
+            : "Empleado registrado correctamente y contrato asociado con éxito."
+        }
       />
 
       <ErrorModal
         isOpen={showErrorModal}
         onClose={() => setShowErrorModal(false)}
-        title="Error de Registro"
+        title={isEditMode ? "Error al actualizar" : "Error de Registro"}
         message={errorMessage}
         buttonText="Intentar de Nuevo"
       />
