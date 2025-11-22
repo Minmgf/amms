@@ -1,0 +1,253 @@
+═══════════════════════════════════════════════════════════════════════════════
+                        ✅ CARPETA IT-GD-001 CREADA EXITOSAMENTE
+═══════════════════════════════════════════════════════════════════════════════
+
+📦 CONTENIDO DE LA CARPETA
+───────────────────────────────────────────────────────────────────────────────
+
+✅ Archivos Principales:
+   📄 IT-GD-001.py                 → Script principal de automatización
+   📄 README.md                    → Guía de uso rápido
+   📄 README_IT_GD_001.md          → Documentación completa del caso
+   📄 IT-GD-001-reporte.md         → Plantilla de reporte manual
+   📄 ESTRUCTURA.md                → Visualización de la estructura
+
+✅ Archivos de Configuración:
+   📄 test_config.py               → Configuración centralizada y selectores
+   📄 .gitignore                   → Exclusiones de git
+
+✅ Utilidades:
+   📄 db_validator.py              → Validación en base de datos (opcional)
+   📄 quick_test.py                → Script de debugging rápido
+   📄 run_test.bat                 → Ejecución fácil en Windows
+
+✅ Directorios:
+   📁 screenshots/                 → Capturas de pantalla (generadas)
+   📁 reports/                     → Reportes JSON (generados)
+
+═══════════════════════════════════════════════════════════════════════════════
+                              🎯 CARACTERÍSTICAS PRINCIPALES
+═══════════════════════════════════════════════════════════════════════════════
+
+✨ GENERACIÓN DE DATOS ÚNICOS
+   • Nombre del dispositivo: "Dispositivo GPS Test {timestamp}"
+   • IMEI: 15 dígitos aleatorios generados con algoritmo de Luhn
+   • ¡Cada ejecución usa datos diferentes!
+   • Evita conflictos con registros existentes
+
+🔄 PRUEBA DE DUPLICADOS
+   • Después del registro exitoso, intenta registrar el mismo dispositivo
+   • Valida que el sistema rechace correctamente los datos duplicados
+   • Verifica mensajes de error apropiados
+   • Confirma comportamiento robusto del sistema
+
+📸 CAPTURAS AUTOMÁTICAS
+   • Screenshot en cada paso importante del flujo
+   • Útil para debugging y evidencia
+   • Timestamp en cada archivo
+   • Guardadas en carpeta screenshots/
+
+📊 REPORTES DETALLADOS
+   • Reporte JSON con todos los detalles de ejecución
+   • Datos de prueba utilizados (nombre, IMEI)
+   • Resultado de cada paso individual
+   • Resumen con tasa de éxito
+   • Timestamps completos
+
+🔌 INTEGRACIÓN
+   • Reutiliza flujo de login existente
+   • Compatible con estructura del proyecto
+   • Usa configuración de .env
+   • Modular y mantenible
+
+═══════════════════════════════════════════════════════════════════════════════
+                              🚀 CÓMO EJECUTAR EL TEST
+═══════════════════════════════════════════════════════════════════════════════
+
+OPCIÓN 1: Script Batch (Windows) - MÁS FÁCIL ⭐
+   1. Navegar a la carpeta IT-GD-001
+   2. Doble clic en: run_test.bat
+   3. El script verifica todo automáticamente
+
+OPCIÓN 2: Línea de comandos
+   PowerShell:
+      cd IT-GD-001
+      python IT-GD-001.py
+
+OPCIÓN 3: Debugging rápido
+   PowerShell:
+      cd IT-GD-001
+      python quick_test.py
+
+═══════════════════════════════════════════════════════════════════════════════
+                              📋 PRECONDICIONES
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ Python instalado (3.7+)
+✅ Dependencias instaladas:
+   pip install selenium python-dotenv
+   pip install psycopg2-binary  (opcional, para validación BD)
+
+✅ Archivo .env configurado con:
+   EMAIL=nicourrutia83@gmail.com
+   PASSWORD=@Nico9812.784
+   HEADLESS=False
+   DB_HOST=158.69.200.27
+   DB_PORT=5436
+   DB_NAME=tester
+   DB_USER=tester
+   DB_PASSWORD=sigma.test.2025
+
+✅ ChromeDriver en carpeta chromedriver/driver.exe
+✅ Aplicación SIGMA corriendo en http://localhost:3000/sigma
+
+═══════════════════════════════════════════════════════════════════════════════
+                              📝 FLUJO DE LA PRUEBA
+═══════════════════════════════════════════════════════════════════════════════
+
+1️⃣  ARRANGE (Preparación)
+    • Generar nombre único con timestamp
+    • Generar IMEI válido de 15 dígitos
+    • Configurar driver de Chrome
+    • Realizar login automático
+
+2️⃣  ACT (Acción)
+    • Navegar al menú "Monitoreo"
+    • Acceder a "Gestión de Dispositivos"
+    • Hacer clic en "Nuevo Dispositivo"
+    • Completar formulario:
+      - Nombre del dispositivo
+      - IMEI de 15 dígitos
+      - Seleccionar 5 parámetros:
+        ✓ Estado de Ignición
+        ✓ Velocidad Actual
+        ✓ Ubicación GPS
+        ✓ Nivel de Combustible
+        ✓ Temperatura del Motor
+    • Presionar "Registrar"
+
+3️⃣  ASSERT (Verificación)
+    • Verificar mensaje: "Dispositivo registrado exitosamente"
+    • Confirmar que el dispositivo aparece en la lista
+    • Validar datos registrados (nombre, IMEI, parámetros)
+
+4️⃣  PRUEBA DUPLICADO (Adicional)
+    • Intentar registrar mismo dispositivo nuevamente
+    • Verificar que el sistema rechaza correctamente
+    • Confirmar mensaje de error apropiado
+
+═══════════════════════════════════════════════════════════════════════════════
+                              📊 SALIDAS GENERADAS
+═══════════════════════════════════════════════════════════════════════════════
+
+📸 SCREENSHOTS (carpeta screenshots/)
+   • screenshot_login_success_{timestamp}.png
+   • screenshot_monitoring_menu_expanded_{timestamp}.png
+   • screenshot_devices_management_page_{timestamp}.png
+   • screenshot_modal_opened_{timestamp}.png
+   • screenshot_form_filled_{timestamp}.png
+   • screenshot_registration_success_{timestamp}.png
+   • screenshot_device_in_list_{timestamp}.png
+   • screenshot_form_filled_duplicate_{timestamp}.png
+   • screenshot_duplicate_error_validation_{timestamp}.png
+   • screenshot_final_state_{timestamp}.png
+
+📊 REPORTES (carpeta reports/)
+   • IT_GD_001_Report_{timestamp}.json
+     Contiene:
+     - ID del test
+     - Datos de prueba (nombre, IMEI)
+     - Resultado de cada paso
+     - Timestamps completos
+     - Resumen: total/exitosos/fallidos/tasa de éxito
+
+═══════════════════════════════════════════════════════════════════════════════
+                              🔍 SELECTORES UTILIZADOS
+═══════════════════════════════════════════════════════════════════════════════
+
+NAVEGACIÓN:
+   • Menú Monitoreo:              //a[@href='/sigma/monitoring']
+   • Gestión de Dispositivos:     //a[@href='/sigma/monitoring/devicesManagement']
+
+MODAL:
+   • Botón Nuevo Dispositivo:     //button[@aria-label='Add Device Button']
+   • Modal:                       //div[contains(@class, 'modal-theme')]
+   • Título:                      //h2[contains(text(), 'Registro de Dispositivo')]
+
+FORMULARIO:
+   • Campo Nombre:                //input[@name='deviceName']
+   • Campo IMEI:                  //input[@name='imei']
+   • Checkbox Parámetro:          //label[contains(., '{param}')]//input[@type='checkbox']
+   • Botón Registrar:             //button[@type='submit' and contains(., 'Registrar')]
+
+═══════════════════════════════════════════════════════════════════════════════
+                              💡 TIPS Y RECOMENDACIONES
+═══════════════════════════════════════════════════════════════════════════════
+
+✨ Cada ejecución es independiente
+   • Genera nuevos datos únicos
+   • No interfiere con ejecuciones previas
+   • Ideal para pruebas repetidas
+
+🐛 Para debugging:
+   • Ejecutar: python quick_test.py
+   • Verifica selectores y navegación
+   • El navegador permanece abierto 10 segundos
+
+🗄️ Validación en BD (opcional):
+   • Usar db_validator.py para verificar datos reales
+   • Requiere psycopg2-binary instalado
+   • Confirma integridad de datos en PostgreSQL
+
+📝 Modo headless:
+   • Cambiar en .env: HEADLESS=True
+   • Ejecuta sin interfaz gráfica
+   • Más rápido para CI/CD
+
+═══════════════════════════════════════════════════════════════════════════════
+                              📚 DOCUMENTACIÓN DISPONIBLE
+═══════════════════════════════════════════════════════════════════════════════
+
+📖 README.md                → Guía rápida de uso
+📖 README_IT_GD_001.md      → Documentación completa del caso de prueba
+📖 IT-GD-001-reporte.md     → Plantilla para reporte manual
+📖 ESTRUCTURA.md            → Diagrama visual de la estructura
+📖 Este archivo            → Resumen general
+
+═══════════════════════════════════════════════════════════════════════════════
+                              ✅ CASO DE PRUEBA CUBIERTO
+═══════════════════════════════════════════════════════════════════════════════
+
+ID:          IT-GD-001
+Título:      Registro completo de dispositivo y validación de integración
+             con sistema de monitoreo
+
+HU:          HU-GD-001 (Registrar nuevo dispositivo)
+             HU-MS-002 (Iniciar monitoreo de solicitud)
+
+Objetivo:    Verificar el proceso integral de registro de un dispositivo
+             GPS/CAN con todos sus parámetros de monitoreo, validando que
+             queda correctamente habilitado para integración automática con
+             el sistema de monitoreo.
+
+═══════════════════════════════════════════════════════════════════════════════
+                              🎉 ¡LISTO PARA USAR!
+═══════════════════════════════════════════════════════════════════════════════
+
+Para empezar:
+   1. cd IT-GD-001
+   2. python IT-GD-001.py    ó    doble clic en run_test.bat
+
+Para debugging:
+   python quick_test.py
+
+Para ver configuración:
+   python test_config.py
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Creado: 2025-11-02
+Versión: 1.0.0
+Sistema: SIGMA - AMMS
+
+═══════════════════════════════════════════════════════════════════════════════

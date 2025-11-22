@@ -28,6 +28,7 @@ const ScheduledMaintenancePage = () => {
     startDate: null,
     endDate: null
   });
+  const [dateRangeError, setDateRangeError] = useState('');
   const [globalFilter, setGlobalFilter] = useState('');
   const [filterModalOpen, setFilterModalOpen] = useState(false);
 
@@ -120,7 +121,7 @@ const ScheduledMaintenancePage = () => {
 
         const types = [
           ...new Set(
-            mappedData.map((item) => item.maintenance_type).filter(Boolean)
+            mappedData.map((item) => item.maintenance_type_name).filter(Boolean)
           )
         ];
 
@@ -463,7 +464,7 @@ const ScheduledMaintenancePage = () => {
       // Filtros específicos
       const matchesStatus = statusFilter === '' || maintenance.status_name === statusFilter;
       const matchesTechnician = technicianFilter === '' || maintenance.technician === technicianFilter;
-      const matchesType = typeFilter === '' || maintenance.maintenance_type === typeFilter;
+      const matchesType = typeFilter === '' || maintenance.maintenance_type_name === typeFilter;
 
       return matchesGlobal && matchesStatus && matchesTechnician && matchesType;
     });
@@ -489,6 +490,32 @@ const ScheduledMaintenancePage = () => {
     const d = new Date(date);
     d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
     return d;
+  };
+
+  // Validar rango de fechas
+  const validateDateRange = (startDate, endDate) => {
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      if (start > end) {
+        setDateRangeError("La fecha inicial no puede ser posterior a la fecha final");
+        return false;
+      }
+    }
+    setDateRangeError("");
+    return true;
+  };
+
+  // Handler para cambios de rango de fechas con validación
+  const handleDateRangeChange = (field, value) => {
+    const newRange = {
+      ...selectedDateRange,
+      [field]: value
+    };
+    
+    setSelectedDateRange(newRange);
+    validateDateRange(newRange.startDate, newRange.endDate);
   };
 
 
@@ -671,11 +698,9 @@ const ScheduledMaintenancePage = () => {
                     <input
                       type="date"
                       value={selectedDateRange.startDate || ''}
-                      onChange={(e) => setSelectedDateRange(prev => ({
-                        ...prev,
-                        startDate: e.target.value
-                      }))}
-                      className="parametrization-input text-sm"
+                      max={selectedDateRange.endDate || undefined}
+                      onChange={(e) => handleDateRangeChange('startDate', e.target.value)}
+                      className={`parametrization-input text-sm ${dateRangeError ? 'border-red-500' : ''}`}
                     />
                   </div>
 
@@ -687,14 +712,19 @@ const ScheduledMaintenancePage = () => {
                     <input
                       type="date"
                       value={selectedDateRange.endDate || ''}
-                      onChange={(e) => setSelectedDateRange(prev => ({
-                        ...prev,
-                        endDate: e.target.value
-                      }))}
                       min={selectedDateRange.startDate || undefined}
-                      className="parametrization-input text-sm"
+                      onChange={(e) => handleDateRangeChange('endDate', e.target.value)}
+                      className={`parametrization-input text-sm ${dateRangeError ? 'border-red-500' : ''}`}
                     />
                   </div>
+
+                  {/* Mensaje de error */}
+                  {dateRangeError && (
+                    <div className="flex items-center gap-2 text-red-600 text-xs bg-red-50 p-2 rounded">
+                      <FiX className="w-4 h-4" />
+                      <span>{dateRangeError}</span>
+                    </div>
+                  )}
 
                   {/* Botones de acción */}
                   <div className="flex gap-2">
@@ -702,6 +732,7 @@ const ScheduledMaintenancePage = () => {
                       onClick={() => {
                         const today = new Date().toISOString().split('T')[0];
                         setSelectedDateRange({ startDate: today, endDate: today });
+                        setDateRangeError('');
                       }}
                       className="flex-1 parametrization-button px-3 py-2 text-xs bg-accent text-white hover:bg-accent-hover transition-colors"
                     >
@@ -716,6 +747,7 @@ const ScheduledMaintenancePage = () => {
                           startDate: today.toISOString().split('T')[0],
                           endDate: nextWeek.toISOString().split('T')[0]
                         });
+                        setDateRangeError('');
                       }}
                       className="flex-1 parametrization-button px-3 py-2 text-xs bg-success text-white hover:bg-success-hover transition-colors"
                     >
@@ -733,13 +765,17 @@ const ScheduledMaintenancePage = () => {
                           startDate: firstDay.toISOString().split('T')[0],
                           endDate: lastDay.toISOString().split('T')[0]
                         });
+                        setDateRangeError('');
                       }}
                       className="flex-1 parametrization-button px-3 py-2 text-xs bg-warning text-white hover:bg-warning-hover transition-colors"
                     >
                       Este mes
                     </button>
                     <button
-                      onClick={() => setSelectedDateRange({ startDate: null, endDate: null })}
+                      onClick={() => {
+                        setSelectedDateRange({ startDate: null, endDate: null });
+                        setDateRangeError('');
+                      }}
                       className="flex-1 parametrization-button px-3 py-2 text-xs parametrization-text hover:bg-hover transition-colors"
                     >
                       Limpiar

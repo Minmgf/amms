@@ -230,9 +230,27 @@ export const downloadInvoicePDF = async (invoiceId) => {
     return response.data;
 };
 
+// Obtener listado de solicitudes para monitoreo (HU-MON-001)
+// Retorna solicitudes en estado Pendiente (20), En proceso (21) y Finalizada (22)
+export const getRequestMonitoringList = async () => {
+    const { data } = await apiMain.get("/service_requests/monitoring-list/");
+    return data;
+};
 
-
-
+// Solicitar mantenimiento automático desde una solicitud de servicio
+// Este endpoint debe ejecutarse ANTES de completar una solicitud
+export const createMaintenanceFromServiceRequest = async (requestId) => {
+    console.log('📤 Solicitando mantenimiento automático - requestId:', requestId);
+    try {
+        const { data } = await apiMain.post(`/maintenance_request/${requestId}/from-service-request/`);
+        console.log('✅ Mantenimiento automático creado:', data);
+        return data;
+    } catch (error) {
+        console.error('❌ Error en createMaintenanceFromServiceRequest:', error);
+        console.error('📋 Error response:', error.response);
+        throw error;
+    }
+};
 
 
 

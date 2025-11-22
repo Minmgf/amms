@@ -4,6 +4,7 @@ export default function FuelPredictionModal({ isOpen, onClose, onSave, formData,
 
   const initialState = {
     implementation: "",
+    implementWidth: "",
     workDepth: "",
     humidity: "",
     soilType: "",
@@ -31,6 +32,16 @@ export default function FuelPredictionModal({ isOpen, onClose, onSave, formData,
     
     // Implementación - obligatorio
     if (!form.implementation) e.implementation = "Seleccione la implementación";
+    
+    // Ancho del implemento - obligatorio, rango: 0.5 a 5.0 metros
+    if (!form.implementWidth || form.implementWidth === "") {
+      e.implementWidth = "El ancho del implemento es obligatorio";
+    } else {
+      const width = Number(form.implementWidth);
+      if (width < 0.5 || width > 5.0) {
+        e.implementWidth = "Debe estar entre 0.5 y 5.0 metros";
+      }
+    }
     
     // Profundidad de trabajo - obligatorio, rango: 0.1 a 0.5 metros
     if (!form.workDepth || form.workDepth === "") {
@@ -103,6 +114,7 @@ export default function FuelPredictionModal({ isOpen, onClose, onSave, formData,
     if (!validate()) return;
     const payload = {
       implementation: form.implementation,
+      implementWidth: form.implementWidth === "" ? null : Number(form.implementWidth),
       workDepth: form.workDepth === "" ? null : Number(form.workDepth),
       humidity: form.humidity === "" ? null : parseFloat(form.humidity),
       soilType: form.soilType,
@@ -140,6 +152,22 @@ export default function FuelPredictionModal({ isOpen, onClose, onSave, formData,
               {implementTypes.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
             </select>
             {errors.implementation && <div className="text-red-600 text-xs mt-1">{errors.implementation}</div>}
+          </div>
+
+          <div>
+            <label className="block text-sm text-gray-700 mb-1">Ancho del implemento (metros)</label>
+            <input
+              type="number"
+              step="0.1"
+              min="0.5"
+              max="5.0"
+              value={form.implementWidth}
+              onChange={e => handleChange("implementWidth", e.target.value)}
+              className="parametrization-input w-full"
+              aria-label="Ancho del implemento en metros"
+              placeholder="Ej: 2.5"
+            />
+            {errors.implementWidth && <div className="text-red-600 text-xs mt-1">{errors.implementWidth}</div>}
           </div>
 
           <div>

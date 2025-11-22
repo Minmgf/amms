@@ -1,14 +1,20 @@
 "use client";
 import AddClientModal from "@/app/components/request/clients/AddClientModal";
 import DetailsRequestModal from "@/app/components/request/services/DetailsRequestModal";
-import TrackingDashboardModal from "@/app/components/request/TrackingDashboardModal";
+import TrackingDashboardModal from "@/app/components/monitoring/TrackingDashboardModal";
+import AddContractModal from "@/app/components/payroll/contractManagement/contracts/AddContractModal";
+import RegisterEmployeeModal from "@/app/components/payroll/human-resources/employees/RegisterEmployeeModal";
 import { useState } from "react";
+import HistoricalDataModal from "@/app/components/monitoring/HistoricalDataModal";
 
 const Prueba = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isRequestDetailsOpen, setIsRequestDetailsOpen] = useState(false);
   const [isTrackingDashboardOpen, setIsTrackingDashboardOpen] = useState(false);
+  const [isHistoricalModalOpen, setIsHistoricalModalOpen] = useState(false);
+  const [isContractModalOpen, setIsContractModalOpen] = useState(false);
+  const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
 
   return (
     <div className="p-6">
@@ -66,6 +72,45 @@ const Prueba = () => {
             Ver Dashboard de Monitoreo
           </button>
         </div>
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">Modal de Datos Historicos</h2>
+          <button
+            onClick={() => setIsHistoricalModalOpen(true)}
+            className="px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            Ver Datos Historicos
+          </button>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6 mt-6">
+          <h2 className="text-xl font-semibold mb-4">Modal de Contratos</h2>
+          
+          <p className="text-gray-600 mb-6">
+            Formulario multipasos para añadir contratos. Incluye información general, términos del contrato, deducciones e incrementos.
+          </p>
+
+          <button
+            onClick={() => setIsContractModalOpen(true)}
+            className="px-6 py-3 bg-orange-600 text-white font-semibold rounded-lg hover:bg-orange-700 transition-colors"
+          >
+            Añadir Contrato
+          </button>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-6 mt-6">
+          <h2 className="text-xl font-semibold mb-4">Modal de Registro de Empleado</h2>
+          
+          <p className="text-gray-600 mb-6">
+            Formulario completo para registrar un nuevo empleado (HU-EMP-001). Incluye datos personales, de contacto y laborales con validaciones completas.
+          </p>
+
+          <button
+            onClick={() => setIsEmployeeModalOpen(true)}
+            className="px-6 py-3 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-colors"
+          >
+            Registrar Empleado
+          </button>
+        </div>
       </div>
 
       {/* Modal de Registro */}
@@ -85,6 +130,32 @@ const Prueba = () => {
         isOpen={isTrackingDashboardOpen}
         onClose={() => setIsTrackingDashboardOpen(false)}
         requestData={null}
+      />
+
+      {/* Historical Data Modal */}
+      <HistoricalDataModal 
+        isOpen={isHistoricalModalOpen}
+        onClose={() => setIsHistoricalModalOpen(false)}
+      />
+
+      {/* Contract Modal */}
+      <AddContractModal
+        isOpen={isContractModalOpen}
+        onClose={() => setIsContractModalOpen(false)}
+        onSuccess={() => {
+          console.log("Contrato guardado exitosamente");
+          setIsContractModalOpen(false);
+        }}
+      />
+
+      {/* Employee Modal */}
+      <RegisterEmployeeModal
+        isOpen={isEmployeeModalOpen}
+        onClose={() => setIsEmployeeModalOpen(false)}
+        onSuccess={() => {
+          console.log("Empleado registrado exitosamente");
+          setIsEmployeeModalOpen(false);
+        }}
       />
     </div>
   );
