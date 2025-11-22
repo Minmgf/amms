@@ -30,6 +30,7 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
     secondLastName: "",
     identificationType: "",
     identificationNumber: "",
+    dateIssuance: "",
     gender: "",
     birthDate: "",
     
@@ -85,6 +86,7 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
         secondLastName: "",
         identificationType: "",
         identificationNumber: "",
+        dateIssuance: "",
         gender: "",
         birthDate: "",
         email: "",
@@ -250,6 +252,8 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
       try {
         const response = await employeeService.getEstablishedContracts(value);
         if (response.success) {
+          // NOTA: El endpoint debe retornar el campo 'id' para cada contrato
+          // Si no viene, verificar con el backend que se incluya en la respuesta
           setContracts(response.data || []);
         }
       } catch (error) {
@@ -368,18 +372,35 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
   const validateForm = () => {
     const newErrors = {};
 
-    // Campos obligatorios
+    // Campos obligatorios - Datos personales
     if (!formData.firstName.trim()) newErrors.firstName = "El primer nombre es obligatorio";
     if (!formData.firstLastName.trim()) newErrors.firstLastName = "El primer apellido es obligatorio";
     if (!formData.identificationType) newErrors.identificationType = "El tipo de documento es obligatorio";
     if (!formData.identificationNumber.trim()) newErrors.identificationNumber = "El número de documento es obligatorio";
+    if (!formData.dateIssuance) newErrors.dateIssuance = "La fecha de expedición del documento es obligatoria";
     if (!formData.gender) newErrors.gender = "El género es obligatorio";
     if (!formData.birthDate) newErrors.birthDate = "La fecha de nacimiento es obligatoria";
+    
+    // Campos obligatorios - Datos de contacto
     if (!formData.country) newErrors.country = "El país es obligatorio";
+    if (!formData.state) newErrors.state = "El estado/departamento es obligatorio";
+    if (!formData.city) newErrors.city = "La ciudad es obligatoria";
+    if (!formData.address.trim()) newErrors.address = "La dirección es obligatoria";
+    
+    // Campos obligatorios - Datos laborales
     if (!formData.department) newErrors.department = "El departamento es obligatorio";
     if (!formData.position) newErrors.position = "El cargo es obligatorio";
-    if (!formData.associatedContract) newErrors.associatedContract = "Debe seleccionar un contrato";
+    if (!formData.associatedContract) newErrors.associatedContract = "Debe seleccionar o crear un contrato antes de guardar";
     if (!formData.noveltyDescription.trim()) newErrors.noveltyDescription = "La descripción de la novedad es obligatoria";
+
+    // Validar fecha de expedición no futura
+    if (formData.dateIssuance) {
+      const today = new Date();
+      const issuanceDate = new Date(formData.dateIssuance);
+      if (issuanceDate > today) {
+        newErrors.dateIssuance = "La fecha de expedición no puede ser posterior a la fecha actual";
+      }
+    }
 
     // Validar mayoría de edad
     if (formData.birthDate) {
@@ -393,7 +414,12 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
       }
       
       if (age < 18) {
-        newErrors.birthDate = "El empleado debe ser mayor de edad";
+        newErrors.birthDate = "El empleado debe ser mayor de edad (18 años)";
+      }
+      
+      // Validar que no sea fecha futura
+      if (birthDate > today) {
+        newErrors.birthDate = "La fecha de nacimiento no puede ser posterior a la fecha actual";
       }
     }
 
@@ -404,13 +430,13 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
 
     // Validar teléfono si se proporciona
     if (formData.phoneNumber && !/^\d{7,15}$/.test(formData.phoneNumber)) {
-      newErrors.phoneNumber = "El teléfono debe tener entre 7 y 15 dígitos";
+      newErrors.phoneNumber = "El teléfono debe tener entre 7 y 15 dígitos numéricos";
     }
 
     // Al menos email o teléfono
     if (!formData.email && !formData.phoneNumber) {
-      newErrors.email = "Debe proporcionar al menos email o teléfono";
-      newErrors.phoneNumber = "Debe proporcionar al menos email o teléfono";
+      newErrors.email = "Debe proporcionar al menos correo electrónico o teléfono";
+      newErrors.phoneNumber = "Debe proporcionar al menos correo electrónico o teléfono";
     }
 
     setErrors(newErrors);
@@ -435,12 +461,12 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
           first_last_name: formData.firstLastName,
           second_last_name: formData.secondLastName || null,
           type_document_id: parseInt(formData.identificationType),
-          date_issuance_document: formData.birthDate, // Nota: ajustar si hay campo separado
+          date_issuance_document: formData.dateIssuance,
           birthday: formData.birthDate,
           gender_id: parseInt(formData.gender),
           country: formData.country,
           department: formData.state,
-          city: parseInt(formData.city) || null,
+          city: parseInt(formData.city),
           address: formData.address,
           phone: formData.phoneNumber || null
         };
@@ -454,12 +480,12 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
           second_last_name: formData.secondLastName || null,
           type_document_id: parseInt(formData.identificationType),
           document_number: formData.identificationNumber,
-          date_issuance_document: formData.birthDate, // Nota: ajustar según requerimientos
+          date_issuance_document: formData.dateIssuance,
           birthday: formData.birthDate,
           gender_id: parseInt(formData.gender),
           country: formData.country,
           department: formData.state,
-          city: parseInt(formData.city) || null,
+          city: parseInt(formData.city),
           address: formData.address,
           phone: formData.phoneNumber || null
         };
@@ -536,11 +562,24 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
       if (error.response?.data) {
         const errorData = error.response.data;
         if (errorData.errors) {
-          // Construir mensaje de error detallado
+          // Mapear errores específicos según la HU
           const errorMessages = [];
           Object.entries(errorData.errors).forEach(([field, messages]) => {
             if (Array.isArray(messages)) {
-              errorMessages.push(`${field}: ${messages.join(", ")}`);
+              const errorText = messages.join(", ");
+              
+              // Mensajes específicos según la HU-EMP-001
+              if (field === "id_user" && errorText.includes("asociado a otro empleado")) {
+                errorMessages.push("El número de documento ya se encuentra registrado.");
+              } else if (field === "email" && errorText.includes("Ya existe")) {
+                errorMessages.push("Ya existe un empleado con este correo electrónico.");
+              } else if (field === "document_number" && errorText.includes("usado")) {
+                errorMessages.push("El número de documento ya se encuentra registrado.");
+              } else if (errorText.includes("correo") || errorText.includes("email")) {
+                errorMessages.push("El formato del correo electrónico no es válido.");
+              } else {
+                errorMessages.push(`${field}: ${errorText}`);
+              }
             }
           });
           errorMsg = errorMessages.length > 0 
@@ -703,6 +742,19 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
 
                   <div>
                     <label className="block text-sm font-medium text-secondary mb-2">
+                      Fecha de expedición del documento *
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.dateIssuance}
+                      onChange={(e) => handleInputChange("dateIssuance", e.target.value)}
+                      className={`input-theme ${errors.dateIssuance ? 'border-red-500' : ''}`}
+                    />
+                    {errors.dateIssuance && <p className="text-red-500 text-xs mt-1">{errors.dateIssuance}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-secondary mb-2">
                       Género *
                     </label>
                     <select
@@ -809,12 +861,12 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
 
                   <div>
                     <label className="block text-sm font-medium text-secondary mb-2">
-                      Departamento/Estado
+                      Departamento/Estado *
                     </label>
                     <select
                       value={formData.state}
                       onChange={(e) => handleInputChange("state", e.target.value)}
-                      className="input-theme"
+                      className={`input-theme ${errors.state ? 'border-red-500' : ''}`}
                       disabled={!formData.country}
                     >
                       <option value="">Seleccione departamento/estado</option>
@@ -824,16 +876,17 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
                         </option>
                       ))}
                     </select>
+                    {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state}</p>}
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-secondary mb-2">
-                      Ciudad
+                      Ciudad *
                     </label>
                     <select
                       value={formData.city}
                       onChange={(e) => handleInputChange("city", e.target.value)}
-                      className="input-theme"
+                      className={`input-theme ${errors.city ? 'border-red-500' : ''}`}
                       disabled={!formData.state}
                     >
                       <option value="">Seleccione ciudad</option>
@@ -843,19 +896,21 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
                         </option>
                       ))}
                     </select>
+                    {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-secondary mb-2">
-                      Dirección
+                      Dirección *
                     </label>
                     <input
                       type="text"
                       value={formData.address}
                       onChange={(e) => handleInputChange("address", e.target.value)}
-                      className="input-theme"
+                      className={`input-theme ${errors.address ? 'border-red-500' : ''}`}
                       placeholder="Ingrese dirección"
                     />
+                    {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
                   </div>
                 </div>
               </div>
@@ -926,6 +981,7 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
                             {contract.contract_code} - {contract.contract_type_name}
                           </option>
                         ))}
+                        {/* IMPORTANTE: El backend debe retornar 'id' en el listado de contratos */}
                       </select>
                       <button
                         type="button"
@@ -1030,8 +1086,25 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
         isOpen={isContractModalOpen}
         onClose={() => setIsContractModalOpen(false)}
         contractToEdit={contractTemplateToEdit}
-        onSuccess={() => {
+        onSuccess={async (newContractId) => {
           setIsContractModalOpen(false);
+          
+          // Recargar lista de contratos después de crear/editar
+          if (formData.position) {
+            try {
+              const response = await employeeService.getEstablishedContracts(formData.position);
+              if (response.success && response.data) {
+                setContracts(response.data);
+                
+                // Si se creó un nuevo contrato, seleccionarlo automáticamente
+                if (newContractId) {
+                  setFormData(prev => ({ ...prev, associatedContract: newContractId }));
+                }
+              }
+            } catch (error) {
+              console.error("Error recargando contratos:", error);
+            }
+          }
         }}
       />
     </>

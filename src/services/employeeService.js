@@ -68,6 +68,10 @@ export const getPositions = async (departmentId) => {
  * Get list of active established contracts for a specific position
  * @param {number} positionId - Position/charge ID
  * @returns {Promise<Array>} List of established contracts
+ * 
+ * IMPORTANTE: La documentación del endpoint indica que solo retorna contract_code,
+ * pero se necesita el campo 'id' para poder obtener los detalles del contrato.
+ * El backend debe incluir el campo 'id' en la respuesta del listado.
  */
 export const getEstablishedContracts = async (positionId) => {
   try {
