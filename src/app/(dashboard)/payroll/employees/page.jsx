@@ -34,6 +34,8 @@ const EmployeesPage = () => {
 
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [actionType, setActionType] = useState(null);
+  const [employeeToEdit, setEmployeeToEdit] = useState(null);
+  const [registerModalMode, setRegisterModalMode] = useState("create");
 
   useEffect(() => {
     loadEmployees();
@@ -294,12 +296,11 @@ const EmployeesPage = () => {
     setIsDetailModalOpen(true);
   };
 
-  const handleEditEmployee = () => {
+  const handleEditEmployee = (employeeData) => {
     setIsDetailModalOpen(false);
-    // TODO: Open edit modal or navigate to edit page
-    setModalTitle("Editar empleado");
-    setModalMessage("Redirigir a la vista de edición del empleado (pendiente de integración).");
-    setSuccessOpen(true);
+    setRegisterModalMode("edit");
+    setEmployeeToEdit(employeeData || null);
+    setIsRegisterModalOpen(true);
   };
 
   const noResultsByFilter =
@@ -365,7 +366,11 @@ const EmployeesPage = () => {
             )}
 
             <button
-              onClick={() => setIsRegisterModalOpen(true)}
+              onClick={() => {
+                setRegisterModalMode("create");
+                setEmployeeToEdit(null);
+                setIsRegisterModalOpen(true);
+              }}
               aria-label="Nuevo empleado"
               className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit bg-black text-white hover:bg-gray-800"
             >
@@ -445,8 +450,14 @@ const EmployeesPage = () => {
 
       <RegisterEmployeeModal
         isOpen={isRegisterModalOpen}
-        onClose={() => setIsRegisterModalOpen(false)}
+        onClose={() => {
+          setIsRegisterModalOpen(false);
+          setEmployeeToEdit(null);
+          setRegisterModalMode("create");
+        }}
         onSuccess={loadEmployees}
+        mode={registerModalMode}
+        employeeData={employeeToEdit}
       />
 
       <ConfirmModal

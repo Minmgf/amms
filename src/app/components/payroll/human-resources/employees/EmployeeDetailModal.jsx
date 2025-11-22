@@ -321,11 +321,11 @@ export default function EmployeeDetailModal({
               {/* Footer */}
               <div className="flex justify-end gap-3 p-theme-lg border-t border-primary bg-surface">
                 <button
-                  onClick={onEdit}
+                  onClick={() => onEdit?.(employeeData)}
                   className="btn-theme btn-primary gap-2"
                 >
                   <FiEdit className="w-4 h-4" />
-                  Editar
+                  Editar información
                 </button>
               </div>
             </>

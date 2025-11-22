@@ -6,21 +6,32 @@ import { apiMain } from "@/lib/axios";
 // Mock data for development
 const mockEmployeeDetails = {
   id: 1,
+  // Datos desagregados para el formulario de edición
+  firstName: "María Fernanda",
+  secondName: "",
+  firstLastName: "González",
+  secondLastName: "Pérez",
+  identificationTypeId: 1,
   fullName: "María Fernanda González Pérez",
   documentType: "Cédula de Ciudadanía",
   document: "1034567890",
-  gender: "Female",
+  gender: "Femenino",
+  genderId: 2,
   birthDate: "1990-03-15",
-  status: "Active",
-  position: "Operator",
-  department: "Operative team",
+  status: "Activo",
+  position: "Operador",
+  positionId: 3,
+  department: "Operaciones",
+  departmentId: 2,
   email: "maria.gonzalez@empresa.com",
   phone: "+57 300 456 7890",
   country: "Colombia",
+  countryId: 1,
   state: "Antioquia",
   city: "Medellín",
   address: "Carrera 43A #14-25",
-  contractCode: "CON-OPERATOR-0789",
+  contractCode: "CON-EXAMPLE-0001",
+  contractId: 3,
   contract: {
     id: 1,
     code: "CON-2025-0003-00",
@@ -178,6 +189,32 @@ export const getEmployeeDetails = async (employeeId) => {
     });
   } catch (error) {
     console.error('Error fetching employee details:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update employee information and register novelty (mock implementation)
+ * @param {number} employeeId - Employee ID
+ * @param {Object} payload - Datos del formulario y novedad
+ * @returns {Promise<Object>} Updated employee details
+ */
+export const updateEmployee = async (employeeId, payload) => {
+  try {
+    // TODO: Replace with actual API call
+    // const response = await apiMain.put(`/employees/${employeeId}`, payload);
+    // return response.data;
+
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          ...mockEmployeeDetails,
+          ...(payload?.formData || {})
+        });
+      }, 800);
+    });
+  } catch (error) {
+    console.error("Error updating employee:", error);
     throw error;
   }
 };
