@@ -157,22 +157,30 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
       setExistingUserId(null);
       return;
     }
-    
+
     setLoading(true);
     try {
       const response = await employeeService.getUserByDocument(documentNumber);
-      
+
       if (response && response.success && response.data) {
         // Usuario encontrado - precargar datos
         setUserExists(true);
         setExistingUserId(response.data.id);
-        
+
+        // Intentar separar el primer nombre del segundo nombre
+        const fullName = response.data.name || "";
+        const nameParts = fullName.trim().split(/\s+/); // Dividir por espacios
+        const firstName = nameParts[0] || "";
+        const secondName = nameParts.slice(1).join(" ") || ""; // Todo después del primer espacio
+
         setFormData(prev => ({
           ...prev,
-          firstName: response.data.name || "",
+          firstName: firstName,
+          secondName: secondName,
           firstLastName: response.data.first_last_name || "",
           secondLastName: response.data.second_last_name || "",
           identificationType: response.data.type_document?.toString() || "",
+          // dateIssuance: NO disponible en la respuesta del backend
           email: response.data.email || "",
           phoneNumber: response.data.phone || "",
           address: response.data.address || "",
@@ -182,14 +190,14 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
           state: response.data.department || "",
           city: response.data.city?.toString() || "" // Ya viene como ID
         }));
-        
+
         // Cargar estados y ciudades si hay datos de ubicación
         if (response.data.country) {
           const selectedCountry = countries.find(c => c.name === response.data.country);
           if (selectedCountry && selectedCountry.iso2) {
             const statesData = await locationService.getStates(selectedCountry.iso2);
             setStates(statesData || []);
-            
+
             if (response.data.department) {
               const selectedState = statesData?.find(s => s.name === response.data.department);
               if (selectedState && selectedState.iso2) {
@@ -206,6 +214,13 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
       }
     } catch (error) {
       console.error("Error buscando usuario:", error);
+
+      // Mostrar error al usuario cuando falla la búsqueda
+      if (error.response?.status !== 404) {
+        setErrorMessage("Error al buscar el usuario. Por favor, verifique su conexión e intente nuevamente.");
+        setShowErrorModal(true);
+      }
+
       setUserExists(false);
       setExistingUserId(null);
     } finally {
@@ -248,12 +263,13 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
     if (field === "position" && value) {
       setFormData(prev => ({ ...prev, associatedContract: "" }));
       setContracts([]);
-      
+
       try {
         const response = await employeeService.getEstablishedContracts(value);
         if (response.success) {
-          // NOTA: El endpoint debe retornar el campo 'id' para cada contrato
-          // Si no viene, verificar con el backend que se incluya en la respuesta
+          // ⚠️ ADVERTENCIA: El endpoint de listar contratos NO retorna el campo 'id'
+          // Ver documentación en employeeService.js líneas 67-94 para más detalles
+          // Workaround: Se usa contract.id || contract.contract_code en el selector
           setContracts(response.data || []);
         }
       } catch (error) {
@@ -429,8 +445,14 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
     }
 
     // Validar teléfono si se proporciona
-    if (formData.phoneNumber && !/^\d{7,15}$/.test(formData.phoneNumber)) {
-      newErrors.phoneNumber = "El teléfono debe tener entre 7 y 15 dígitos numéricos";
+    if (formData.phoneNumber) {
+      // Remover espacios, guiones y paréntesis para contar solo dígitos
+      const digitsOnly = formData.phoneNumber.replace(/[\s\-()]/g, '');
+
+      // Validar que contenga solo dígitos (después de remover caracteres permitidos)
+      if (!/^\d{7,15}$/.test(digitsOnly)) {
+        newErrors.phoneNumber = "El teléfono debe tener entre 7 y 15 dígitos numéricos";
+      }
     }
 
     // Al menos email o teléfono
@@ -453,11 +475,22 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
     try {
       let userId = existingUserId;
 
+      // Limpiar número de teléfono (solo dígitos) antes de enviar al backend
+      const cleanPhoneNumber = formData.phoneNumber
+        ? formData.phoneNumber.replace(/[\s\-()]/g, '')
+        : null;
+
+      // Concatenar primer y segundo nombre para el campo 'name' del backend
+      // El backend espera primer y segundo nombre en un solo campo 'name'
+      const fullName = formData.secondName
+        ? `${formData.firstName} ${formData.secondName}`.trim()
+        : formData.firstName;
+
       // Paso 1: Crear o actualizar usuario si es necesario
       if (userExists && existingUserId) {
         // Actualizar usuario existente si hay cambios
         const userData = {
-          name: formData.firstName,
+          name: fullName,
           first_last_name: formData.firstLastName,
           second_last_name: formData.secondLastName || null,
           type_document_id: parseInt(formData.identificationType),
@@ -468,14 +501,14 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
           department: formData.state,
           city: parseInt(formData.city),
           address: formData.address,
-          phone: formData.phoneNumber || null
+          phone: cleanPhoneNumber
         };
 
         await employeeService.updateUser(existingUserId, userData);
       } else {
         // Crear nuevo usuario
         const userData = {
-          name: formData.firstName,
+          name: fullName,
           first_last_name: formData.firstLastName,
           second_last_name: formData.secondLastName || null,
           type_document_id: parseInt(formData.identificationType),
@@ -487,7 +520,7 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
           department: formData.state,
           city: parseInt(formData.city),
           address: formData.address,
-          phone: formData.phoneNumber || null
+          phone: cleanPhoneNumber
         };
 
         const createUserResponse = await employeeService.createUser(userData);
@@ -981,7 +1014,9 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
                             {contract.contract_code} - {contract.contract_type_name}
                           </option>
                         ))}
-                        {/* IMPORTANTE: El backend debe retornar 'id' en el listado de contratos */}
+                        {/* ⚠️ WORKAROUND: Se usa contract.id || contract.contract_code porque
+                            el backend NO retorna el campo 'id' en el listado de contratos.
+                            Ver employeeService.js para más detalles sobre este problema. */}
                       </select>
                       <button
                         type="button"
@@ -1071,7 +1106,7 @@ const RegisterEmployeeModal = ({ isOpen, onClose, onSuccess }) => {
           onClose();
         }}
         title="Empleado Registrado"
-        message="Empleado registrado correctamente y contrato asociado con éxito."
+        message="Empleado registrado correctamente y contrato asociado exitosamente."
       />
 
       <ErrorModal
