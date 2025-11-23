@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useEffect, useMemo, useState } from "react";
 import { FiSearch, FiFilter, FiPlus, FiEye, FiFileText, FiPower, FiRefreshCw, FiX } from "react-icons/fi";
 import { SuccessModal, ErrorModal, ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
@@ -8,6 +9,7 @@ import { createColumnHelper } from "@tanstack/react-table";
 import { useTheme } from "@/contexts/ThemeContext";
 import RegisterEmployeeModal from "@/app/components/payroll/human-resources/employees/RegisterEmployeeModal";
 import EmployeeDetailModal from "@/app/components/payroll/human-resources/employees/EmployeeDetailModal";
+import GeneratePayrollModal from "@/app/components/payroll/human-resources/employees/GenerateIndividualPayrollModal";
 
 const EmployeesPage = () => {
   useTheme();
@@ -36,6 +38,9 @@ const EmployeesPage = () => {
   const [actionType, setActionType] = useState(null);
   const [employeeToEdit, setEmployeeToEdit] = useState(null);
   const [registerModalMode, setRegisterModalMode] = useState("create");
+  const [isGeneratePayrollModalOpen, setIsGeneratePayrollModalOpen] = useState(false);
+  const [employeeForPayroll, setEmployeeForPayroll] = useState(null);
+  const [generatedPayrolls, setGeneratedPayrolls] = useState([]);
 
   useEffect(() => {
     loadEmployees();
@@ -202,13 +207,15 @@ const EmployeesPage = () => {
                 <FiEye className="w-3 h-3" /> Ver
               </button>
 
-              <button
-                aria-label="Generar nómina individual"
-                onClick={() => handleGeneratePayroll(employee)}
-                className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
-              >
-                <FiFileText className="w-3 h-3" /> Nómina
-              </button>
+              {isActive && employee.canGeneratePayroll && (
+                <button
+                  aria-label="Generar nómina individual"
+                  onClick={() => handleGeneratePayroll(employee)}
+                  className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
+                >
+                  <FiFileText className="w-3 h-3" /> Nómina
+                </button>
+              )}
 
               {isActive ? (
                 <button
@@ -243,11 +250,17 @@ const EmployeesPage = () => {
       return;
     }
 
-    setModalTitle("Generar nómina");
-    setModalMessage(
-      "Redirigir a la vista de generación de nómina individual (pendiente de integración)."
-    );
-    setSuccessOpen(true);
+    if (!employee.canGeneratePayroll) {
+      setModalTitle("Acceso restringido");
+      setModalMessage(
+        "No tiene permisos para generar la nómina individual de este empleado."
+      );
+      setErrorOpen(true);
+      return;
+    }
+
+    setEmployeeForPayroll(employee);
+    setIsGeneratePayrollModalOpen(true);
   };
 
   const handleToggleStatus = (employee, type) => {
@@ -491,6 +504,20 @@ const EmployeesPage = () => {
         onClose={() => setIsDetailModalOpen(false)}
         employeeId={selectedEmployeeForDetail?.id}
         onEdit={handleEditEmployee}
+      />
+
+      <GeneratePayrollModal
+        isOpen={isGeneratePayrollModalOpen}
+        onClose={() => {
+          setIsGeneratePayrollModalOpen(false);
+          setEmployeeForPayroll(null);
+        }}
+        employee={employeeForPayroll}
+        generatedPayrolls={generatedPayrolls}
+        onRegisterPayroll={(newPayroll) => {
+          setGeneratedPayrolls((prev) => [...prev, newPayroll]);
+        }}
+        canGeneratePayroll={employeeForPayroll?.canGeneratePayroll ?? true}
       />
     </>
   );

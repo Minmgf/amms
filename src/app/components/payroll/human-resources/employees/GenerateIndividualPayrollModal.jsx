@@ -1,0 +1,779 @@
+"use client";
+
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  FiX,
+  FiChevronLeft,
+  FiChevronRight,
+} from "react-icons/fi";
+import { useTheme } from "@/contexts/ThemeContext";
+import {
+  SuccessModal,
+  ErrorModal,
+  ConfirmModal,
+} from "@/app/components/shared/SuccessErrorModal";
+
+// Datos mock de contratos por empleado mientras se integran los endpoints reales
+const MOCK_EMPLOYEE_CONTRACTS = [
+  {
+    id: 1,
+    code: "CT-EMP1-2026-IND",
+    name: "Contrato indefinido 2026",
+    status: "Vigente",
+    isActive: true,
+    employeeId: 1,
+    startDate: "2026-01-01",
+    endDate: "2026-12-31",
+  },
+  {
+    id: 2,
+    code: "CT-EMP1-2025-FIN",
+    name: "Contrato fijo 2025",
+    status: "Finalizado",
+    isActive: false,
+    employeeId: 1,
+    startDate: "2025-01-01",
+    endDate: "2025-12-31",
+  },
+  {
+    id: 3,
+    code: "CT-EMP2-2024-FIN",
+    name: "Contrato fijo 2024",
+    status: "Finalizado",
+    isActive: false,
+    employeeId: 2,
+    startDate: "2024-01-01",
+    endDate: "2024-12-31",
+  },
+];
+
+const getMonthLabel = (date) => {
+  const formatter = new Intl.DateTimeFormat("es-ES", {
+    month: "long",
+    year: "numeric",
+  });
+  return formatter.format(date);
+};
+
+const formatDateISO = (date) => {
+  if (!(date instanceof Date)) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const GeneratePayrollModal = ({
+  isOpen,
+  onClose,
+  employee,
+  generatedPayrolls = [],
+  onRegisterPayroll,
+  canGeneratePayroll = true,
+}) => {
+  useTheme();
+
+  const [selectedContractId, setSelectedContractId] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+
+  const [showNoAdjustmentsConfirm, setShowNoAdjustmentsConfirm] =
+    useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const [adjustments, setAdjustments] = useState([]);
+
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date());
+
+  const employeeContracts = useMemo(() => {
+    if (!employee) return [];
+    return MOCK_EMPLOYEE_CONTRACTS.filter(
+      (contract) => contract.employeeId === employee.id
+    );
+  }, [employee]);
+
+  const hasActiveContract = useMemo(
+    () => employeeContracts.some((contract) => contract.isActive),
+    [employeeContracts]
+  );
+
+  const selectedContract = useMemo(() => {
+    if (!selectedContractId) return null;
+    return (
+      employeeContracts.find(
+        (contract) => String(contract.id) === String(selectedContractId)
+      ) || null
+    );
+  }, [employeeContracts, selectedContractId]);
+
+  const resetState = () => {
+    setSelectedContractId("");
+    setStartDate("");
+    setEndDate("");
+    setErrors({});
+    setLoading(false);
+    setAdjustments([]);
+    setShowNoAdjustmentsConfirm(false);
+    setShowCancelConfirm(false);
+  };
+
+  useEffect(() => {
+    if (!isOpen) {
+      resetState();
+      return;
+    }
+
+    resetState();
+
+    if (employeeContracts.length === 0) {
+      setErrorMessage(
+        "El empleado no tiene contratos registrados. No es posible generar la nómina."
+      );
+      setShowErrorModal(true);
+      return;
+    }
+
+    const activeContract =
+      employeeContracts.find((contract) => contract.isActive) ||
+      employeeContracts[0];
+
+    setSelectedContractId(String(activeContract.id));
+    setStartDate(activeContract.startDate);
+    setEndDate(activeContract.endDate);
+    setCalendarMonth(new Date(activeContract.startDate));
+  }, [isOpen, employeeContracts]);
+
+  useEffect(() => {
+    if (!selectedContract) return;
+
+    setCalendarMonth(new Date(selectedContract.startDate));
+
+    setStartDate((prev) => {
+      if (!prev) return selectedContract.startDate;
+      if (prev < selectedContract.startDate || prev > selectedContract.endDate) {
+        return "";
+      }
+      return prev;
+    });
+
+    setEndDate((prev) => {
+      if (!prev) return selectedContract.endDate;
+      if (prev < selectedContract.startDate || prev > selectedContract.endDate) {
+        return "";
+      }
+      return prev;
+    });
+
+    setErrors((prev) => ({
+      ...prev,
+      startDate: "",
+      endDate: "",
+      dateRange: "",
+      contract: "",
+    }));
+  }, [selectedContract]);
+
+  const handleContractChange = (value) => {
+    setSelectedContractId(value);
+    setErrors((prev) => ({ ...prev, contract: "" }));
+  };
+
+  const handleDateChange = (field, value) => {
+    if (field === "startDate") {
+      setStartDate(value);
+      setErrors((prev) => ({ ...prev, startDate: "", dateRange: "" }));
+    } else {
+      setEndDate(value);
+      setErrors((prev) => ({ ...prev, endDate: "", dateRange: "" }));
+    }
+  };
+
+  const handleAddAdjustment = () => {
+    setAdjustments((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        type: "incremento",
+        description: "",
+        amount: "",
+      },
+    ]);
+  };
+
+  const handleAdjustmentChange = (id, field, value) => {
+    setAdjustments((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              [field]: value,
+            }
+          : item
+      )
+    );
+  };
+
+  const handleRemoveAdjustment = (id) => {
+    setAdjustments((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const hasChanges = () => {
+    if (selectedContractId || startDate || endDate) return true;
+    if (adjustments.length > 0) return true;
+    return false;
+  };
+
+  const handleCancel = () => {
+    if (hasChanges()) {
+      setShowCancelConfirm(true);
+      return;
+    }
+    onClose?.();
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!employee) {
+      newErrors.employee = "No se encontró la información del empleado.";
+    }
+
+    if (!selectedContract) {
+      newErrors.contract = "Debe seleccionar un contrato.";
+    }
+
+    if (!hasActiveContract) {
+      newErrors.contract =
+        "El empleado debe tener al menos un contrato o 'Otro Sí' activo para generar la nómina.";
+    }
+
+    if (!startDate) {
+      newErrors.startDate = "Debe seleccionar la fecha de inicio.";
+    }
+
+    if (!endDate) {
+      newErrors.endDate = "Debe seleccionar la fecha de fin.";
+    }
+
+    if (startDate && endDate && startDate > endDate) {
+      newErrors.dateRange =
+        "La fecha de inicio no puede ser posterior a la fecha final.";
+    }
+
+    if (selectedContract && startDate && endDate) {
+      if (
+        startDate < selectedContract.startDate ||
+        endDate > selectedContract.endDate
+      ) {
+        newErrors.dateRange =
+          "Las fechas deben estar dentro de la vigencia del contrato seleccionado.";
+      }
+    }
+
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      return false;
+    }
+
+    if (!canGeneratePayroll) {
+      setErrorMessage(
+        "No tiene permisos para generar la nómina individual de este empleado."
+      );
+      setShowErrorModal(true);
+      return false;
+    }
+
+    if (employee && selectedContract) {
+      const exists = (generatedPayrolls || []).some(
+        (payroll) =>
+          payroll.employeeId === employee.id &&
+          payroll.contractId === selectedContract.id &&
+          payroll.startDate === startDate &&
+          payroll.endDate === endDate
+      );
+
+      if (exists) {
+        setErrorMessage(
+          "Ya existe una nómina generada para este empleado en el periodo seleccionado."
+        );
+        setShowErrorModal(true);
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const proceedGeneratePayroll = () => {
+    if (!validateForm()) return;
+
+    if (!employee || !selectedContract) return;
+
+    setLoading(true);
+
+    setTimeout(() => {
+      const payrollRecord = {
+        id: Date.now(),
+        employeeId: employee.id,
+        employeeName: employee.fullName,
+        contractId: selectedContract.id,
+        contractCode: selectedContract.code,
+        startDate,
+        endDate,
+        createdAt: new Date().toISOString(),
+        adjustments: adjustments.map((item) => ({
+          type: item.type,
+          description: item.description,
+          amount: item.amount,
+        })),
+      };
+
+      if (onRegisterPayroll) {
+        onRegisterPayroll(payrollRecord);
+      }
+
+      setLoading(false);
+      setShowSuccessModal(true);
+    }, 800);
+  };
+
+  const handleGenerateClick = () => {
+    if (!validateForm()) return;
+
+    if (adjustments.length === 0) {
+      setShowNoAdjustmentsConfirm(true);
+      return;
+    }
+
+    proceedGeneratePayroll();
+  };
+
+  const changeMonth = (direction) => {
+    setCalendarMonth((prev) => {
+      const newDate = new Date(prev);
+      newDate.setMonth(prev.getMonth() + direction);
+      return newDate;
+    });
+  };
+
+  const buildCalendarDays = () => {
+    const days = [];
+    const year = calendarMonth.getFullYear();
+    const monthIndex = calendarMonth.getMonth();
+
+    const firstDayOfMonth = new Date(year, monthIndex, 1);
+    const dayOfWeek = firstDayOfMonth.getDay();
+    const totalDays = new Date(year, monthIndex + 1, 0).getDate();
+
+    for (let i = 0; i < dayOfWeek; i++) {
+      days.push(null);
+    }
+
+    for (let day = 1; day <= totalDays; day++) {
+      days.push(new Date(year, monthIndex, day));
+    }
+
+    return days;
+  };
+
+  const isDayInSelectedRange = (date) => {
+    if (!date || !startDate || !endDate) return false;
+
+    const dayStr = formatDateISO(date);
+    return dayStr >= startDate && dayStr <= endDate;
+  };
+
+  if (!isOpen) return null;
+
+  const minDate = selectedContract?.startDate || "";
+  const maxDate = selectedContract?.endDate || "";
+
+  const calendarDays = buildCalendarDays();
+
+  return (
+    <>
+      <div
+        className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+        onClick={(e) => e.target === e.currentTarget && handleCancel()}
+      >
+        <div className="card-theme rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden">
+          <div className="flex items-center justify-between p-6 border-b border-primary">
+            <h2 className="text-2xl font-bold text-primary">
+              Generación de nómina
+            </h2>
+            <button
+              onClick={handleCancel}
+              className="p-2 hover:bg-hover rounded-full transition-colors cursor-pointer"
+              aria-label="Cerrar modal de generación de nómina"
+            >
+              <FiX className="w-6 h-6 text-secondary" />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto max-h-[calc(95vh-90px)]">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleGenerateClick();
+              }}
+              className="p-6 space-y-6"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-secondary mb-2">
+                    Nombre completo del empleado
+                  </label>
+                  <input
+                    type="text"
+                    value={employee?.fullName || ""}
+                    readOnly
+                    className="input-theme bg-gray-50 cursor-not-allowed"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-secondary mb-2">
+                    Cargo
+                  </label>
+                  <input
+                    type="text"
+                    value={employee?.position || ""}
+                    readOnly
+                    className="input-theme bg-gray-50 cursor-not-allowed"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-secondary mb-2">
+                  Contrato *
+                </label>
+                <select
+                  value={selectedContractId}
+                  onChange={(e) => handleContractChange(e.target.value)}
+                  className={`input-theme ${
+                    errors.contract ? "border-red-500" : ""
+                  }`}
+                  disabled={employeeContracts.length === 0}
+                >
+                  <option value="">
+                    {employeeContracts.length === 0
+                      ? "Sin contratos disponibles"
+                      : "Seleccione un contrato"}
+                  </option>
+                  {employeeContracts.map((contract) => (
+                    <option key={contract.id} value={contract.id}>
+                      {contract.code} - {contract.name} ({" "}
+                      {contract.isActive ? "Vigente" : "Finalizado"})
+                    </option>
+                  ))}
+                </select>
+                {errors.contract && (
+                  <p className="text-red-500 text-xs mt-1">{errors.contract}</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-secondary mb-2">
+                    Fecha de inicio *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) =>
+                        handleDateChange("startDate", e.target.value)
+                      }
+                      min={minDate}
+                      max={maxDate}
+                      className={`input-theme ${
+                        errors.startDate ? "border-red-500" : ""
+                      }`}
+                    />
+                  </div>
+                  {errors.startDate && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.startDate}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-secondary mb-2">
+                    Fecha final *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) =>
+                        handleDateChange("endDate", e.target.value)
+                      }
+                      min={minDate}
+                      max={maxDate}
+                      className={`input-theme ${
+                        errors.endDate ? "border-red-500" : ""
+                      }`}
+                    />
+                  </div>
+                  {errors.endDate && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.endDate}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {errors.dateRange && (
+                <p className="text-red-500 text-xs">{errors.dateRange}</p>
+              )}
+
+              <p className="text-xs text-secondary">
+                Las fechas deben estar dentro de la vigencia del contrato
+                seleccionado.
+              </p>
+
+              <div>
+                <h3 className="text-sm font-medium text-primary mb-2">
+                  Periodo seleccionado
+                </h3>
+                <div className="card-theme p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <button
+                      type="button"
+                      onClick={() => changeMonth(-1)}
+                      className="p-2 rounded-full hover:bg-hover transition-colors"
+                      aria-label="Mes anterior"
+                    >
+                      <FiChevronLeft className="w-4 h-4 text-secondary" />
+                    </button>
+                    <div className="text-sm font-semibold text-primary">
+                      {getMonthLabel(calendarMonth)}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => changeMonth(1)}
+                      className="p-2 rounded-full hover:bg-hover transition-colors"
+                      aria-label="Mes siguiente"
+                    >
+                      <FiChevronRight className="w-4 h-4 text-secondary" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-7 gap-1 text-center text-xs text-secondary mb-2">
+                    <span>Dom</span>
+                    <span>Lun</span>
+                    <span>Mar</span>
+                    <span>Mié</span>
+                    <span>Jue</span>
+                    <span>Vie</span>
+                    <span>Sáb</span>
+                  </div>
+
+                  <div className="grid grid-cols-7 gap-1 text-center text-xs">
+                    {calendarDays.map((day, index) => {
+                      if (!day) {
+                        return <div key={index} />;
+                      }
+
+                      const isSelected = isDayInSelectedRange(day);
+
+                      return (
+                        <div
+                          key={index}
+                          className={`h-8 flex items-center justify-center rounded-md border text-xs font-medium ${
+                            isSelected
+                              ? "bg-accent text-white border-accent"
+                              : "border-primary text-secondary"
+                          }`}
+                        >
+                          {day.getDate()}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <p className="mt-3 text-xs text-secondary">
+                    Los días resaltados están incluidos en el periodo de nómina
+                    seleccionado.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-medium text-primary">
+                    Ajustes adicionales
+                  </h3>
+                  <button
+                    type="button"
+                    className="text-xs text-accent hover:underline"
+                    onClick={handleAddAdjustment}
+                  >
+                    Agregar ajuste
+                  </button>
+                </div>
+
+                {adjustments.length === 0 && (
+                  <p className="text-xs text-secondary">
+                    No se han registrado ajustes adicionales para esta nómina.
+                  </p>
+                )}
+
+                {adjustments.length > 0 && (
+                  <div className="space-y-3 mt-2">
+                    {adjustments.map((item) => (
+                      <div
+                        key={item.id}
+                        className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center"
+                      >
+                        <select
+                          value={item.type}
+                          onChange={(e) =>
+                            handleAdjustmentChange(
+                              item.id,
+                              "type",
+                              e.target.value
+                            )
+                          }
+                          className="input-theme md:col-span-3"
+                        >
+                          <option value="incremento">
+                            Incremento adicional
+                          </option>
+                          <option value="deduccion">Deducción adicional</option>
+                        </select>
+                        <input
+                          type="text"
+                          placeholder="Descripción"
+                          value={item.description}
+                          onChange={(e) =>
+                            handleAdjustmentChange(
+                              item.id,
+                              "description",
+                              e.target.value
+                            )
+                          }
+                          className="input-theme md:col-span-6"
+                        />
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="Valor"
+                          value={item.amount}
+                          onChange={(e) =>
+                            handleAdjustmentChange(
+                              item.id,
+                              "amount",
+                              e.target.value
+                            )
+                          }
+                          className="input-theme md:col-span-2"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveAdjustment(item.id)}
+                          className="btn-theme btn-error md:col-span-1 text-xs"
+                        >
+                          Quitar
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-col md:flex-row gap-4 pt-6 pb-6 border-t border-primary">
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="btn-theme btn-error flex-1"
+                  disabled={loading}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAddAdjustment}
+                  className="btn-theme btn-secondary flex-1"
+                  disabled={loading}
+                >
+                  Ajustes adicionales
+                </button>
+                <button
+                  type="submit"
+                  className="btn-theme btn-primary flex-1 disabled:opacity-50"
+                  disabled={loading || !canGeneratePayroll}
+                  title={
+                    !canGeneratePayroll
+                      ? "No tiene permisos para generar nómina"
+                      : ""
+                  }
+                >
+                  {loading ? "Generando..." : "Generar"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <ConfirmModal
+        isOpen={showNoAdjustmentsConfirm}
+        onClose={() => setShowNoAdjustmentsConfirm(false)}
+        onConfirm={() => {
+          setShowNoAdjustmentsConfirm(false);
+          proceedGeneratePayroll();
+        }}
+        title="Confirmar generación de nómina"
+        message="La nómina que se va a generar no cuenta con ajustes adicionales. ¿Estás seguro?"
+        confirmText="Generar sin ajustes"
+        cancelText="Cancelar"
+        confirmColor="btn-primary"
+        cancelColor="btn-error"
+      />
+
+      <ConfirmModal
+        isOpen={showCancelConfirm}
+        onClose={() => setShowCancelConfirm(false)}
+        onConfirm={() => {
+          setShowCancelConfirm(false);
+          onClose?.();
+        }}
+        title="Confirmar Acción"
+        message="¿Desea descartar los datos ingresados? Los cambios no se guardarán."
+        confirmText="Confirmar"
+        cancelText="Cancelar"
+        confirmColor="btn-primary"
+        cancelColor="btn-error"
+      />
+
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => {
+          setShowSuccessModal(false);
+          onClose?.();
+        }}
+        title="Nómina generada correctamente"
+        message="La nómina se generó correctamente. Podrá descargar el PDF desde el listado de nóminas cuando esté disponible."
+      />
+
+      <ErrorModal
+        isOpen={showErrorModal}
+        onClose={() => setShowErrorModal(false)}
+        title="No fue posible generar la nómina"
+        message={errorMessage}
+        buttonText="Cerrar"
+      />
+    </>
+  );
+};
+
+export default GeneratePayrollModal;
