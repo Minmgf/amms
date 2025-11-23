@@ -444,6 +444,23 @@ export const getUserById = async (userId) => {
   }
 };
 
+/**
+ * Toggle employee status (activate/deactivate)
+ * @param {number} employeeId - Employee ID
+ * @param {string|null} observation - Observation (required for deactivation, optional for activation)
+ * @returns {Promise<Object>} Response message
+ */
+export const toggleEmployeeStatus = async (employeeId, observation = null) => {
+  try {
+    const payload = observation ? { observation } : {};
+    const response = await apiMain.patch(`/employees/${employeeId}/toggle-status/`, payload);
+    return response.data;
+  } catch (error) {
+    console.error('Error toggling employee status:', error);
+    throw error;
+  }
+};
+
 // =============================================================================
 // Mock data for development
 // =============================================================================
