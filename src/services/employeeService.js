@@ -315,29 +315,12 @@ export const updateUser = async (userId, userData) => {
 // =============================================================================
 
 /**
- * Obtener lista de empleados con paginación
- * @param {Object} params - Parámetros de consulta
- * @param {number} params.page - Número de página (por defecto 1)
- * @param {number} params.page_size - Tamaño de página (10, 25, 50, 100)
- * @returns {Promise<Object>} Lista de empleados con paginación
+ * Obtener lista de empleados
+ * @returns {Promise<Object>} Lista de empleados
  */
-export const getEmployeesList = async (params = {}) => {
+export const getEmployeesList = async () => {
   try {
-    const { page = 1, page_size = 25 } = params;
-    
-    // Validar page_size
-    const validPageSizes = [10, 25, 50, 100];
-    if (!validPageSizes.includes(page_size)) {
-      throw new Error(`page_size debe ser uno de: ${validPageSizes.join(', ')}.`);
-    }
-
-    const response = await apiMain.get('/employees/list/', {
-      params: {
-        page,
-        page_size
-      }
-    });
-
+    const response = await apiMain.get('/employees/list/');
     return response.data;
   } catch (error) {
     // Manejo de errores específicos del endpoint
@@ -361,7 +344,6 @@ export const getEmployeesList = async (params = {}) => {
 
       const customError = new Error(message);
       customError.status = status;
-      customError.response = error.response;
       throw customError;
     }
 

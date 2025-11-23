@@ -19,12 +19,6 @@ const EmployeesPage = () => {
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [loading, setLoading] = useState(false);
-  const [pagination, setPagination] = useState({
-    total: 0,
-    page: 1,
-    page_size: 25,
-    total_pages: 0
-  });
 
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
@@ -54,10 +48,10 @@ const EmployeesPage = () => {
     loadEmployees();
   }, []);
 
-  const loadEmployees = async (page = 1, pageSize = 25) => {
+  const loadEmployees = async () => {
     setLoading(true);
     try {
-      const response = await getEmployeesList({ page, page_size: pageSize });
+      const response = await getEmployeesList();
       
       if (response.success) {
         // Mapear los datos del endpoint a la estructura esperada por el componente
@@ -77,14 +71,6 @@ const EmployeesPage = () => {
         const ordered = orderEmployees(mappedEmployees);
         setEmployees(ordered);
         setFilteredEmployees(ordered);
-        setPagination(response.pagination);
-        
-        // Si no hay empleados, mostrar mensaje apropiado
-        if (mappedEmployees.length === 0 && response.message) {
-          setModalTitle("Sin resultados");
-          setModalMessage(response.message);
-          setErrorOpen(true);
-        }
       } else {
         throw new Error('Respuesta inválida del servidor');
       }
@@ -115,7 +101,6 @@ const EmployeesPage = () => {
       setErrorOpen(true);
       setEmployees([]);
       setFilteredEmployees([]);
-      setPagination({ total: 0, page: 1, page_size: 25, total_pages: 0 });
     } finally {
       setLoading(false);
     }
@@ -441,17 +426,6 @@ const EmployeesPage = () => {
             onRowDoubleClick={handleViewDetails}
           />
 
-          {/* Información de paginación */}
-          {!loading && pagination.total > 0 && (
-            <div className="mt-4 flex justify-between items-center text-sm text-secondary">
-              <div>
-                Mostrando {displayData.length} de {pagination.total} empleados
-              </div>
-              <div>
-                Página {pagination.page} de {pagination.total_pages}
-              </div>
-            </div>
-          )}
 
           {noResultsByFilter && (
             <div className="text-center py-8 text-secondary">
