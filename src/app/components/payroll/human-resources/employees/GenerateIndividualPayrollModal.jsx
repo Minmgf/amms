@@ -12,6 +12,7 @@ import {
   ErrorModal,
   ConfirmModal,
 } from "@/app/components/shared/SuccessErrorModal";
+import IndividualPayrollAdjustmentsModal from "@/app/components/payroll/human-resources/employees/IndividualPayrollAdjustmentsModal";
 
 // Datos mock de contratos por empleado mientras se integran los endpoints reales
 const MOCK_EMPLOYEE_CONTRACTS = [
@@ -86,7 +87,11 @@ const GeneratePayrollModal = ({
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const [adjustments, setAdjustments] = useState([]);
+  const [adjustments, setAdjustments] = useState({
+    deductions: [],
+    increments: [],
+  });
+  const [isAdjustmentsModalOpen, setIsAdjustmentsModalOpen] = useState(false);
 
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
 
@@ -111,15 +116,22 @@ const GeneratePayrollModal = ({
     );
   }, [employeeContracts, selectedContractId]);
 
+  const hasAdjustments = useMemo(() => {
+    const d = adjustments?.deductions || [];
+    const i = adjustments?.increments || [];
+    return d.length > 0 || i.length > 0;
+  }, [adjustments]);
+
   const resetState = () => {
     setSelectedContractId("");
     setStartDate("");
     setEndDate("");
     setErrors({});
     setLoading(false);
-    setAdjustments([]);
+    setAdjustments({ deductions: [], increments: [] });
     setShowNoAdjustmentsConfirm(false);
     setShowCancelConfirm(false);
+    setIsAdjustmentsModalOpen(false);
   };
 
   useEffect(() => {
@@ -193,38 +205,9 @@ const GeneratePayrollModal = ({
     }
   };
 
-  const handleAddAdjustment = () => {
-    setAdjustments((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        type: "incremento",
-        description: "",
-        amount: "",
-      },
-    ]);
-  };
-
-  const handleAdjustmentChange = (id, field, value) => {
-    setAdjustments((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              [field]: value,
-            }
-          : item
-      )
-    );
-  };
-
-  const handleRemoveAdjustment = (id) => {
-    setAdjustments((prev) => prev.filter((item) => item.id !== id));
-  };
-
   const hasChanges = () => {
     if (selectedContractId || startDate || endDate) return true;
-    if (adjustments.length > 0) return true;
+    if (hasAdjustments) return true;
     return false;
   };
 
@@ -327,11 +310,10 @@ const GeneratePayrollModal = ({
         startDate,
         endDate,
         createdAt: new Date().toISOString(),
-        adjustments: adjustments.map((item) => ({
-          type: item.type,
-          description: item.description,
-          amount: item.amount,
-        })),
+        adjustments: {
+          deductions: adjustments.deductions || [],
+          increments: adjustments.increments || [],
+        },
       };
 
       if (onRegisterPayroll) {
@@ -346,7 +328,7 @@ const GeneratePayrollModal = ({
   const handleGenerateClick = () => {
     if (!validateForm()) return;
 
-    if (adjustments.length === 0) {
+    if (!hasAdjustments) {
       setShowNoAdjustmentsConfirm(true);
       return;
     }
@@ -617,9 +599,14 @@ const GeneratePayrollModal = ({
                 </button>
                 <button
                   type="button"
-                  onClick={handleAddAdjustment}
+                  onClick={() => setIsAdjustmentsModalOpen(true)}
                   className="btn-theme btn-secondary flex-1"
-                  disabled={loading}
+                  disabled={loading || !canGeneratePayroll}
+                  title={
+                    !canGeneratePayroll
+                      ? "No tiene permisos para gestionar ajustes adicionales"
+                      : "Gestionar ajustes adicionales de esta nómina"
+                  }
                 >
                   Ajustes adicionales
                 </button>
@@ -687,6 +674,19 @@ const GeneratePayrollModal = ({
         title="No fue posible generar la nómina"
         message={errorMessage}
         buttonText="Cerrar"
+      />
+
+      <IndividualPayrollAdjustmentsModal
+        isOpen={isAdjustmentsModalOpen}
+        onClose={() => setIsAdjustmentsModalOpen(false)}
+        onSave={(ajustes) => {
+          setAdjustments(ajustes || { deductions: [], increments: [] });
+          setIsAdjustmentsModalOpen(false);
+        }}
+        initialAdjustments={adjustments}
+        payrollStartDate={startDate}
+        payrollEndDate={endDate}
+        canManagePayroll={canGeneratePayroll}
       />
     </>
   );

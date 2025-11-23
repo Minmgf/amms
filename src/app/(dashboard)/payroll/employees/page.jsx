@@ -38,8 +38,6 @@ const EmployeesPage = () => {
 
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [actionType, setActionType] = useState(null);
-  const [employeeToEdit, setEmployeeToEdit] = useState(null);
-  const [registerModalMode, setRegisterModalMode] = useState("create");
   const [isGeneratePayrollModalOpen, setIsGeneratePayrollModalOpen] = useState(false);
   const [employeeForPayroll, setEmployeeForPayroll] = useState(null);
   const [generatedPayrolls, setGeneratedPayrolls] = useState([]);
