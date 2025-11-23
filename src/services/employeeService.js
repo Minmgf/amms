@@ -315,6 +315,44 @@ export const updateUser = async (userId, userData) => {
 // =============================================================================
 
 /**
+ * Obtener lista de empleados
+ * @returns {Promise<Object>} Lista de empleados
+ */
+export const getEmployeesList = async () => {
+  try {
+    const response = await apiMain.get('/employees/list/');
+    return response.data;
+  } catch (error) {
+    // Manejo de errores específicos del endpoint
+    if (error.response) {
+      const status = error.response.status;
+      let message = 'Error al obtener la lista de empleados';
+
+      switch (status) {
+        case 400:
+          message = error.response.data?.message || 'Parámetros inválidos';
+          break;
+        case 401:
+          message = 'Usuario no autenticado';
+          break;
+        case 403:
+          message = 'No tiene permisos para acceder al listado de empleados.';
+          break;
+        default:
+          message = `Error del servidor: ${status}`;
+      }
+
+      const customError = new Error(message);
+      customError.status = status;
+      throw customError;
+    }
+
+    console.error('Error fetching employees list:', error);
+    throw error;
+  }
+};
+
+/**
  * Create a new employee with contract
  * @param {Object} employeeData - Employee and contract data
  * @returns {Promise<Object>} Created employee

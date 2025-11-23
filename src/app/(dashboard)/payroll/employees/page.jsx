@@ -10,6 +10,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import RegisterEmployeeModal from "@/app/components/payroll/human-resources/employees/RegisterEmployeeModal";
 import EmployeeDetailModal from "@/app/components/payroll/human-resources/employees/EmployeeDetailModal";
 import GeneratePayrollModal from "@/app/components/payroll/human-resources/employees/GenerateIndividualPayrollModal";
+import { getEmployeesList } from "@/services/employeeService";
 
 const EmployeesPage = () => {
   useTheme();
@@ -49,31 +50,53 @@ const EmployeesPage = () => {
   const loadEmployees = async () => {
     setLoading(true);
     try {
-      const mockEmployees = [
-        {
-          id: 1,
-          document: "1076500031",
-          fullName: "Cristiano Ronaldo",
-          position: "Operador",
-          status: "Activo",
-          canGeneratePayroll: true,
-        },
-        {
-          id: 2,
-          document: "1076500032",
-          fullName: "Cristiano Ronaldo",
-          position: "Operador",
-          status: "Inactivo",
-          canGeneratePayroll: false,
-        },
-      ];
+      const response = await getEmployeesList();
+      
+      if (response.success) {
+        // Mapear los datos del endpoint a la estructura esperada por el componente
+        const mappedEmployees = response.data.map(employee => ({
+          id: employee.id_employee,
+          id_user: employee.id_user,
+          document: employee.document_number,
+          fullName: employee.full_name,
+          position: employee.charge_name,
+          positionId: employee.charge_id,
+          status: employee.status_name,
+          statusId: employee.status_id,
+          email: employee.email,
+          canGeneratePayroll: employee.status_id === 1, // Solo activos pueden generar nómina
+        }));
 
-      const ordered = orderEmployees(mockEmployees);
-      setEmployees(ordered);
-      setFilteredEmployees(ordered);
+        const ordered = orderEmployees(mappedEmployees);
+        setEmployees(ordered);
+        setFilteredEmployees(ordered);
+      } else {
+        throw new Error('Respuesta inválida del servidor');
+      }
     } catch (error) {
+      console.error('Error loading employees:', error);
+      
+      let errorMessage = "Error al cargar el listado de empleados.";
+      
+      // Manejo de errores específicos
+      if (error.status) {
+        switch (error.status) {
+          case 401:
+            errorMessage = "Su sesión ha expirado. Por favor, inicie sesión nuevamente.";
+            break;
+          case 403:
+            errorMessage = "No tiene permisos para acceder al listado de empleados.";
+            break;
+          case 400:
+            errorMessage = error.message || "Parámetros de consulta inválidos.";
+            break;
+          default:
+            errorMessage = error.message || errorMessage;
+        }
+      }
+      
       setModalTitle("Error");
-      setModalMessage("Error al cargar el listado de empleados.");
+      setModalMessage(errorMessage);
       setErrorOpen(true);
       setEmployees([]);
       setFilteredEmployees([]);
@@ -153,7 +176,7 @@ const EmployeesPage = () => {
         header: "Documento",
         cell: (info) => (
           <div className="text-primary font-medium parametrization-text">
-            {info.getValue()}
+            {info.getValue() || 'N/A'}
           </div>
         ),
       }),
@@ -401,6 +424,7 @@ const EmployeesPage = () => {
             pageSizeOptions={[10, 25, 50, 100]}
             onRowDoubleClick={handleViewDetails}
           />
+
 
           {noResultsByFilter && (
             <div className="text-center py-8 text-secondary">
