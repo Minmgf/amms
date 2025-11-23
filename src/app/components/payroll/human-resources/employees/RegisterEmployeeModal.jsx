@@ -351,7 +351,7 @@ const RegisterEmployeeModal = ({
     }
 
     // Buscar usuario si es número de documento
-    if (field === "identificationNumber") {
+    if (field === "identificationNumber" && !isEditMode) {
       searchUserByDocument(value);
     }
 
@@ -486,11 +486,11 @@ const RegisterEmployeeModal = ({
       const birthDate = new Date(formData.birthDate);
       let age = today.getFullYear() - birthDate.getFullYear();
       const monthDiff = today.getMonth() - birthDate.getMonth();
-      
+
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
         age--;
       }
-      
+
       if (age < 18) {
         newErrors.birthDate = "El empleado debe ser mayor de edad (18 años)";
       }
@@ -1128,6 +1128,11 @@ const RegisterEmployeeModal = ({
                       </div>
                     )}
                     {errors.associatedContract && <p className="text-red-500 text-xs mt-1">{errors.associatedContract}</p>}
+                    {!isEditMode && contracts.length === 0 && formData.department && formData.position && (
+                      <p className="text-yellow-600 text-xs mt-1">
+                        ⚠️ No hay contratos disponibles para este departamento y cargo. Debe seleccionar o crear un contrato antes de guardar.
+                      </p>
+                    )}
                   </div>
 
                   <div className="sm:col-span-2">
@@ -1139,7 +1144,10 @@ const RegisterEmployeeModal = ({
                       onChange={(e) => handleInputChange("noveltyDescription", e.target.value)}
                       className={`input-theme ${errors.noveltyDescription ? 'border-red-500' : ''}`}
                       rows={4}
-                      placeholder="Ingrese descripción de la novedad o justificación para el registro del empleado"
+                      placeholder={isEditMode
+                        ? "Ingrese descripción de la novedad o justificación para la actualización de la información del empleado"
+                        : "Ingrese descripción de la novedad o justificación para el registro del empleado"
+                      }
                     />
                     {errors.noveltyDescription && <p className="text-red-500 text-xs mt-1">{errors.noveltyDescription}</p>}
                   </div>
@@ -1182,7 +1190,7 @@ const RegisterEmployeeModal = ({
         onClose={() => setShowConfirmModal(false)}
         onConfirm={confirmCancel}
         title="Confirmar Acción"
-        message="¿Desea descartar los datos ingresados? Los cambios no se guardarán."
+        message={isEditMode ? "¿Desea descartar los cambios realizados? Los datos no se guardarán." : "¿Desea descartar los datos ingresados? Los cambios no se guardarán."}
         confirmText="Confirmar"
         cancelText="Cancelar"
         confirmColor="btn-primary"

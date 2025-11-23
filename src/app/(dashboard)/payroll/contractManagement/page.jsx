@@ -627,7 +627,7 @@ const ContractManagementPage = () => {
         onClose={() => { setIsContractDetailsOpen(false); setSelectedContract(null); }}
         contractData={selectedContract}
         onBackToList={() => { setIsContractDetailsOpen(false); setSelectedContract(null); }}
-        onExport={(format) => { setModalTitle("Exportar"); setModalMessage(`Export solicitado: ${format} (pendiente de implementar)`); setIsSuccessModalOpen(true); }}
+        onExport={(format) => { setModalTitle("Exportar"); setModalMessage(`Export solicitado: ${format}`); setIsSuccessModalOpen(true); }}
         themeColors={{}}
         canViewContract={true}
       />

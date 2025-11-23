@@ -395,21 +395,32 @@ export const getUserById = async (userId) => {
 // =============================================================================
 const mockEmployeeDetails = {
   id: 1,
+  // Datos desagregados para el formulario de edición
+  firstName: "María Fernanda",
+  secondName: "",
+  firstLastName: "González",
+  secondLastName: "Pérez",
+  identificationTypeId: 1,
   fullName: "María Fernanda González Pérez",
   documentType: "Cédula de Ciudadanía",
   document: "1034567890",
-  gender: "Female",
+  gender: "Femenino",
+  genderId: 2,
   birthDate: "1990-03-15",
-  status: "Active",
-  position: "Operator",
-  department: "Operative team",
+  status: "Activo",
+  position: "Operador",
+  positionId: 3,
+  department: "Operaciones",
+  departmentId: 2,
   email: "maria.gonzalez@empresa.com",
   phone: "+57 300 456 7890",
   country: "Colombia",
+  countryId: 1,
   state: "Antioquia",
   city: "Medellín",
   address: "Carrera 43A #14-25",
-  contractCode: "CON-OPERATOR-0789",
+  contractCode: "CON-EXAMPLE-0001",
+  contractId: 3,
   contract: {
     id: 1,
     code: "CON-2025-0003-00",
@@ -554,22 +565,15 @@ const mockContractHistory = [
  */
 export const getEmployeeDetails = async (employeeId) => {
   try {
-    // TODO: Replace with actual API call
-    // const response = await fetch(`/api/employees/${employeeId}`);
-    // if (!response.ok) throw new Error('Failed to fetch employee details');
-    // return await response.json();
-    
-    // Mock implementation
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(mockEmployeeDetails);
-      }, 500);
-    });
+    const response = await apiMain.get(`/employees/${employeeId}/`);
+    return response.data;
   } catch (error) {
     console.error('Error fetching employee details:', error);
     throw error;
   }
 };
+
+
 
 /**
  * Get employee novelty history

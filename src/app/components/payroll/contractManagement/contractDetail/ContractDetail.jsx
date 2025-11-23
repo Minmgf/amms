@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { getContractDetail } from "@/services/contractService";
+import { getContractDetail, downloadContract } from "@/services/contractService";
 import { getContractHistory } from "@/services/auditService";
 
 /**
@@ -32,6 +32,8 @@ export default function ContractDetail({
   const [error, setError] = useState(null);
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [downloadLoading, setDownloadLoading] = useState(false);
+  const [downloadError, setDownloadError] = useState(null);
 
   useEffect(() => {
     const loadDetail = async () => {
@@ -180,7 +182,32 @@ export default function ContractDetail({
   // Don't render if modal is closed — all hooks above always run
   if (!isOpen) return null;
 
-  const onExportClick = (format = "pdf") => {
+  const onExportClick = async (format = "pdf") => {
+    if (!contractData?.contract_code) {
+      console.error('No contract code available for download');
+      return;
+    }
+
+    try {
+      setDownloadLoading(true);
+      setDownloadError(null);
+      
+      const result = await downloadContract(contractData.contract_code, format);
+      
+      if (result.success) {
+        console.log(`Contract downloaded successfully: ${result.filename}`);
+      }
+    } catch (error) {
+      console.error('Download error:', error);
+      setDownloadError(error.message || 'Error al descargar el contrato');
+      
+      // Show error message to user (you might want to use a toast notification instead)
+      alert(`Error al descargar: ${error.message || 'Error desconocido'}`);
+    } finally {
+      setDownloadLoading(false);
+    }
+
+    // Also call the original onExport if provided
     if (onExport) onExport(format);
   };
 
@@ -664,25 +691,49 @@ export default function ContractDetail({
 
         {/* Footer */}
         <footer className="flex items-center justify-end p-theme-lg border-t border-primary bg-surface">
+          {downloadError && (
+            <div className="flex-1 mr-4">
+              <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md">
+                {downloadError}
+              </p>
+            </div>
+          )}
+          
           <div className="flex items-center space-x-3">
             <button
               onClick={() => onExportClick("pdf")}
-              className="btn-theme btn-outline"
+              disabled={downloadLoading || !contractData?.contract_code}
+              className="btn-theme btn-outline disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-              </svg>
-              Export PDF
+              {downloadLoading ? (
+                <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                </svg>
+              )}
+              {downloadLoading ? 'Descargando...' : 'Descargar PDF'}
             </button>
 
             <button
               onClick={() => onExportClick("docx")}
-              className="btn-theme btn-primary"
+              disabled={downloadLoading || !contractData?.contract_code}
+              className="btn-theme btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-              </svg>
-              Export Word
+              {downloadLoading ? (
+                <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                </svg>
+              )}
+              {downloadLoading ? 'Descargando...' : 'Descargar Word'}
             </button>
           </div>
         </footer>

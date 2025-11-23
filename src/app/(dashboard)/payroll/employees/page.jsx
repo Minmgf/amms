@@ -366,7 +366,11 @@ const EmployeesPage = () => {
             )}
 
             <button
-              onClick={() => setIsRegisterModalOpen(true)}
+              onClick={() => {
+                setRegisterModalMode("create");
+                setEmployeeIdToEdit(null);
+                setIsRegisterModalOpen(true);
+              }}
               aria-label="Nuevo empleado"
               className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit bg-black text-white hover:bg-gray-800"
             >
