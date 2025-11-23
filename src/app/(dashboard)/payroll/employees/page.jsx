@@ -23,6 +23,8 @@ const EmployeesPage = () => {
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedEmployeeForDetail, setSelectedEmployeeForDetail] = useState(null);
+  const [registerModalMode, setRegisterModalMode] = useState("create");
+  const [employeeIdToEdit, setEmployeeIdToEdit] = useState(null);
 
   const [searchType, setSearchType] = useState("document");
   const [advancedSearchText, setAdvancedSearchText] = useState("");
@@ -312,7 +314,7 @@ const EmployeesPage = () => {
   const handleEditEmployee = (employeeData) => {
     setIsDetailModalOpen(false);
     setRegisterModalMode("edit");
-    setEmployeeToEdit(employeeData || null);
+    setEmployeeIdToEdit(employeeData?.id || selectedEmployeeForDetail?.id);
     setIsRegisterModalOpen(true);
   };
 
@@ -381,7 +383,7 @@ const EmployeesPage = () => {
             <button
               onClick={() => {
                 setRegisterModalMode("create");
-                setEmployeeToEdit(null);
+                setEmployeeIdToEdit(null);
                 setIsRegisterModalOpen(true);
               }}
               aria-label="Nuevo empleado"
@@ -465,12 +467,12 @@ const EmployeesPage = () => {
         isOpen={isRegisterModalOpen}
         onClose={() => {
           setIsRegisterModalOpen(false);
-          setEmployeeToEdit(null);
           setRegisterModalMode("create");
+          setEmployeeIdToEdit(null);
         }}
         onSuccess={loadEmployees}
         mode={registerModalMode}
-        employeeData={employeeToEdit}
+        employeeId={employeeIdToEdit}
       />
 
       <ConfirmModal
