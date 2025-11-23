@@ -66,10 +66,12 @@ const RegisterEmployeeModal = ({
   const [existingUserId, setExistingUserId] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isContractModalOpen, setIsContractModalOpen] = useState(false);
   const [contractTemplateToEdit, setContractTemplateToEdit] = useState(null);
+  const [contractsLoading, setContractsLoading] = useState(false);
 
   // Estados parametrizables (cargados desde el endpoint)
   const [identificationTypes, setIdentificationTypes] = useState([]);
@@ -286,6 +288,39 @@ const RegisterEmployeeModal = ({
         const firstName = nameParts[0] || "";
         const secondName = nameParts.slice(1).join(" ") || ""; // Todo después del primer espacio
 
+        // Resolver ubicación (País, Departamento, Ciudad)
+        let countryName = response.data.country || "";
+        let stateName = response.data.department || "";
+        let cityId = response.data.city?.toString() || "";
+
+        // 1. Resolver País (puede venir como ISO2 "CO" o nombre "Colombia")
+        const selectedCountry = countries.find(c => 
+          c.name === response.data.country || c.iso2 === response.data.country
+        );
+        
+        if (selectedCountry) {
+          countryName = selectedCountry.name;
+          
+          // Cargar estados del país encontrado
+          const statesData = await locationService.getStates(selectedCountry.iso2);
+          setStates(statesData || []);
+
+          // 2. Resolver Departamento (puede venir como ISO2 "HUI" o nombre "Huila")
+          if (response.data.department) {
+            const selectedState = statesData?.find(s => 
+              s.name === response.data.department || s.iso2 === response.data.department
+            );
+
+            if (selectedState) {
+              stateName = selectedState.name;
+
+              // Cargar ciudades del departamento encontrado
+              const citiesData = await locationService.getCities(selectedCountry.iso2, selectedState.iso2);
+              setCities(citiesData || []);
+            }
+          }
+        }
+
         setFormData(prev => ({
           ...prev,
           firstName: firstName,
@@ -293,33 +328,16 @@ const RegisterEmployeeModal = ({
           firstLastName: response.data.first_last_name || "",
           secondLastName: response.data.second_last_name || "",
           identificationType: response.data.type_document?.toString() || "",
-          // dateIssuance: NO disponible en la respuesta del backend
           email: response.data.email || "",
           phoneNumber: response.data.phone || "",
           address: response.data.address || "",
           gender: response.data.gender_id?.toString() || "",
           birthDate: response.data.birthday || "",
-          country: response.data.country || "",
-          state: response.data.department || "",
-          city: response.data.city?.toString() || "" // Ya viene como ID
+          country: countryName,
+          state: stateName,
+          city: cityId
         }));
 
-        // Cargar estados y ciudades si hay datos de ubicación
-        if (response.data.country) {
-          const selectedCountry = countries.find(c => c.name === response.data.country);
-          if (selectedCountry && selectedCountry.iso2) {
-            const statesData = await locationService.getStates(selectedCountry.iso2);
-            setStates(statesData || []);
-
-            if (response.data.department) {
-              const selectedState = statesData?.find(s => s.name === response.data.department);
-              if (selectedState && selectedState.iso2) {
-                const citiesData = await locationService.getCities(selectedCountry.iso2, selectedState.iso2);
-                setCities(citiesData || []);
-              }
-            }
-          }
-        }
       } else {
         // Usuario no encontrado
         setUserExists(false);
@@ -376,7 +394,8 @@ const RegisterEmployeeModal = ({
     if (field === "position" && value) {
       setFormData(prev => ({ ...prev, associatedContract: "" }));
       setContracts([]);
-
+      setContractsLoading(true);
+      
       try {
         const response = await employeeService.getEstablishedContracts(value);
         if (response.success) {
@@ -387,6 +406,8 @@ const RegisterEmployeeModal = ({
         }
       } catch (error) {
         console.error("Error cargando contratos:", error);
+      } finally {
+        setContractsLoading(false);
       }
     }
 
@@ -578,10 +599,11 @@ const RegisterEmployeeModal = ({
         const updateResponse = await employeeService.updateEmployee(employeeId, employeeUpdateData);
 
         if (updateResponse || updateResponse?.message) {
+          setSuccessMessage(updateResponse.message || "La información del empleado se ha actualizado correctamente.");
           setShowSuccessModal(true);
           if (onSuccess) onSuccess();
         } else {
-          throw new Error("Error al actualizar el empleado");
+          throw new Error(updateResponse?.message || "Error al actualizar el empleado");
         }
 
       } else {
@@ -604,7 +626,7 @@ const RegisterEmployeeModal = ({
           if (createUserResponse.success && createUserResponse.data) {
             userIdForEmployee = createUserResponse.data.id;
           } else {
-            throw new Error("No se pudo crear el usuario");
+            throw new Error(createUserResponse.message || "No se pudo crear el usuario");
           }
         }
 
@@ -657,7 +679,9 @@ const RegisterEmployeeModal = ({
         // Paso 4: Crear empleado
         const createEmployeeResponse = await employeeService.createEmployee(employeeData);
 
-        if (createEmployeeResponse.success) {
+        // Validar respuesta exitosa (puede venir con success:true o con data)
+        if (createEmployeeResponse.success || createEmployeeResponse.data) {
+          setSuccessMessage(createEmployeeResponse.message || "Empleado registrado correctamente y contrato asociado exitosamente.");
           setShowSuccessModal(true);
           if (onSuccess) onSuccess();
         } else {
@@ -1128,7 +1152,7 @@ const RegisterEmployeeModal = ({
                       </div>
                     )}
                     {errors.associatedContract && <p className="text-red-500 text-xs mt-1">{errors.associatedContract}</p>}
-                    {!isEditMode && contracts.length === 0 && formData.department && formData.position && (
+                    {!isEditMode && !contractsLoading && contracts.length === 0 && formData.department && formData.position && (
                       <p className="text-yellow-600 text-xs mt-1">
                         ⚠️ No hay contratos disponibles para este departamento y cargo. Debe seleccionar o crear un contrato antes de guardar.
                       </p>
@@ -1204,9 +1228,7 @@ const RegisterEmployeeModal = ({
           onClose();
         }}
         title={isEditMode ? "Empleado Actualizado" : "Empleado Registrado"}
-        message={isEditMode
-          ? "La información del empleado se ha actualizado correctamente."
-          : "Empleado registrado correctamente y contrato asociado exitosamente."}
+        message={successMessage}
       />
 
       <ErrorModal
