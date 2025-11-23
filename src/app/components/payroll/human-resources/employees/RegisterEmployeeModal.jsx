@@ -435,66 +435,15 @@ const RegisterEmployeeModal = ({
   };
 
   // Abrir modal de edición de contrato (cuando hay contrato seleccionado)
-  const handleOpenEditContract = async () => {
+  const handleOpenEditContract = () => {
     if (!formData.associatedContract) return;
 
-    try {
-      setLoading(true);
-      
-      // Obtener los detalles del contrato desde la API
-      const contractDetails = await employeeService.getEstablishedContractDetails(
-        formData.associatedContract
-      );
-
-      if (!contractDetails) {
-        setErrorMessage("No se pudieron cargar los detalles del contrato");
-        setShowErrorModal(true);
-        return;
-      }
-
-      // Preparar template con los datos del contrato para el modal de edición
-      const templateForEdit = {
-        // Información general
-        department: formData.department,
-        charge: formData.position,
-        description: contractDetails.description || "",
-        contractType: contractDetails.contract_type?.toString() || "",
-        startDate: contractDetails.start_date || "",
-        endDate: contractDetails.end_date || "",
-        paymentFrequency: contractDetails.payment_frequency_type || "",
-        minimumHours: contractDetails.minimum_hours?.toString() || "",
-        workday: contractDetails.workday_type?.toString() || "",
-        workModality: contractDetails.work_mode_type?.toString() || "",
-        
-        // Términos del contrato
-        salaryType: contractDetails.salary_type || "",
-        baseSalary: contractDetails.salary_base?.toString() || "",
-        currency: contractDetails.currency_type || "",
-        trialPeriod: contractDetails.trial_period_days?.toString() || "",
-        vacationDays: contractDetails.vacation_days?.toString() || "",
-        cumulative: contractDetails.cumulative_vacation ? "yes" : "no",
-        effectiveFrom: contractDetails.start_cumulative_vacation || "",
-        vacationGrantFrequency: contractDetails.vacation_frequency_days?.toString() || "",
-        maximumDisabilityDays: contractDetails.maximum_disability_days?.toString() || "",
-        maximumOvertime: contractDetails.overtime?.toString() || "",
-        overtimePeriod: contractDetails.overtime_period || "",
-        terminationNoticePeriod: contractDetails.notice_period_days?.toString() || "",
-        
-        // Pagos, deducciones e incrementos
-        contract_payments: contractDetails.contract_payments || [],
-        established_deductions: contractDetails.established_deductions || [],
-        established_increases: contractDetails.established_increases || []
-      };
-
-      setContractTemplateToEdit(templateForEdit);
-      setIsContractModalOpen(true);
-    } catch (error) {
-      console.error("Error cargando detalles del contrato:", error);
-      setErrorMessage("Error al cargar los detalles del contrato");
-      setShowErrorModal(true);
-    } finally {
-      setLoading(false);
-    }
+    // Pasar solo el código del contrato; AddContractModal se encarga de
+    // obtener y mapear el detalle completo usando getContractDetail
+    setContractTemplateToEdit({
+      contract_code: formData.associatedContract
+    });
+    setIsContractModalOpen(true);
   };
 
   // Validar formulario
@@ -1102,7 +1051,7 @@ const RegisterEmployeeModal = ({
                     >
                       <option value="">Seleccione departamento</option>
                       {departments.map(dept => (
-                        <option key={dept.id} value={dept.id}>
+                        <option key={dept.id_employee_department} value={dept.id_employee_department}>
                           {dept.name}
                         </option>
                       ))}
@@ -1122,7 +1071,7 @@ const RegisterEmployeeModal = ({
                     >
                       <option value="">Seleccione cargo</option>
                       {positions.map(pos => (
-                        <option key={pos.id} value={pos.id}>
+                        <option key={pos.id_employee_charge} value={pos.id_employee_charge}>
                           {pos.name}
                         </option>
                       ))}

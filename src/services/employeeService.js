@@ -42,7 +42,28 @@ export const getGenders = async () => {
 export const getDepartments = async () => {
   try {
     const response = await apiMain.get('/employee_departments/list/active/');
-    return response.data;
+    const payload = response.data;
+
+    if (Array.isArray(payload)) {
+      return {
+        success: true,
+        data: payload
+      };
+    }
+
+    if (payload && Array.isArray(payload.data)) {
+      return {
+        success: true,
+        data: payload.data,
+        message: payload.message
+      };
+    }
+
+    return {
+      success: false,
+      data: [],
+      message: 'Unexpected departments response format'
+    };
   } catch (error) {
     console.error('Error fetching departments:', error);
     throw error;
@@ -57,7 +78,28 @@ export const getDepartments = async () => {
 export const getPositions = async (departmentId) => {
   try {
     const response = await apiMain.get(`/employee_charges/list/active/${departmentId}/`);
-    return response.data;
+    const payload = response.data;
+
+    if (Array.isArray(payload)) {
+      return {
+        success: true,
+        data: payload
+      };
+    }
+
+    if (payload && Array.isArray(payload.data)) {
+      return {
+        success: true,
+        data: payload.data,
+        message: payload.message
+      };
+    }
+
+    return {
+      success: false,
+      data: [],
+      message: 'Unexpected positions response format'
+    };
   } catch (error) {
     console.error('Error fetching positions:', error);
     throw error;
