@@ -315,6 +315,62 @@ export const updateUser = async (userId, userData) => {
 // =============================================================================
 
 /**
+ * Obtener lista de empleados con paginación
+ * @param {Object} params - Parámetros de consulta
+ * @param {number} params.page - Número de página (por defecto 1)
+ * @param {number} params.page_size - Tamaño de página (10, 25, 50, 100)
+ * @returns {Promise<Object>} Lista de empleados con paginación
+ */
+export const getEmployeesList = async (params = {}) => {
+  try {
+    const { page = 1, page_size = 25 } = params;
+    
+    // Validar page_size
+    const validPageSizes = [10, 25, 50, 100];
+    if (!validPageSizes.includes(page_size)) {
+      throw new Error(`page_size debe ser uno de: ${validPageSizes.join(', ')}.`);
+    }
+
+    const response = await apiMain.get('/employees/list/', {
+      params: {
+        page,
+        page_size
+      }
+    });
+
+    return response.data;
+  } catch (error) {
+    // Manejo de errores específicos del endpoint
+    if (error.response) {
+      const status = error.response.status;
+      let message = 'Error al obtener la lista de empleados';
+
+      switch (status) {
+        case 400:
+          message = error.response.data?.message || 'Parámetros inválidos';
+          break;
+        case 401:
+          message = 'Usuario no autenticado';
+          break;
+        case 403:
+          message = 'No tiene permisos para acceder al listado de empleados.';
+          break;
+        default:
+          message = `Error del servidor: ${status}`;
+      }
+
+      const customError = new Error(message);
+      customError.status = status;
+      customError.response = error.response;
+      throw customError;
+    }
+
+    console.error('Error fetching employees list:', error);
+    throw error;
+  }
+};
+
+/**
  * Create a new employee with contract
  * @param {Object} employeeData - Employee and contract data
  * @returns {Promise<Object>} Created employee
