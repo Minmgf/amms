@@ -328,8 +328,10 @@ const EmployeesPage = () => {
   };
 
   const handleViewDetails = (employee) => {
+    console.log('handleViewDetails called with employee:', employee);
     setSelectedEmployeeForDetail(employee);
     setIsDetailModalOpen(true);
+    console.log('Modal should be opening now');
   };
 
   const handleEditEmployee = (employeeData) => {

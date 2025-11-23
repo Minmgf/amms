@@ -603,8 +603,25 @@ const mockContractHistory = [
  */
 export const getEmployeeDetails = async (employeeId) => {
   try {
-    const response = await apiMain.get(`/employees/${employeeId}/`);
-    return response.data;
+    // TODO: Replace with actual API call when endpoint is ready
+    // const response = await apiMain.get(`/employees/${employeeId}/`);
+    // return response.data;
+    
+    // Mock implementation - using example data
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // Create dynamic mock data based on employeeId
+        const mockData = {
+          ...mockEmployeeDetails,
+          id: employeeId,
+          fullName: `Empleado ${employeeId}`,
+          document: `100000000${employeeId}`,
+          email: `empleado${employeeId}@empresa.com`,
+          phone: `+57 300 000 00${employeeId.toString().padStart(2, '0')}`,
+        };
+        resolve(mockData);
+      }, 500);
+    });
   } catch (error) {
     console.error('Error fetching employee details:', error);
     throw error;

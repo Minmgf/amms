@@ -24,7 +24,9 @@ export default function EmployeeDetailModal({
   const [endDate, setEndDate] = useState("");
 
   useEffect(() => {
+    console.log('EmployeeDetailModal useEffect:', { isOpen, employeeId });
     if (isOpen && employeeId) {
+      console.log('Loading employee data for ID:', employeeId);
       loadEmployeeData();
       loadEmployeeHistory();
     }
@@ -90,6 +92,8 @@ export default function EmployeeDetailModal({
     });
   };
 
+  console.log('EmployeeDetailModal render:', { isOpen, employeeId, employeeData, loading, error });
+  
   if (!isOpen) return null;
 
   const handleBackdropClick = (e) => {
