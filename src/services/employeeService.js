@@ -414,6 +414,22 @@ export const getLatestEmployeeContract = async (employeeId) => {
 };
 
 /**
+ * Create a contract addendum (Otro Sí) for an employee (HU-EMP-006)
+ * @param {number} employeeId - Employee ID
+ * @param {Object} payload - Addendum data
+ * @returns {Promise<Object>} Created addendum/contract
+ */
+export const createContractAddendum = async (employeeId, payload) => {
+  try {
+    const response = await apiMain.post(`/employees/${employeeId}/generate-otro-si/`, payload);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating contract addendum:', error);
+    throw error;
+  }
+};
+
+/**
  * Get user information by ID (HU-EMP-009)
  * @param {number} userId - User ID
  * @returns {Promise<Object>} User information
