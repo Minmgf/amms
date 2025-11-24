@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { FiX, FiArrowLeft, FiEdit, FiPause, FiPlay } from "react-icons/fi";
 import { TbExchange } from "react-icons/tb";
 import { getContractDetails, getContractHistory, getHistoryByContract } from "@/services/employeeService";
+import { getContractTerminationReasons, terminateContract } from "@/services/contractService";
 import EndContractModal from "./EndContractModal";
 import GenerateAddendumModal from "@/app/components/payroll/contractManagement/contracts/GenerateAddendumModal";
 import AddContractModal from "@/app/components/payroll/contractManagement/contracts/AddContractModal";
@@ -27,6 +28,8 @@ export default function ContractDetailModal({
   const [showAddendumModal, setShowAddendumModal] = useState(false);
   const [showAddContractModal, setShowAddContractModal] = useState(false);
   const [addendumFields, setAddendumFields] = useState([]);
+  const [terminationReasons, setTerminationReasons] = useState([]);
+  const [terminationReasonsLoading, setTerminationReasonsLoading] = useState(false);
 
   // Estados para Cambio de Contrato (Colleague's work)
   const [isChangeContractModalOpen, setIsChangeContractModalOpen] = useState(false);
@@ -194,6 +197,23 @@ export default function ContractDetailModal({
     }
   };
 
+  const loadTerminationReasons = async () => {
+    setTerminationReasonsLoading(true);
+    try {
+      const response = await getContractTerminationReasons();
+      setTerminationReasons(response || []);
+    } catch (err) {
+      console.error("Error loading termination reasons:", err);
+      setTerminationReasons([]);
+    } finally {
+      setTerminationReasonsLoading(false);
+    }
+  };
+
+  const handleContractSelect = (contract) => {
+    setSelectedContract(contract);
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return "—";
     return new Date(dateString).toLocaleDateString("es-CO", {
@@ -224,32 +244,53 @@ export default function ContractDetailModal({
     }).format(amount);
   };
 
-  // Funciones para manejar la finalización del contrato (User's logic)
-  const handleEndContract = () => {
+  // Funciones para manejar la finalización del contrato
+  const handleEndContract = async () => {
     setShowEndContractModal(true);
+    // Cargar razones de terminación cuando se abre el modal
+    await loadTerminationReasons();
   };
 
   const handleEndContractConfirm = async (formData) => {
+    if (!selectedContract?.contract_code) {
+      alert("No se ha seleccionado un contrato válido");
+      return;
+    }
+
     setEndContractLoading(true);
     try {
-      // Aquí iría la llamada al servicio para finalizar el contrato
-      console.log("Finalizando contrato con datos:", formData);
+      // Preparar payload según la especificación del endpoint
+      const payload = {
+        contract_termination_reason: parseInt(formData.reasonId),
+        observation: formData.description || ""
+      };
+
+      // Llamar al servicio para finalizar el contrato
+      const response = await terminateContract(selectedContract.contract_code, payload);
       
-      // Simular llamada al API
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Cerrar modal y actualizar datos
-      setShowEndContractModal(false);
-      
-      // Recargar detalles del contrato para reflejar el nuevo estado
-      await loadContractDetails();
-      
-      // Mostrar mensaje de éxito
-      alert("Contrato finalizado exitosamente");
+      if (response.success) {
+        // Cerrar modal
+        setShowEndContractModal(false);
+        
+        // Recargar detalles del contrato para reflejar el nuevo estado
+        await loadContractDetails();
+        await loadContractHistory();
+        
+        // Mostrar mensaje de éxito
+        alert(response.message || "Contrato finalizado exitosamente");
+      }
       
     } catch (error) {
       console.error("Error al finalizar contrato:", error);
-      alert("Error al finalizar el contrato. Intente nuevamente.");
+      
+      // Mostrar mensaje de error específico
+      const errorMessage = error.message || "Error al finalizar el contrato. Intente nuevamente.";
+      alert(errorMessage);
+      
+      // Si hay errores de validación, podrías manejarlos aquí
+      if (error.validationErrors) {
+        console.error("Errores de validación:", error.validationErrors);
+      }
     } finally {
       setEndContractLoading(false);
     }
@@ -617,16 +658,10 @@ export default function ContractDetailModal({
         isOpen={showEndContractModal}
         onClose={handleEndContractCancel}
         onConfirm={handleEndContractConfirm}
-        contractData={selectedContract} // Assuming selectedContract is the target
+        contractData={selectedContract}
         employeeData={employeeData}
-        terminationReasons={[
-          { id: "1", name: "Terminación por mutuo acuerdo" },
-          { id: "2", name: "Terminación por vencimiento del término" },
-          { id: "3", name: "Terminación por justa causa" },
-          { id: "4", name: "Renuncia del empleado" },
-          { id: "5", name: "Despido sin justa causa" }
-        ]}
-        loading={endContractLoading}
+        terminationReasons={terminationReasons}
+        loading={endContractLoading || terminationReasonsLoading}
       />
 
       {/* Modal de Selección de Campos para Otro Sí (User's work) */}
