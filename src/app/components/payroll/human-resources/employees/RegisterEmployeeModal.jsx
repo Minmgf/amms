@@ -623,10 +623,23 @@ const RegisterEmployeeModal = ({
           };
 
           const createUserResponse = await employeeService.createUser(createUserData);
-          if (createUserResponse.success && createUserResponse.data) {
-            userIdForEmployee = createUserResponse.data.id;
+
+          if (createUserResponse && createUserResponse.success) {
+            const newUserId = parseInt(
+              createUserResponse.id_user ||
+              createUserResponse.user_id ||
+              (createUserResponse.data && (createUserResponse.data.id_user || createUserResponse.data.id)) ||
+              createUserResponse.id,
+              10
+            );
+
+            if (!newUserId || Number.isNaN(newUserId)) {
+              throw new Error("El usuario se creó pero no se pudo obtener su identificador (id_user) desde el servidor.");
+            }
+
+            userIdForEmployee = newUserId;
           } else {
-            throw new Error(createUserResponse.message || "No se pudo crear el usuario");
+            throw new Error(createUserResponse?.message || "No se pudo crear el usuario");
           }
         }
 
