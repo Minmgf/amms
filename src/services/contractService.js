@@ -39,7 +39,9 @@ export const deleteContract = async (contractId) => {
  */
 export const toggleContractStatus = async (contractId) => {
   try {
-    const { data } = await apiMain.patch(`/contracts/${contractId}/toggle-status/`);
+    const { data } = await apiMain.patch(
+      `/contracts/${contractId}/toggle-status/`
+    );
     return data;
   } catch (error) {
     throw error;
@@ -85,7 +87,10 @@ export const getIncreaseTypes = async () => {
  */
 export const createEstablishedContract = async (payload) => {
   try {
-    const { data } = await apiMain.post("/established_contracts/create_established_contract/", payload);
+    const { data } = await apiMain.post(
+      "/established_contracts/create_established_contract/",
+      payload
+    );
     return data;
   } catch (error) {
     console.error("Error al crear contrato:", error);
@@ -114,7 +119,9 @@ export const getEstablishedContracts = async () => {
  */
 export const getContractDetail = async (contractCode) => {
   try {
-    const { data } = await apiMain.get(`/established_contracts/${contractCode}/detail/`);
+    const { data } = await apiMain.get(
+      `/established_contracts/${contractCode}/detail/`
+    );
     return data;
   } catch (error) {
     console.error("Error al obtener detalle del contrato:", error);
@@ -130,7 +137,10 @@ export const getContractDetail = async (contractCode) => {
  */
 export const updateEstablishedContract = async (contractCode, payload) => {
   try {
-    const { data } = await apiMain.put(`/established_contracts/${contractCode}/update_established_contract/`, payload);
+    const { data } = await apiMain.put(
+      `/established_contracts/${contractCode}/update_established_contract/`,
+      payload
+    );
     return data;
   } catch (error) {
     console.error("Error al actualizar contrato:", error);
@@ -163,7 +173,9 @@ export const getActiveDepartments = async () => {
  */
 export const getActiveCharges = async (departmentId) => {
   try {
-    const { data } = await apiMain.get(`/employee_charges/list/active/${departmentId}/`);
+    const { data } = await apiMain.get(
+      `/employee_charges/list/active/${departmentId}/`
+    );
     return data;
   } catch (error) {
     console.error("Error al obtener cargos activos:", error);
@@ -197,6 +209,20 @@ export const getActiveUnits = async (categoryId) => {
     return data;
   } catch (error) {
     console.error("Error al obtener unidades activas:", error);
+    throw error;
+  }
+};
+
+/**
+ * Obtener días de la semana
+ * @returns {Promise} - Lista de días de la semana
+ */
+export const getDaysOfWeek = async () => {
+  try {
+    const { data } = await apiMain.get("/days_of_week/");
+    return data;
+  } catch (error) {
+    console.error("Error al obtener días de la semana:", error);
     throw error;
   }
 };
