@@ -10,7 +10,8 @@ import { useTheme } from "@/contexts/ThemeContext";
 import RegisterEmployeeModal from "@/app/components/payroll/human-resources/employees/RegisterEmployeeModal";
 import EmployeeDetailModal from "@/app/components/payroll/human-resources/employees/EmployeeDetailModal";
 import GeneratePayrollModal from "@/app/components/payroll/human-resources/employees/GenerateIndividualPayrollModal";
-import { getEmployeesList } from "@/services/employeeService";
+import ToggleStatusModal from "@/app/components/payroll/human-resources/employees/ToggleStatusModal";
+import { getEmployeesList, toggleEmployeeStatus } from "@/services/employeeService";
 
 const EmployeesPage = () => {
   useTheme();
@@ -42,6 +43,9 @@ const EmployeesPage = () => {
   const [isGeneratePayrollModalOpen, setIsGeneratePayrollModalOpen] = useState(false);
   const [employeeForPayroll, setEmployeeForPayroll] = useState(null);
   const [generatedPayrolls, setGeneratedPayrolls] = useState([]);
+  
+  const [isToggleStatusModalOpen, setIsToggleStatusModalOpen] = useState(false);
+  const [isTogglingStatus, setIsTogglingStatus] = useState(false);
 
   useEffect(() => {
     loadEmployees();
@@ -289,42 +293,71 @@ const EmployeesPage = () => {
   const handleToggleStatus = (employee, type) => {
     setSelectedEmployee(employee);
     setActionType(type);
-    setModalTitle(type === "deactivate" ? "Desactivar empleado" : "Activar empleado");
-    setModalMessage(
-      type === "deactivate"
-        ? `¿Está seguro que desea desactivar al empleado "${employee.fullName}"?`
-        : `¿Está seguro que desea activar al empleado "${employee.fullName}"?`
-    );
-    setConfirmOpen(true);
+    setIsToggleStatusModalOpen(true);
   };
 
-  const handleConfirmToggleStatus = () => {
+  const handleConfirmToggleStatus = async (observation) => {
+    console.log('handleConfirmToggleStatus called', { observation, selectedEmployee, actionType });
+    
     if (!selectedEmployee || !actionType) {
-      setConfirmOpen(false);
+      setIsToggleStatusModalOpen(false);
       return;
     }
 
-    setEmployees((prev) => {
-      const updated = prev.map((emp) =>
-        emp.id === selectedEmployee.id
-          ? {
-              ...emp,
-              status: actionType === "deactivate" ? "Inactivo" : "Activo",
-            }
-          : emp
+    setIsTogglingStatus(true);
+    
+    try {
+      const response = await toggleEmployeeStatus(
+        selectedEmployee.id, 
+        observation || null
       );
-      const ordered = orderEmployees(updated);
-      setFilteredEmployees(ordered);
-      return ordered;
-    });
 
-    setConfirmOpen(false);
-    setSelectedEmployee(null);
-    setActionType(null);
+      // Actualizar el estado local del empleado
+      setEmployees((prev) => {
+        const updated = prev.map((emp) =>
+          emp.id === selectedEmployee.id
+            ? {
+                ...emp,
+                status: actionType === "deactivate" ? "Inactivo" : "Activo",
+                statusId: actionType === "deactivate" ? 2 : 1,
+                canGeneratePayroll: actionType === "activate",
+              }
+            : emp
+        );
+        const ordered = orderEmployees(updated);
+        setFilteredEmployees(ordered);
+        return ordered;
+      });
 
-    setModalTitle("Estado actualizado");
-    setModalMessage("El estado del empleado se actualizó correctamente.");
-    setSuccessOpen(true);
+      setIsToggleStatusModalOpen(false);
+      setSelectedEmployee(null);
+      setActionType(null);
+
+      setModalTitle("Estado actualizado");
+      setModalMessage(
+        response.message || 
+        `El empleado ha sido ${actionType === "deactivate" ? "desactivado" : "activado"} exitosamente.`
+      );
+      setSuccessOpen(true);
+    } catch (error) {
+      console.error('Error toggling employee status:', error);
+      
+      let errorMessage = "Error al cambiar el estado del empleado.";
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.status === 403) {
+        errorMessage = "No tiene permisos para cambiar el estado de empleados.";
+      } else if (error.response?.status === 404) {
+        errorMessage = "Empleado no encontrado.";
+      }
+      
+      setModalTitle("Error");
+      setModalMessage(errorMessage);
+      setErrorOpen(true);
+    } finally {
+      setIsTogglingStatus(false);
+    }
   };
 
   const handleViewDetails = (employee) => {
@@ -497,16 +530,22 @@ const EmployeesPage = () => {
         employeeId={employeeIdToEdit}
       />
 
-      <ConfirmModal
-        isOpen={confirmOpen}
-        onClose={() => setConfirmOpen(false)}
+      <ToggleStatusModal
+        isOpen={isToggleStatusModalOpen}
+        onClose={() => {
+          setIsToggleStatusModalOpen(false);
+          setSelectedEmployee(null);
+          setActionType(null);
+        }}
         onConfirm={handleConfirmToggleStatus}
-        title={modalTitle}
-        message={modalMessage}
-        confirmText="Confirmar"
-        cancelText="Cancelar"
-        confirmColor="btn-primary"
-        cancelColor="btn-error"
+        title={actionType === "deactivate" ? "Desactivar empleado" : "Activar empleado"}
+        message={
+          actionType === "deactivate"
+            ? `¿Está seguro que desea desactivar al empleado "${selectedEmployee?.fullName}"?`
+            : `¿Está seguro que desea activar al empleado "${selectedEmployee?.fullName}"?`
+        }
+        type={actionType}
+        isLoading={isTogglingStatus}
       />
 
       <SuccessModal
