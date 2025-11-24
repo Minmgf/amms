@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { FiX, FiArrowLeft, FiEdit, FiPause, FiPlay } from "react-icons/fi";
+import { TbExchange } from "react-icons/tb";
 import { getContractDetails, getContractHistory } from "@/services/employeeService";
 
 export default function ContractDetailModal({
@@ -14,6 +15,9 @@ export default function ContractDetailModal({
   const [contractHistory, setContractHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const [isChangeContractModalOpen, setIsChangeContractModalOpen] = useState(false);
+  const [selectedChangeOption, setSelectedChangeOption] = useState("predefined");
 
   useEffect(() => {
     if (isOpen && contractData?.id) {
@@ -143,6 +147,13 @@ export default function ContractDetailModal({
                     <FiPlay className="w-4 h-4" />
                     Generar Otrosi
                   </button>
+                  <button
+                    className="btn-theme btn-primary gap-2"
+                    onClick={() => setIsChangeContractModalOpen(true)}
+                  >
+                    <TbExchange className="w-4 h-4" />
+                    Cambiar contrato
+                  </button>
                 </div>
               )}
 
@@ -157,21 +168,19 @@ export default function ContractDetailModal({
                       {contractHistory.map((contract, index) => (
                         <div
                           key={index}
-                          className={`p-theme-sm rounded-theme-lg border cursor-pointer transition-fast ${
-                            contract.id === contractDetails.id
-                              ? "border-accent bg-accent/10"
-                              : "border-primary hover:bg-hover"
-                          }`}
+                          className={`p-theme-sm rounded-theme-lg border cursor-pointer transition-fast ${contract.id === contractDetails.id
+                            ? "border-accent bg-accent/10"
+                            : "border-primary hover:bg-hover"
+                            }`}
                         >
                           <div className="flex items-center justify-between mb-2">
                             <span className="font-theme-medium text-theme-sm">{contract.code}</span>
-                            <span className={`parametrization-badge ${
-                              contract.status === "Active" || contract.status === "Activo"
-                                ? "parametrization-badge-5"
-                                : contract.status === "Finished" || contract.status === "Finalizado"
+                            <span className={`parametrization-badge ${contract.status === "Active" || contract.status === "Activo"
+                              ? "parametrization-badge-5"
+                              : contract.status === "Finished" || contract.status === "Finalizado"
                                 ? "parametrization-badge-10"
                                 : "parametrization-badge-1"
-                            }`}>
+                              }`}>
                               {contract.status}
                             </span>
                           </div>
@@ -194,12 +203,11 @@ export default function ContractDetailModal({
                         <div key={index} className="p-theme-sm border border-primary rounded-theme-lg">
                           <div className="flex items-center justify-between mb-1">
                             <span className="font-theme-medium text-theme-sm">{action.code}</span>
-                            <span className={`parametrization-badge ${
-                              action.type === "Creation" ? "parametrization-badge-5" :
+                            <span className={`parametrization-badge ${action.type === "Creation" ? "parametrization-badge-5" :
                               action.type === "Termination" ? "parametrization-badge-1" :
-                              action.type === "Modification" ? "parametrization-badge-8" :
-                              "parametrization-badge-10"
-                            }`}>
+                                action.type === "Modification" ? "parametrization-badge-8" :
+                                  "parametrization-badge-10"
+                              }`}>
                               {action.type}
                             </span>
                           </div>
@@ -209,10 +217,10 @@ export default function ContractDetailModal({
                           </div>
                         </div>
                       )) || (
-                        <div className="text-center py-4 text-secondary text-theme-sm">
-                          No hay acciones registradas
-                        </div>
-                      )}
+                          <div className="text-center py-4 text-secondary text-theme-sm">
+                            No hay acciones registradas
+                          </div>
+                        )}
                     </div>
                   </div>
                 </div>
@@ -238,9 +246,9 @@ export default function ContractDetailModal({
                       <InfoField label="Tiempo completo" value={contractDetails.fullTime ? "Sí" : "No"} />
                     </div>
                     <div className="mt-4">
-                      <InfoField 
-                        label="Descripción" 
-                        value={contractDetails.description || "Desarrollo y mantenimiento de aplicaciones web usando tecnologías modernas"} 
+                      <InfoField
+                        label="Descripción"
+                        value={contractDetails.description || "Desarrollo y mantenimiento de aplicaciones web usando tecnologías modernas"}
                       />
                     </div>
                   </div>
@@ -296,12 +304,12 @@ export default function ContractDetailModal({
                               <td className="py-2 px-3 text-gray-600">{deduction.quantity}</td>
                             </tr>
                           )) || (
-                            <tr>
-                              <td colSpan="7" className="py-4 text-center text-gray-500">
-                                No hay deducciones asociadas
-                              </td>
-                            </tr>
-                          )}
+                              <tr>
+                                <td colSpan="7" className="py-4 text-center text-gray-500">
+                                  No hay deducciones asociadas
+                                </td>
+                              </tr>
+                            )}
                         </tbody>
                       </table>
                     </div>
@@ -337,12 +345,12 @@ export default function ContractDetailModal({
                               <td className="py-2 px-3 text-gray-600">{increment.quantity}</td>
                             </tr>
                           )) || (
-                            <tr>
-                              <td colSpan="7" className="py-4 text-center text-gray-500">
-                                No hay incrementos asociados
-                              </td>
-                            </tr>
-                          )}
+                              <tr>
+                                <td colSpan="7" className="py-4 text-center text-gray-500">
+                                  No hay incrementos asociados
+                                </td>
+                              </tr>
+                            )}
                         </tbody>
                       </table>
                     </div>
@@ -353,6 +361,66 @@ export default function ContractDetailModal({
           </>
         ) : null}
       </div>
+
+      {/* Change Contract Modal */}
+      {isChangeContractModalOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4">
+          <div className="modal-theme rounded-xl shadow-2xl w-full max-w-lg p-6 bg-white dark:bg-gray-800">
+            <h3 className="text-xl font-bold text-center mb-6 text-primary">
+              Cambiar Contrato
+            </h3>
+
+            <p className="text-secondary mb-6 text-center">
+              Por favor seleccione una de las siguientes opciones:
+            </p>
+
+            <div className="flex justify-center gap-8 mb-8">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="contractOption"
+                  value="predefined"
+                  checked={selectedChangeOption === "predefined"}
+                  onChange={(e) => setSelectedChangeOption(e.target.value)}
+                  className="w-4 h-4 text-primary focus:ring-primary"
+                />
+                <span className="text-primary">Seleccionar un contrato predefinido</span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="contractOption"
+                  value="new"
+                  checked={selectedChangeOption === "new"}
+                  onChange={(e) => setSelectedChangeOption(e.target.value)}
+                  className="w-4 h-4 text-primary focus:ring-primary"
+                />
+                <span className="text-primary">Crear un nuevo contrato</span>
+              </label>
+            </div>
+
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => setIsChangeContractModalOpen(false)}
+                className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  // Handle selection logic here
+                  console.log("Selected option:", selectedChangeOption);
+                  setIsChangeContractModalOpen(false);
+                }}
+                className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium dark:bg-white dark:text-black dark:hover:bg-gray-200"
+              >
+                Seleccionar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
