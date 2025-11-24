@@ -267,3 +267,84 @@ export const downloadContract = async (contractCode, fileType = 'pdf') => {
     throw error;
   }
 };
+
+// =============================================================================
+// FINALIZACIÓN DE CONTRATOS
+// =============================================================================
+
+/**
+ * Obtener tipos de razones de terminación de contrato (categoría 20)
+ * @returns {Promise} - Lista de razones de terminación
+ */
+export const getContractTerminationReasons = async () => {
+  try {
+    const { data } = await apiMain.get("/types/list/active/20/");
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Finalizar contrato de empleado
+ * @param {string} contractCode - Código del contrato
+ * @param {Object} payload - Datos de finalización
+ * @param {number} payload.contract_termination_reason - ID de la razón de terminación
+ * @param {string} payload.observation - Observación de la finalización
+ * @returns {Promise} - Respuesta del servidor
+ */
+export const terminateContract = async (contractCode, payload) => {
+  try {
+    const { data } = await apiMain.post(`/employees/${contractCode}/terminate-contract/`, payload);
+    return data;
+  } catch (error) {
+    // Manejar errores específicos del endpoint
+    if (error.response) {
+      const status = error.response.status;
+      let message = 'Error al finalizar el contrato';
+
+      switch (status) {
+        case 400:
+          // Extraer errores de validación si están disponibles
+          if (error.response.data?.errors) {
+            const errors = error.response.data.errors;
+            const errorMessages = [];
+            
+            Object.entries(errors).forEach(([field, messages]) => {
+              if (Array.isArray(messages)) {
+                errorMessages.push(...messages);
+              }
+            });
+            
+            if (errorMessages.length > 0) {
+              message = errorMessages.join('. ');
+            }
+          } else if (error.response.data?.message) {
+            message = error.response.data.message;
+          }
+          break;
+        case 401:
+          message = 'Usuario no autenticado';
+          break;
+        case 403:
+          message = 'No tiene permisos para finalizar este contrato';
+          break;
+        case 404:
+          message = 'Contrato no encontrado';
+          break;
+        case 500:
+          message = 'Error interno del servidor al finalizar el contrato';
+          break;
+        default:
+          message = error.response.data?.message || `Error del servidor: ${status}`;
+      }
+
+      const customError = new Error(message);
+      customError.status = status;
+      customError.validationErrors = error.response.data?.errors || {};
+      throw customError;
+    }
+
+    throw error;
+  }
+};
