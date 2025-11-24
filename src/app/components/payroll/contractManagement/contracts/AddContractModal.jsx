@@ -15,14 +15,20 @@ import {
   getActiveDepartments,
   getActiveCharges
 } from "@/services/contractService";
+import { createContractAddendum, getLatestEmployeeContract } from "@/services/employeeService";
 
 export default function AddContractModal({
   isOpen,
   onClose,
   contractToEdit,
   onSuccess,
+  isAddendum = false,
+  modifiableFields = [],
+  employeeId,
 }) {
-  const isEditMode = !!contractToEdit;
+  // Si es Addendum, NO es modo edición (se crea un nuevo registro), pero sí necesitamos cargar los datos del contrato base.
+  const isEditMode = !!contractToEdit && !isAddendum;
+  const modalTitle = isAddendum ? "Generar Otro Sí" : (isEditMode ? "Editar contrato" : "Añadir contrato");
   const [step, setStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState([]);
   const [isSubmittingStep, setIsSubmittingStep] = useState(false);
@@ -36,6 +42,7 @@ export default function AddContractModal({
 
   const defaultValues = {
     // Step 1 - General Information
+    observation: "", // Required for Addendum
     department: "",
     charge: "",
     description: "",
@@ -91,12 +98,23 @@ export default function AddContractModal({
 
     // Función para cargar los datos del contrato
     const loadContractData = async () => {
-      if (isOpen && isEditMode && contractToEdit) {
+      // Cargamos datos si es modo edición O si es modo Addendum (usando el contrato base)
+      if (isOpen && (isEditMode || isAddendum)) {
         try {
           setIsLoadingContract(true);
           
-          // Obtener el detalle del contrato desde el endpoint
-          const contractData = await getContractDetail(contractToEdit.contract_code);
+          let contractData;
+          
+          // AJUSTE: Usar el endpoint de la doc para Otro Sí
+          if (isAddendum && employeeId) {
+             contractData = await getLatestEmployeeContract(employeeId);
+          } else if (contractToEdit && contractToEdit.contract_code) {
+             // Comportamiento normal para editar
+             contractData = await getContractDetail(contractToEdit.contract_code);
+          } else {
+             // Fallback o caso donde no hay datos
+             throw new Error("No se pudo identificar el contrato a cargar");
+          }
 
           // Obtener el departamento del cargo
           let departmentId = "";
@@ -134,6 +152,7 @@ export default function AddContractModal({
           // Mapear datos del backend al formato del formulario
           const mappedData = {
             // Paso 1 - Generalidades
+            observation: "", // Observation should be empty for new addendum, or loaded from contract if exists (but here we are loading base contract, so empty)
             department: departmentId, // ID del departamento encontrado
             charge: contractData.id_employee_charge ? String(contractData.id_employee_charge) : "",
             description: contractData.description || "",
@@ -220,7 +239,7 @@ export default function AddContractModal({
     };
 
     loadContractData();
-  }, [isOpen, isEditMode, contractToEdit]);
+  }, [isOpen, isEditMode, isAddendum, contractToEdit]);
 
   const steps = [
     { id: 1, name: "Información general" },
@@ -234,6 +253,10 @@ export default function AddContractModal({
     const currentValues = methods.getValues();
     
     // Campos obligatorios básicos
+    // Si es Addendum, solo validamos los campos que son modificables (y por ende, visibles/habilitados)
+    // OJO: Si un campo está deshabilitado, su valor igual se envía (react-hook-form mantiene el valor).
+    // Pero startDate está deshabilitado en Addendum y NO debe ser validado como si el usuario lo hubiera ingresado (ya tiene valor).
+    
     const requiredFields = [
       "department",
       "charge",
@@ -242,6 +265,12 @@ export default function AddContractModal({
       "endDate",
       "paymentFrequency",
     ];
+
+    if (isAddendum) {
+      requiredFields.push("observation");
+    }
+
+    // ... (resto de validación)
 
     // Validar campos obligatorios básicos
     const missingFields = requiredFields.filter((field) => {
@@ -677,7 +706,7 @@ export default function AddContractModal({
       }
     };
 
-    return {
+    const contractData = {
       id_employee_charge: parseInt(formData.charge),
       description: formData.description || null,
       contract_type: parseInt(formData.contractType),
@@ -699,6 +728,9 @@ export default function AddContractModal({
       overtime: parseInt(formData.maximumOvertime),
       overtime_period: formData.overtimePeriod,
       notice_period_days: formData.terminationNoticePeriod ? parseInt(formData.terminationNoticePeriod) : null,
+      
+      // Solo para creación/actualización normal, para addendum se estructura diferente
+      days_of_week: [], // TODO: Agregar lógica para days_of_week si es necesario (Step1GeneralInfo no tiene selector de días para diario/etc, solo paymentDay para semanal)
 
       // Mapeo de pagos según frecuencia
       contract_payments: mapContractPayments(),
@@ -727,6 +759,16 @@ export default function AddContractModal({
         amount: i.amount ? parseFloat(i.amount) : null
       }))
     };
+
+    if (isAddendum) {
+      return {
+        observation: formData.observation,
+        id_employee_charge: parseInt(formData.charge),
+        contract: [contractData]
+      };
+    }
+
+    return contractData;
   };
 
   // Envío del paso 4
@@ -742,14 +784,23 @@ export default function AddContractModal({
         delete payload.id_employee_charge;
       }
 
-      console.log(`Payload a ${isEditMode ? 'actualizar' : 'crear'}:`, payload);
+      // Si es Addendum, asegurarnos de que se envíe como una creación (POST) pero quizás con alguna marca de que es un addendum
+      // O simplemente se crea un nuevo contrato asociado al empleado (el backend manejará la versión/otro sí).
+      
+      console.log(`Payload a ${isEditMode ? 'actualizar' : (isAddendum ? 'generar otro sí' : 'crear')}:`, payload);
 
       let response;
       if (isEditMode) {
         // Llamar al endpoint PUT
         response = await updateEstablishedContract(contractToEdit.contract_code, payload);
+      } else if (isAddendum) {
+        // Llamar al endpoint de generar otro sí (requiere employeeId)
+        if (!employeeId) {
+          throw new Error("ID de empleado no encontrado para generar Otro Sí");
+        }
+        response = await createContractAddendum(employeeId, payload);
       } else {
-        // Llamar al endpoint POST
+        // Llamar al endpoint POST de creación normal
         response = await createEstablishedContract(payload);
       }
 
@@ -758,7 +809,7 @@ export default function AddContractModal({
       setCompletedSteps((prev) => [...prev, 3]);
 
       // Mostrar mensaje de éxito
-      setModalMessage(response.message || (isEditMode ? "Contrato actualizado exitosamente" : "Contrato creado exitosamente"));
+      setModalMessage(response.message || (isEditMode ? "Contrato actualizado exitosamente" : (isAddendum ? "Otro Sí generado exitosamente" : "Contrato creado exitosamente")));
       setSuccessOpen(true);
 
       // Cerrar el modal y recargar datos
@@ -1120,7 +1171,7 @@ export default function AddContractModal({
             {/* Header */}
             <div className="flex justify-between items-center mb-4 sm:mb-6 md:mb-8">
               <h2 className="text-lg sm:text-xl md:text-theme-xl font-theme-semibold text-primary">
-                {isEditMode ? "Editar contrato" : "Añadir contrato"}
+                {modalTitle}
               </h2>
               <button
                 type="button"
@@ -1146,10 +1197,10 @@ export default function AddContractModal({
                 </div>
               ) : (
                 <>
-                  {step === 0 && <Step1GeneralInfo />}
-                  {step === 1 && <Step2ContractTerms />}
-                  {step === 2 && <Step3Deductions />}
-                  {step === 3 && <Step4Increments />}
+              {step === 0 && <Step1GeneralInfo isAddendum={isAddendum} modifiableFields={modifiableFields} />}
+              {step === 1 && <Step2ContractTerms isAddendum={isAddendum} modifiableFields={modifiableFields} />}
+              {step === 2 && <Step3Deductions isAddendum={isAddendum} modifiableFields={modifiableFields} />}
+              {step === 3 && <Step4Increments isAddendum={isAddendum} modifiableFields={modifiableFields} />}
                 </>
               )}
             </div>

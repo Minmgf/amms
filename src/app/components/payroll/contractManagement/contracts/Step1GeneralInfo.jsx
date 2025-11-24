@@ -7,12 +7,19 @@ import {
   getActiveTypes
 } from "@/services/contractService";
 
-export default function Step1GeneralInfo() {
+export default function Step1GeneralInfo({ isAddendum = false, modifiableFields = [] }) {
   const {
     register,
     formState: { errors },
     watch,
   } = useFormContext();
+
+  const isDisabled = (fieldName) => {
+    if (!isAddendum) return false;
+    // Special case: startDate is never modifiable in addendum
+    if (fieldName === "startDate") return true;
+    return !modifiableFields.includes(fieldName);
+  };
 
   const description = watch("description") || "";
   const paymentFrequency = watch("paymentFrequency") || "";
@@ -130,6 +137,49 @@ export default function Step1GeneralInfo() {
         Información general
       </h3>
 
+      {/* Campo de Observación - Solo visible para Addendum */}
+      {isAddendum && (
+        <div>
+          <label
+            htmlFor="observation"
+            className="block text-theme-sm font-theme-medium text-primary mb-2"
+          >
+            Observación
+            <span className="text-red-500 ml-1">*</span>
+          </label>
+          <div className="relative">
+            <textarea
+              id="observation"
+              {...register("observation", {
+                required: isAddendum ? "Este campo es obligatorio" : false,
+                maxLength: {
+                  value: 255,
+                  message: "Máximo 255 caracteres",
+                },
+              })}
+              rows={3}
+              maxLength={255}
+              className={`input-theme w-full resize-none ${
+                errors.observation ? "border-red-500" : ""
+              }`}
+              style={{
+                backgroundColor: "var(--color-surface)",
+                borderColor: errors.observation
+                  ? "#EF4444"
+                  : "var(--color-border)",
+                color: "var(--color-text-primary)",
+              }}
+              placeholder="Ingrese el motivo del cambio o resumen de modificaciones"
+            />
+          </div>
+          {errors.observation && (
+            <p className="text-red-500 text-xs mt-1">
+              {errors.observation.message}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Primera fila: Departamento y Cargo */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         {/* Departamento */}
@@ -147,9 +197,10 @@ export default function Step1GeneralInfo() {
               required: "Este campo es obligatorio",
             })}
             value={selectedDepartment}
+            disabled={isDisabled("department")}
             className={`input-theme w-full ${
               errors.department ? "border-red-500" : ""
-            }`}
+            } ${isDisabled("department") ? "bg-gray-100 cursor-not-allowed opacity-70" : ""}`}
             style={{
               backgroundColor: "var(--color-surface)",
               borderColor: errors.department
@@ -187,9 +238,10 @@ export default function Step1GeneralInfo() {
               required: "Este campo es obligatorio",
             })}
             value={selectedCharge}
+            disabled={isDisabled("charge")}
             className={`input-theme w-full ${
               errors.charge ? "border-red-500" : ""
-            }`}
+            } ${isDisabled("charge") ? "bg-gray-100 cursor-not-allowed opacity-70" : ""}`}
             style={{
               backgroundColor: "var(--color-surface)",
               borderColor: errors.charge
@@ -230,11 +282,12 @@ export default function Step1GeneralInfo() {
                 message: `Máximo ${maxDescriptionLength} caracteres`,
               },
             })}
+            disabled={isDisabled("description")}
             rows={3}
             maxLength={maxDescriptionLength}
             className={`input-theme w-full resize-none ${
               errors.description ? "border-red-500" : ""
-            }`}
+            } ${isDisabled("description") ? "bg-gray-100 cursor-not-allowed opacity-70" : ""}`}
             style={{
               backgroundColor: "var(--color-surface)",
               borderColor: errors.description
@@ -271,10 +324,11 @@ export default function Step1GeneralInfo() {
             {...register("contractType", {
               required: "Este campo es obligatorio",
             })}
+            disabled={isDisabled("contractType")}
             value={selectedContractType}
             className={`input-theme w-full ${
               errors.contractType ? "border-red-500" : ""
-            }`}
+            } ${isDisabled("contractType") ? "bg-gray-100 cursor-not-allowed opacity-70" : ""}`}
             style={{
               backgroundColor: "var(--color-surface)",
               borderColor: errors.contractType
@@ -312,9 +366,10 @@ export default function Step1GeneralInfo() {
             {...register("startDate", {
               required: "Este campo es obligatorio",
             })}
+            disabled={isDisabled("startDate")}
             className={`input-theme w-full ${
               errors.startDate ? "border-red-500" : ""
-            }`}
+            } ${isDisabled("startDate") ? "bg-gray-100 cursor-not-allowed opacity-70" : ""}`}
             style={{
               backgroundColor: "var(--color-surface)",
               borderColor: errors.startDate
@@ -345,9 +400,10 @@ export default function Step1GeneralInfo() {
             {...register("endDate", {
               required: "Este campo es obligatorio",
             })}
+            disabled={isDisabled("endDate")}
             className={`input-theme w-full ${
               errors.endDate ? "border-red-500" : ""
-            }`}
+            } ${isDisabled("endDate") ? "bg-gray-100 cursor-not-allowed opacity-70" : ""}`}
             style={{
               backgroundColor: "var(--color-surface)",
               borderColor: errors.endDate
@@ -380,9 +436,10 @@ export default function Step1GeneralInfo() {
             {...register("paymentFrequency", {
               required: "Este campo es obligatorio",
             })}
+            disabled={isDisabled("paymentFrequency")}
             className={`input-theme w-full ${
               errors.paymentFrequency ? "border-red-500" : ""
-            }`}
+            } ${isDisabled("paymentFrequency") ? "bg-gray-100 cursor-not-allowed opacity-70" : ""}`}
             style={{
               backgroundColor: "var(--color-surface)",
               borderColor: errors.paymentFrequency
@@ -421,9 +478,10 @@ export default function Step1GeneralInfo() {
               {...register("paymentDay", {
                 required: paymentFrequency === "semanal" ? "Este campo es obligatorio" : false,
               })}
+              disabled={isDisabled("paymentDay")}
               className={`input-theme w-full ${
                 errors.paymentDay ? "border-red-500" : ""
-              }`}
+              } ${isDisabled("paymentDay") ? "bg-gray-100 cursor-not-allowed opacity-70" : ""}`}
               style={{
                 backgroundColor: "var(--color-surface)",
                 borderColor: errors.paymentDay
@@ -469,9 +527,10 @@ export default function Step1GeneralInfo() {
                 min: { value: 1, message: "Debe ser entre 1 y 31" },
                 max: { value: 31, message: "Debe ser entre 1 y 31" },
               })}
+              disabled={isDisabled("paymentDay")} // Using paymentDay logic for paymentDate as generic payment timing
               className={`input-theme w-full ${
                 errors.paymentDate ? "border-red-500" : ""
-              }`}
+              } ${isDisabled("paymentDay") ? "bg-gray-100 cursor-not-allowed opacity-70" : ""}`}
               style={{
                 backgroundColor: "var(--color-surface)",
                 borderColor: errors.paymentDate
@@ -510,9 +569,10 @@ export default function Step1GeneralInfo() {
                   min: { value: 1, message: "Debe ser entre 1 y 31" },
                   max: { value: 31, message: "Debe ser entre 1 y 31" },
                 })}
+                disabled={isDisabled("paymentDay")}
                 className={`input-theme w-full ${
                   errors.firstPaymentDate ? "border-red-500" : ""
-                }`}
+                } ${isDisabled("paymentDay") ? "bg-gray-100 cursor-not-allowed opacity-70" : ""}`}
                 style={{
                   backgroundColor: "var(--color-surface)",
                   borderColor: errors.firstPaymentDate
@@ -546,9 +606,10 @@ export default function Step1GeneralInfo() {
                   min: { value: 1, message: "Debe ser entre 1 y 31" },
                   max: { value: 31, message: "Debe ser entre 1 y 31" },
                 })}
+                disabled={isDisabled("paymentDay")}
                 className={`input-theme w-full ${
                   errors.secondPaymentDate ? "border-red-500" : ""
-                }`}
+                } ${isDisabled("paymentDay") ? "bg-gray-100 cursor-not-allowed opacity-70" : ""}`}
                 style={{
                   backgroundColor: "var(--color-surface)",
                   borderColor: errors.secondPaymentDate
@@ -585,9 +646,10 @@ export default function Step1GeneralInfo() {
             {...register("minimumHours", {
               min: { value: 1, message: "Debe ser mayor a 0" },
             })}
+            disabled={isDisabled("minimumHours")}
             className={`input-theme w-full ${
               errors.minimumHours ? "border-red-500" : ""
-            }`}
+            } ${isDisabled("minimumHours") ? "bg-gray-100 cursor-not-allowed opacity-70" : ""}`}
             style={{
               backgroundColor: "var(--color-surface)",
               borderColor: errors.minimumHours
@@ -615,10 +677,11 @@ export default function Step1GeneralInfo() {
           <select
             id="workday"
             {...register("workday")}
+            disabled={isDisabled("workday")}
             value={selectedWorkday}
             className={`input-theme w-full ${
               errors.workday ? "border-red-500" : ""
-            }`}
+            } ${isDisabled("workday") ? "bg-gray-100 cursor-not-allowed opacity-70" : ""}`}
             style={{
               backgroundColor: "var(--color-surface)",
               borderColor: errors.workday
@@ -652,10 +715,11 @@ export default function Step1GeneralInfo() {
           <select
             id="workModality"
             {...register("workModality")}
+            disabled={isDisabled("workModality")}
             value={selectedWorkModality}
             className={`input-theme w-full ${
               errors.workModality ? "border-red-500" : ""
-            }`}
+            } ${isDisabled("workModality") ? "bg-gray-100 cursor-not-allowed opacity-70" : ""}`}
             style={{
               backgroundColor: "var(--color-surface)",
               borderColor: errors.workModality

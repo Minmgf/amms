@@ -5,6 +5,8 @@ import { FiX, FiArrowLeft, FiEdit, FiPause, FiPlay } from "react-icons/fi";
 import { getContractDetails, getContractHistory, getHistoryByContract } from "@/services/employeeService";
 import { getContractTerminationReasons, terminateContract } from "@/services/contractService";
 import EndContractModal from "./EndContractModal";
+import GenerateAddendumModal from "@/app/components/payroll/contractManagement/contracts/GenerateAddendumModal";
+import AddContractModal from "@/app/components/payroll/contractManagement/contracts/AddContractModal";
 
 export default function ContractDetailModal({
   isOpen,
@@ -23,6 +25,9 @@ export default function ContractDetailModal({
   const [endContractLoading, setEndContractLoading] = useState(false);
   const [terminationReasons, setTerminationReasons] = useState([]);
   const [terminationReasonsLoading, setTerminationReasonsLoading] = useState(false);
+  const [showAddendumModal, setShowAddendumModal] = useState(false);
+  const [showAddContractModal, setShowAddContractModal] = useState(false);
+  const [addendumFields, setAddendumFields] = useState([]);
 
   useEffect(() => {
     if (isOpen && employeeData?.employeeId) {
@@ -268,6 +273,28 @@ export default function ContractDetailModal({
     setShowEndContractModal(false);
   };
 
+  const handleGenerateAddendum = () => {
+    setShowAddendumModal(true);
+  };
+
+  const handleConfirmAddendum = (selectedFields) => {
+    setAddendumFields(selectedFields);
+    setShowAddendumModal(false);
+    setShowAddContractModal(true);
+  };
+
+  const handleAddContractClose = () => {
+    setShowAddContractModal(false);
+    setAddendumFields([]);
+  };
+
+  const handleAddContractSuccess = () => {
+    setShowAddContractModal(false);
+    setAddendumFields([]);
+    loadContractDetails();
+    loadContractHistory();
+  };
+
   const isActiveContract = contractDetails?.status === "Active" || contractDetails?.status === "Activo";
 
   if (!isOpen) return null;
@@ -336,7 +363,10 @@ export default function ContractDetailModal({
                     <FiPause className="w-4 h-4" />
                     Terminar Contrato
                   </button>
-                  <button className="btn-theme btn-primary gap-2">
+                  <button 
+                    className="btn-theme btn-primary gap-2"
+                    onClick={handleGenerateAddendum}
+                  >
                     <FiPlay className="w-4 h-4" />
                     Generar Otrosi
                   </button>
@@ -589,6 +619,27 @@ export default function ContractDetailModal({
         terminationReasons={terminationReasons}
         loading={endContractLoading || terminationReasonsLoading}
       />
+
+      {/* Modal de Selección de Campos para Otro Sí */}
+      <GenerateAddendumModal
+        isOpen={showAddendumModal}
+        onClose={() => setShowAddendumModal(false)}
+        onConfirm={handleConfirmAddendum}
+        contractData={contractDetails}
+      />
+
+      {/* Modal de Creación de Contrato (usado para Otro Sí) */}
+      {showAddContractModal && (
+        <AddContractModal
+          isOpen={showAddContractModal}
+          onClose={handleAddContractClose}
+          contractToEdit={contractDetails}
+          onSuccess={handleAddContractSuccess}
+          isAddendum={true}
+          modifiableFields={addendumFields}
+          employeeId={employeeData.id}
+        />
+      )}
     </div>
   );
 }
