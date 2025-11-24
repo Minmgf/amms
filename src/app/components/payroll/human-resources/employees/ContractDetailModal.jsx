@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { FiX, FiArrowLeft, FiEdit, FiPause, FiPlay } from "react-icons/fi";
-import { getContractDetails, getContractHistory } from "@/services/employeeService";
+import { getContractDetails, getContractHistory, getHistoryByContract } from "@/services/employeeService";
 import EndContractModal from "./EndContractModal";
 import GenerateAddendumModal from "@/app/components/payroll/contractManagement/contracts/GenerateAddendumModal";
 import AddContractModal from "@/app/components/payroll/contractManagement/contracts/AddContractModal";
@@ -15,7 +15,10 @@ export default function ContractDetailModal({
 }) {
   const [contractDetails, setContractDetails] = useState(null);
   const [contractHistory, setContractHistory] = useState([]);
+  const [contractActionsHistory, setContractActionsHistory] = useState([]);
+  const [selectedContract, setSelectedContract] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   const [error, setError] = useState(null);
   const [showEndContractModal, setShowEndContractModal] = useState(false);
   const [endContractLoading, setEndContractLoading] = useState(false);
@@ -24,34 +27,149 @@ export default function ContractDetailModal({
   const [addendumFields, setAddendumFields] = useState([]);
 
   useEffect(() => {
-    if (isOpen && contractData?.id) {
-      loadContractDetails();
+    if (isOpen && employeeData?.employeeId) {
       loadContractHistory();
     }
-  }, [isOpen, contractData]);
+  }, [isOpen, employeeData]);
+
+  // Efecto para cargar detalles cuando se selecciona un contrato
+  useEffect(() => {
+    if (selectedContract) {
+      loadContractDetails();
+      loadContractActionsHistory();
+    }
+  }, [selectedContract]);
 
   const loadContractDetails = async () => {
-    setLoading(true);
+    if (!selectedContract?.contract_code) return;
+    
+    setLoadingDetails(true);
     setError(null);
     try {
-      const details = await getContractDetails(contractData.id);
-      setContractDetails(details);
+      const response = await getContractDetails(selectedContract.contract_code);
+      
+      if (response) {
+        // Mapear los datos de la API a la estructura esperada por el componente
+        const mappedDetails = {
+          // Información General
+          code: response.contract_code,
+          department: "N/A", // No viene en la respuesta
+          contractType: response.contract_type_name,
+          position: response.employee_charge_name,
+          startDate: response.start_date,
+          endDate: response.end_date,
+          indefinite: !response.end_date,
+          description: response.description,
+          
+          // Términos del Contrato
+          paymentFrequency: response.payment_frequency_type,
+          monthly: response.salary_type === "Mensual fijo",
+          workingDay: response.workday_type_name,
+          baseModality: response.work_mode_type_name,
+          monthlySalary: response.salary_base,
+          currency: response.currency_type_name,
+          
+          // Vacaciones y períodos
+          vacationDays: `${response.vacation_days} días`,
+          vacationFrequency: `${response.vacation_frequency_days} días`,
+          vacationAccumulation: response.cumulative_vacation ? "Sí" : "No",
+          trialPeriod: `${response.trial_period_days} días`,
+          
+          // Horas y tiempo extra
+          minimumHours: `${response.minimum_hours} horas`,
+          overtime: `${response.overtime} horas extra por ${response.overtime_period}`,
+          maxDisabilityDays: `${response.maximum_disability_days} días`,
+          noticePeriod: `${response.notice_period_days} días`,
+          
+          // Estado
+          status: response.contract_status_name,
+          
+          // Fechas de pago
+          paymentDates: response.contract_payments?.map(payment => 
+            payment.date_payment ? `Día ${payment.date_payment}` : payment.day_of_week_name
+          ).join(", ") || "No especificado",
+          
+          // Días de la semana (si aplica)
+          workDays: response.days_of_week?.map(day => day.day_name).join(", ") || "Todos los días",
+          
+          // Mapear deducciones
+          deductions: response.employee_contract_deductions?.map(deduction => ({
+            name: deduction.deduction_type_name || "N/A",
+            type: deduction.amount_type || "N/A",
+            value: deduction.amount_type === "fijo" ? `$${deduction.amount_value}` : `${deduction.amount_value}%`,
+            application: deduction.application_deduction_type || "N/A",
+            validity: `${deduction.start_date_deduction} - ${deduction.end_date_deductions || 'Indefinido'}`,
+            description: deduction.description || "Sin descripción",
+            quantity: deduction.amount || 1
+          })) || [],
+          
+          // Mapear incrementos
+          increments: response.employee_contract_increases?.map(increase => ({
+            name: increase.increase_type_name || "N/A",
+            type: increase.amount_type || "N/A",
+            value: increase.amount_type === "fijo" ? `$${increase.amount_value}` : `${increase.amount_value}%`,
+            application: increase.application_increase_type || "N/A",
+            validity: `${increase.start_date_increase} - ${increase.end_date_increase || 'Indefinido'}`,
+            description: increase.description || "Sin descripción",
+            quantity: increase.amount || 1
+          })) || []
+        };
+        
+        setContractDetails(mappedDetails);
+      }
     } catch (err) {
       setError("Error al cargar los detalles del contrato");
       console.error("Error loading contract details:", err);
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
+  const loadContractHistory = async () => {
+    if (!employeeData?.employeeId) return;
+    
+    setLoading(true);
+    try {
+      const response = await getContractHistory(employeeData.employeeId);
+      
+      if (response.success && response.data) {
+        setContractHistory(response.data);
+        
+        // Seleccionar el contrato activo por defecto (el primero con estado "Creado" o similar)
+        const activeContract = response.data.find(contract => 
+          contract.contract_status_name === "Creado" || 
+          contract.contract_status_name === "Activo"
+        ) || response.data[0];
+        
+        if (activeContract) {
+          setSelectedContract(activeContract);
+        }
+      }
+    } catch (err) {
+      console.error("Error loading contract history:", err);
+      setContractHistory([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const loadContractHistory = async () => {
+  const loadContractActionsHistory = async () => {
+    if (!selectedContract?.contract_code) return;
+    
     try {
-      const history = await getContractHistory(contractData.id);
-      setContractHistory(history || []);
+      const response = await getHistoryByContract(selectedContract.contract_code);
+      
+      if (response.success && response.data) {
+        setContractActionsHistory(response.data);
+      }
     } catch (err) {
-      console.error("Error loading contract history:", err);
-      setContractHistory([]);
+      console.error("Error loading contract actions history:", err);
+      setContractActionsHistory([]);
     }
+  };
+
+  const handleContractSelect = (contract) => {
+    setSelectedContract(contract);
   };
 
   const formatDate = (dateString) => {
@@ -181,7 +299,7 @@ export default function ContractDetailModal({
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent mx-auto mb-4"></div>
-              <p className="text-secondary">Cargando detalles del contrato...</p>
+              <p className="text-secondary">Cargando historial de contratos...</p>
             </div>
           </div>
         ) : error ? (
@@ -190,7 +308,7 @@ export default function ContractDetailModal({
               <p>{error}</p>
             </div>
           </div>
-        ) : contractDetails ? (
+        ) : contractHistory.length > 0 ? (
           <>
             <div className="p-theme-lg">
               {/* Action Buttons - Only show for active contracts */}
@@ -229,27 +347,30 @@ export default function ContractDetailModal({
                       {contractHistory.map((contract, index) => (
                         <div
                           key={index}
+                          onClick={() => handleContractSelect(contract)}
                           className={`p-theme-sm rounded-theme-lg border cursor-pointer transition-fast ${
-                            contract.id === contractDetails.id
+                            selectedContract?.contract_code === contract.contract_code
                               ? "border-accent bg-accent/10"
                               : "border-primary hover:bg-hover"
                           }`}
                         >
                           <div className="flex items-center justify-between mb-2">
-                            <span className="font-theme-medium text-theme-sm">{contract.code}</span>
+                            <span className="font-theme-medium text-theme-sm">{contract.contract_code}</span>
                             <span className={`parametrization-badge ${
-                              contract.status === "Active" || contract.status === "Activo"
+                              contract.contract_status_name === "Creado" || contract.contract_status_name === "Activo"
                                 ? "parametrization-badge-5"
-                                : contract.status === "Finished" || contract.status === "Finalizado"
+                                : contract.contract_status_name === "Finalizado"
                                 ? "parametrization-badge-10"
                                 : "parametrization-badge-1"
                             }`}>
-                              {contract.status}
+                              {contract.contract_status_name}
                             </span>
                           </div>
                           <div className="text-theme-xs text-secondary">
-                            <div>Cliente: {contract.client}</div>
-                            <div>Creado: {formatDate(contract.createdDate)}</div>
+                            <div>Responsable: {contract.responsible_user_name}</div>
+                            <div>Creado: {formatDate(contract.creation_date)}</div>
+                            <div>Inicio: {formatDate(contract.start_date)}</div>
+                            {contract.end_date && <div>Fin: {formatDate(contract.end_date)}</div>}
                           </div>
                         </div>
                       ))}
@@ -262,27 +383,32 @@ export default function ContractDetailModal({
                       <h3 className="font-theme-semibold text-primary">Historial de Acciones del Contrato</h3>
                     </div>
                     <div className="p-theme-md space-y-3 max-h-64 overflow-y-auto">
-                      {contractDetails.actionsHistory?.map((action, index) => (
+                      {contractActionsHistory.length > 0 ? contractActionsHistory.map((action, index) => (
                         <div key={index} className="p-theme-sm border border-primary rounded-theme-lg">
                           <div className="flex items-center justify-between mb-1">
-                            <span className="font-theme-medium text-theme-sm">{action.code}</span>
+                            <span className="font-theme-medium text-theme-sm">{action.contract_code}</span>
                             <span className={`parametrization-badge ${
-                              action.type === "Creation" ? "parametrization-badge-5" :
-                              action.type === "Termination" ? "parametrization-badge-1" :
-                              action.type === "Modification" ? "parametrization-badge-8" :
+                              action.contract_status_name === "Creacion" ? "parametrization-badge-5" :
+                              action.contract_status_name === "Finalizado" ? "parametrization-badge-1" :
+                              action.contract_status_name === "Otrosi" ? "parametrization-badge-8" :
                               "parametrization-badge-10"
                             }`}>
-                              {action.type}
+                              {action.contract_status_name}
                             </span>
                           </div>
                           <div className="text-theme-xs text-secondary">
-                            <div>Fecha: {formatDateTime(action.date)}</div>
-                            <div>Usuario: {action.user}</div>
+                            <div>Fecha: {formatDateTime(action.creation_date)}</div>
+                            <div>Usuario: {action.responsible_user_name}</div>
+                            <div>Inicio: {formatDate(action.start_date)}</div>
+                            {action.end_date && <div>Fin: {formatDate(action.end_date)}</div>}
+                            {action.secundary_petition && (
+                              <div className="text-blue-600 text-xs mt-1">Petición secundaria</div>
+                            )}
                           </div>
                         </div>
-                      )) || (
+                      )) : (
                         <div className="text-center py-4 text-secondary text-theme-sm">
-                          No hay acciones registradas
+                          {selectedContract ? "No hay acciones registradas para este contrato" : "Seleccione un contrato para ver las acciones"}
                         </div>
                       )}
                     </div>
@@ -291,23 +417,29 @@ export default function ContractDetailModal({
 
                 {/* Right Column - Contract Details */}
                 <div className="lg:col-span-2 space-y-6">
-                  {/* General Information */}
-                  <div className="card-theme">
+                  {loadingDetails ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent mx-auto mb-4"></div>
+                        <p className="text-secondary text-sm">Cargando detalles del contrato...</p>
+                      </div>
+                    </div>
+                  ) : contractDetails ? (
+                    <>
+                      {/* General Information */}
+                      <div className="card-theme">
                     <h3 className="text-theme-lg font-theme-semibold text-primary mb-4">
                       Información General
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <InfoField label="ID del Contrato" value={contractDetails.code} />
-                      <InfoField label="Departamento" value={contractDetails.department} />
+                      <InfoField label="Código del Contrato" value={contractDetails.code} />
                       <InfoField label="Tipo de contrato" value={contractDetails.contractType} />
                       <InfoField label="Cargo" value={contractDetails.position} />
-                      <InfoField label="Término fijo" value={formatDate(contractDetails.startDate)} />
+                      <InfoField label="Fecha de inicio" value={formatDate(contractDetails.startDate)} />
                       <InfoField label="Fecha de finalización" value={formatDate(contractDetails.endDate)} />
-                      <InfoField label="Frecuencia de pago" value={contractDetails.paymentFrequency} />
-                      <InfoField label="Indefinido" value={contractDetails.indefinite ? "Sí" : "No"} />
-                      <InfoField label="Mensual" value={contractDetails.monthly ? "Sí" : "No"} />
+                      <InfoField label="Estado" value={contractDetails.status} />
                       <InfoField label="Jornada laboral" value={contractDetails.workingDay} />
-                      <InfoField label="Tiempo completo" value={contractDetails.fullTime ? "Sí" : "No"} />
+                      <InfoField label="Modalidad de trabajo" value={contractDetails.baseModality} />
                     </div>
                     <div className="mt-4">
                       <InfoField 
@@ -323,18 +455,18 @@ export default function ContractDetailModal({
                       Términos del Contrato
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <InfoField label="Modalidad base" value={contractDetails.baseModality} />
                       <InfoField label="Salario base" value={formatCurrency(contractDetails.monthlySalary)} />
                       <InfoField label="Moneda" value={contractDetails.currency} />
-                      <InfoField label="Período base" value={contractDetails.basePeriod} />
-                      <InfoField label="Días de vacaciones" value={contractDetails.fifteenDays} />
+                      <InfoField label="Frecuencia de pago" value={contractDetails.paymentFrequency} />
+                      <InfoField label="Fechas de pago" value={contractDetails.paymentDates} />
+                      <InfoField label="Horas mínimas" value={contractDetails.minimumHours} />
+                      <InfoField label="Horas extra" value={contractDetails.overtime} />
+                      <InfoField label="Días de vacaciones" value={contractDetails.vacationDays} />
+                      <InfoField label="Frecuencia de vacaciones" value={contractDetails.vacationFrequency} />
                       <InfoField label="Acumulación de vacaciones" value={contractDetails.vacationAccumulation} />
-                      <InfoField label="3 meses" value={contractDetails.threeMonths} />
-                      <InfoField label="15 días" value={contractDetails.fifteenDays} />
-                      <InfoField label="Fecha de liquidación" value={formatDate(contractDetails.liquidationDate)} />
-                      <InfoField label="Horas extra máximas" value={contractDetails.hoursPerWeek} />
-                      <InfoField label="8 horas/semana" value={contractDetails.hoursPerWeek} />
-                      <InfoField label="Semanal" value={contractDetails.weekly} />
+                      <InfoField label="Período de prueba" value={contractDetails.trialPeriod} />
+                      <InfoField label="Días máximos de incapacidad" value={contractDetails.maxDisabilityDays} />
+                      <InfoField label="Período de aviso" value={contractDetails.noticePeriod} />
                     </div>
                   </div>
 
@@ -418,12 +550,26 @@ export default function ContractDetailModal({
                         </tbody>
                       </table>
                     </div>
-                  </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="text-center text-secondary">
+                        <p>Seleccione un contrato de la lista para ver los detalles</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </>
-        ) : null}
+        ) : (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center text-secondary">
+              <p>No se encontraron contratos para este empleado</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Modal de finalización de contrato */}
