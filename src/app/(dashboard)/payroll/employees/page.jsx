@@ -368,7 +368,8 @@ const EmployeesPage = () => {
   const handleEditEmployee = (employeeData) => {
     setIsDetailModalOpen(false);
     setRegisterModalMode("edit");
-    setEmployeeIdToEdit(employeeData?.id || selectedEmployeeForDetail?.id);
+    // employeeData.id es id_user; employeeData.employeeId es id_employee
+    setEmployeeIdToEdit(employeeData?.employeeId || selectedEmployeeForDetail?.id);
     setIsRegisterModalOpen(true);
   };
 

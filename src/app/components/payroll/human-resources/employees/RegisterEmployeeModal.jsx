@@ -174,15 +174,22 @@ const RegisterEmployeeModal = ({
   const loadEmployeeDataForEdit = async () => {
     setLoading(true);
     try {
-      // 1. Obtener detalles del empleado
-      const employeeDetails = await employeeService.getEmployeeDetails(employeeId);
+      // 1. Obtener detalles del empleado (estructura real con personal_info y contract_info)
+      const employeeDetailsResponse = await employeeService.getEmployeeDetails(employeeId);
 
-      if (!employeeDetails) {
+      if (!employeeDetailsResponse || !employeeDetailsResponse.success || !employeeDetailsResponse.data) {
         throw new Error("No se pudieron cargar los detalles del empleado");
       }
 
-      // 2. Obtener información del usuario
-      const userIdFromEmployee = employeeDetails.id_user;
+      const personalInfo = employeeDetailsResponse.data.personal_info;
+      const contractInfo = employeeDetailsResponse.data.contract_info;
+
+      if (!personalInfo) {
+        throw new Error("No se encontró la información personal del empleado");
+      }
+
+      // 2. Obtener información del usuario a partir de id_user del empleado
+      const userIdFromEmployee = personalInfo.id_user;
       setUserId(userIdFromEmployee);
       setExistingUserId(userIdFromEmployee);
       setUserExists(true);
@@ -196,57 +203,57 @@ const RegisterEmployeeModal = ({
         throw new Error("No se pudo cargar la información del usuario");
       }
 
-      // 3. Obtener contrato actual
-      const contractData = await employeeService.getLatestEmployeeContract(employeeId);
-
-      // 4. Separar nombre completo en primer y segundo nombre
-      const fullName = userInfo.name || "";
+      // 3. Separar nombre completo en primer y segundo nombre (desde userInfo.name)
+      const fullName = userInfo.name || personalInfo.full_name || "";
       const nameParts = fullName.trim().split(/\s+/);
       const firstName = nameParts[0] || "";
       const secondName = nameParts.slice(1).join(" ") || "";
 
-      // 5. Precargar formulario con datos del empleado
+      // 4. Precargar formulario combinando datos de usuario y empleado
       setFormData({
         firstName: firstName,
         secondName: secondName,
         firstLastName: userInfo.first_last_name || "",
         secondLastName: userInfo.second_last_name || "",
         identificationType: userInfo.type_document_id?.toString() || "",
-        identificationNumber: userInfo.document_number?.toString() || "",
-        dateIssuance: userInfo.date_issuance_document?.split('T')[0] || "",
-        gender: userInfo.gender_id?.toString() || "",
-        birthDate: userInfo.birthday?.split('T')[0] || "",
-        email: employeeDetails.email || userInfo.email || "",
-        phoneNumber: userInfo.phone || "",
+        identificationNumber: userInfo.document_number?.toString() || personalInfo.document_number?.toString() || "",
+        dateIssuance: (userInfo.date_issuance_document || "").split('T')[0] || "",
+        gender: (userInfo.gender_id ?? personalInfo.gender_id)?.toString() || "",
+        birthDate: (userInfo.birthday || personalInfo.birth_date || "").split('T')[0] || "",
+        email: personalInfo.email || userInfo.email || "",
+        phoneNumber: personalInfo.phone || userInfo.phone || "",
         countryCode: "+57",
-        country: userInfo.country || "",
-        state: userInfo.department || "",
-        city: userInfo.city?.toString() || "",
-        address: userInfo.address || "",
-        department: employeeDetails.id_employee_department?.toString() || "",
-        position: contractData?.id_employee_charge?.toString() || "",
-        associatedContract: contractData?.contract_code || "",
+        country: userInfo.country || personalInfo.country || "",
+        state: userInfo.department || personalInfo.state || "",
+        city: (userInfo.city ?? personalInfo.city)?.toString() || "",
+        address: userInfo.address || personalInfo.address || "",
+        department: contractInfo?.department_id?.toString() || "",
+        position: contractInfo?.charge_id?.toString() || "",
+        associatedContract: contractInfo?.contract_code || "",
         noveltyDescription: ""
       });
 
-      // 6. Cargar posiciones según departamento
-      if (employeeDetails.id_employee_department) {
-        const positionsData = await employeeService.getPositions(employeeDetails.id_employee_department);
+      // 5. Cargar posiciones según departamento actual
+      if (contractInfo?.department_id) {
+        const positionsData = await employeeService.getPositions(contractInfo.department_id);
         if (positionsData.success) {
           setAllPositions(positionsData.data || []);
           setPositions(positionsData.data || []);
         }
       }
 
-      // 7. Cargar estados y ciudades según país
-      if (userInfo.country) {
-        const selectedCountry = countries.find(c => c.name === userInfo.country);
+      // 6. Cargar estados y ciudades según país (resolviendo desde userInfo/personalInfo)
+      const countryName = userInfo.country || personalInfo.country;
+      const stateName = userInfo.department || personalInfo.state;
+
+      if (countryName) {
+        const selectedCountry = countries.find(c => c.name === countryName || c.iso2 === countryName);
         if (selectedCountry && selectedCountry.iso2) {
           const statesData = await locationService.getStates(selectedCountry.iso2);
           setStates(statesData || []);
 
-          if (userInfo.department) {
-            const selectedState = statesData?.find(s => s.name === userInfo.department);
+          if (stateName) {
+            const selectedState = statesData?.find(s => s.name === stateName || s.iso2 === stateName);
             if (selectedState && selectedState.iso2) {
               const citiesData = await locationService.getCities(selectedCountry.iso2, selectedState.iso2);
               setCities(citiesData || []);
@@ -586,25 +593,25 @@ const RegisterEmployeeModal = ({
       if (isEditMode) {
         // ============ MODO EDICIÓN (HU-EMP-009) ============
 
-        // Paso 1: Actualizar usuario
-        await employeeService.updateUser(userId, userData);
-
-        // Paso 2: Actualizar empleado
+        // Payload para actualizar empleado (updateEmployee)
         const employeeUpdateData = {
           email: formData.email || null,
           id_employee_charge: parseInt(formData.position),
           observation: formData.noveltyDescription
         };
 
-        const updateResponse = await employeeService.updateEmployee(employeeId, employeeUpdateData);
+        // Ejecutar actualización de usuario y empleado a la vez
+        const [updateUserResponse, updateEmployeeResponse] = await Promise.all([
+          employeeService.updateUser(userId, userData),
+          employeeService.updateEmployee(employeeId, employeeUpdateData)
+        ]);
 
-        if (updateResponse || updateResponse?.message) {
-          setSuccessMessage(updateResponse.message || "La información del empleado se ha actualizado correctamente.");
-          setShowSuccessModal(true);
-          if (onSuccess) onSuccess();
-        } else {
-          throw new Error(updateResponse?.message || "Error al actualizar el empleado");
-        }
+        const finalMessage = updateEmployeeResponse?.message || updateUserResponse?.message ||
+          "La información del empleado se ha actualizado correctamente.";
+
+        setSuccessMessage(finalMessage);
+        setShowSuccessModal(true);
+        if (onSuccess) onSuccess();
 
       } else {
         // ============ MODO CREACIÓN (HU-EMP-001) ============
