@@ -197,6 +197,19 @@ export default function AddContractModal({
           mappedData.maximumOvertime = contractData.overtime ? String(contractData.overtime) : "";
           mappedData.overtimePeriod = contractData.overtime_period || "";
           mappedData.terminationNoticePeriod = contractData.notice_period_days ? String(contractData.notice_period_days) : "";
+          mappedData.contractedAmount = contractData.working_hours ? String(contractData.working_hours) : "";
+
+          // Horario de trabajo: mapear days_of_week del backend al formato del formulario
+          // Soporta tanto arrays de IDs (por ejemplo [1,1,2,3,4,5]) como arrays de objetos
+          mappedData.days_of_week = (contractData.days_of_week || []).map((d) => {
+            if (typeof d === "number") {
+              return { id_day_of_week: d, day_of_week_name: "" };
+            }
+            return {
+              id_day_of_week: d.id_day_of_week,
+              day_of_week_name: d.day_of_week_name || "",
+            };
+          });
 
           // Paso 3 - Deducciones
           mappedData.deductions = (contractData.established_deductions || []).map(d => ({
@@ -731,9 +744,11 @@ export default function AddContractModal({
       overtime: parseInt(formData.maximumOvertime),
       overtime_period: formData.overtimePeriod,
       notice_period_days: formData.terminationNoticePeriod ? parseInt(formData.terminationNoticePeriod) : null,
+      working_hours: formData.contractedAmount ? parseInt(formData.contractedAmount) : null,
       
       // Solo para creación/actualización normal, para addendum se estructura diferente
-      days_of_week: [], // TODO: Agregar lógica para days_of_week si es necesario (Step1GeneralInfo no tiene selector de días para diario/etc, solo paymentDay para semanal)
+      // Horario de trabajo: enviar arreglo de IDs de día de la semana, por ejemplo [1,1,2,3,4,5]
+      days_of_week: (formData.days_of_week || []).map((d) => d.id_day_of_week),
 
       // Mapeo de pagos según frecuencia
       contract_payments: mapContractPayments(),
