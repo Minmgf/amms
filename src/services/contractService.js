@@ -48,6 +48,9 @@ export const toggleContractStatus = async (contractId) => {
   }
 };
 
+export const downloadContract = async (contractCode, fileType = 'pdf') => {
+};
+
 // =============================================================================
 // GESTIÓN DE DEDUCCIONES E INCREMENTOS
 // =============================================================================
@@ -225,4 +228,27 @@ export const getDaysOfWeek = async () => {
     console.error("Error al obtener días de la semana:", error);
     throw error;
   }
+};
+
+
+// =============================================================================
+// FINALIZACIÓN DE CONTRATOS
+// =============================================================================
+
+/**
+ * Obtener tipos de razones de terminación de contrato (categoría 20)
+ * @returns {Promise} - Lista de razones de terminación
+ */
+export const getContractTerminationReasons = async () => {
+};
+
+/**
+ * Finalizar contrato de empleado
+ * @param {string} contractCode - Código del contrato
+ * @param {Object} payload - Datos de finalización
+ * @param {number} payload.contract_termination_reason - ID de la razón de terminación
+ * @param {string} payload.observation - Observación de la finalización
+ * @returns {Promise} - Respuesta del servidor
+ */
+export const terminateContract = async (contractCode, payload) => {
 };
