@@ -9,7 +9,7 @@ import { createColumnHelper } from "@tanstack/react-table";
 import { useTheme } from "@/contexts/ThemeContext";
 import RegisterEmployeeModal from "@/app/components/payroll/human-resources/employees/RegisterEmployeeModal";
 import EmployeeDetailModal from "@/app/components/payroll/human-resources/employees/EmployeeDetailModal";
-import GeneratePayrollModal from "@/app/components/payroll/human-resources/employees/GenerateIndividualPayrollModal";
+import GeneratePayrollModal from "@/app/components/payroll/payroll-runs/GenerateIndividualPayrollModal";
 import ToggleStatusModal from "@/app/components/payroll/human-resources/employees/ToggleStatusModal";
 import { getEmployeesList, toggleEmployeeStatus } from "@/services/employeeService";
 
@@ -368,7 +368,8 @@ const EmployeesPage = () => {
   const handleEditEmployee = (employeeData) => {
     setIsDetailModalOpen(false);
     setRegisterModalMode("edit");
-    setEmployeeIdToEdit(employeeData?.id || selectedEmployeeForDetail?.id);
+    // employeeData.id es id_user; employeeData.employeeId es id_employee
+    setEmployeeIdToEdit(employeeData?.employeeId || selectedEmployeeForDetail?.id);
     setIsRegisterModalOpen(true);
   };
 
