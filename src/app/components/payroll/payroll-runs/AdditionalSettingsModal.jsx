@@ -42,7 +42,8 @@ const createEmptyDeduction = () => ({
   aplicacion: "",
   cantidad: "",
   descripcion: "",
-  fechaNovedad: "",
+  fechaInicio: "",
+  fechaFin: "",
 });
 
 const createEmptyIncrement = () => ({
@@ -54,7 +55,8 @@ const createEmptyIncrement = () => ({
   aplicacion: "",
   cantidad: "",
   descripcion: "",
-  fechaNovedad: "",
+  fechaInicio: "",
+  fechaFin: "",
 });
 
 const isRowEmpty = (row) => {
@@ -65,7 +67,8 @@ const isRowEmpty = (row) => {
     !row.aplicacion &&
     !row.cantidad &&
     !row.descripcion &&
-    !row.fechaNovedad
+    !row.fechaInicio &&
+    !row.fechaFin
   );
 };
 
@@ -171,7 +174,8 @@ const IndividualPayrollAdjustmentsModal = ({
           aplicacion: item.aplicacion,
           cantidad: item.cantidad,
           descripcion: item.descripcion,
-          fechaNovedad: item.fechaNovedad,
+          fechaInicio: item.fechaInicio,
+          fechaFin: item.fechaFin,
         }))
       );
 
@@ -220,6 +224,22 @@ const IndividualPayrollAdjustmentsModal = ({
           : item
       )
     );
+  };
+
+  const toggleAllDeductionsSelected = () => {
+    setDeductions((prev) => {
+      if (prev.length === 0) return prev;
+      const allSelected = prev.every((item) => item.seleccionado);
+      return prev.map((item) => ({ ...item, seleccionado: !allSelected }));
+    });
+  };
+
+  const toggleAllIncrementsSelected = () => {
+    setIncrements((prev) => {
+      if (prev.length === 0) return prev;
+      const allSelected = prev.every((item) => item.seleccionado);
+      return prev.map((item) => ({ ...item, seleccionado: !allSelected }));
+    });
   };
 
   const handleIncrementChange = (id, field, value) => {
@@ -310,12 +330,29 @@ const IndividualPayrollAdjustmentsModal = ({
         mensajes.push("La descripción no puede superar los 255 caracteres.");
       }
 
-      if (row.fechaNovedad && parsedStartDate && parsedEndDate) {
-        const fecha = new Date(row.fechaNovedad);
-        if (fecha < parsedStartDate || fecha > parsedEndDate) {
+      if (row.fechaInicio && parsedStartDate && parsedEndDate) {
+        const fechaInicio = new Date(row.fechaInicio);
+        if (fechaInicio < parsedStartDate || fechaInicio > parsedEndDate) {
           mensajes.push(
-            "La fecha de la novedad debe estar dentro del rango de fechas de la nómina."
+            "La fecha de inicio debe estar dentro del rango de fechas de la nómina."
           );
+        }
+      }
+
+      if (row.fechaFin && parsedStartDate && parsedEndDate) {
+        const fechaFin = new Date(row.fechaFin);
+        if (fechaFin < parsedStartDate || fechaFin > parsedEndDate) {
+          mensajes.push(
+            "La fecha de fin debe estar dentro del rango de fechas de la nómina."
+          );
+        }
+      }
+
+      if (row.fechaInicio && row.fechaFin) {
+        const fechaInicio = new Date(row.fechaInicio);
+        const fechaFin = new Date(row.fechaFin);
+        if (fechaFin < fechaInicio) {
+          mensajes.push("La fecha de fin no puede ser anterior a la fecha de inicio.");
         }
       }
 
@@ -487,6 +524,7 @@ const IndividualPayrollAdjustmentsModal = ({
                   onRemoveSelected={removeSelectedDeductions}
                   onFieldChange={handleDeductionChange}
                   onToggleSelected={toggleDeductionSelected}
+                  onToggleAll={toggleAllDeductionsSelected}
                   errors={rowErrors.deductions}
                   payrollStartDate={payrollStartDate}
                   payrollEndDate={payrollEndDate}
@@ -498,6 +536,7 @@ const IndividualPayrollAdjustmentsModal = ({
                   onRemoveSelected={removeSelectedIncrements}
                   onFieldChange={handleIncrementChange}
                   onToggleSelected={toggleIncrementSelected}
+                  onToggleAll={toggleAllIncrementsSelected}
                   errors={rowErrors.increments}
                   payrollStartDate={payrollStartDate}
                   payrollEndDate={payrollEndDate}
@@ -731,10 +770,14 @@ const AdditionalDeductionsSection = ({
   onRemoveSelected,
   onFieldChange,
   onToggleSelected,
+  onToggleAll,
   errors,
   payrollStartDate,
   payrollEndDate,
 }) => {
+  const allSelected =
+    deductions.length > 0 && deductions.every((item) => !!item.seleccionado);
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between mb-2">
@@ -760,18 +803,27 @@ const AdditionalDeductionsSection = ({
       </div>
 
       <div className="border border-primary rounded-theme-lg overflow-x-auto">
-        <div className="min-w-[1100px]">
-          <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface text-xs font-medium text-secondary border-b border-primary">
-            <div className="col-span-1 flex items-center">
-              <span>Sel.</span>
+        <div className="min-w-max">
+          {/* Encabezado */}
+          <div className="grid grid-cols-[40px_150px_150px_120px_150px_150px_150px_200px_100px] gap-2 px-4 py-2 bg-surface text-xs font-medium text-secondary border-b border-primary">
+            <div className="flex items-center justify-center">
+              <input
+                type="checkbox"
+                className="cursor-pointer"
+                checked={allSelected}
+                disabled={deductions.length === 0}
+                onChange={onToggleAll}
+                aria-label="Seleccionar todas las deducciones adicionales"
+              />
             </div>
-            <div className="col-span-2">Nombre</div>
-            <div className="col-span-2">Tipo de monto</div>
-            <div className="col-span-1">Valor</div>
-            <div className="col-span-2">Aplicación</div>
-            <div className="col-span-1">Cantidad</div>
-            <div className="col-span-2">Descripción</div>
-            <div className="col-span-1">Fecha novedad</div>
+            <div>Name</div>
+            <div>Type</div>
+            <div>Amount</div>
+            <div>Application</div>
+            <div>Start</div>
+            <div>End</div>
+            <div>Description</div>
+            <div>Quantity</div>
           </div>
 
           {deductions.length === 0 ? (
@@ -784,125 +836,142 @@ const AdditionalDeductionsSection = ({
               return (
                 <div
                   key={item.id}
-                  className={`px-4 py-2 border-b border-primary/40 ${
+                  className={`grid grid-cols-[40px_150px_150px_120px_150px_150px_150px_200px_100px] gap-2 px-4 py-2 border-b border-primary/40 items-start text-xs ${
                     rowError ? "bg-error/5" : ""
                   }`}
                 >
-                  <div className="grid grid-cols-12 gap-2 items-start text-xs">
-                    <div className="col-span-1 flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={!!item.seleccionado}
-                        onChange={() => onToggleSelected(item.id)}
-                        className="cursor-pointer"
-                      />
-                    </div>
-
-                    <div className="col-span-2">
-                      <select
-                        className="input-theme text-xs"
-                        value={item.nombreId}
-                        onChange={(e) =>
-                          onFieldChange(item.id, "nombreId", e.target.value)
-                        }
-                      >
-                        <option value="">Seleccione</option>
-                        {MOCK_DEDUCTIONS.map((option) => (
-                          <option key={option.id} value={option.id}>
-                            {option.nombre}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="col-span-2">
-                      <select
-                        className="input-theme text-xs"
-                        value={item.tipoMonto}
-                        onChange={(e) =>
-                          onFieldChange(item.id, "tipoMonto", e.target.value)
-                        }
-                      >
-                        <option value="">Seleccione</option>
-                        {MOCK_AMOUNT_TYPES.map((option) => (
-                          <option key={option.id} value={option.id}>
-                            {option.etiqueta}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="col-span-1">
-                      <input
-                        type="number"
-                        className="input-theme text-xs"
-                        min="0"
-                        step="0.01"
-                        value={item.valorMonto}
-                        onChange={(e) =>
-                          onFieldChange(item.id, "valorMonto", e.target.value)
-                        }
-                      />
-                    </div>
-
-                    <div className="col-span-2">
-                      <select
-                        className="input-theme text-xs"
-                        value={item.aplicacion}
-                        onChange={(e) =>
-                          onFieldChange(item.id, "aplicacion", e.target.value)
-                        }
-                      >
-                        <option value="">Seleccione</option>
-                        {MOCK_APPLICATION_TYPES.map((option) => (
-                          <option key={option.id} value={option.id}>
-                            {option.etiqueta}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="col-span-1">
-                      <input
-                        type="number"
-                        className="input-theme text-xs"
-                        min="0"
-                        step="0.01"
-                        value={item.cantidad}
-                        onChange={(e) =>
-                          onFieldChange(item.id, "cantidad", e.target.value)
-                        }
-                      />
-                    </div>
-
-                    <div className="col-span-2">
-                      <input
-                        type="text"
-                        className="input-theme text-xs"
-                        maxLength={255}
-                        value={item.descripcion}
-                        onChange={(e) =>
-                          onFieldChange(item.id, "descripcion", e.target.value)
-                        }
-                      />
-                    </div>
-
-                    <div className="col-span-1">
-                      <input
-                        type="date"
-                        className="input-theme text-xs"
-                        value={item.fechaNovedad || ""}
-                        min={payrollStartDate || undefined}
-                        max={payrollEndDate || undefined}
-                        onChange={(e) =>
-                          onFieldChange(item.id, "fechaNovedad", e.target.value)
-                        }
-                      />
-                    </div>
+                  {/* Checkbox fila */}
+                  <div className="flex items-center justify-center">
+                    <input
+                      type="checkbox"
+                      checked={!!item.seleccionado}
+                      onChange={() => onToggleSelected(item.id)}
+                      className="cursor-pointer"
+                    />
                   </div>
-                  {rowError && (
-                    <p className="mt-1 text-[11px] text-red-500">{rowError}</p>
-                  )}
+
+                  {/* Name */}
+                  <div>
+                    <select
+                      className="input-theme text-xs"
+                      value={item.nombreId}
+                      onChange={(e) =>
+                        onFieldChange(item.id, "nombreId", e.target.value)
+                      }
+                    >
+                      <option value="">Seleccione</option>
+                      {MOCK_DEDUCTIONS.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Type */}
+                  <div>
+                    <select
+                      className="input-theme text-xs"
+                      value={item.tipoMonto}
+                      onChange={(e) =>
+                        onFieldChange(item.id, "tipoMonto", e.target.value)
+                      }
+                    >
+                      <option value="">Seleccione</option>
+                      {MOCK_AMOUNT_TYPES.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.etiqueta}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Amount */}
+                  <div>
+                    <input
+                      type="number"
+                      className="input-theme text-xs"
+                      min="0"
+                      step="0.01"
+                      value={item.valorMonto}
+                      onChange={(e) =>
+                        onFieldChange(item.id, "valorMonto", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  {/* Application */}
+                  <div>
+                    <select
+                      className="input-theme text-xs"
+                      value={item.aplicacion}
+                      onChange={(e) =>
+                        onFieldChange(item.id, "aplicacion", e.target.value)
+                      }
+                    >
+                      <option value="">Seleccione</option>
+                      {MOCK_APPLICATION_TYPES.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.etiqueta}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Start */}
+                  <div>
+                    <input
+                      type="date"
+                      className="input-theme text-xs"
+                      value={item.fechaInicio || ""}
+                      min={payrollStartDate || undefined}
+                      max={payrollEndDate || undefined}
+                      onChange={(e) =>
+                        onFieldChange(item.id, "fechaInicio", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  {/* End */}
+                  <div>
+                    <input
+                      type="date"
+                      className="input-theme text-xs"
+                      value={item.fechaFin || ""}
+                      min={payrollStartDate || undefined}
+                      max={payrollEndDate || undefined}
+                      onChange={(e) =>
+                        onFieldChange(item.id, "fechaFin", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <input
+                      type="text"
+                      className="input-theme text-xs"
+                      maxLength={255}
+                      value={item.descripcion}
+                      onChange={(e) =>
+                        onFieldChange(item.id, "descripcion", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  {/* Quantity */}
+                  <div>
+                    <input
+                      type="number"
+                      className="input-theme text-xs"
+                      min="0"
+                      step="0.01"
+                      value={item.cantidad}
+                      onChange={(e) =>
+                        onFieldChange(item.id, "cantidad", e.target.value)
+                      }
+                    />
+                  </div>
                 </div>
               );
             })
@@ -919,10 +988,14 @@ const AdditionalIncrementsSection = ({
   onRemoveSelected,
   onFieldChange,
   onToggleSelected,
+  onToggleAll,
   errors,
   payrollStartDate,
   payrollEndDate,
 }) => {
+  const allSelected =
+    increments.length > 0 && increments.every((item) => !!item.seleccionado);
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between mb-2">
@@ -948,18 +1021,27 @@ const AdditionalIncrementsSection = ({
       </div>
 
       <div className="border border-primary rounded-theme-lg overflow-x-auto">
-        <div className="min-w-[1100px]">
-          <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-surface text-xs font-medium text-secondary border-b border-primary">
-            <div className="col-span-1 flex items-center">
-              <span>Sel.</span>
+        <div className="min-w-max">
+          {/* Encabezado */}
+          <div className="grid grid-cols-[40px_150px_150px_120px_150px_150px_150px_200px_100px] gap-2 px-4 py-2 bg-surface text-xs font-medium text-secondary border-b border-primary">
+            <div className="flex items-center justify-center">
+              <input
+                type="checkbox"
+                className="cursor-pointer"
+                checked={allSelected}
+                disabled={increments.length === 0}
+                onChange={onToggleAll}
+                aria-label="Seleccionar todos los incrementos adicionales"
+              />
             </div>
-            <div className="col-span-2">Nombre</div>
-            <div className="col-span-2">Tipo de monto</div>
-            <div className="col-span-1">Valor</div>
-            <div className="col-span-2">Aplicación</div>
-            <div className="col-span-1">Cantidad</div>
-            <div className="col-span-2">Descripción</div>
-            <div className="col-span-1">Fecha novedad</div>
+            <div>Name</div>
+            <div>Type</div>
+            <div>Amount</div>
+            <div>Application</div>
+            <div>Start</div>
+            <div>End</div>
+            <div>Description</div>
+            <div>Quantity</div>
           </div>
 
           {increments.length === 0 ? (
@@ -972,125 +1054,142 @@ const AdditionalIncrementsSection = ({
               return (
                 <div
                   key={item.id}
-                  className={`px-4 py-2 border-b border-primary/40 ${
+                  className={`grid grid-cols-[40px_150px_150px_120px_150px_150px_150px_200px_100px] gap-2 px-4 py-2 border-b border-primary/40 items-start text-xs ${
                     rowError ? "bg-error/5" : ""
                   }`}
                 >
-                  <div className="grid grid-cols-12 gap-2 items-start text-xs">
-                    <div className="col-span-1 flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={!!item.seleccionado}
-                        onChange={() => onToggleSelected(item.id)}
-                        className="cursor-pointer"
-                      />
-                    </div>
-
-                    <div className="col-span-2">
-                      <select
-                        className="input-theme text-xs"
-                        value={item.nombreId}
-                        onChange={(e) =>
-                          onFieldChange(item.id, "nombreId", e.target.value)
-                        }
-                      >
-                        <option value="">Seleccione</option>
-                        {MOCK_INCREMENTS.map((option) => (
-                          <option key={option.id} value={option.id}>
-                            {option.nombre}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="col-span-2">
-                      <select
-                        className="input-theme text-xs"
-                        value={item.tipoMonto}
-                        onChange={(e) =>
-                          onFieldChange(item.id, "tipoMonto", e.target.value)
-                        }
-                      >
-                        <option value="">Seleccione</option>
-                        {MOCK_AMOUNT_TYPES.map((option) => (
-                          <option key={option.id} value={option.id}>
-                            {option.etiqueta}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="col-span-1">
-                      <input
-                        type="number"
-                        className="input-theme text-xs"
-                        min="0"
-                        step="0.01"
-                        value={item.valorMonto}
-                        onChange={(e) =>
-                          onFieldChange(item.id, "valorMonto", e.target.value)
-                        }
-                      />
-                    </div>
-
-                    <div className="col-span-2">
-                      <select
-                        className="input-theme text-xs"
-                        value={item.aplicacion}
-                        onChange={(e) =>
-                          onFieldChange(item.id, "aplicacion", e.target.value)
-                        }
-                      >
-                        <option value="">Seleccione</option>
-                        {MOCK_APPLICATION_TYPES.map((option) => (
-                          <option key={option.id} value={option.id}>
-                            {option.etiqueta}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="col-span-1">
-                      <input
-                        type="number"
-                        className="input-theme text-xs"
-                        min="0"
-                        step="0.01"
-                        value={item.cantidad}
-                        onChange={(e) =>
-                          onFieldChange(item.id, "cantidad", e.target.value)
-                        }
-                      />
-                    </div>
-
-                    <div className="col-span-2">
-                      <input
-                        type="text"
-                        className="input-theme text-xs"
-                        maxLength={255}
-                        value={item.descripcion}
-                        onChange={(e) =>
-                          onFieldChange(item.id, "descripcion", e.target.value)
-                        }
-                      />
-                    </div>
-
-                    <div className="col-span-1">
-                      <input
-                        type="date"
-                        className="input-theme text-xs"
-                        value={item.fechaNovedad || ""}
-                        min={payrollStartDate || undefined}
-                        max={payrollEndDate || undefined}
-                        onChange={(e) =>
-                          onFieldChange(item.id, "fechaNovedad", e.target.value)
-                        }
-                      />
-                    </div>
+                  {/* Checkbox fila */}
+                  <div className="flex items-center justify-center">
+                    <input
+                      type="checkbox"
+                      checked={!!item.seleccionado}
+                      onChange={() => onToggleSelected(item.id)}
+                      className="cursor-pointer"
+                    />
                   </div>
-                  {rowError && (
-                    <p className="mt-1 text-[11px] text-red-500">{rowError}</p>
-                  )}
+
+                  {/* Name */}
+                  <div>
+                    <select
+                      className="input-theme text-xs"
+                      value={item.nombreId}
+                      onChange={(e) =>
+                        onFieldChange(item.id, "nombreId", e.target.value)
+                      }
+                    >
+                      <option value="">Seleccione</option>
+                      {MOCK_INCREMENTS.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Type */}
+                  <div>
+                    <select
+                      className="input-theme text-xs"
+                      value={item.tipoMonto}
+                      onChange={(e) =>
+                        onFieldChange(item.id, "tipoMonto", e.target.value)
+                      }
+                    >
+                      <option value="">Seleccione</option>
+                      {MOCK_AMOUNT_TYPES.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.etiqueta}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Amount */}
+                  <div>
+                    <input
+                      type="number"
+                      className="input-theme text-xs"
+                      min="0"
+                      step="0.01"
+                      value={item.valorMonto}
+                      onChange={(e) =>
+                        onFieldChange(item.id, "valorMonto", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  {/* Application */}
+                  <div>
+                    <select
+                      className="input-theme text-xs"
+                      value={item.aplicacion}
+                      onChange={(e) =>
+                        onFieldChange(item.id, "aplicacion", e.target.value)
+                      }
+                    >
+                      <option value="">Seleccione</option>
+                      {MOCK_APPLICATION_TYPES.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.etiqueta}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Start */}
+                  <div>
+                    <input
+                      type="date"
+                      className="input-theme text-xs"
+                      value={item.fechaInicio || ""}
+                      min={payrollStartDate || undefined}
+                      max={payrollEndDate || undefined}
+                      onChange={(e) =>
+                        onFieldChange(item.id, "fechaInicio", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  {/* End */}
+                  <div>
+                    <input
+                      type="date"
+                      className="input-theme text-xs"
+                      value={item.fechaFin || ""}
+                      min={payrollStartDate || undefined}
+                      max={payrollEndDate || undefined}
+                      onChange={(e) =>
+                        onFieldChange(item.id, "fechaFin", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <input
+                      type="text"
+                      className="input-theme text-xs"
+                      maxLength={255}
+                      value={item.descripcion}
+                      onChange={(e) =>
+                        onFieldChange(item.id, "descripcion", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  {/* Quantity */}
+                  <div>
+                    <input
+                      type="number"
+                      className="input-theme text-xs"
+                      min="0"
+                      step="0.01"
+                      value={item.cantidad}
+                      onChange={(e) =>
+                        onFieldChange(item.id, "cantidad", e.target.value)
+                      }
+                    />
+                  </div>
                 </div>
               );
             })
@@ -1099,6 +1198,6 @@ const AdditionalIncrementsSection = ({
       </div>
     </div>
   );
-};
+}
 
 export default IndividualPayrollAdjustmentsModal;
