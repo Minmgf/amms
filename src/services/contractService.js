@@ -5,13 +5,27 @@ import { apiMain } from "@/lib/axios";
 // =============================================================================
 
 /**
+ * Obtener lista de contratos registrados
+ * @returns {Promise} - Lista de contratos
+ */
+export const getContracts = async () => {
+  try {
+    const response = await apiMain.get("/established_contracts/list/");
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener contratos:", error);
+    throw error;
+  }
+};
+
+/**
  * Eliminar contrato
- * @param {number} contractCode - ID del contrato a eliminar
+ * @param {number} contractId - ID del contrato a eliminar
  * @returns {Promise} - Respuesta del servidor
  */
-export const deleteContract = async (contractCode) => {
+export const deleteContract = async (contractId) => {
   try {
-    const { data } = await apiMain.delete(`/established_contracts/${contractCode}/`);
+    const { data } = await apiMain.delete(`/contracts/${contractId}/`);
     return data;
   } catch (error) {
     throw error;
@@ -20,16 +34,21 @@ export const deleteContract = async (contractCode) => {
 
 /**
  * Alternar estado del contrato (activar/desactivar)
- * @param {number} contractCode - ID del contrato
+ * @param {number} contractId - ID del contrato
  * @returns {Promise} - Respuesta del servidor
  */
-export const toggleContractStatus = async (contractCode) => {
+export const toggleContractStatus = async (contractId) => {
   try {
-    const { data } = await apiMain.patch(`/established_contracts/${contractCode}/toggle-status/`);
+    const { data } = await apiMain.patch(
+      `/contracts/${contractId}/toggle-status/`
+    );
     return data;
   } catch (error) {
     throw error;
   }
+};
+
+export const downloadContract = async (contractCode, fileType = 'pdf') => {
 };
 
 // =============================================================================
@@ -71,7 +90,10 @@ export const getIncreaseTypes = async () => {
  */
 export const createEstablishedContract = async (payload) => {
   try {
-    const { data } = await apiMain.post("/established_contracts/create_established_contract/", payload);
+    const { data } = await apiMain.post(
+      "/established_contracts/create_established_contract/",
+      payload
+    );
     return data;
   } catch (error) {
     console.error("Error al crear contrato:", error);
@@ -100,7 +122,9 @@ export const getEstablishedContracts = async () => {
  */
 export const getContractDetail = async (contractCode) => {
   try {
-    const { data } = await apiMain.get(`/established_contracts/${contractCode}/detail/`);
+    const { data } = await apiMain.get(
+      `/established_contracts/${contractCode}/detail/`
+    );
     return data;
   } catch (error) {
     console.error("Error al obtener detalle del contrato:", error);
@@ -116,7 +140,10 @@ export const getContractDetail = async (contractCode) => {
  */
 export const updateEstablishedContract = async (contractCode, payload) => {
   try {
-    const { data } = await apiMain.put(`/established_contracts/${contractCode}/update_established_contract/`, payload);
+    const { data } = await apiMain.put(
+      `/established_contracts/${contractCode}/update_established_contract/`,
+      payload
+    );
     return data;
   } catch (error) {
     console.error("Error al actualizar contrato:", error);
@@ -149,7 +176,9 @@ export const getActiveDepartments = async () => {
  */
 export const getActiveCharges = async (departmentId) => {
   try {
-    const { data } = await apiMain.get(`/employee_charges/list/active/${departmentId}/`);
+    const { data } = await apiMain.get(
+      `/employee_charges/list/active/${departmentId}/`
+    );
     return data;
   } catch (error) {
     console.error("Error al obtener cargos activos:", error);
@@ -188,82 +217,38 @@ export const getActiveUnits = async (categoryId) => {
 };
 
 /**
- * Descargar contrato en formato PDF o DOCX
- * @param {string} contractCode - Código del contrato
- * @param {string} fileType - Tipo de archivo ('pdf' o 'docx')
- * @returns {Promise} - Blob del archivo descargado
+ * Obtener días de la semana
+ * @returns {Promise} - Lista de días de la semana
  */
-export const downloadContract = async (contractCode, fileType = 'pdf') => {
+export const getDaysOfWeek = async () => {
   try {
-    // Validar formato
-    if (!['pdf', 'docx'].includes(fileType.toLowerCase())) {
-      throw new Error('Formato inválido. Formatos permitidos: pdf, docx');
-    }
-
-    const response = await apiMain.get(
-      `/established_contracts/${contractCode}/download/`,
-      {
-        params: { file_type: fileType.toLowerCase() },
-        responseType: 'blob', // Importante para manejar archivos binarios
-      }
-    );
-
-    // Crear nombre del archivo con timestamp
-    const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '').replace('T', '_');
-    const filename = `contrato_${contractCode}_${timestamp}.${fileType.toLowerCase()}`;
-
-    // Crear blob con el tipo de contenido correcto
-    const contentType = fileType.toLowerCase() === 'pdf' 
-      ? 'application/pdf'
-      : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-    
-    const blob = new Blob([response.data], { type: contentType });
-
-    // Crear URL temporal y descargar
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    
-    // Limpiar
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-
-    return { success: true, filename };
+    const { data } = await apiMain.get("/days_of_week/");
+    return data;
   } catch (error) {
-    // Manejar errores específicos del endpoint
-    if (error.response) {
-      const status = error.response.status;
-      let message = 'Error al descargar el contrato';
-
-      switch (status) {
-        case 400:
-          message = 'Formato inválido. Formatos permitidos: pdf, docx';
-          break;
-        case 401:
-          message = 'Usuario no autenticado';
-          break;
-        case 403:
-          message = 'No tiene permisos o el contrato seleccionado no se encuentra disponible para descarga.';
-          break;
-        case 404:
-          message = 'No tiene permisos o el contrato seleccionado no se encuentra disponible para descarga.';
-          break;
-        case 500:
-          message = 'Error al generar el documento del contrato.';
-          break;
-        default:
-          message = `Error del servidor: ${status}`;
-      }
-
-      const customError = new Error(message);
-      customError.status = status;
-      throw customError;
-    }
-
-    console.error("Error al descargar contrato:", error);
+    console.error("Error al obtener días de la semana:", error);
     throw error;
   }
+};
+
+
+// =============================================================================
+// FINALIZACIÓN DE CONTRATOS
+// =============================================================================
+
+/**
+ * Obtener tipos de razones de terminación de contrato (categoría 20)
+ * @returns {Promise} - Lista de razones de terminación
+ */
+export const getContractTerminationReasons = async () => {
+};
+
+/**
+ * Finalizar contrato de empleado
+ * @param {string} contractCode - Código del contrato
+ * @param {Object} payload - Datos de finalización
+ * @param {number} payload.contract_termination_reason - ID de la razón de terminación
+ * @param {string} payload.observation - Observación de la finalización
+ * @returns {Promise} - Respuesta del servidor
+ */
+export const terminateContract = async (contractCode, payload) => {
 };
