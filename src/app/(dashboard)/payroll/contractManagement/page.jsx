@@ -130,18 +130,6 @@ const ContractManagementPage = () => {
   }, [data]);
 
   const handleApplyFilters = () => {
-    if (startDateFilter && endDateFilter && new Date(endDateFilter) < new Date(startDateFilter)) {
-      setModalTitle("Error de Validación");
-      setModalMessage("La fecha final no puede ser anterior a la fecha de inicio.");
-      setIsErrorModalOpen(true);
-      return;
-    }
-    if (minSalaryFilter && maxSalaryFilter && parseFloat(maxSalaryFilter) < parseFloat(minSalaryFilter)) {
-      setModalTitle("Error de Validación");
-      setModalMessage("El salario máximo no puede ser menor al salario mínimo.");
-      setIsErrorModalOpen(true);
-      return;
-    }
     applyFilters();
     setFilterModalOpen(false);
   };
@@ -230,20 +218,10 @@ const ContractManagementPage = () => {
 
     try {
       const response = await toggleContractStatus(selectedContract.contract_code);
-
+      
       if (response.success) {
-        // Actualizar el contrato en la lista
-        setData(prevData =>
-          prevData.map(contract =>
-            contract.contract_code === selectedContract.contract_code
-              ? {
-                ...contract,
-                status_id: contract.status_id === 1 ? 2 : 1,
-                status_name: contract.status_id === 1 ? "Finalizado" : "Activo"
-              }
-              : contract
-          )
-        );
+        // Activación exitosa - recargar datos
+        await loadInitialData();
 
         // Mostrar modal de éxito con mensaje específico para activación
         setModalTitle("Contrato Activado");
@@ -274,20 +252,10 @@ const ContractManagementPage = () => {
 
     try {
       const response = await toggleContractStatus(selectedContract.contract_code);
-
+      
       if (response.success) {
-        // Actualizar el contrato en la lista
-        setData(prevData =>
-          prevData.map(contract =>
-            contract.contract_code === selectedContract.contract_code
-              ? {
-                ...contract,
-                status_id: contract.status_id === 1 ? 2 : 1,
-                status_name: contract.status_id === 1 ? "Finalizado" : "Activo"
-              }
-              : contract
-          )
-        );
+        // Desactivación exitosa - recargar datos
+        await loadInitialData();
 
         // Mostrar modal de éxito con mensaje específico para desactivación
         setModalTitle("Contrato Desactivado");
@@ -298,8 +266,8 @@ const ContractManagementPage = () => {
       console.error("Error deactivating contract:", error);
       setModalTitle("Error");
       setModalMessage(
-        error.response?.data?.message ||
-        "Ocurrió un error al cambiar el estado del contrato. Por favor, inténtelo de nuevo."
+        error.response?.data?.message || 
+        "No se pudo completar la desactivación del contrato. Intente nuevamente o contacte al administrador."
       );
       setIsErrorModalOpen(true);
     } finally {
@@ -352,8 +320,9 @@ const ContractManagementPage = () => {
           const status_id = info.getValue();
           const status_name = info.row.original.established_contract_status_name;
           return (
-            <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${status_id === 1 ? "bg-green-100 text-green-800" : "bg-pink-100 text-pink-800"
-              }`}>
+            <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
+              status_id === 1 ? "bg-green-100 text-green-800" : "bg-pink-100 text-pink-800"
+            }`}>
               {status_name}
             </span>
           );
@@ -381,46 +350,46 @@ const ContractManagementPage = () => {
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               {/* TODO: Descomentar PermissionGuards cuando los permisos estén configurados */}
               {/* <PermissionGuard permission={201}> */}
-              <button
-                aria-label="View Details Button"
-                onClick={() => handleOpenContractFormModal("view", contract.contract_code)}
-                className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600 text-gray-700"
-                title="Ver detalles"
-              >
-                <FiEye className="w-3 h-3" /> Ver
-              </button>
+                <button
+                  aria-label="View Details Button"
+                  onClick={() => handleOpenContractFormModal("view", contract.contract_code)}
+                  className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-blue-500 hover:text-blue-600 text-gray-700"
+                  title="Ver detalles"
+                >
+                  <FiEye className="w-3 h-3" /> Ver
+                </button>
               {/* </PermissionGuard> */}
               {/* <PermissionGuard permission={202}> */}
-              <button
-                aria-label="Edit Button"
-                onClick={() => handleOpenContractFormModal("edit", contract.contract_code)}
-                className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
-                title="Editar contrato"
-              >
-                <FiEdit2 className="w-3 h-3" /> Editar
-              </button>
+                <button
+                  aria-label="Edit Button"
+                  onClick={() => handleOpenContractFormModal("edit", contract.contract_code)}
+                  className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
+                  title="Editar contrato"
+                >
+                  <FiEdit2 className="w-3 h-3" /> Editar
+                </button>
               {/* </PermissionGuard> */}
               {isActive ? (
                 // <PermissionGuard permission={203}>
-                <button
-                  aria-label="Delete Button"
-                  onClick={() => handleOpenDeleteConfirm(contract)}
-                  className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-red-500 hover:text-red-600 text-gray-700"
-                  title="Eliminar Contrato"
-                >
-                  <FiTrash2 className="w-3 h-3" /> Eliminar
-                </button>
+                  <button
+                    aria-label="Delete Button"
+                    onClick={() => handleOpenDeleteConfirm(contract)}
+                    className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-red-500 hover:text-red-600 text-gray-700"
+                    title="Eliminar Contrato"
+                  >
+                    <FiTrash2 className="w-3 h-3" /> Eliminar
+                  </button>
                 // </PermissionGuard>
               ) : (
                 // <PermissionGuard permission={204}>
-                <button
-                  aria-label="Activate Button"
-                  onClick={() => handleOpenActivateConfirm(contract)}
-                  className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
-                  title="Activar Contrato"
-                >
-                  <FaCheckCircle className="w-3 h-3" /> Activar
-                </button>
+                  <button
+                    aria-label="Activate Button"
+                    onClick={() => handleOpenActivateConfirm(contract)}
+                    className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
+                    title="Activar Contrato"
+                  >
+                    <FaCheckCircle className="w-3 h-3" /> Activar
+                  </button>
                 // </PermissionGuard>
               )}
             </div>
@@ -487,8 +456,9 @@ const ContractManagementPage = () => {
             </div>
 
             <button
-              className={`parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit ${activeFiltersCount > 0 ? "bg-blue-100 border-blue-300 text-blue-700" : ""
-                }`}
+              className={`parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit ${
+                activeFiltersCount > 0 ? "bg-blue-100 border-blue-300 text-blue-700" : ""
+              }`}
               onClick={() => setFilterModalOpen(true)}
               aria-label="Filter Button"
             >
@@ -508,27 +478,27 @@ const ContractManagementPage = () => {
             )}
 
             {/* <PermissionGuard permission={200}> */}
-            <button
-              onClick={() => handleOpenContractFormModal("add")}
-              aria-label="Add Contract Button"
-              className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit bg-black text-white hover:bg-gray-800"
-            >
-              <FiPlus className="w-4 h-4" />
-              <span className="text-sm">Nuevo Contrato</span>
-            </button>
+              <button
+                onClick={() => handleOpenContractFormModal("add")}
+                aria-label="Add Contract Button"
+                className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit bg-black text-white hover:bg-gray-800"
+              >
+                <FiPlus className="w-4 h-4" />
+                <span className="text-sm">Nuevo Contrato</span>
+              </button>
             {/* </PermissionGuard> */}
           </div>
 
           {/* TODO: Descomentar PermissionGuard cuando los permisos estén configurados */}
           {/* <PermissionGuard permission={199}> */}
-          <TableList
-            columns={columns}
-            data={displayData}
-            loading={loading}
-            globalFilter={globalFilter}
-            onGlobalFilterChange={setGlobalFilter}
-            pageSizeOptions={[10, 25, 50, 100]}
-          />
+            <TableList
+              columns={columns}
+              data={displayData}
+              loading={loading}
+              globalFilter={globalFilter}
+              onGlobalFilterChange={setGlobalFilter}
+              pageSizeOptions={[10, 25, 50, 100]}
+            />
           {/* </PermissionGuard> */}
 
           {!loading && displayData.length === 0 && data.length > 0 && (globalFilter || activeFiltersCount > 0) && (
@@ -572,7 +542,7 @@ const ContractManagementPage = () => {
               <FaCalendar className="inline w-4 h-4 mr-2" />
               Fecha de Inicio (Desde)
             </label>
-            <input type="date" value={startDateFilter} max={endDateFilter} onChange={(e) => setStartDateFilter(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent" />
+            <input type="date" value={startDateFilter} onChange={(e) => setStartDateFilter(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent" />
           </div>
 
           <div>
@@ -580,7 +550,7 @@ const ContractManagementPage = () => {
               <FaCalendar className="inline w-4 h-4 mr-2" />
               Fecha de Finalización (Hasta)
             </label>
-            <input type="date" value={endDateFilter} min={startDateFilter} onChange={(e) => setEndDateFilter(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent" />
+            <input type="date" value={endDateFilter} onChange={(e) => setEndDateFilter(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent" />
           </div>
 
           <div>
@@ -588,7 +558,7 @@ const ContractManagementPage = () => {
               <FaDollarSign className="inline w-4 h-4 mr-2" />
               Salario Mínimo
             </label>
-            <input type="number" value={minSalaryFilter} max={maxSalaryFilter} onChange={(e) => setMinSalaryFilter(e.target.value)} placeholder="0" className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent" />
+            <input type="number" value={minSalaryFilter} onChange={(e) => setMinSalaryFilter(e.target.value)} placeholder="0" className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent" />
           </div>
 
           <div>
@@ -596,7 +566,7 @@ const ContractManagementPage = () => {
               <FaDollarSign className="inline w-4 h-4 mr-2" />
               Salario Máximo
             </label>
-            <input type="number" value={maxSalaryFilter} min={minSalaryFilter} onChange={(e) => setMaxSalaryFilter(e.target.value)} placeholder="0" className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent" />
+            <input type="number" value={maxSalaryFilter} onChange={(e) => setMaxSalaryFilter(e.target.value)} placeholder="0" className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent" />
           </div>
 
         </div>
@@ -644,7 +614,7 @@ const ContractManagementPage = () => {
         title={modalTitle || "Éxito"}
         message={modalMessage}
       />
-
+      
       <ErrorModal
         isOpen={isErrorModalOpen}
         onClose={() => setIsErrorModalOpen(false)}
@@ -664,10 +634,10 @@ const ContractManagementPage = () => {
 
       <AddContractModal
         isOpen={isContractFormModalOpen}
-        onClose={() => {
-          setIsContractFormModalOpen(false);
-          setSelectedContract(null);
-          setContractFormMode("add");
+        onClose={() => { 
+          setIsContractFormModalOpen(false); 
+          setSelectedContract(null); 
+          setContractFormMode("add"); 
         }}
         contractToEdit={contractFormMode === "edit" ? selectedContract : null}
         onSuccess={() => {

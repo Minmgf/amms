@@ -102,9 +102,19 @@ export default function AddContractModal({
       if (isOpen && (isEditMode || isAddendum)) {
         try {
           setIsLoadingContract(true);
-
-          // Obtener el detalle del contrato desde el endpoint
-          const contractData = await getContractDetail(contractToEdit.contract_code);
+          
+          let contractData;
+          
+          // AJUSTE: Usar el endpoint de la doc para Otro Sí
+          if (isAddendum && employeeId) {
+             contractData = await getLatestEmployeeContract(employeeId);
+          } else if (contractToEdit && contractToEdit.contract_code) {
+             // Comportamiento normal para editar
+             contractData = await getContractDetail(contractToEdit.contract_code);
+          } else {
+             // Fallback o caso donde no hay datos
+             throw new Error("No se pudo identificar el contrato a cargar");
+          }
 
           // Obtener el departamento del cargo
           let departmentId = "";
@@ -184,7 +194,6 @@ export default function AddContractModal({
           mappedData.maximumOvertime = contractData.overtime ? String(contractData.overtime) : "";
           mappedData.overtimePeriod = contractData.overtime_period || "";
           mappedData.terminationNoticePeriod = contractData.notice_period_days ? String(contractData.notice_period_days) : "";
-          mappedData.days_of_week = contractData.days_of_week || [];
 
           // Paso 3 - Deducciones
           mappedData.deductions = (contractData.established_deductions || []).map(d => ({
@@ -242,7 +251,7 @@ export default function AddContractModal({
   // Validación del paso 1
   const validateStep1 = () => {
     const currentValues = methods.getValues();
-
+    
     // Campos obligatorios básicos
     // Si es Addendum, solo validamos los campos que son modificables (y por ende, visibles/habilitados)
     // OJO: Si un campo está deshabilitado, su valor igual se envía (react-hook-form mantiene el valor).
@@ -281,7 +290,7 @@ export default function AddContractModal({
 
     // Validar campos condicionales según frecuencia de pago
     const paymentFrequency = currentValues.paymentFrequency;
-
+    
     if (paymentFrequency === "semanal") {
       if (!currentValues.paymentDay || currentValues.paymentDay.trim() === "") {
         methods.setError("paymentDay", {
@@ -319,7 +328,7 @@ export default function AddContractModal({
     if (currentValues.startDate && currentValues.endDate) {
       const startDate = new Date(currentValues.startDate);
       const endDate = new Date(currentValues.endDate);
-
+      
       if (endDate <= startDate) {
         methods.setError("endDate", {
           type: "validate",
@@ -421,7 +430,7 @@ export default function AddContractModal({
         "start_date_deduction",
         "end_date_deductions"
       ];
-
+      
       requiredFields.forEach((field) => {
         const value = deduction[field];
         if (!value || (typeof value === "string" && value.trim() === "")) {
@@ -437,7 +446,7 @@ export default function AddContractModal({
       if (deduction.start_date_deduction && deduction.end_date_deductions) {
         const startDate = new Date(deduction.start_date_deduction);
         const endDate = new Date(deduction.end_date_deductions);
-
+        
         if (endDate <= startDate) {
           methods.setError(`deductions.${index}.end_date_deductions`, {
             type: "validate",
@@ -490,7 +499,7 @@ export default function AddContractModal({
         "start_date_increase",
         "end_date_increase"
       ];
-
+      
       requiredFields.forEach((field) => {
         const value = increment[field];
         if (!value || (typeof value === "string" && value.trim() === "")) {
@@ -506,7 +515,7 @@ export default function AddContractModal({
       if (increment.start_date_increase && increment.end_date_increase) {
         const startDate = new Date(increment.start_date_increase);
         const endDate = new Date(increment.end_date_increase);
-
+        
         if (endDate <= startDate) {
           methods.setError(`increments.${index}.end_date_increase`, {
             type: "validate",
@@ -553,7 +562,7 @@ export default function AddContractModal({
       setStep(1);
     } catch (error) {
       let message = "Error al guardar los datos. Por favor, inténtelo de nuevo.";
-
+      
       if (error.response?.data?.details || error.response?.data?.errors) {
         const details = error.response.data.details || error.response.data.errors;
         message = Object.entries(details)
@@ -591,7 +600,7 @@ export default function AddContractModal({
       setStep(2);
     } catch (error) {
       let message = "Error al guardar los datos. Por favor, inténtelo de nuevo.";
-
+      
       if (error.response?.data?.details || error.response?.data?.errors) {
         const details = error.response.data.details || error.response.data.errors;
         message = Object.entries(details)
@@ -629,7 +638,7 @@ export default function AddContractModal({
       setStep(3);
     } catch (error) {
       let message = "Error al guardar los datos. Por favor, inténtelo de nuevo.";
-
+      
       if (error.response?.data?.details || error.response?.data?.errors) {
         const details = error.response.data.details || error.response.data.errors;
         message = Object.entries(details)
@@ -719,7 +728,9 @@ export default function AddContractModal({
       overtime: parseInt(formData.maximumOvertime),
       overtime_period: formData.overtimePeriod,
       notice_period_days: formData.terminationNoticePeriod ? parseInt(formData.terminationNoticePeriod) : null,
-      days_of_week: (formData.days_of_week || []).map(d => d.id_day_of_week),
+      
+      // Solo para creación/actualización normal, para addendum se estructura diferente
+      days_of_week: [], // TODO: Agregar lógica para days_of_week si es necesario (Step1GeneralInfo no tiene selector de días para diario/etc, solo paymentDay para semanal)
 
       // Mapeo de pagos según frecuencia
       contract_payments: mapContractPayments(),
@@ -944,26 +955,28 @@ export default function AddContractModal({
                   type="button"
                   onClick={() => goToStep(index)}
                   disabled={!completedSteps.includes(index) && index !== 0}
-                  className={`w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-xs sm:text-theme-sm font-theme-bold border-2 transition-all duration-300 ${isActive
-                    ? "bg-accent text-white"
-                    : isCompleted
+                  className={`w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-xs sm:text-theme-sm font-theme-bold border-2 transition-all duration-300 ${
+                    isActive
+                      ? "bg-accent text-white"
+                      : isCompleted
                       ? "bg-success text-white border-success"
                       : "bg-surface text-secondary border-primary"
-                    } ${!completedSteps.includes(index) && index !== 0
+                  } ${
+                    !completedSteps.includes(index) && index !== 0
                       ? "cursor-not-allowed opacity-50"
                       : "hover:shadow-md"
-                    }`}
+                  }`}
                   style={{
                     backgroundColor: isActive
                       ? "var(--color-accent)"
                       : isCompleted
-                        ? "var(--color-success)"
-                        : "var(--color-surface)",
+                      ? "var(--color-success)"
+                      : "var(--color-surface)",
                     borderColor: isActive
                       ? "var(--color-accent)"
                       : isCompleted
-                        ? "var(--color-success)"
-                        : "var(--color-border)",
+                      ? "var(--color-success)"
+                      : "var(--color-border)",
                     color:
                       isActive || isCompleted
                         ? "white"
@@ -989,19 +1002,20 @@ export default function AddContractModal({
 
                 <div className="mt-1 sm:mt-2 text-center max-w-20 sm:max-w-none">
                   <div
-                    className={`text-xs sm:text-theme-xs font-theme-medium ${status === "En progreso"
-                      ? "text-accent"
-                      : status === "Completo"
+                    className={`text-xs sm:text-theme-xs font-theme-medium ${
+                      status === "En progreso"
+                        ? "text-accent"
+                        : status === "Completo"
                         ? "text-success"
                         : "text-secondary"
-                      }`}
+                    }`}
                     style={{
                       color:
                         status === "En progreso"
                           ? "var(--color-accent)"
                           : status === "Completo"
-                            ? "var(--color-success)"
-                            : "var(--color-text-secondary)",
+                          ? "var(--color-success)"
+                          : "var(--color-text-secondary)",
                     }}
                   >
                     <span className="hidden md:block">{stepItem.name}</span>
@@ -1010,19 +1024,20 @@ export default function AddContractModal({
                     </span>
                   </div>
                   <div
-                    className={`text-xs sm:text-theme-xs mt-0.5 sm:mt-1 ${status === "En progreso"
-                      ? "text-accent"
-                      : status === "Completo"
+                    className={`text-xs sm:text-theme-xs mt-0.5 sm:mt-1 ${
+                      status === "En progreso"
+                        ? "text-accent"
+                        : status === "Completo"
                         ? "text-success"
                         : "text-secondary"
-                      }`}
+                    }`}
                     style={{
                       color:
                         status === "En progreso"
                           ? "var(--color-accent)"
                           : status === "Completo"
-                            ? "var(--color-success)"
-                            : "var(--color-text-secondary)",
+                          ? "var(--color-success)"
+                          : "var(--color-text-secondary)",
                     }}
                   >
                     {status}
@@ -1058,26 +1073,28 @@ export default function AddContractModal({
                   type="button"
                   onClick={() => goToStep(index)}
                   disabled={!completedSteps.includes(index) && index !== 0}
-                  className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-theme-bold border-2 transition-all duration-300 ${isActive
-                    ? "bg-accent text-white"
-                    : isCompleted
+                  className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-theme-bold border-2 transition-all duration-300 ${
+                    isActive
+                      ? "bg-accent text-white"
+                      : isCompleted
                       ? "bg-success text-white border-success"
                       : "bg-surface text-secondary border-primary"
-                    } ${!completedSteps.includes(index) && index !== 0
+                  } ${
+                    !completedSteps.includes(index) && index !== 0
                       ? "cursor-not-allowed opacity-50"
                       : ""
-                    }`}
+                  }`}
                   style={{
                     backgroundColor: isActive
                       ? "var(--color-accent)"
                       : isCompleted
-                        ? "var(--color-success)"
-                        : "var(--color-surface)",
+                      ? "var(--color-success)"
+                      : "var(--color-surface)",
                     borderColor: isActive
                       ? "var(--color-accent)"
                       : isCompleted
-                        ? "var(--color-success)"
-                        : "var(--color-border)",
+                      ? "var(--color-success)"
+                      : "var(--color-border)",
                     color:
                       isActive || isCompleted
                         ? "white"

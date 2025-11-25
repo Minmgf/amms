@@ -128,11 +128,9 @@ export default function EndContractModal({
                   className={`w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none ${errors.reason ? 'border-red-500' : ''}`}
                   disabled={loading}
                 >
-                  <option value="">
-                    {loading ? "Cargando razones..." : "Seleccione una razón"}
-                  </option>
+                  <option value="">Ejemplo</option>
                   {terminationReasons.map((reason) => (
-                    <option key={reason.id_types} value={reason.id_types}>
+                    <option key={reason.id} value={reason.id}>
                       {reason.name}
                     </option>
                   ))}

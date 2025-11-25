@@ -4,7 +4,7 @@ import DetailsRequestModal from "@/app/components/request/services/DetailsReques
 import TrackingDashboardModal from "@/app/components/monitoring/TrackingDashboardModal";
 import AddContractModal from "@/app/components/payroll/contractManagement/contracts/AddContractModal";
 import RegisterEmployeeModal from "@/app/components/payroll/human-resources/employees/RegisterEmployeeModal";
-import IndividualPayrollAdjustmentsModal from "@/app/components/payroll/payroll-runs/IndividualPayrollAdjustmentsModal";
+import IndividualPayrollAdjustmentsModal from "@/app/components/payroll/human-resources/employees/IndividualPayrollAdjustmentsModal";
 import { useState } from "react";
 import HistoricalDataModal from "@/app/components/monitoring/HistoricalDataModal";
 

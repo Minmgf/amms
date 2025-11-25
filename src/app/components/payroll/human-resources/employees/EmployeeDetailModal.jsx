@@ -17,13 +17,16 @@ export default function EmployeeDetailModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isContractModalOpen, setIsContractModalOpen] = useState(false);
+  const [selectedContract, setSelectedContract] = useState(null);
 
   // Date range filter for history
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
   useEffect(() => {
+    console.log('EmployeeDetailModal useEffect:', { isOpen, employeeId });
     if (isOpen && employeeId) {
+      console.log('Loading employee data for ID:', employeeId);
       loadEmployeeData();
       loadEmployeeHistory();
     }
@@ -33,53 +36,8 @@ export default function EmployeeDetailModal({
     setLoading(true);
     setError(null);
     try {
-      const response = await getEmployeeDetails(employeeId);
-      
-      if (response.success && response.data) {
-        // Mapear los datos de la API a la estructura esperada por el componente
-        const mappedData = {
-          // Información personal
-          id: response.data.personal_info.id_user,
-          employeeId: employeeId, // Usar el employeeId que se pasa como parámetro
-          fullName: response.data.personal_info.full_name,
-          documentType: response.data.personal_info.document_type,
-          document: response.data.personal_info.document_number,
-          gender: response.data.personal_info.gender,
-          genderId: response.data.personal_info.gender_id,
-          birthDate: response.data.personal_info.birth_date,
-          email: response.data.personal_info.email,
-          phone: response.data.personal_info.phone,
-          country: response.data.personal_info.country,
-          state: response.data.personal_info.state,
-          city: response.data.personal_info.city,
-          address: response.data.personal_info.address,
-          
-          // Información del contrato
-          status: response.data.contract_info.status_name,
-          statusId: response.data.contract_info.status_id,
-          position: response.data.contract_info.charge_name,
-          positionId: response.data.contract_info.charge_id,
-          department: response.data.contract_info.department_name,
-          departmentId: response.data.contract_info.department_id,
-          contractCode: response.data.contract_info.contract_code,
-          
-          // Información adicional del contrato
-          contract: {
-            id: response.data.contract_info.contract_code,
-            code: response.data.contract_info.contract_code,
-            status: response.data.contract_info.status_name
-          }
-        };
-        
-        setEmployeeData(mappedData);
-        
-        // También establecer el historial desde la respuesta de la API
-        if (response.data.news_history && Array.isArray(response.data.news_history)) {
-          setEmployeeHistory(response.data.news_history);
-        }
-      } else {
-        throw new Error('Respuesta inválida del servidor');
-      }
+      const data = await getEmployeeDetails(employeeId);
+      setEmployeeData(data);
     } catch (err) {
       setError("Error al cargar la información del empleado");
       console.error("Error loading employee data:", err);
@@ -89,12 +47,17 @@ export default function EmployeeDetailModal({
   };
 
   const loadEmployeeHistory = async () => {
-    // El historial ahora se carga junto con los datos del empleado
-    // Esta función se mantiene para compatibilidad pero no hace nada
-    // ya que el historial viene en la respuesta de getEmployeeDetails
+    try {
+      const history = await getEmployeeHistory(employeeId);
+      setEmployeeHistory(history || []);
+    } catch (err) {
+      console.error("Error loading employee history:", err);
+      setEmployeeHistory([]);
+    }
   };
 
-  const handleContractView = () => {
+  const handleContractView = (contract) => {
+    setSelectedContract(contract);
     setIsContractModalOpen(true);
   };
 
@@ -129,6 +92,8 @@ export default function EmployeeDetailModal({
     });
   };
 
+  console.log('EmployeeDetailModal render:', { isOpen, employeeId, employeeData, loading, error });
+  
   if (!isOpen) return null;
 
   const handleBackdropClick = (e) => {
@@ -231,13 +196,15 @@ export default function EmployeeDetailModal({
                           <h3 className="text-theme-lg font-theme-semibold text-primary">
                             Información del Contrato
                           </h3>
-                          <button
-                            onClick={handleContractView}
-                            className="btn-theme btn-outline text-theme-sm gap-2"
-                          >
-                            <FiFileText className="w-4 h-4" />
-                            Contratos
-                          </button>
+                          {employeeData.contract && (
+                            <button
+                              onClick={() => handleContractView(employeeData.contract)}
+                              className="btn-theme btn-outline text-theme-sm gap-2"
+                            >
+                              <FiFileText className="w-4 h-4" />
+                              Contratos
+                            </button>
+                          )}
                         </div>
                         <div className="space-y-4">
                           <InfoField label="Cargo" value={employeeData.position} />
@@ -331,14 +298,14 @@ export default function EmployeeDetailModal({
                                         {formatDateTime(item.date)}
                                       </span>
                                       <span className="text-theme-sm text-secondary">
-                                        por {item.responsible_user_name}
+                                        por {item.user}
                                       </span>
                                     </div>
                                     <p className="text-primary mb-1">{item.description}</p>
                                     <span className={`parametrization-badge ${
-                                      item.action === "Creación de empleado" ? "parametrization-badge-5" :
-                                      item.action === "Actualizar empleado" ? "parametrization-badge-8" :
-                                      item.action === "Cambio de contrato" ? "parametrization-badge-4" :
+                                      item.action === "creation" ? "parametrization-badge-5" :
+                                      item.action === "update" ? "parametrization-badge-8" :
+                                      item.action === "contract_change" ? "parametrization-badge-4" :
                                       "parametrization-badge-10"
                                     }`}>
                                       {item.action}
@@ -374,6 +341,7 @@ export default function EmployeeDetailModal({
       <ContractDetailModal
         isOpen={isContractModalOpen}
         onClose={() => setIsContractModalOpen(false)}
+        contractData={selectedContract}
         employeeData={employeeData}
       />
     </>
