@@ -361,8 +361,10 @@ const EmployeesPage = () => {
   };
 
   const handleViewDetails = (employee) => {
+    console.log('handleViewDetails called with employee:', employee);
     setSelectedEmployeeForDetail(employee);
     setIsDetailModalOpen(true);
+    console.log('Modal should be opening now');
   };
 
   const handleEditEmployee = (employeeData) => {
@@ -565,7 +567,7 @@ const EmployeesPage = () => {
       <EmployeeDetailModal
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
-        employeeId={selectedEmployeeForDetail?.id_employee || selectedEmployeeForDetail?.id}
+        employeeId={selectedEmployeeForDetail?.id}
         onEdit={handleEditEmployee}
       />
 
