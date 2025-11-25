@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react";
 import { FiX, FiArrowLeft, FiEdit, FiPause, FiPlay } from "react-icons/fi";
 import { TbExchange } from "react-icons/tb";
 import { getContractDetails, getContractHistory, getHistoryByContract } from "@/services/employeeService";
+import { getContractTerminationReasons, terminateContract } from "@/services/contractService";
+import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
 import EndContractModal from "./EndContractModal";
 import GenerateAddendumModal from "@/app/components/payroll/contractManagement/contracts/GenerateAddendumModal";
 import AddContractModal from "@/app/components/payroll/contractManagement/contracts/AddContractModal";
@@ -24,9 +26,16 @@ export default function ContractDetailModal({
   // Estados para funcionalidades de Otrosí y Terminación (User's work)
   const [showEndContractModal, setShowEndContractModal] = useState(false);
   const [endContractLoading, setEndContractLoading] = useState(false);
+  const [terminationReasons, setTerminationReasons] = useState([]);
+  const [terminationReasonsLoading, setTerminationReasonsLoading] = useState(false);
   const [showAddendumModal, setShowAddendumModal] = useState(false);
   const [showAddContractModal, setShowAddContractModal] = useState(false);
   const [addendumFields, setAddendumFields] = useState([]);
+
+  const [successModalOpen, setSuccessModalOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   // Estados para Cambio de Contrato (Colleague's work)
   const [isChangeContractModalOpen, setIsChangeContractModalOpen] = useState(false);
@@ -194,6 +203,21 @@ export default function ContractDetailModal({
     }
   };
 
+  const loadTerminationReasons = async () => {
+    setTerminationReasonsLoading(true);
+    try {
+      const response = await getContractTerminationReasons();
+      const payload = response?.data || response;
+      const list = Array.isArray(payload) ? payload : payload?.data || [];
+      setTerminationReasons(list || []);
+    } catch (err) {
+      console.error("Error loading termination reasons:", err);
+      setTerminationReasons([]);
+    } finally {
+      setTerminationReasonsLoading(false);
+    }
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return "—";
     return new Date(dateString).toLocaleDateString("es-CO", {
@@ -224,32 +248,52 @@ export default function ContractDetailModal({
     }).format(amount);
   };
 
-  // Funciones para manejar la finalización del contrato (User's logic)
-  const handleEndContract = () => {
+  // Funciones para manejar la finalización del contrato
+  const handleEndContract = async () => {
+    if (!selectedContract?.contract_code) {
+      setErrorMessage("No se ha seleccionado un contrato válido");
+      setErrorModalOpen(true);
+      return;
+    }
+
     setShowEndContractModal(true);
+    await loadTerminationReasons();
   };
 
   const handleEndContractConfirm = async (formData) => {
+    if (!selectedContract?.contract_code) {
+      setErrorMessage("No se ha seleccionado un contrato válido");
+      setErrorModalOpen(true);
+      return;
+    }
+
     setEndContractLoading(true);
     try {
-      // Aquí iría la llamada al servicio para finalizar el contrato
-      console.log("Finalizando contrato con datos:", formData);
-      
-      // Simular llamada al API
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Cerrar modal y actualizar datos
-      setShowEndContractModal(false);
-      
-      // Recargar detalles del contrato para reflejar el nuevo estado
-      await loadContractDetails();
-      
-      // Mostrar mensaje de éxito
-      alert("Contrato finalizado exitosamente");
-      
+      const payload = {
+        contract_termination_reason: parseInt(formData.reasonId, 10),
+        observation: formData.description || ""
+      };
+
+      const response = await terminateContract(selectedContract.contract_code, payload);
+
+      if (response?.success) {
+        setShowEndContractModal(false);
+        await loadContractDetails();
+        await loadContractHistory();
+
+        setSuccessMessage(response.message || "Contrato finalizado exitosamente.");
+        setSuccessModalOpen(true);
+      } else {
+        const fallbackMessage =
+          response?.message || "Error al finalizar el contrato. Intente nuevamente.";
+        setErrorMessage(fallbackMessage);
+        setErrorModalOpen(true);
+      }
     } catch (error) {
-      console.error("Error al finalizar contrato:", error);
-      alert("Error al finalizar el contrato. Intente nuevamente.");
+      const computedMessage =
+        error?.message || "Error al finalizar el contrato. Intente nuevamente.";
+      setErrorMessage(computedMessage);
+      setErrorModalOpen(true);
     } finally {
       setEndContractLoading(false);
     }
@@ -617,16 +661,10 @@ export default function ContractDetailModal({
         isOpen={showEndContractModal}
         onClose={handleEndContractCancel}
         onConfirm={handleEndContractConfirm}
-        contractData={selectedContract} // Assuming selectedContract is the target
+        contractData={selectedContract}
         employeeData={employeeData}
-        terminationReasons={[
-          { id: "1", name: "Terminación por mutuo acuerdo" },
-          { id: "2", name: "Terminación por vencimiento del término" },
-          { id: "3", name: "Terminación por justa causa" },
-          { id: "4", name: "Renuncia del empleado" },
-          { id: "5", name: "Despido sin justa causa" }
-        ]}
-        loading={endContractLoading}
+        terminationReasons={terminationReasons}
+        loading={endContractLoading || terminationReasonsLoading}
       />
 
       {/* Modal de Selección de Campos para Otro Sí (User's work) */}
@@ -709,6 +747,20 @@ export default function ContractDetailModal({
           </div>
         </div>
       )}
+
+      <SuccessModal
+        isOpen={successModalOpen}
+        onClose={() => setSuccessModalOpen(false)}
+        title="Contrato finalizado"
+        message={successMessage || "Contrato finalizado exitosamente."}
+      />
+
+      <ErrorModal
+        isOpen={errorModalOpen}
+        onClose={() => setErrorModalOpen(false)}
+        title="Error al finalizar contrato"
+        message={errorMessage || "Error al finalizar el contrato. Intente nuevamente."}
+      />
     </div>
   );
 }

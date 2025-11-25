@@ -240,6 +240,12 @@ export const getDaysOfWeek = async () => {
  * @returns {Promise} - Lista de razones de terminación
  */
 export const getContractTerminationReasons = async () => {
+  try {
+    const { data } = await apiMain.get("/types/list/active/20/");
+    return data;
+  } catch (error) {
+    throw error;
+  }
 };
 
 /**
@@ -251,4 +257,57 @@ export const getContractTerminationReasons = async () => {
  * @returns {Promise} - Respuesta del servidor
  */
 export const terminateContract = async (contractCode, payload) => {
+  try {
+    const { data } = await apiMain.post(
+      `/employees/${contractCode}/terminate-contract/`,
+      payload
+    );
+    return data;
+  } catch (error) {
+    if (error.response) {
+      const status = error.response.status;
+      let message = "Error al finalizar el contrato";
+
+      switch (status) {
+        case 400: {
+          const errors = error.response.data?.errors;
+          if (errors) {
+            const errorMessages = [];
+            Object.values(errors).forEach((messages) => {
+              if (Array.isArray(messages)) {
+                errorMessages.push(...messages);
+              }
+            });
+            if (errorMessages.length > 0) {
+              message = errorMessages.join(". ");
+            }
+          } else if (error.response.data?.message) {
+            message = error.response.data.message;
+          }
+          break;
+        }
+        case 401:
+          message = "Usuario no autenticado";
+          break;
+        case 403:
+          message = "No tiene permisos para finalizar este contrato";
+          break;
+        case 404:
+          message = "Contrato no encontrado";
+          break;
+        case 500:
+          message = "Error interno del servidor al finalizar el contrato";
+          break;
+        default:
+          message = error.response.data?.message || `Error del servidor: ${status}`;
+      }
+
+      const customError = new Error(message);
+      customError.status = status;
+      customError.validationErrors = error.response.data?.errors || {};
+      throw customError;
+    }
+
+    throw error;
+  }
 };
