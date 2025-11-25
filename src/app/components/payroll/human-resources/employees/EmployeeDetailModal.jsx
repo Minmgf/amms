@@ -17,7 +17,6 @@ export default function EmployeeDetailModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isContractModalOpen, setIsContractModalOpen] = useState(false);
-  const [selectedContract, setSelectedContract] = useState(null);
 
   // Date range filter for history
   const [startDate, setStartDate] = useState("");
@@ -375,7 +374,6 @@ export default function EmployeeDetailModal({
       <ContractDetailModal
         isOpen={isContractModalOpen}
         onClose={() => setIsContractModalOpen(false)}
-        contractData={selectedContract}
         employeeData={employeeData}
       />
     </>
