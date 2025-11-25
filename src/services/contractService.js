@@ -225,10 +225,10 @@ export const downloadContract = async (contractCode, fileType = 'pdf') => {
     const filename = `contrato_${contractCode}_${timestamp}.${fileType.toLowerCase()}`;
 
     // Crear blob con el tipo de contenido correcto
-    const contentType = fileType.toLowerCase() === 'pdf' 
+    const contentType = fileType.toLowerCase() === 'pdf'
       ? 'application/pdf'
       : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-    
+
     const blob = new Blob([response.data], { type: contentType });
 
     // Crear URL temporal y descargar
@@ -238,7 +238,7 @@ export const downloadContract = async (contractCode, fileType = 'pdf') => {
     link.download = filename;
     document.body.appendChild(link);
     link.click();
-    
+
     // Limpiar
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
@@ -321,13 +321,13 @@ export const terminateContract = async (contractCode, payload) => {
           if (error.response.data?.errors) {
             const errors = error.response.data.errors;
             const errorMessages = [];
-            
+
             Object.entries(errors).forEach(([field, messages]) => {
               if (Array.isArray(messages)) {
                 errorMessages.push(...messages);
               }
             });
-            
+
             if (errorMessages.length > 0) {
               message = errorMessages.join('. ');
             }
@@ -356,16 +356,14 @@ export const terminateContract = async (contractCode, payload) => {
       customError.validationErrors = error.response.data?.errors || {};
       throw customError;
     }
+  }};
 
- * Obtener días de la semana
- * @returns {Promise} - Lista de días de la semana
- */
 export const getDaysOfWeek = async () => {
-  try {
-    const { data } = await apiMain.get("/days_of_week/");
-    return data;
-  } catch (error) {
-    console.error("Error al obtener días de la semana:", error);
-    throw error;
-  }
+      try {
+        const { data } = await apiMain.get("/days_of_week/");
+        return data;
+      } catch (error) {
+        console.error("Error al obtener días de la semana:", error);
+        throw error;
+      }
 };
