@@ -414,6 +414,22 @@ export const getLatestEmployeeContract = async (employeeId) => {
 };
 
 /**
+ * Create a contract addendum (Otro Sí) for an employee (HU-EMP-006)
+ * @param {number} employeeId - Employee ID
+ * @param {Object} payload - Addendum data
+ * @returns {Promise<Object>} Created addendum/contract
+ */
+export const createContractAddendum = async (employeeId, payload) => {
+  try {
+    const response = await apiMain.post(`/employees/${employeeId}/generate-otro-si/`, payload);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating contract addendum:', error);
+    throw error;
+  }
+};
+
+/**
  * Get user information by ID (HU-EMP-009)
  * @param {number} userId - User ID
  * @returns {Promise<Object>} User information
@@ -424,6 +440,23 @@ export const getUserById = async (userId) => {
     return response.data;
   } catch (error) {
     console.error('Error fetching user by ID:', error);
+    throw error;
+  }
+};
+
+/**
+ * Toggle employee status (activate/deactivate)
+ * @param {number} employeeId - Employee ID
+ * @param {string|null} observation - Observation (required for deactivation, optional for activation)
+ * @returns {Promise<Object>} Response message
+ */
+export const toggleEmployeeStatus = async (employeeId, observation = null) => {
+  try {
+    const payload = observation ? { observation } : {};
+    const response = await apiMain.patch(`/employees/${employeeId}/toggle-status/`, payload);
+    return response.data;
+  } catch (error) {
+    console.error('Error toggling employee status:', error);
     throw error;
   }
 };
