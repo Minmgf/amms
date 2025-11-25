@@ -5,6 +5,7 @@ import { FiX, FiArrowLeft, FiEdit, FiPause, FiPlay } from "react-icons/fi";
 import { getContractDetails, getContractHistory, getHistoryByContract } from "@/services/employeeService";
 import { getContractTerminationReasons, terminateContract } from "@/services/contractService";
 import EndContractModal from "./EndContractModal";
+import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
 
 export default function ContractDetailModal({
   isOpen,
@@ -23,6 +24,10 @@ export default function ContractDetailModal({
   const [endContractLoading, setEndContractLoading] = useState(false);
   const [terminationReasons, setTerminationReasons] = useState([]);
   const [terminationReasonsLoading, setTerminationReasonsLoading] = useState(false);
+  const [successModalOpen, setSuccessModalOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     if (isOpen && employeeData?.employeeId) {
@@ -221,7 +226,8 @@ export default function ContractDetailModal({
 
   const handleEndContractConfirm = async (formData) => {
     if (!selectedContract?.contract_code) {
-      alert("No se ha seleccionado un contrato válido");
+      setErrorMessage("No se ha seleccionado un contrato válido");
+      setErrorModalOpen(true);
       return;
     }
 
@@ -244,16 +250,18 @@ export default function ContractDetailModal({
         await loadContractDetails();
         await loadContractHistory();
         
-        // Mostrar mensaje de éxito
-        alert(response.message || "Contrato finalizado exitosamente");
+        // Mostrar mensaje de éxito con modal reutilizable
+        setSuccessMessage(response.message || "Contrato finalizado exitosamente.");
+        setSuccessModalOpen(true);
       }
       
     } catch (error) {
       console.error("Error al finalizar contrato:", error);
       
-      // Mostrar mensaje de error específico
-      const errorMessage = error.message || "Error al finalizar el contrato. Intente nuevamente.";
-      alert(errorMessage);
+      // Mostrar mensaje de error específico en modal reutilizable
+      const errorMsg = error.message || "Error al finalizar el contrato. Intente nuevamente.";
+      setErrorMessage(errorMsg);
+      setErrorModalOpen(true);
       
       // Si hay errores de validación, podrías manejarlos aquí
       if (error.validationErrors) {
@@ -588,6 +596,22 @@ export default function ContractDetailModal({
         employeeData={employeeData}
         terminationReasons={terminationReasons}
         loading={endContractLoading || terminationReasonsLoading}
+      />
+
+      {/* Modal de éxito al finalizar contrato */}
+      <SuccessModal
+        isOpen={successModalOpen}
+        onClose={() => setSuccessModalOpen(false)}
+        title="Contrato finalizado"
+        message={successMessage}
+      />
+
+      {/* Modal de error al finalizar contrato */}
+      <ErrorModal
+        isOpen={errorModalOpen}
+        onClose={() => setErrorModalOpen(false)}
+        title="Error al finalizar contrato"
+        message={errorMessage}
       />
     </div>
   );
