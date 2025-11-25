@@ -7,6 +7,8 @@ import { getContractTerminationReasons, terminateContract } from "@/services/con
 import EndContractModal from "./EndContractModal";
 import GenerateAddendumModal from "@/app/components/payroll/contractManagement/contracts/GenerateAddendumModal";
 import AddContractModal from "@/app/components/payroll/contractManagement/contracts/AddContractModal";
+import { TbExchange } from "react-icons/tb";
+import { getContractDetails, getContractHistory } from "@/services/employeeService";
 
 export default function ContractDetailModal({
   isOpen,
@@ -28,6 +30,9 @@ export default function ContractDetailModal({
   const [showAddendumModal, setShowAddendumModal] = useState(false);
   const [showAddContractModal, setShowAddContractModal] = useState(false);
   const [addendumFields, setAddendumFields] = useState([]);
+
+  const [isChangeContractModalOpen, setIsChangeContractModalOpen] = useState(false);
+  const [selectedChangeOption, setSelectedChangeOption] = useState("predefined");
 
   useEffect(() => {
     if (isOpen && employeeData?.employeeId) {
@@ -370,6 +375,13 @@ export default function ContractDetailModal({
                     <FiPlay className="w-4 h-4" />
                     Generar Otrosi
                   </button>
+                  <button
+                    className="btn-theme btn-primary gap-2"
+                    onClick={() => setIsChangeContractModalOpen(true)}
+                  >
+                    <TbExchange className="w-4 h-4" />
+                    Cambiar contrato
+                  </button>
                 </div>
               )}
 
@@ -384,23 +396,20 @@ export default function ContractDetailModal({
                       {contractHistory.map((contract, index) => (
                         <div
                           key={index}
-                          onClick={() => handleContractSelect(contract)}
-                          className={`p-theme-sm rounded-theme-lg border cursor-pointer transition-fast ${
-                            selectedContract?.contract_code === contract.contract_code
-                              ? "border-accent bg-accent/10"
-                              : "border-primary hover:bg-hover"
-                          }`}
+                          className={`p-theme-sm rounded-theme-lg border cursor-pointer transition-fast ${contract.id === contractDetails.id
+                            ? "border-accent bg-accent/10"
+                            : "border-primary hover:bg-hover"
+                            }`}
                         >
                           <div className="flex items-center justify-between mb-2">
-                            <span className="font-theme-medium text-theme-sm">{contract.contract_code}</span>
-                            <span className={`parametrization-badge ${
-                              contract.contract_status_name === "Creado" || contract.contract_status_name === "Activo"
-                                ? "parametrization-badge-5"
-                                : contract.contract_status_name === "Finalizado"
+                            <span className="font-theme-medium text-theme-sm">{contract.code}</span>
+                            <span className={`parametrization-badge ${contract.status === "Active" || contract.status === "Activo"
+                              ? "parametrization-badge-5"
+                              : contract.status === "Finished" || contract.status === "Finalizado"
                                 ? "parametrization-badge-10"
                                 : "parametrization-badge-1"
-                            }`}>
-                              {contract.contract_status_name}
+                              }`}>
+                              {contract.status}
                             </span>
                           </div>
                           <div className="text-theme-xs text-secondary">
@@ -423,14 +432,13 @@ export default function ContractDetailModal({
                       {contractActionsHistory.length > 0 ? contractActionsHistory.map((action, index) => (
                         <div key={index} className="p-theme-sm border border-primary rounded-theme-lg">
                           <div className="flex items-center justify-between mb-1">
-                            <span className="font-theme-medium text-theme-sm">{action.contract_code}</span>
-                            <span className={`parametrization-badge ${
-                              action.contract_status_name === "Creacion" ? "parametrization-badge-5" :
-                              action.contract_status_name === "Finalizado" ? "parametrization-badge-1" :
-                              action.contract_status_name === "Otrosi" ? "parametrization-badge-8" :
-                              "parametrization-badge-10"
-                            }`}>
-                              {action.contract_status_name}
+                            <span className="font-theme-medium text-theme-sm">{action.code}</span>
+                            <span className={`parametrization-badge ${action.type === "Creation" ? "parametrization-badge-5" :
+                              action.type === "Termination" ? "parametrization-badge-1" :
+                                action.type === "Modification" ? "parametrization-badge-8" :
+                                  "parametrization-badge-10"
+                              }`}>
+                              {action.type}
                             </span>
                           </div>
                           <div className="text-theme-xs text-secondary">
@@ -443,11 +451,11 @@ export default function ContractDetailModal({
                             )}
                           </div>
                         </div>
-                      )) : (
-                        <div className="text-center py-4 text-secondary text-theme-sm">
-                          {selectedContract ? "No hay acciones registradas para este contrato" : "Seleccione un contrato para ver las acciones"}
-                        </div>
-                      )}
+                      )) || (
+                          <div className="text-center py-4 text-secondary text-theme-sm">
+                            No hay acciones registradas
+                          </div>
+                        )}
                     </div>
                   </div>
                 </div>
@@ -479,9 +487,9 @@ export default function ContractDetailModal({
                       <InfoField label="Modalidad de trabajo" value={contractDetails.baseModality} />
                     </div>
                     <div className="mt-4">
-                      <InfoField 
-                        label="Descripción" 
-                        value={contractDetails.description || "Desarrollo y mantenimiento de aplicaciones web usando tecnologías modernas"} 
+                      <InfoField
+                        label="Descripción"
+                        value={contractDetails.description || "Desarrollo y mantenimiento de aplicaciones web usando tecnologías modernas"}
                       />
                     </div>
                   </div>
@@ -537,12 +545,12 @@ export default function ContractDetailModal({
                               <td className="py-2 px-3 text-gray-600">{deduction.quantity}</td>
                             </tr>
                           )) || (
-                            <tr>
-                              <td colSpan="7" className="py-4 text-center text-gray-500">
-                                No hay deducciones asociadas
-                              </td>
-                            </tr>
-                          )}
+                              <tr>
+                                <td colSpan="7" className="py-4 text-center text-gray-500">
+                                  No hay deducciones asociadas
+                                </td>
+                              </tr>
+                            )}
                         </tbody>
                       </table>
                     </div>
@@ -578,12 +586,12 @@ export default function ContractDetailModal({
                               <td className="py-2 px-3 text-gray-600">{increment.quantity}</td>
                             </tr>
                           )) || (
-                            <tr>
-                              <td colSpan="7" className="py-4 text-center text-gray-500">
-                                No hay incrementos asociados
-                              </td>
-                            </tr>
-                          )}
+                              <tr>
+                                <td colSpan="7" className="py-4 text-center text-gray-500">
+                                  No hay incrementos asociados
+                                </td>
+                              </tr>
+                            )}
                         </tbody>
                       </table>
                     </div>
@@ -609,36 +617,64 @@ export default function ContractDetailModal({
         )}
       </div>
 
-      {/* Modal de finalización de contrato */}
-      <EndContractModal
-        isOpen={showEndContractModal}
-        onClose={handleEndContractCancel}
-        onConfirm={handleEndContractConfirm}
-        contractData={selectedContract}
-        employeeData={employeeData}
-        terminationReasons={terminationReasons}
-        loading={endContractLoading || terminationReasonsLoading}
-      />
+      {/* Change Contract Modal */}
+      {isChangeContractModalOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4">
+          <div className="modal-theme rounded-xl shadow-2xl w-full max-w-lg p-6 bg-white dark:bg-gray-800">
+            <h3 className="text-xl font-bold text-center mb-6 text-primary">
+              Cambiar Contrato
+            </h3>
 
-      {/* Modal de Selección de Campos para Otro Sí */}
-      <GenerateAddendumModal
-        isOpen={showAddendumModal}
-        onClose={() => setShowAddendumModal(false)}
-        onConfirm={handleConfirmAddendum}
-        contractData={contractDetails}
-      />
+            <p className="text-secondary mb-6 text-center">
+              Por favor seleccione una de las siguientes opciones:
+            </p>
 
-      {/* Modal de Creación de Contrato (usado para Otro Sí) */}
-      {showAddContractModal && (
-        <AddContractModal
-          isOpen={showAddContractModal}
-          onClose={handleAddContractClose}
-          contractToEdit={contractDetails}
-          onSuccess={handleAddContractSuccess}
-          isAddendum={true}
-          modifiableFields={addendumFields}
-          employeeId={employeeData.id}
-        />
+            <div className="flex justify-center gap-8 mb-8">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="contractOption"
+                  value="predefined"
+                  checked={selectedChangeOption === "predefined"}
+                  onChange={(e) => setSelectedChangeOption(e.target.value)}
+                  className="w-4 h-4 text-primary focus:ring-primary"
+                />
+                <span className="text-primary">Seleccionar un contrato predefinido</span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="contractOption"
+                  value="new"
+                  checked={selectedChangeOption === "new"}
+                  onChange={(e) => setSelectedChangeOption(e.target.value)}
+                  className="w-4 h-4 text-primary focus:ring-primary"
+                />
+                <span className="text-primary">Crear un nuevo contrato</span>
+              </label>
+            </div>
+
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => setIsChangeContractModalOpen(false)}
+                className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  // Handle selection logic here
+                  console.log("Selected option:", selectedChangeOption);
+                  setIsChangeContractModalOpen(false);
+                }}
+                className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium dark:bg-white dark:text-black dark:hover:bg-gray-200"
+              >
+                Seleccionar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
