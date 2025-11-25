@@ -41,7 +41,7 @@ const createCustomIcon = (color) => {
 };
 
 // Gauge Card Component (Velocímetro/Tacómetro)
-export const GaugeCard = ({ label, value, max, unit, type, alert = null, threshold, hasData = true }) => {
+export const GaugeCard = ({ label, value, max, unit, type, alert, threshold, hasData = true }) => {
   // Si no hay datos, mostrar "No aplica"
   if (!hasData) {
     return (
@@ -76,8 +76,16 @@ export const GaugeCard = ({ label, value, max, unit, type, alert = null, thresho
     return 'var(--color-primary)';
   };
 
-  // Solo hay alerta si viene en el campo alert del WebSocket
-  const hasAlert = alert !== null && alert !== undefined;
+  // Determinar si hay alerta basado en umbrales dinámicos o valores por defecto
+  const getAlertThreshold = () => {
+    if (threshold) return threshold;
+    if (type === 'speed') return max * 0.25; // 25% del máximo
+    if (type === 'rpm') return max * 0.93; // 93% del máximo
+    return max;
+  };
+
+  const alertThreshold = getAlertThreshold();
+  const hasAlert = alert || realValue > alertThreshold;
 
   return (
     <div 
@@ -162,17 +170,12 @@ export const GaugeCard = ({ label, value, max, unit, type, alert = null, thresho
       </div>
       <p className="text-2xl font-bold text-primary mt-2 transition-colors duration-500" style={{ color: hasAlert ? '#EF4444' : 'var(--color-primary)' }}>{Math.round(realValue)}</p>
       <p className="text-xs text-secondary">{unit}</p>
-      {hasAlert && alert && (
-        <div className="mt-2 text-xs text-center">
-          <p className="text-red-600 font-semibold">⚠️ Se ha superado el umbral establecido {alert.reason ? alert.reason.split(' ')[6] || '' : ''}{unit}</p>
-        </div>
-      )}
     </div>
   );
 };
 
 // Circular Progress Component
-export const CircularProgress = ({ label, value, color = "#3B82F6", alert = null, hasData = true }) => {
+export const CircularProgress = ({ label, value, color = "#3B82F6", alert = false, hasData = true }) => {
   // Si no hay datos, mostrar "No aplica"
   if (!hasData) {
     return (
@@ -198,8 +201,8 @@ export const CircularProgress = ({ label, value, color = "#3B82F6", alert = null
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (clampedValue / 100) * circumference;
   
-  // Solo hay alerta si viene en el campo alert del WebSocket
-  const hasAlert = alert !== null && alert !== undefined;
+  // Determinar alerta si el valor es muy alto (usando valor real)
+  const hasAlert = alert || realValue > 90;
   const displayColor = hasAlert ? '#EF4444' : color;
 
   return (
@@ -245,11 +248,6 @@ export const CircularProgress = ({ label, value, color = "#3B82F6", alert = null
           </div>
         </div>
       </div>
-      {hasAlert && alert && (
-        <div className="mt-2 text-xs text-center">
-          <p className="text-red-600 font-semibold">⚠️ Se ha superado el umbral establecido {alert.reason ? alert.reason.split(' ')[6] || '' : ''}%</p>
-        </div>
-      )}
     </div>
   );
 };

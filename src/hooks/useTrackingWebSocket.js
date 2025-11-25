@@ -201,8 +201,6 @@ export const useTrackingWebSocket = (options = {}) => {
       setLastMessage(processedData);
 
       // Procesar alertas si existen
-      // IMPORTANTE: Solo mantener las alertas del mensaje actual para este IMEI
-      // Las alertas desaparecen si no vienen en el siguiente mensaje
       if (messageAlerts && Array.isArray(messageAlerts) && messageAlerts.length > 0) {
         const newAlerts = messageAlerts.map(alert => ({
           ...alert,
@@ -211,14 +209,7 @@ export const useTrackingWebSocket = (options = {}) => {
           id: `${imei}-${timestamp}-${alert.parameter}`
         }));
         
-        // Remover alertas anteriores de este IMEI y agregar las nuevas
-        setAlerts(prev => {
-          const alertsFromOtherImeis = prev.filter(a => a.imei !== imei);
-          return [...newAlerts, ...alertsFromOtherImeis].slice(0, 50);
-        });
-      } else {
-        // Si no hay alertas en este mensaje, limpiar las alertas de este IMEI
-        setAlerts(prev => prev.filter(a => a.imei !== imei));
+        setAlerts(prev => [...newAlerts, ...prev].slice(0, 50)); // Mantener últimas 50 alertas
       }
 
     } catch (error) {

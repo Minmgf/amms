@@ -176,12 +176,6 @@ export const getDepartments = async () => {
     return data;
 };
 
-//Listar Departamentos Activos
-export const getActiveDepartments = async () => {
-    const { data } = await apiMain.get(`employee_departments/list/active/`);
-    return data;
-};
-
 //Crear nuevo departamento
 export const createDepartment = async (payload) => {
     const { data } = await apiMain.post("employee_departments/", payload);
@@ -191,12 +185,6 @@ export const createDepartment = async (payload) => {
 //Obtener cargos por departamento
 export const getChargesDepartments = async (id_employee_deparment) => {
     const { data } = await apiMain.get(`employee_charges/list/${id_employee_deparment}/`);
-    return data;
-};
-
-//Obtener cargos activos por departamento
-export const getActiveChargesDepartments = async (id_employee_deparment) => {
-    const { data } = await apiMain.get(`employee_charges/list/active/${id_employee_deparment}/`);
     return data;
 };
 

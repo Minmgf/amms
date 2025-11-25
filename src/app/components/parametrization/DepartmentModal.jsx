@@ -131,8 +131,7 @@ const DepartmentModal = ({
           name: job.name,
           description: job.description,
           idStatues: job.id_statues,
-          status: job.estado,
-          contractPrefix: job.contractPrefix || job.contract_prefix,
+          status: job.estado
         })));
       } else if (response.data) {
         setJobTitles(response.data.map(job => ({
@@ -140,8 +139,7 @@ const DepartmentModal = ({
           name: job.name,
           description: job.description,
           idStatues: job.id_statues,
-          status: job.estado,
-          contractPrefix: job.contractPrefix || job.contract_prefix,
+          status: job.estado
         })));
       } else {
         setJobTitles([]);
@@ -224,8 +222,7 @@ const DepartmentModal = ({
           id: jobTitles.length > 0 ? Math.max(...jobTitles.map(j => j.id)) + 1 : 1,
           name: jobData.jobTitle,
           description: jobData.description,
-          status: jobData.isActive ? 'Activo' : 'Inactivo',
-          contractPrefix: jobData.contractPrefix,
+          status: jobData.isActive ? 'Activo' : 'Inactivo'
         };
         setJobTitles(prev => [...prev, newJob]);
       } else {
@@ -237,7 +234,6 @@ const DepartmentModal = ({
             responsible_user: userId,
             name: jobData.jobTitle,
             description: jobData.description,
-            contract_prefix: jobData.contractPrefix,
           };
           const response = await createJob(payload);
           await fetchJobs(departmentId);
@@ -259,8 +255,7 @@ const DepartmentModal = ({
               ...job,
               name: jobData.jobTitle,
               description: jobData.description,
-              status: jobData.isActive ? 'Activo' : 'Inactivo',
-              contractPrefix: jobData.contractPrefix,
+              status: jobData.isActive ? 'Activo' : 'Inactivo'
             }
             : job
         ));
@@ -271,8 +266,7 @@ const DepartmentModal = ({
           const payload = {
             name: jobData.jobTitle,
             description: jobData.description,
-            responsible_user: userId,
-            contract_prefix: jobData.contractPrefix,
+            responsible_user: userId
           };
           const response = await updateJob(jobId, payload);
           await fetchJobs(formData.id);

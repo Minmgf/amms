@@ -1,80 +1,62 @@
 "use client";
 import { useFormContext, useFieldArray } from "react-hook-form";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
-import { useState, useEffect } from "react";
-import { ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
-import { getDeductionTypes } from "@/services/contractService";
+import { useState } from "react";
+import { ConfirmModal } from "../shared/SuccessErrorModal";
 
-export default function Step3Deductions({ isAddendum = false, modifiableFields = [] }) {
+export default function Step4Increments() {
   const {
     register,
     control,
     formState: { errors },
   } = useFormContext();
 
-  const isDisabled = isAddendum && !modifiableFields.includes("changeDeductions");
-
   const { fields, append, remove } = useFieldArray({
     control,
-    name: "deductions",
+    name: "increments",
   });
 
   const [selectedRows, setSelectedRows] = useState([]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [deductionNameOptions, setDeductionNameOptions] = useState([]);
-  const [loadingDeductions, setLoadingDeductions] = useState(true);
 
-  // Cargar tipos de deducción desde el servicio
-  useEffect(() => {
-    const fetchDeductionTypes = async () => {
-      try {
-        setLoadingDeductions(true);
-        const data = await getDeductionTypes();
-        console.log("Tipos de deducción cargados:", data);
-        setDeductionNameOptions(data || []);
-      } catch (error) {
-        console.error("Error al cargar tipos de deducción:", error);
-        setDeductionNameOptions([]);
-      } finally {
-        setLoadingDeductions(false);
-      }
-    };
-
-    fetchDeductionTypes();
-  }, []);
-
-  // Opciones de tipo de monto (según especificación del backend)
-  const deductionTypeOptions = [
-    { id: "Porcentaje", name: "Porcentaje" },
-    { id: "fijo", name: "Fijo" },
+  // Datos temporales para los selects - deberían venir de servicios
+  const incrementNameOptions = [
+    { id: 1, name: "Bonificación" },
+    { id: 2, name: "Prima" },
+    { id: 3, name: "Comisión" },
+    { id: 4, name: "Auxilio de transporte" },
+    { id: 5, name: "Auxilio de alimentación" },
   ];
 
-  // Opciones de aplicación (según especificación del backend)
+  const incrementTypeOptions = [
+    { id: 1, name: "Porcentual" },
+    { id: 2, name: "Fijo" },
+  ];
+
   const applicationOptions = [
-    { id: "SalarioBase", name: "Salario Base" },
-    { id: "SalarioFinal", name: "Salario Final" },
+    { id: 1, name: "Salario base" },
+    { id: 2, name: "Salario total" },
+    { id: 3, name: "Horas extras" },
   ];
 
-  const handleAddDeduction = () => {
+  const handleAddIncrement = () => {
     append({
-      deduction_type: "",
-      amount_type: "",
-      amount_value: "",
-      application_deduction_type: "",
-      start_date_deduction: "",
-      end_date_deductions: "",
-      description: "",
+      name: "",
+      type: "",
       amount: "",
+      application: "",
+      startDate: "",
+      endDate: "",
+      description: "",
+      quantity: "1",
     });
   };
 
   const handleDeleteClick = () => {
-    // Mostrar el modal de confirmación
     setShowConfirmModal(true);
   };
 
   const handleConfirmDelete = () => {
-    // Ordenar índices de mayor a menor para evitar problemas al eliminar
     const sortedIndexes = [...selectedRows].sort((a, b) => b - a);
     sortedIndexes.forEach((index) => remove(index));
     setSelectedRows([]);
@@ -104,46 +86,44 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
       {/* Header con botones */}
       <div className="flex justify-between items-center">
         <h3 className="text-lg sm:text-theme-lg font-theme-semibold text-primary">
-          Deducciones
+          Incrementos
         </h3>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={handleDeleteClick}
-            disabled={selectedRows.length === 0 || isDisabled}
+            disabled={selectedRows.length === 0}
             className="flex items-center gap-2 px-4 py-2 text-theme-sm font-theme-medium rounded-lg transition-colors"
             style={{
               backgroundColor:
-                selectedRows.length === 0 || isDisabled
+                selectedRows.length === 0
                   ? "var(--color-border)"
                   : "var(--color-error)",
-              color: selectedRows.length === 0 || isDisabled ? "var(--color-text-secondary)" : "white",
-              cursor: selectedRows.length === 0 || isDisabled ? "not-allowed" : "pointer",
+              color: selectedRows.length === 0 ? "var(--color-text-secondary)" : "white",
+              cursor: selectedRows.length === 0 ? "not-allowed" : "pointer",
             }}
-            aria-label="Delete Selected Deductions"
+            aria-label="Delete Selected Increments"
           >
             <FiTrash2 size={16} />
             Eliminar
           </button>
           <button
             type="button"
-            onClick={handleAddDeduction}
-            disabled={isDisabled}
+            onClick={handleAddIncrement}
             className="flex items-center gap-2 px-4 py-2 text-theme-sm font-theme-medium rounded-lg transition-colors"
             style={{
-              backgroundColor: isDisabled ? "var(--color-border)" : "var(--color-accent)",
-              color: isDisabled ? "var(--color-text-secondary)" : "white",
-              cursor: isDisabled ? "not-allowed" : "pointer",
+              backgroundColor: "var(--color-accent)",
+              color: "white",
             }}
-            aria-label="Add Deduction"
+            aria-label="Add Increment"
           >
             <FiPlus size={16} />
-            Añadir deducción
+            Añadir incremento
           </button>
         </div>
       </div>
 
-      {/* Tabla de deducciones */}
+      {/* Tabla de incrementos */}
       <div className="overflow-x-auto">
         <div className="min-w-max">
           {/* Header de la tabla */}
@@ -153,8 +133,7 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
                 type="checkbox"
                 onChange={handleSelectAll}
                 checked={selectedRows.length === fields.length && fields.length > 0}
-                disabled={isDisabled}
-                className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
+                className="w-4 h-4 cursor-pointer"
                 style={{ accentColor: "var(--color-accent)" }}
                 aria-label="Select All"
               />
@@ -169,15 +148,11 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
             <div className="text-theme-sm font-theme-semibold text-primary">Cantidad</div>
           </div>
 
-          {/* Filas de deducciones */}
-          {loadingDeductions ? (
+          {/* Filas de incrementos */}
+          {fields.length === 0 ? (
             <div className="text-center py-8 text-secondary">
-              <p>Cargando tipos de deducción...</p>
-            </div>
-          ) : fields.length === 0 ? (
-            <div className="text-center py-8 text-secondary">
-              <p>No hay deducciones añadidas</p>
-              <p className="text-sm mt-2">Haz clic en "Añadir deducción" para comenzar</p>
+              <p>No hay incrementos añadidos</p>
+              <p className="text-sm mt-2">Haz clic en "Añadir incremento" para comenzar</p>
             </div>
           ) : (
             fields.map((field, index) => (
@@ -196,55 +171,24 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
                     type="checkbox"
                     checked={selectedRows.includes(index)}
                     onChange={() => handleSelectRow(index)}
-                    disabled={isDisabled}
-                    className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
+                    className="w-4 h-4 cursor-pointer"
                     style={{ accentColor: "var(--color-accent)" }}
-                    aria-label={`Select deduction ${index + 1}`}
+                    aria-label={`Select increment ${index + 1}`}
                   />
                 </div>
 
-                {/* Name - deduction_type */}
+                {/* Name */}
                 <div>
                   <select
-                    {...register(`deductions.${index}.deduction_type`, {
+                    {...register(`increments.${index}.name`, {
                       required: "Requerido",
                     })}
                     className={`input-theme w-full text-sm ${
-                      errors.deductions?.[index]?.deduction_type ? "border-red-500" : ""
+                      errors.increments?.[index]?.name ? "border-red-500" : ""
                     }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: errors.deductions?.[index]?.deduction_type
-                        ? "#EF4444"
-                        : "var(--color-border)",
-                      color: "var(--color-text-primary)",
-                      padding: "0.375rem 0.5rem",
-                    }}
-                    disabled={loadingDeductions || isDisabled}
-                  >
-                    <option value="">
-                      {loadingDeductions ? "Cargando..." : "Seleccionar"}
-                    </option>
-                    {deductionNameOptions.map((option) => (
-                      <option key={option.id_types} value={option.id_types}>
-                        {option.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Type - amount_type */}
-                <div>
-                  <select
-                    {...register(`deductions.${index}.amount_type`, {
-                      required: "Requerido",
-                    })}
-                    className={`input-theme w-full text-sm ${
-                      errors.deductions?.[index]?.amount_type ? "border-red-500" : ""
-                    }`}
-                    style={{
-                      backgroundColor: "var(--color-background)",
-                      borderColor: errors.deductions?.[index]?.amount_type
+                      borderColor: errors.increments?.[index]?.name
                         ? "#EF4444"
                         : "var(--color-border)",
                       color: "var(--color-text-primary)",
@@ -252,7 +196,7 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
                     }}
                   >
                     <option value="">Seleccionar</option>
-                    {deductionTypeOptions.map((option) => (
+                    {incrementNameOptions.map((option) => (
                       <option key={option.id} value={option.id}>
                         {option.name}
                       </option>
@@ -260,23 +204,49 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
                   </select>
                 </div>
 
-                {/* Amount - amount_value */}
+                {/* Type */}
+                <div>
+                  <select
+                    {...register(`increments.${index}.type`, {
+                      required: "Requerido",
+                    })}
+                    className={`input-theme w-full text-sm ${
+                      errors.increments?.[index]?.type ? "border-red-500" : ""
+                    }`}
+                    style={{
+                      backgroundColor: "var(--color-background)",
+                      borderColor: errors.increments?.[index]?.type
+                        ? "#EF4444"
+                        : "var(--color-border)",
+                      color: "var(--color-text-primary)",
+                      padding: "0.375rem 0.5rem",
+                    }}
+                  >
+                    <option value="">Seleccionar</option>
+                    {incrementTypeOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Amount */}
                 <div>
                   <input
                     type="number"
                     step="0.01"
                     min="0"
-                    {...register(`deductions.${index}.amount_value`, {
+                    {...register(`increments.${index}.amount`, {
                       required: "Requerido",
                       min: { value: 0, message: "Debe ser >= 0" },
                     })}
-                    disabled={isDisabled}
                     className={`input-theme w-full text-sm ${
-                      errors.deductions?.[index]?.amount_value ? "border-red-500" : ""
-                    } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                      errors.increments?.[index]?.amount ? "border-red-500" : ""
+                    }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: errors.deductions?.[index]?.amount_value
+                      borderColor: errors.increments?.[index]?.amount
                         ? "#EF4444"
                         : "var(--color-border)",
                       color: "var(--color-text-primary)",
@@ -286,18 +256,18 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
                   />
                 </div>
 
-                {/* Application - application_deduction_type */}
+                {/* Application */}
                 <div>
                   <select
-                    {...register(`deductions.${index}.application_deduction_type`, {
+                    {...register(`increments.${index}.application`, {
                       required: "Requerido",
                     })}
                     className={`input-theme w-full text-sm ${
-                      errors.deductions?.[index]?.application_deduction_type ? "border-red-500" : ""
+                      errors.increments?.[index]?.application ? "border-red-500" : ""
                     }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: errors.deductions?.[index]?.application_deduction_type
+                      borderColor: errors.increments?.[index]?.application
                         ? "#EF4444"
                         : "var(--color-border)",
                       color: "var(--color-text-primary)",
@@ -313,20 +283,19 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
                   </select>
                 </div>
 
-                {/* Start Date - start_date_deduction */}
+                {/* Start Date */}
                 <div>
                   <input
                     type="date"
-                    {...register(`deductions.${index}.start_date_deduction`, {
+                    {...register(`increments.${index}.startDate`, {
                       required: "Requerido",
                     })}
-                    disabled={isDisabled}
                     className={`input-theme w-full text-sm ${
-                      errors.deductions?.[index]?.start_date_deduction ? "border-red-500" : ""
-                    } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                      errors.increments?.[index]?.startDate ? "border-red-500" : ""
+                    }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: errors.deductions?.[index]?.start_date_deduction
+                      borderColor: errors.increments?.[index]?.startDate
                         ? "#EF4444"
                         : "var(--color-border)",
                       color: "var(--color-text-primary)",
@@ -335,20 +304,19 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
                   />
                 </div>
 
-                {/* End Date - end_date_deductions */}
+                {/* End Date */}
                 <div>
                   <input
                     type="date"
-                    {...register(`deductions.${index}.end_date_deductions`, {
+                    {...register(`increments.${index}.endDate`, {
                       required: "Requerido",
                     })}
-                    disabled={isDisabled}
                     className={`input-theme w-full text-sm ${
-                      errors.deductions?.[index]?.end_date_deductions ? "border-red-500" : ""
-                    } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                      errors.increments?.[index]?.endDate ? "border-red-500" : ""
+                    }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: errors.deductions?.[index]?.end_date_deductions
+                      borderColor: errors.increments?.[index]?.endDate
                         ? "#EF4444"
                         : "var(--color-border)",
                       color: "var(--color-text-primary)",
@@ -361,9 +329,8 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
                 <div>
                   <input
                     type="text"
-                    {...register(`deductions.${index}.description`)}
-                    disabled={isDisabled}
-                    className={`input-theme w-full text-sm ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                    {...register(`increments.${index}.description`)}
+                    className="input-theme w-full text-sm"
                     style={{
                       backgroundColor: "var(--color-background)",
                       borderColor: "var(--color-border)",
@@ -374,28 +341,27 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
                   />
                 </div>
 
-                {/* Quantity - amount */}
+                {/* Quantity */}
                 <div>
                   <input
                     type="number"
-                    step="0.01"
-                    min="0"
-                    {...register(`deductions.${index}.amount`, {
-                      min: { value: 0, message: "Debe ser >= 0" },
+                    min="1"
+                    {...register(`increments.${index}.quantity`, {
+                      required: "Requerido",
+                      min: { value: 1, message: "Debe ser >= 1" },
                     })}
-                    disabled={isDisabled}
                     className={`input-theme w-full text-sm ${
-                      errors.deductions?.[index]?.amount ? "border-red-500" : ""
-                    } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                      errors.increments?.[index]?.quantity ? "border-red-500" : ""
+                    }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: errors.deductions?.[index]?.amount
+                      borderColor: errors.increments?.[index]?.quantity
                         ? "#EF4444"
                         : "var(--color-border)",
                       color: "var(--color-text-primary)",
                       padding: "0.375rem 0.5rem",
                     }}
-                    placeholder="0.00"
+                    placeholder="1"
                   />
                 </div>
               </div>
@@ -404,10 +370,10 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
         </div>
       </div>
 
-      {/* Mensaje de error general si hay errores en las deducciones */}
-      {errors.deductions && (
+      {/* Mensaje de error general si hay errores en los incrementos */}
+      {errors.increments && (
         <p className="text-red-500 text-sm mt-2">
-          Por favor, completa todos los campos obligatorios en las deducciones
+          Por favor, completa todos los campos obligatorios en los incrementos
         </p>
       )}
 
@@ -417,7 +383,7 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
         onClose={() => setShowConfirmModal(false)}
         onConfirm={handleConfirmDelete}
         title="Confirmar Acción"
-        message={`¿Está seguro que desea eliminar ${selectedRows.length === 1 ? 'esta deducción' : `estas ${selectedRows.length} deducciones`}?`}
+        message={`¿Está seguro que desea eliminar ${selectedRows.length === 1 ? 'este incremento' : `estos ${selectedRows.length} incrementos`}?`}
         confirmText="Confirm"
         cancelText="Cancel"
         confirmColor="btn-primary"

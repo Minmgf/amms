@@ -1,78 +1,64 @@
 "use client";
 import { useFormContext, useFieldArray } from "react-hook-form";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
-import { useState, useEffect } from "react";
-import { ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
-import { getIncreaseTypes } from "@/services/contractService";
+import { useState } from "react";
+import { ConfirmModal } from "../shared/SuccessErrorModal";
 
-export default function Step4Increments({ isAddendum = false, modifiableFields = [] }) {
+export default function Step3Deductions() {
   const {
     register,
     control,
     formState: { errors },
   } = useFormContext();
 
-  const isDisabled = isAddendum && !modifiableFields.includes("changeIncrements");
-
   const { fields, append, remove } = useFieldArray({
     control,
-    name: "increments",
+    name: "deductions",
   });
 
   const [selectedRows, setSelectedRows] = useState([]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [incrementNameOptions, setIncrementNameOptions] = useState([]);
-  const [loadingIncrements, setLoadingIncrements] = useState(true);
 
-  // Cargar tipos de incremento desde el servicio
-  useEffect(() => {
-    const fetchIncreaseTypes = async () => {
-      try {
-        setLoadingIncrements(true);
-        const data = await getIncreaseTypes();
-        console.log("Tipos de incremento cargados:", data);
-        setIncrementNameOptions(data || []);
-      } catch (error) {
-        console.error("Error al cargar tipos de incremento:", error);
-        setIncrementNameOptions([]);
-      } finally {
-        setLoadingIncrements(false);
-      }
-    };
-
-    fetchIncreaseTypes();
-  }, []);
-
-  // Opciones de tipo de monto (según especificación del backend)
-  const incrementTypeOptions = [
-    { id: "Porcentaje", name: "Porcentaje" },
-    { id: "fijo", name: "Fijo" },
+  // Datos temporales para los selects - deberían venir de servicios
+  const deductionNameOptions = [
+    { id: 1, name: "Salud" },
+    { id: 2, name: "Pensión" },
+    { id: 3, name: "Fondo de Solidaridad" },
+    { id: 4, name: "Retención en la fuente" },
+    { id: 5, name: "Préstamo" },
   ];
 
-  // Opciones de aplicación (según especificación del backend)
+  const deductionTypeOptions = [
+    { id: 1, name: "Porcentual" },
+    { id: 2, name: "Fijo" },
+  ];
+
   const applicationOptions = [
-    { id: "SalarioBase", name: "Salario Base" },
-    { id: "SalarioFinal", name: "Salario Final" },
+    { id: 1, name: "Salario base" },
+    { id: 2, name: "Salario total" },
+    { id: 3, name: "Horas extras" },
   ];
 
-  const handleAddIncrement = () => {
+  const handleAddDeduction = () => {
     append({
-      increase_type: "",
-      amount_type: "",
-      amount_value: "",
-      application_increase_type: "",
-      start_date_increase: "",
-      end_date_increase: "",
-      description: "",
+      name: "",
+      type: "",
       amount: "",
+      application: "",
+      startDate: "",
+      endDate: "",
+      description: "",
+      quantity: "1",
     });
   };
 
   const handleDeleteClick = () => {
+    // Mostrar el modal de confirmación
     setShowConfirmModal(true);
   };
 
   const handleConfirmDelete = () => {
+    // Ordenar índices de mayor a menor para evitar problemas al eliminar
     const sortedIndexes = [...selectedRows].sort((a, b) => b - a);
     sortedIndexes.forEach((index) => remove(index));
     setSelectedRows([]);
@@ -102,46 +88,44 @@ export default function Step4Increments({ isAddendum = false, modifiableFields =
       {/* Header con botones */}
       <div className="flex justify-between items-center">
         <h3 className="text-lg sm:text-theme-lg font-theme-semibold text-primary">
-          Incrementos
+          Deducciones
         </h3>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={handleDeleteClick}
-            disabled={selectedRows.length === 0 || isDisabled}
+            disabled={selectedRows.length === 0}
             className="flex items-center gap-2 px-4 py-2 text-theme-sm font-theme-medium rounded-lg transition-colors"
             style={{
               backgroundColor:
-                selectedRows.length === 0 || isDisabled
+                selectedRows.length === 0
                   ? "var(--color-border)"
                   : "var(--color-error)",
-              color: selectedRows.length === 0 || isDisabled ? "var(--color-text-secondary)" : "white",
-              cursor: selectedRows.length === 0 || isDisabled ? "not-allowed" : "pointer",
+              color: selectedRows.length === 0 ? "var(--color-text-secondary)" : "white",
+              cursor: selectedRows.length === 0 ? "not-allowed" : "pointer",
             }}
-            aria-label="Delete Selected Increments"
+            aria-label="Delete Selected Deductions"
           >
             <FiTrash2 size={16} />
             Eliminar
           </button>
           <button
             type="button"
-            onClick={handleAddIncrement}
-            disabled={isDisabled}
+            onClick={handleAddDeduction}
             className="flex items-center gap-2 px-4 py-2 text-theme-sm font-theme-medium rounded-lg transition-colors"
             style={{
-              backgroundColor: isDisabled ? "var(--color-border)" : "var(--color-accent)",
-              color: isDisabled ? "var(--color-text-secondary)" : "white",
-              cursor: isDisabled ? "not-allowed" : "pointer",
+              backgroundColor: "var(--color-accent)",
+              color: "white",
             }}
-            aria-label="Add Increment"
+            aria-label="Add Deduction"
           >
             <FiPlus size={16} />
-            Añadir incremento
+            Añadir deducción
           </button>
         </div>
       </div>
 
-      {/* Tabla de incrementos */}
+      {/* Tabla de deducciones */}
       <div className="overflow-x-auto">
         <div className="min-w-max">
           {/* Header de la tabla */}
@@ -151,8 +135,7 @@ export default function Step4Increments({ isAddendum = false, modifiableFields =
                 type="checkbox"
                 onChange={handleSelectAll}
                 checked={selectedRows.length === fields.length && fields.length > 0}
-                disabled={isDisabled}
-                className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
+                className="w-4 h-4 cursor-pointer"
                 style={{ accentColor: "var(--color-accent)" }}
                 aria-label="Select All"
               />
@@ -167,15 +150,11 @@ export default function Step4Increments({ isAddendum = false, modifiableFields =
             <div className="text-theme-sm font-theme-semibold text-primary">Cantidad</div>
           </div>
 
-          {/* Filas de incrementos */}
-          {loadingIncrements ? (
+          {/* Filas de deducciones */}
+          {fields.length === 0 ? (
             <div className="text-center py-8 text-secondary">
-              <p>Cargando tipos de incremento...</p>
-            </div>
-          ) : fields.length === 0 ? (
-            <div className="text-center py-8 text-secondary">
-              <p>No hay incrementos añadidos</p>
-              <p className="text-sm mt-2">Haz clic en "Añadir incremento" para comenzar</p>
+              <p>No hay deducciones añadidas</p>
+              <p className="text-sm mt-2">Haz clic en "Añadir deducción" para comenzar</p>
             </div>
           ) : (
             fields.map((field, index) => (
@@ -194,55 +173,24 @@ export default function Step4Increments({ isAddendum = false, modifiableFields =
                     type="checkbox"
                     checked={selectedRows.includes(index)}
                     onChange={() => handleSelectRow(index)}
-                    disabled={isDisabled}
-                    className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
+                    className="w-4 h-4 cursor-pointer"
                     style={{ accentColor: "var(--color-accent)" }}
-                    aria-label={`Select increment ${index + 1}`}
+                    aria-label={`Select deduction ${index + 1}`}
                   />
                 </div>
 
-                {/* Name - increase_type */}
+                {/* Name */}
                 <div>
                   <select
-                    {...register(`increments.${index}.increase_type`, {
+                    {...register(`deductions.${index}.name`, {
                       required: "Requerido",
                     })}
                     className={`input-theme w-full text-sm ${
-                      errors.increments?.[index]?.increase_type ? "border-red-500" : ""
+                      errors.deductions?.[index]?.name ? "border-red-500" : ""
                     }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: errors.increments?.[index]?.increase_type
-                        ? "#EF4444"
-                        : "var(--color-border)",
-                      color: "var(--color-text-primary)",
-                      padding: "0.375rem 0.5rem",
-                    }}
-                    disabled={loadingIncrements || isDisabled}
-                  >
-                    <option value="">
-                      {loadingIncrements ? "Cargando..." : "Seleccionar"}
-                    </option>
-                    {incrementNameOptions.map((option) => (
-                      <option key={option.id_types} value={option.id_types}>
-                        {option.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Type - amount_type */}
-                <div>
-                  <select
-                    {...register(`increments.${index}.amount_type`, {
-                      required: "Requerido",
-                    })}
-                    className={`input-theme w-full text-sm ${
-                      errors.increments?.[index]?.amount_type ? "border-red-500" : ""
-                    }`}
-                    style={{
-                      backgroundColor: "var(--color-background)",
-                      borderColor: errors.increments?.[index]?.amount_type
+                      borderColor: errors.deductions?.[index]?.name
                         ? "#EF4444"
                         : "var(--color-border)",
                       color: "var(--color-text-primary)",
@@ -250,7 +198,7 @@ export default function Step4Increments({ isAddendum = false, modifiableFields =
                     }}
                   >
                     <option value="">Seleccionar</option>
-                    {incrementTypeOptions.map((option) => (
+                    {deductionNameOptions.map((option) => (
                       <option key={option.id} value={option.id}>
                         {option.name}
                       </option>
@@ -258,23 +206,49 @@ export default function Step4Increments({ isAddendum = false, modifiableFields =
                   </select>
                 </div>
 
-                {/* Amount - amount_value */}
+                {/* Type */}
+                <div>
+                  <select
+                    {...register(`deductions.${index}.type`, {
+                      required: "Requerido",
+                    })}
+                    className={`input-theme w-full text-sm ${
+                      errors.deductions?.[index]?.type ? "border-red-500" : ""
+                    }`}
+                    style={{
+                      backgroundColor: "var(--color-background)",
+                      borderColor: errors.deductions?.[index]?.type
+                        ? "#EF4444"
+                        : "var(--color-border)",
+                      color: "var(--color-text-primary)",
+                      padding: "0.375rem 0.5rem",
+                    }}
+                  >
+                    <option value="">Seleccionar</option>
+                    {deductionTypeOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Amount */}
                 <div>
                   <input
                     type="number"
                     step="0.01"
                     min="0"
-                    {...register(`increments.${index}.amount_value`, {
+                    {...register(`deductions.${index}.amount`, {
                       required: "Requerido",
                       min: { value: 0, message: "Debe ser >= 0" },
                     })}
-                    disabled={isDisabled}
                     className={`input-theme w-full text-sm ${
-                      errors.increments?.[index]?.amount_value ? "border-red-500" : ""
-                    } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                      errors.deductions?.[index]?.amount ? "border-red-500" : ""
+                    }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: errors.increments?.[index]?.amount_value
+                      borderColor: errors.deductions?.[index]?.amount
                         ? "#EF4444"
                         : "var(--color-border)",
                       color: "var(--color-text-primary)",
@@ -284,18 +258,18 @@ export default function Step4Increments({ isAddendum = false, modifiableFields =
                   />
                 </div>
 
-                {/* Application - application_increase_type */}
+                {/* Application */}
                 <div>
                   <select
-                    {...register(`increments.${index}.application_increase_type`, {
+                    {...register(`deductions.${index}.application`, {
                       required: "Requerido",
                     })}
                     className={`input-theme w-full text-sm ${
-                      errors.increments?.[index]?.application_increase_type ? "border-red-500" : ""
+                      errors.deductions?.[index]?.application ? "border-red-500" : ""
                     }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: errors.increments?.[index]?.application_increase_type
+                      borderColor: errors.deductions?.[index]?.application
                         ? "#EF4444"
                         : "var(--color-border)",
                       color: "var(--color-text-primary)",
@@ -311,20 +285,19 @@ export default function Step4Increments({ isAddendum = false, modifiableFields =
                   </select>
                 </div>
 
-                {/* Start Date - start_date_increase */}
+                {/* Start Date */}
                 <div>
                   <input
                     type="date"
-                    {...register(`increments.${index}.start_date_increase`, {
+                    {...register(`deductions.${index}.startDate`, {
                       required: "Requerido",
                     })}
-                    disabled={isDisabled}
                     className={`input-theme w-full text-sm ${
-                      errors.increments?.[index]?.start_date_increase ? "border-red-500" : ""
-                    } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                      errors.deductions?.[index]?.startDate ? "border-red-500" : ""
+                    }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: errors.increments?.[index]?.start_date_increase
+                      borderColor: errors.deductions?.[index]?.startDate
                         ? "#EF4444"
                         : "var(--color-border)",
                       color: "var(--color-text-primary)",
@@ -333,20 +306,19 @@ export default function Step4Increments({ isAddendum = false, modifiableFields =
                   />
                 </div>
 
-                {/* End Date - end_date_increase */}
+                {/* End Date */}
                 <div>
                   <input
                     type="date"
-                    {...register(`increments.${index}.end_date_increase`, {
+                    {...register(`deductions.${index}.endDate`, {
                       required: "Requerido",
                     })}
-                    disabled={isDisabled}
                     className={`input-theme w-full text-sm ${
-                      errors.increments?.[index]?.end_date_increase ? "border-red-500" : ""
-                    } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                      errors.deductions?.[index]?.endDate ? "border-red-500" : ""
+                    }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: errors.increments?.[index]?.end_date_increase
+                      borderColor: errors.deductions?.[index]?.endDate
                         ? "#EF4444"
                         : "var(--color-border)",
                       color: "var(--color-text-primary)",
@@ -359,9 +331,8 @@ export default function Step4Increments({ isAddendum = false, modifiableFields =
                 <div>
                   <input
                     type="text"
-                    {...register(`increments.${index}.description`)}
-                    disabled={isDisabled}
-                    className={`input-theme w-full text-sm ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                    {...register(`deductions.${index}.description`)}
+                    className="input-theme w-full text-sm"
                     style={{
                       backgroundColor: "var(--color-background)",
                       borderColor: "var(--color-border)",
@@ -372,28 +343,27 @@ export default function Step4Increments({ isAddendum = false, modifiableFields =
                   />
                 </div>
 
-                {/* Quantity - amount */}
+                {/* Quantity */}
                 <div>
                   <input
                     type="number"
-                    step="0.01"
-                    min="0"
-                    {...register(`increments.${index}.amount`, {
-                      min: { value: 0, message: "Debe ser >= 0" },
+                    min="1"
+                    {...register(`deductions.${index}.quantity`, {
+                      required: "Requerido",
+                      min: { value: 1, message: "Debe ser >= 1" },
                     })}
-                    disabled={isDisabled}
                     className={`input-theme w-full text-sm ${
-                      errors.increments?.[index]?.amount ? "border-red-500" : ""
-                    } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                      errors.deductions?.[index]?.quantity ? "border-red-500" : ""
+                    }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: errors.increments?.[index]?.amount
+                      borderColor: errors.deductions?.[index]?.quantity
                         ? "#EF4444"
                         : "var(--color-border)",
                       color: "var(--color-text-primary)",
                       padding: "0.375rem 0.5rem",
                     }}
-                    placeholder="0.00"
+                    placeholder="1"
                   />
                 </div>
               </div>
@@ -402,10 +372,10 @@ export default function Step4Increments({ isAddendum = false, modifiableFields =
         </div>
       </div>
 
-      {/* Mensaje de error general si hay errores en los incrementos */}
-      {errors.increments && (
+      {/* Mensaje de error general si hay errores en las deducciones */}
+      {errors.deductions && (
         <p className="text-red-500 text-sm mt-2">
-          Por favor, completa todos los campos obligatorios en los incrementos
+          Por favor, completa todos los campos obligatorios en las deducciones
         </p>
       )}
 
@@ -415,7 +385,7 @@ export default function Step4Increments({ isAddendum = false, modifiableFields =
         onClose={() => setShowConfirmModal(false)}
         onConfirm={handleConfirmDelete}
         title="Confirmar Acción"
-        message={`¿Está seguro que desea eliminar ${selectedRows.length === 1 ? 'este incremento' : `estos ${selectedRows.length} incrementos`}?`}
+        message={`¿Está seguro que desea eliminar ${selectedRows.length === 1 ? 'esta deducción' : `estas ${selectedRows.length} deducciones`}?`}
         confirmText="Confirm"
         cancelText="Cancel"
         confirmColor="btn-primary"

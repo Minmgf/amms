@@ -1,13 +1,14 @@
 # 📋 Guía Completa de Creación de Modales - AMMS
 
-> **Última actualización:** Noviembre 2025  
-> **Basado en:** Análisis de 42+ modales existentes en el proyecto
-> **Estándar actualizado:** Patrones comunes y mejores prácticas identificadas
+> **Última actualización:** Octubre 2025  
+> **Basado en:** `DetailsClientModal.jsx` (Ejemplo de referencia completo)
 
 ## 🎯 Principios Fundamentales
 
 ### 1. **Todo Debe Ser Parametrizable**
 Los modales **NUNCA** deben tener datos hardcodeados. Toda la información debe venir de endpoints o ser configurable.
+
+**Regla de oro:** Si un dato puede cambiar desde la interfaz de parametrización, DEBE venir de un endpoint.
 
 **Regla de oro:** Si un dato puede cambiar desde la interfaz de parametrización, DEBE venir de un endpoint.
 
@@ -120,494 +121,58 @@ if (item.status === "Activo") { // ❌ Puede cambiar
 </span>
 ```
 
-## 🏗️ Estándar Mejorado de Modales (Basado en 42+ Modales Analizados)
+## 🏗️ Estructura Base de un Modal
 
-### 📊 **Patrones Identificados en el Proyecto**
-
-Después de analizar todos los modales existentes en AMMS, hemos identificado patrones consistentes que deben seguirse:
-
-#### **1. Estructura de Componente Estándar**
+### Ejemplo Completo de Estructura
 ```jsx
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { FiX } from "react-icons/fi";
 import { useTheme } from "@/contexts/ThemeContext";
-import { SuccessModal, ErrorModal, ConfirmModal } from "../shared/SuccessErrorModal";
+import FilterModal from "@/app/components/shared/FilterModal";
+import TableList from "@/app/components/shared/TableList";
 
 /**
- * ComponentNameModal Component
+ * ExampleModal Component
+ * 
+ * Descripción clara del propósito del modal
  * 
  * @param {Object} props
  * @param {boolean} props.isOpen - Controla si el modal está abierto
  * @param {Function} props.onClose - Función para cerrar el modal
- * @param {Function} props.onSuccess - Callback opcional para éxito
- * @param {Object} props.defaultValues - Valores por defecto para el formulario
- * @param {string} props.mode - 'create' | 'edit' | 'view'
+ * @param {Object} props.data - Datos a mostrar en el modal
  */
-const ComponentNameModal = ({ 
-  isOpen, 
-  onClose, 
-  onSuccess, 
-  defaultValues = {}, 
-  mode = "create" 
-}) => {
+const ExampleModal = ({ isOpen, onClose, data }) => {
   const { getCurrentTheme } = useTheme();
   
-  // Estados estándar
-  const [loading, setLoading] = useState(false);
-  const [successOpen, setSuccessOpen] = useState(false);
-  const [errorOpen, setErrorOpen] = useState(false);
-  const [modalMessage, setModalMessage] = useState("");
-  
-  // Estados de datos (parametrizables)
-  const [dataOptions, setDataOptions] = useState([]);
-  
-  // Estados de formulario
-  const [formData, setFormData] = useState({
-    // Campos del formulario
-  });
-  
-  // Estados de errores
-  const [errors, setErrors] = useState({});
-};
-```
+  // Estados para filtros y control
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const [filters, setFilters] = useState({});
+  const [globalFilter, setGlobalFilter] = useState("");
 
-#### **2. Patrones de Estados Identificados**
+  // Mock data - Estados parametrizables (TEMPORAL - vendrá del endpoint)
+  const [statuses] = useState([
+    { id_statues: 1, name: "Activo", description: "estado activo" },
+    { id_statues: 2, name: "Inactivo", description: "estado inactivo" },
+  ]);
 
-**Estados Siempre Requeridos:**
-```jsx
-// ✅ Estados estándar en TODOS los modales
-const [loading, setLoading] = useState(false);
-const [successOpen, setSuccessOpen] = useState(false);
-const [errorOpen, setErrorOpen] = useState(false);
-const [modalMessage, setModalMessage] = useState("");
-
-// ✅ Estados de datos parametrizables
-const [statuses, setStatuses] = useState([]);
-const [types, setTypes] = useState([]);
-const [priorities, setPriorities] = useState([]);
-
-// ✅ Estados de formulario
-const [formData, setFormData] = useState({});
-const [errors, setErrors] = useState({});
-```
-
-#### **3. Patrones de useEffect Identificados**
-
-**Patrón 1: Cargar datos al abrir modal**
-```jsx
-useEffect(() => {
-  if (!isOpen) return;
-  
-  const fetchData = async () => {
-    try {
-      const [data1, data2, data3] = await Promise.all([
-        getEndpoint1(),
-        getEndpoint2(), 
-        getEndpoint3()
-      ]);
-      setDataOptions(data1.data);
-      setStatuses(data2.data);
-      setTypes(data3.data);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    }
+  // Función para obtener información por ID
+  const getStatusById = (id, statusArray) => {
+    return statusArray.find((s) => s.id_statues === id) || 
+           statusArray.find((s) => s.id === id);
   };
-  
-  fetchData();
-}, [isOpen]);
-```
 
-**Patrón 2: Resetear formulario al cerrar**
-```jsx
-useEffect(() => {
-  if (!isOpen) {
-    // Resetear estados
-    setFormData(defaultValues);
-    setErrors({});
-    setLoading(false);
-    return;
-  }
-  
-  // Cargar datos en modo edición
-  if (isOpen && mode === "edit" && editData) {
-    setFormData({
-      ...defaultValues,
-      ...editData
-    });
-  }
-}, [isOpen, mode, editData]);
-```
-
-#### **4. Patrones de Manejo de Formularios**
-
-**Patrón A: React Hook Form (Más común)**
-```jsx
-const { 
-  register, 
-  handleSubmit, 
-  reset, 
-  watch, 
-  setValue,
-  formState: { errors } 
-} = useForm({
-  defaultValues,
-});
-
-const handleFormSubmit = async (data) => {
-  setLoading(true);
-  try {
-    const response = await createItem(data);
-    setModalMessage(response.message || "Item creado exitosamente");
-    setSuccessOpen(true);
-    if (onSuccess) onSuccess();
-    setTimeout(() => {
-      setSuccessOpen(false);
-      reset();
-      onClose();
-    }, 2000);
-  } catch (error) {
-    const apiError = error.response?.data;
-    let fullMessage = apiError?.message || "Error al crear el item";
-    if (apiError?.details) {
-      const detailsArray = Object.values(apiError.details).flat();
-      fullMessage += `: ${detailsArray.join(" ")}`;
-    }
-    setModalMessage(fullMessage);
-    setErrorOpen(true);
-  } finally {
-    setLoading(false);
-  }
-};
-```
-
-**Patrón B: Estado Controlado (Para formularios complejos)**
-```jsx
-const handleInputChange = (field, value) => {
-  setFormData(prev => ({ ...prev, [field]: value }));
-  
-  // Limpiar error del campo
-  if (errors[field]) {
-    setErrors(prev => ({ ...prev, [field]: "" }));
-  }
-};
-
-const validateForm = () => {
-  const newErrors = {};
-  // Validaciones...
-  setErrors(newErrors);
-  return Object.keys(newErrors).length === 0;
-};
-
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (!validateForm()) return;
-  
-  setLoading(true);
-  try {
-    const response = await createItem(formData);
-    setModalMessage(response.message || "Item creado exitosamente");
-    setSuccessOpen(true);
-    if (onSuccess) onSuccess();
-  } catch (error) {
-    setModalMessage(error.response?.data?.message || "Error al crear el item");
-    setErrorOpen(true);
-  } finally {
-    setLoading(false);
-  }
-};
-```
-
-#### **5. Patrones de Estructura JSX**
-
-**Estructura Base Estándar:**
-```jsx
-if (!isOpen) return null;
-
-return (
-  <>
-    <div
-      className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="card-theme rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-primary">
-          <h2 className="text-2xl font-bold text-primary">
-            {mode === "edit" ? "Editar" : "Nuevo"} Componente
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-hover rounded-full transition-colors"
-            aria-label="Cerrar modal"
-          >
-            <FiX className="w-6 h-6 text-secondary" />
-          </button>
-        </div>
-
-        {/* Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto max-h-[calc(95vh-90px)]">
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* Secciones del formulario */}
-            
-            {/* Botones */}
-            <div className="flex gap-4 pt-6 border-t border-primary">
-              <button
-                type="button"
-                onClick={onClose}
-                className="btn-theme btn-secondary flex-1"
-                disabled={loading}
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="btn-theme btn-primary flex-1"
-                disabled={loading}
-              >
-                {loading ? "Guardando..." : "Guardar"}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    {/* Modales de feedback */}
-    <SuccessModal
-      isOpen={successOpen}
-      onClose={() => setSuccessOpen(false)}
-      title="Éxito"
-      message={modalMessage}
-    />
-
-    <ErrorModal
-      isOpen={errorOpen}
-      onClose={() => setErrorOpen(false)}
-      title="Error"
-      message={modalMessage}
-    />
-  </>
-);
-```
-
-#### **6. Patrones de Validación**
-
-**Validaciones Comunes Identificadas:**
-```jsx
-const validateForm = () => {
-  const newErrors = {};
-  
-  // Campos obligatorios
-  if (!formData.name?.trim()) newErrors.name = "El nombre es obligatorio";
-  if (!formData.type) newErrors.type = "Debe seleccionar un tipo";
-  
-  // Validaciones de formato
-  if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-    newErrors.email = "El formato del email no es válido";
-  }
-  
-  // Validaciones de longitud
-  if (formData.phone && !/^\d{7,15}$/.test(formData.phone)) {
-    newErrors.phone = "El teléfono debe tener entre 7 y 15 dígitos";
-  }
-  
-  // Validaciones condicionales
-  if (formData.requiresContract && !formData.contractId) {
-    newErrors.contractId = "Debe seleccionar un contrato";
-  }
-  
-  setErrors(newErrors);
-  return Object.keys(newErrors).length === 0;
-};
-```
-
-#### **7. Patrones de Loading y Estados**
-
-**Loading States:**
-```jsx
-// Botón con loading
-<button
-  type="submit"
-  className="btn-theme btn-primary flex-1"
-  disabled={loading}
->
-  {loading ? (
-    <>
-      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-      Guardando...
-    </>
-  ) : (
-    "Guardar"
-  )}
-</button>
-
-// Inputs con loading
-<select 
-  className="input-theme"
-  disabled={loadingOptions}
->
-  {loadingOptions ? (
-    <option>Cargando opciones...</option>
-  ) : (
-    options.map(option => (
-      <option key={option.id} value={option.id}>
-        {option.name}
-      </option>
-    ))
-  )}
-</select>
-```
-
-#### **8. Patrones de Responsive**
-
-**Grid Responsive Estándar:**
-```jsx
-<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-  {/* Campos del formulario */}
-</div>
-
-// Para formularios más complejos
-<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-  {/* Campos del formulario */}
-</div>
-```
-
-## 🏗️ Ejemplo Completo Actualizado
-
-### Modal Estándar Completo (2025)
-```jsx
-"use client";
-import React, { useState, useEffect } from "react";
-import { FiX, FiUser, FiMail } from "react-icons/fi";
-import { useForm } from "react-hook-form";
-import { useTheme } from "@/contexts/ThemeContext";
-import { SuccessModal, ErrorModal } from "../shared/SuccessErrorModal";
-
-/**
- * StandardModal Component
- * 
- * Ejemplo completo siguiendo el estándar actualizado
- * 
- * @param {Object} props
- * @param {boolean} props.isOpen - Controla si el modal está abierto
- * @param {Function} props.onClose - Función para cerrar el modal
- * @param {Function} props.onSuccess - Callback para éxito
- * @param {Object} props.editData - Datos para modo edición
- * @param {string} props.mode - 'create' | 'edit'
- */
-const StandardModal = ({ 
-  isOpen, 
-  onClose, 
-  onSuccess, 
-  editData, 
-  mode = "create" 
-}) => {
-  const { getCurrentTheme } = useTheme();
-  const isEditMode = mode === "edit";
-  
-  // Estados estándar
-  const [loading, setLoading] = useState(false);
-  const [loadingOptions, setLoadingOptions] = useState(false);
-  const [successOpen, setSuccessOpen] = useState(false);
-  const [errorOpen, setErrorOpen] = useState(false);
-  const [modalMessage, setModalMessage] = useState("");
-  
-  // Estados de datos parametrizables
-  const [statuses, setStatuses] = useState([]);
-  const [types, setTypes] = useState([]);
-  
-  // React Hook Form
-  const { 
-    register, 
-    handleSubmit, 
-    reset, 
-    watch, 
-    setValue,
-    formState: { errors } 
-  } = useForm({
-    defaultValues: {
-      name: "",
-      email: "",
-      status: "",
-      type: "",
-    },
-  });
-
-  // Cargar datos parametrizables
-  useEffect(() => {
-    if (!isOpen) return;
-    
-    const fetchData = async () => {
-      setLoadingOptions(true);
-      try {
-        const [statusesData, typesData] = await Promise.all([
-          getStatuses(),
-          getTypes()
-        ]);
-        setStatuses(statusesData.data);
-        setTypes(typesData.data);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoadingOptions(false);
-      }
-    };
-    
-    fetchData();
-  }, [isOpen]);
-
-  // Resetear/Cargar formulario
-  useEffect(() => {
-    if (!isOpen) {
-      reset();
-      return;
-    }
-    
-    if (isEditMode && editData) {
-      reset({
-        name: editData.name || "",
-        email: editData.email || "",
-        status: editData.status_id || "",
-        type: editData.type_id || "",
-      });
-    }
-  }, [isOpen, isEditMode, editData, reset]);
-
-  // Manejar envío
-  const handleFormSubmit = async (data) => {
-    setLoading(true);
-    try {
-      const endpoint = isEditMode ? updateItem : createItem;
-      const payload = isEditMode ? { id: editData.id, ...data } : data;
-      
-      const response = await endpoint(payload);
-      setModalMessage(response.message || 
-        (isEditMode ? "Item actualizado exitosamente" : "Item creado exitosamente"));
-      setSuccessOpen(true);
-      
-      if (onSuccess) onSuccess();
-      
-      setTimeout(() => {
-        setSuccessOpen(false);
-        reset();
-        onClose();
-      }, 2000);
-    } catch (error) {
-      const apiError = error.response?.data;
-      let fullMessage = apiError?.message || "Error al procesar la solicitud";
-      if (apiError?.details) {
-        const detailsArray = Object.values(apiError.details).flat();
-        fullMessage += `: ${detailsArray.join(" ")}`;
-      }
-      setModalMessage(fullMessage);
-      setErrorOpen(true);
-    } finally {
-      setLoading(false);
+  // Función para obtener colores por ID (BASADA EN ID, NO EN NOMBRE)
+  const getStatusColorById = (id, type = "status") => {
+    // Colores inmutables basados en ID
+    switch (id) {
+      case 1: return "bg-green-100 text-green-800"; // Activo
+      case 2: return "bg-red-100 text-red-800"; // Inactivo
+      default: return "bg-gray-100 text-gray-800";
     }
   };
 
-  if (!isOpen) return null;
+  if (!data) return null;
 
   return (
     <>
@@ -615,12 +180,10 @@ const StandardModal = ({
         className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
         onClick={(e) => e.target === e.currentTarget && onClose()}
       >
-        <div className="card-theme rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden">
+        <div className="card-theme rounded-xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-primary">
-            <h2 className="text-2xl font-bold text-primary">
-              {isEditMode ? "Editar" : "Nuevo"} Item
-            </h2>
+            <h2 className="text-2xl font-bold text-primary">Título del Modal</h2>
             <button
               onClick={onClose}
               className="p-2 hover:bg-hover rounded-full transition-colors"
@@ -630,316 +193,21 @@ const StandardModal = ({
             </button>
           </div>
 
-          {/* Content */}
+          {/* Content - Scrollable */}
           <div className="flex-1 overflow-y-auto max-h-[calc(95vh-90px)]">
-            <form onSubmit={handleSubmit(handleFormSubmit)} className="p-6 space-y-6">
-              {/* Sección Información General */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-md bg-blue-100 flex items-center justify-center">
-                    <FiUser className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-primary">Información General</h3>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-secondary mb-2">
-                      Nombre *
-                    </label>
-                    <input
-                      type="text"
-                      {...register("name", { required: "El nombre es obligatorio" })}
-                      className={`input-theme ${errors.name ? 'border-red-500' : ''}`}
-                      placeholder="Ingrese el nombre"
-                    />
-                    {errors.name && (
-                      <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-secondary mb-2">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      {...register("email", { 
-                        pattern: {
-                          value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                          message: "Formato de email inválido"
-                        }
-                      })}
-                      className={`input-theme ${errors.email ? 'border-red-500' : ''}`}
-                      placeholder="Ingrese el email"
-                    />
-                    {errors.email && (
-                      <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-secondary mb-2">
-                      Estado *
-                    </label>
-                    <select
-                      {...register("status", { required: "Debe seleccionar un estado" })}
-                      className={`input-theme ${errors.status ? 'border-red-500' : ''}`}
-                      disabled={loadingOptions}
-                    >
-                      <option value="">Seleccione un estado</option>
-                      {statuses.map(status => (
-                        <option key={status.id} value={status.id}>
-                          {status.name}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.status && (
-                      <p className="text-red-500 text-xs mt-1">{errors.status.message}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-secondary mb-2">
-                      Tipo *
-                    </label>
-                    <select
-                      {...register("type", { required: "Debe seleccionar un tipo" })}
-                      className={`input-theme ${errors.type ? 'border-red-500' : ''}`}
-                      disabled={loadingOptions}
-                    >
-                      <option value="">Seleccione un tipo</option>
-                      {types.map(type => (
-                        <option key={type.id} value={type.id}>
-                          {type.name}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.type && (
-                      <p className="text-red-500 text-xs mt-1">{errors.type.message}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Botones */}
-              <div className="flex gap-4 pt-6 border-t border-primary">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="btn-theme btn-secondary flex-1"
-                  disabled={loading}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="btn-theme btn-primary flex-1"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                      {isEditMode ? "Actualizando..." : "Creando..."}
-                    </>
-                  ) : (
-                    isEditMode ? "Actualizar" : "Crear"
-                  )}
-                </button>
-              </div>
-            </form>
+            {/* Secciones del contenido */}
           </div>
         </div>
       </div>
 
-      {/* Modales de feedback */}
-      <SuccessModal
-        isOpen={successOpen}
-        onClose={() => setSuccessOpen(false)}
-        title="Éxito"
-        message={modalMessage}
-      />
-
-      <ErrorModal
-        isOpen={errorOpen}
-        onClose={() => setErrorOpen(false)}
-        title="Error"
-        message={modalMessage}
-      />
-    </>
-  );
-};
-
-export default StandardModal;
-```
-
-## 📋 **Checklist de Creación de Modales (2025)**
-
-### ✅ **Obligatorio en Todo Modal**
-- [ ] **"use client"** al inicio del archivo
-- [ ] **Importar useTheme** desde `@/contexts/ThemeContext`
-- [ ] **Importar SuccessModal, ErrorModal** desde `../shared/SuccessErrorModal`
-- [ ] **Estados estándar**: `loading`, `successOpen`, `errorOpen`, `modalMessage`
-- [ ] **Estructura base**: overlay + modal container + header + content
-- [ ] **Cerrar al hacer click fuera**: `onClick={(e) => e.target === e.currentTarget && onClose()}`
-- [ ] **Botón de cerrar** en el header con icono FiX
-- [ ] **Contenido scrollable**: `overflow-y-auto max-h-[calc(95vh-90px)]`
-- [ ] **Clases temáticas**: `card-theme`, `input-theme`, `btn-theme`
-- [ ] **Responsive**: grid responsive para formularios
-
-### ✅ **Para Modales con Formularios**
-- [ ] **React Hook Form** o estado controlado
-- [ ] **Validaciones** obligatorias y de formato
-- [ ] **Loading states** en botones y selects
-- [ ] **Manejo de errores** con mensajes específicos
-- [ ] **Resetear formulario** al cerrar
-- [ ] **Callback onSuccess** opcional
-- [ ] **Modo edición** con `editData` y `mode`
-
-### ✅ **Para Modales con Datos Parametrizables**
-- [ ] **useEffect para cargar datos** al abrir modal
-- [ ] **Promise.all** para múltiples endpoints
-- [ ] **Estados de loading** para selects
-- [ ] **IDs para lógica, nombres para display**
-- [ ] **Manejo de datos vacíos** o error de carga
-
-### ✅ **Accesibilidad y UX**
-- [ ] **aria-label** en botones de cerrar
-- [ ] **disabled states** durante loading
-- [ ] **Feedback visual** (spinners, mensajes)
-- [ ] **Confirmación al cancelar** si hay datos
-- [ ] **Focus management** (opcional pero recomendado)
-
-## 🚨 **Errores Comunes Identificados y Soluciones**
-
-### **Error 1: Modal no se cierra al hacer click fuera**
-```jsx
-// ❌ Incorrecto - no maneja click en overlay
-<div className="fixed inset-0 bg-black/60 flex items-center justify-center">
-
-// ✅ Correcto - maneja click solo en overlay
-<div 
-  className="fixed inset-0 bg-black/60 flex items-center justify-center"
-  onClick={(e) => e.target === e.currentTarget && onClose()}
->
-```
-
-### **Error 2: Estados no se resetean al cerrar**
-```jsx
-// ❌ Incorrecto - no resetea estados
-const handleSubmit = async (data) => {
-  // ... lógica
-  onClose(); // estados permanecen
-};
-
-// ✅ Correcto - resetea estados
-useEffect(() => {
-  if (!isOpen) {
-    reset();
-    setErrors({});
-    setLoading(false);
-  }
-}, [isOpen, reset]);
-```
-
-### **Error 3: Datos hardcodeados**
-```jsx
-// ❌ Incorrecto - datos fijos
-const options = ["Activo", "Inactivo"];
-
-// ✅ Correcto - del endpoint
-const [options, setOptions] = useState([]);
-useEffect(() => {
-  if (isOpen) getOptions().then(setOptions);
-}, [isOpen]);
-```
-
-### **Error 4: No manejar loading en selects**
-```jsx
-// ❌ Incorrecto - no muestra loading
-<select className="input-theme">
-  {options.map(option => ...)}
-</select>
-
-// ✅ Correcto - muestra estado de carga
-<select className="input-theme" disabled={loadingOptions}>
-  {loadingOptions ? (
-    <option>Cargando...</option>
-  ) : (
-    options.map(option => ...)
-  )}
-</select>
-```
-
-## 🎯 **Tipos de Modales Identificados en el Proyecto**
-
-### **1. Form Modal (60% de los casos)**
-- Propósito: Crear/editar entidades
-- Características: Formulario, validaciones, loading states
-- Ejemplos: `AddClientModal`, `MaintenanceRequestModal`, `RegisterEmployeeModal`
-
-### **2. Detail Modal (25% de los casos)**
-- Propósito: Mostrar información detallada
-- Características: Solo lectura, tabs, datos complejos
-- Ejemplos: `TrackingDashboardModal`, `DetailsClientModal`
-
-### **3. Filter Modal (10% de los casos)**
-- Propósito: Filtrar listados
-- Características: Inputs de filtro, botones apply/clear
-- Ejemplos: `HistoryFiltersModal`, `MaintenanceFiltersModal`
-
-### **4. Confirmation Modal (5% de los casos)**
-- Propósito: Confirmar acciones destructivas
-- Características: Mensaje, botones confirm/cancel
-- Ejemplos: `CancelRequestModal`, `DeclineRequestModal`
-
-## 📚 **Referencias Rápidas**
-
-### **Imports Estándar**
-```jsx
-import React, { useState, useEffect } from "react";
-import { FiX } from "react-icons/fi";
-import { useTheme } from "@/contexts/ThemeContext";
-import { SuccessModal, ErrorModal, ConfirmModal } from "../shared/SuccessErrorModal";
-import { useForm } from "react-hook-form"; // si usa formulario
-```
-
-### **Clases CSS Temáticas**
-```jsx
-// Contenedor principal
-className="card-theme rounded-xl shadow-2xl"
-
-// Header
-className="flex items-center justify-between p-6 border-b border-primary"
-
-// Form inputs
-className="input-theme"
-
-// Botones
-className="btn-theme btn-primary"
-className="btn-theme btn-secondary"
-className="btn-theme btn-error"
-
-// Textos
-className="text-primary"     // títulos
-className="text-secondary"   // descripciones
-className="text-error"       // errores
-```
-
-### **Estructura de Directorios**
-```
-src/app/components/
-├── shared/
-│   └── SuccessErrorModal.jsx     # ✅ Siempre importar
-├── [feature]/
-│   └── FeatureModal.jsx          # Tu modal aquí
-└── contexts/
-    └── ThemeContext.jsx          # ✅ Siempre usar
-```
-
----
-
-**🎯 Conclusión:** Siguiendo este estándar actualizado basado en los 42+ modales existentes, garantizarás consistencia, mantenibilidad y las mejores prácticas en todo el proyecto AMMS.
+      {/* Modales adicionales (filtros, confirmación, etc.) */}
+      <FilterModal
+        open={filterModalOpen}
+        onClose={() => setFilterModalOpen(false)}
+        onClear={() => setFilters({})}
+        onApply={() => setFilterModalOpen(false)}
+      >
+        {/* Campos de filtro */}
       </FilterModal>
     </>
   );
@@ -1027,119 +295,6 @@ Patrón estándar para mostrar información con iconos:
   </div>
 </div>
 ```
-
-### 5. **Estilos Parametrizables con el Sistema de Temas**
-
-Los modales deben seguir las reglas globales del sistema de temas para que sean **100% parametrizables**:
-
-- **Usar siempre** clases temáticas definidas en `theme.css` (`card-theme`, `modal-theme`, `btn-theme`, `input-theme`, `text-*`, `bg-*`, `border-*`).
-- **Nunca** usar colores fijos como `bg-white`, `text-gray-900`, `bg-blue-500`, `border-gray-200`, etc.
-- Recordar la regla de la guía de estilo: *"Usa siempre los colores estilos de los temas, para que sean parametrizable"*.
-
-```jsx
-<div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-  <div className="modal-theme card-theme rounded-theme-lg w-full max-w-4xl max-h-[95vh] overflow-hidden">
-    {/* Header temático */}
-    <div className="flex items-center justify-between p-6 border-b border-primary">
-      <h2 className="text-2xl font-bold text-primary">Título del modal</h2>
-      <button
-        onClick={onClose}
-        className="p-2 hover:bg-hover rounded-full transition-colors"
-        aria-label="Cerrar modal"
-      >
-        <FiX className="w-6 h-6 text-secondary" />
-      </button>
-    </div>
-
-    {/* Contenido scrollable */}
-    <div className="flex-1 overflow-y-auto max-h-[calc(95vh-90px)] bg-surface">
-      {/* Campos e información del modal */}
-    </div>
-  </div>
-</div>
-```
-
-#### 5.1. Colores de estados usando clases temáticas
-
-En vez de devolver clases con colores fijos, se deben usar las clases **semánticas** del tema (`bg-success`, `bg-warning`, `bg-error`, `text-success`, `text-error`, etc.).
-
-```jsx
-// ❌ NO usar colores fijos
-const getStatusColorById = (id, type = "status") => {
-  if (type === "client") {
-    switch (id) {
-      case 1: return "bg-green-100 text-green-800";
-      case 2: return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
-  }
-  return "bg-gray-100 text-gray-800";
-};
-
-// ✅ Sí usar clases del tema (parametrizables)
-const getStatusThemeClassesById = (id, type = "status") => {
-  if (type === "client") {
-    switch (id) {
-      case 1: return "bg-success text-success";      // Activo
-      case 2: return "bg-error text-error";          // Inactivo
-      default: return "bg-surface text-secondary";
-    }
-  }
-
-  if (type === "request") {
-    switch (id) {
-      case 13: return "bg-success text-success";     // Finalizada
-      case 14: return "bg-accent text-primary";      // En proceso
-      case 15: return "bg-error text-error";         // Cancelada
-      case 16: return "bg-warning text-warning";     // Pendiente
-      default: return "bg-surface text-secondary";
-    }
-  }
-
-  return "bg-surface text-secondary";
-};
-
-// Uso en el modal
-const status = getStatusById(item.status_id, statuses);
-
-<span
-  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-    getStatusThemeClassesById(item.status_id, "request")
-  }`}
->
-  {status?.name || "N/A"}
-</span>
-```
-
-#### 5.2. Uso de `useTheme` y variables CSS
-
-Para casos avanzados donde el modal necesite estilos muy específicos (por ejemplo, un color de acento propio del módulo), se puede combinar el sistema de temas con variables CSS.
-
-```jsx
-import { useTheme } from "@/contexts/ThemeContext";
-
-const ExampleThemedModal = ({ isOpen, onClose }) => {
-  const { currentTheme } = useTheme();
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div
-        className="modal-theme card-theme rounded-theme-lg max-w-3xl w-full"
-        style={{
-          // Ejemplo: variable CSS derivada del tema actual
-          "--modal-accent": currentTheme.colors?.custom || "#000000",
-        }}
-      >
-        {/* Contenido del modal */}
-      </div>
-    </div>
-  );
-};
-```
-
-**Regla general:** todo color o estilo que deba poder cambiarse desde la parametrización debe provenir del sistema de temas (`THEME_SYSTEM_README.md`) o de variables CSS derivadas de `currentTheme`, **nunca** de clases Tailwind con colores fijos.
 
 ## 📊 Manejo de Estados
 

@@ -8,7 +8,7 @@ import {
   getServiceTypes,
   getCurrencyUnits,
 } from "@/services/serviceService";
-import { getTributesName } from "@/services/billingService";
+import { authorization, getTributesNames } from "@/services/billingService";
 import {
   SuccessModal,
   ErrorModal,
@@ -46,6 +46,8 @@ export default function CreateEditServiceModal({
 
   const [serviceTypes, setServiceTypes] = useState([]);
   const [currencyUnits, setCurrencyUnits] = useState([]);
+  const [taxTypes, setTaxTypes] = useState([]);
+  const [billingToken, setBillingToken] = useState("");
   const [tributesNames, setTributesNames] = useState([]);
 
   // Estados para modales de éxito, error y confirmación
@@ -66,6 +68,20 @@ export default function CreateEditServiceModal({
   // Load initial data
   useEffect(() => {
     loadInitialData();
+    const getTokenBilling = async () => {
+      try {
+        const response = await authorization();
+        setBillingToken(response.access_token);
+
+        if (response.access_token) {
+          const tributes = await getTributesNames(response.access_token);
+          setTributesNames(tributes.data);
+        }
+      } catch (error) {
+        console.error("Error en inicialización:", error);
+      }
+    };
+    getTokenBilling();
   }, []);
 
   // Cargar datos del servicio cuando cambie el modo o los datos
@@ -85,7 +101,6 @@ export default function CreateEditServiceModal({
       const [typesData, unitsData, taxData] = await Promise.all([
         getServiceTypes(),
         getCurrencyUnits(),
-        getTributesName(),
       ]);
 
       // Procesar tipos de servicios
@@ -105,8 +120,8 @@ export default function CreateEditServiceModal({
       // Procesar tipos de impuestos
       const taxes = Array.isArray(taxData)
         ? taxData
-        : taxData?.data?.tributes && Array.isArray(taxData.data.tributes)
-        ? taxData.data.tributes
+        : taxData?.data && Array.isArray(taxData.data)
+        ? taxData.data
         : [];
 
       // Solo actualizar si se obtuvieron datos de la API
@@ -116,10 +131,6 @@ export default function CreateEditServiceModal({
 
       if (units.length > 0) {
         setCurrencyUnits(units);
-      }
-
-      if (taxes.length > 0) {
-        setTributesNames(taxes);
       }
     } catch (error) {
       console.error(
