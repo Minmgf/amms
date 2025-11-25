@@ -66,14 +66,25 @@ function SectionCard({ title, children }) {
 export default function SeePayrollDetails({ isOpen, onClose, payroll }) {
   useTheme();
 
-  if (!isOpen || !payroll) return null;
-
-  const accruedFixed = payroll.accruedFixed || [];
-  const accruedAdditional = payroll.accruedAdditional || [];
-  const deductionsFixed = payroll.deductionsFixed || [];
-  const deductionsAdditional = payroll.deductionsAdditional || [];
+  const accruedFixed = payroll?.accruedFixed || [];
+  const accruedAdditional = payroll?.accruedAdditional || [];
+  const deductionsFixed = payroll?.deductionsFixed || [];
+  const deductionsAdditional = payroll?.deductionsAdditional || [];
 
   const totals = useMemo(() => {
+    if (!payroll) {
+      return {
+        baseTotal: 0,
+        totalAccruedFixed: 0,
+        totalAccruedAdditional: 0,
+        totalAccrued: 0,
+        totalDeductionsFixed: 0,
+        totalDeductionsAdditional: 0,
+        totalDeductions: 0,
+        netAmount: 0,
+      };
+    }
+
     const sum = (items) =>
       (items || []).reduce((acc, item) => acc + (Number(item.amount) || 0), 0);
 
@@ -108,15 +119,17 @@ export default function SeePayrollDetails({ isOpen, onClose, payroll }) {
       netAmount,
     };
   }, [
-    payroll.baseSalaryTotal,
-    payroll.totalAccrued,
-    payroll.totalDeductions,
-    payroll.netAmount,
+    payroll?.baseSalaryTotal,
+    payroll?.totalAccrued,
+    payroll?.totalDeductions,
+    payroll?.netAmount,
     accruedFixed,
     accruedAdditional,
     deductionsFixed,
     deductionsAdditional,
   ]);
+
+  if (!isOpen || !payroll) return null;
 
   const handleBackdropClick = (event) => {
     if (event.target === event.currentTarget) {
