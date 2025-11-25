@@ -13,7 +13,8 @@ import {
   getContractDetail,
   updateEstablishedContract,
   getActiveDepartments,
-  getActiveCharges
+  getActiveCharges,
+  changeEmployeeContract
 } from "@/services/contractService";
 import { createContractAddendum, getLatestEmployeeContract } from "@/services/employeeService";
 
@@ -26,10 +27,16 @@ export default function AddContractModal({
   modifiableFields = [],
   employeeId,
   preventTemplateUpdate = false,
+  isChangeContract = false,
+  changeContractObservation = "",
 }) {
   // Si es Addendum, NO es modo edición (se crea un nuevo registro), pero sí necesitamos cargar los datos del contrato base.
-  const isEditMode = !!contractToEdit && !isAddendum;
-  const modalTitle = isAddendum ? "Generar Otro Sí" : (isEditMode ? "Editar contrato" : "Añadir contrato");
+  const isEditMode = !!contractToEdit && !isAddendum && !isChangeContract;
+  const modalTitle = isAddendum
+    ? "Generar Otro Sí"
+    : (isChangeContract
+        ? "Añadir contrato"
+        : (isEditMode ? "Editar contrato" : "Añadir contrato"));
   const [step, setStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState([]);
   const [isSubmittingStep, setIsSubmittingStep] = useState(false);
@@ -769,6 +776,14 @@ export default function AddContractModal({
       };
     }
 
+    if (isChangeContract) {
+      return {
+        observation: changeContractObservation,
+        id_employee_charge: parseInt(formData.charge),
+        contract: [contractData]
+      };
+    }
+
     return contractData;
   };
 
@@ -779,8 +794,7 @@ export default function AddContractModal({
 
       // Transformar datos al formato del backend (sin id_employee_charge para actualización)
       const payload = transformDataForBackend(data);
-
-      const shouldUpdateTemplate = isEditMode && !preventTemplateUpdate;
+      const shouldUpdateTemplate = isEditMode && !preventTemplateUpdate && !isChangeContract;
 
       // Para actualización, remover id_employee_charge ya que no se envía en el PUT
       if (shouldUpdateTemplate) {
@@ -789,19 +803,32 @@ export default function AddContractModal({
 
       // Si es Addendum, asegurarnos de que se envíe como una creación (POST) pero quizás con alguna marca de que es un addendum
       // O simplemente se crea un nuevo contrato asociado al empleado (el backend manejará la versión/otro sí).
-      
-      console.log(`Payload a ${shouldUpdateTemplate ? 'actualizar' : (isAddendum ? 'generar otro sí' : 'crear')}:`, payload);
+
+      const actionLabel = isAddendum
+        ? "generar otro sí"
+        : (isChangeContract
+            ? "cambiar contrato"
+            : (shouldUpdateTemplate ? "actualizar" : "crear"));
+
+      console.log(`Payload a ${actionLabel}:`, payload);
 
       let response;
       let newContractId = null;
+
       if (isAddendum) {
         // Llamar al endpoint de generar otro sí (requiere employeeId)
         if (!employeeId) {
           throw new Error("ID de empleado no encontrado para generar Otro Sí");
         }
         response = await createContractAddendum(employeeId, payload);
+      } else if (isChangeContract) {
+        // Llamar al endpoint de cambio de contrato (requiere employeeId)
+        if (!employeeId) {
+          throw new Error("ID de empleado no encontrado para cambiar contrato");
+        }
+        response = await changeEmployeeContract(employeeId, payload);
       } else if (shouldUpdateTemplate) {
-        // Llamar al endpoint PUT
+        // Llamar al endpoint PUT para actualizar contrato establecido
         response = await updateEstablishedContract(contractToEdit.contract_code, payload);
       } else {
         // Llamar al endpoint POST de creación normal
@@ -819,12 +846,16 @@ export default function AddContractModal({
       setCompletedSteps((prev) => [...prev, 3]);
 
       // Mostrar mensaje de éxito
-      setModalMessage(
-        response.message ||
-        (isAddendum
-          ? "Otro Sí generado exitosamente"
-          : (shouldUpdateTemplate ? "Contrato actualizado exitosamente" : "Contrato creado exitosamente"))
-      );
+      const fallbackMessage = isAddendum
+        ? "Otro Sí generado exitosamente"
+        : (isChangeContract
+            ? "Contrato cambiado exitosamente"
+            : (shouldUpdateTemplate
+                ? "Contrato actualizado exitosamente"
+                : "Contrato creado exitosamente"));
+
+      setModalMessage(response.message || fallbackMessage);
+
       setSuccessOpen(true);
 
       // Cerrar el modal y recargar datos

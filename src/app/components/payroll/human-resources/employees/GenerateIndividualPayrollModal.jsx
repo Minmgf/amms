@@ -12,7 +12,7 @@ import {
   ErrorModal,
   ConfirmModal,
 } from "@/app/components/shared/SuccessErrorModal";
-import IndividualPayrollAdjustmentsModal from "@/app/components/payroll/payroll-runs/IndividualPayrollAdjustmentsModal";
+import IndividualPayrollAdjustmentsModal from "@/app/components/payroll/human-resources/employees/IndividualPayrollAdjustmentsModal";
 
 // Datos mock de contratos por empleado mientras se integran los endpoints reales
 const MOCK_EMPLOYEE_CONTRACTS = [
