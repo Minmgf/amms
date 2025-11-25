@@ -57,10 +57,10 @@ export default function EndContractModal({
   // Confirmar finalización
   const handleConfirm = () => {
     const formData = {
-      reasonId: selectedReason,
-      description: description.trim(),
-      contractId: contractData?.id,
-      employeeId: employeeData?.id
+      contract_termination_reason: selectedReason,
+      observation: description.trim(),
+      contractId: contractData?.id || contractData?.contract_code, // Fallback if id is missing
+      employeeId: employeeData?.employeeId || employeeData?.id
     };
     
     onConfirm(formData);
@@ -132,8 +132,8 @@ export default function EndContractModal({
                     {loading ? "Cargando razones..." : "Seleccione una razón"}
                   </option>
                   {terminationReasons.map((reason) => (
-                    <option key={reason.id_types} value={reason.id_types}>
-                      {reason.name}
+                    <option key={reason.id || reason.id_types} value={reason.id || reason.id_types}>
+                      {reason.name || reason.typeName}
                     </option>
                   ))}
                 </select>
@@ -151,7 +151,7 @@ export default function EndContractModal({
             {/* Descripción de la novedad */}
             <div className="space-y-3">
               <label className="block text-base font-medium text-gray-700">
-                Descripción de la novedad
+                Observación (Opcional)
               </label>
               <textarea
                 value={description}
@@ -161,7 +161,7 @@ export default function EndContractModal({
                     setErrors(prev => ({ ...prev, description: null }));
                   }
                 }}
-                placeholder=""
+                placeholder="Ingrese una observación sobre la terminación del contrato..."
                 rows={4}
                 maxLength={255}
                 className={`w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none ${errors.description ? 'border-red-500' : ''}`}

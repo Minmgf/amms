@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { FiX, FiArrowLeft, FiEdit, FiPause, FiPlay } from "react-icons/fi";
 import { TbExchange } from "react-icons/tb";
 import { getContractDetails, getContractHistory, getHistoryByContract } from "@/services/employeeService";
+import { terminateContract, getContractTerminationReasons } from "@/services/contractService";
 import EndContractModal from "./EndContractModal";
 import GenerateAddendumModal from "@/app/components/payroll/contractManagement/contracts/GenerateAddendumModal";
 import AddContractModal from "@/app/components/payroll/contractManagement/contracts/AddContractModal";
@@ -21,14 +22,15 @@ export default function ContractDetailModal({
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [error, setError] = useState(null);
 
-  // Estados para funcionalidades de Otrosí y Terminación (User's work)
+  // Estados para funcionalidades de Otrosí y Terminación
   const [showEndContractModal, setShowEndContractModal] = useState(false);
   const [endContractLoading, setEndContractLoading] = useState(false);
   const [showAddendumModal, setShowAddendumModal] = useState(false);
   const [showAddContractModal, setShowAddContractModal] = useState(false);
   const [addendumFields, setAddendumFields] = useState([]);
+  const [terminationReasons, setTerminationReasons] = useState([]);
 
-  // Estados para Cambio de Contrato (Colleague's work)
+  // Estados para Cambio de Contrato
   const [isChangeContractModalOpen, setIsChangeContractModalOpen] = useState(false);
   const [selectedChangeOption, setSelectedChangeOption] = useState("predefined");
 
@@ -36,6 +38,7 @@ export default function ContractDetailModal({
   useEffect(() => {
     if (isOpen && employeeData?.employeeId) {
       loadContractHistory();
+      loadTerminationReasons();
     }
   }, [isOpen, employeeData]);
 
@@ -46,6 +49,16 @@ export default function ContractDetailModal({
       loadContractActionsHistory();
     }
   }, [selectedContract]);
+
+  const loadTerminationReasons = async () => {
+    try {
+      const response = await getContractTerminationReasons();
+      const reasons = Array.isArray(response) ? response : response?.data || [];
+      setTerminationReasons(reasons);
+    } catch (error) {
+      console.error("Error loading termination reasons:", error);
+    }
+  };
 
   const loadContractHistory = async () => {
     if (!employeeData?.employeeId) return;
@@ -224,7 +237,7 @@ export default function ContractDetailModal({
     }).format(amount);
   };
 
-  // Funciones para manejar la finalización del contrato (User's logic)
+  // Funciones para manejar la finalización del contrato
   const handleEndContract = () => {
     setShowEndContractModal(true);
   };
@@ -232,24 +245,46 @@ export default function ContractDetailModal({
   const handleEndContractConfirm = async (formData) => {
     setEndContractLoading(true);
     try {
-      // Aquí iría la llamada al servicio para finalizar el contrato
-      console.log("Finalizando contrato con datos:", formData);
+      // Prepara payload para el servicio
+      const payload = {
+        contract_termination_reason: parseInt(formData.contract_termination_reason, 10),
+        observation: formData.observation
+      };
       
-      // Simular llamada al API
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Cerrar modal y actualizar datos
-      setShowEndContractModal(false);
-      
-      // Recargar detalles del contrato para reflejar el nuevo estado
-      await loadContractDetails();
-      
-      // Mostrar mensaje de éxito
-      alert("Contrato finalizado exitosamente");
+      const contractCode = selectedContract?.contract_code || contractDetails?.code;
+
+      if (!contractCode) {
+        throw new Error("No se ha seleccionado un código de contrato válido");
+      }
+
+      const response = await terminateContract(contractCode, payload);
+
+      if (response.success) {
+        // Cerrar modal y actualizar datos
+        setShowEndContractModal(false);
+        
+        // Recargar historial y detalles para reflejar el nuevo estado
+        await loadContractHistory();
+        // Esto actualizará selectedContract si cambia el orden/estado
+        
+        alert(response.message || "Contrato finalizado exitosamente");
+      } else {
+        // Manejo de respuesta con success: false pero sin throw
+        alert(response.message || "Error al finalizar el contrato.");
+      }
       
     } catch (error) {
       console.error("Error al finalizar contrato:", error);
-      alert("Error al finalizar el contrato. Intente nuevamente.");
+      const errorMsg = error.response?.data?.message || error.message || "Error al finalizar el contrato. Intente nuevamente.";
+      
+      // Si hay errores de validación específicos
+      if (error.response?.data?.errors) {
+        const errors = error.response.data.errors;
+        const errorDetails = Object.keys(errors).map(key => `${key}: ${errors[key].join(', ')}`).join('\n');
+        alert(`${errorMsg}\n\n${errorDetails}`);
+      } else {
+        alert(errorMsg);
+      }
     } finally {
       setEndContractLoading(false);
     }
@@ -259,7 +294,7 @@ export default function ContractDetailModal({
     setShowEndContractModal(false);
   };
 
-  // Funciones para Otrosí (User's logic)
+  // Funciones para Otrosí
   const handleGenerateAddendum = () => {
     setShowAddendumModal(true);
   };
@@ -282,7 +317,6 @@ export default function ContractDetailModal({
     loadContractHistory();
   };
 
-  // Lógica de estado activo mejorada (User's fix)
   const isActiveContract = ["active", "activo", "creado", "vigente"].includes(contractDetails?.status?.toLowerCase() || "");
 
   if (!isOpen) return null;
@@ -617,15 +651,9 @@ export default function ContractDetailModal({
         isOpen={showEndContractModal}
         onClose={handleEndContractCancel}
         onConfirm={handleEndContractConfirm}
-        contractData={selectedContract} // Assuming selectedContract is the target
+        contractData={selectedContract}
         employeeData={employeeData}
-        terminationReasons={[
-          { id: "1", name: "Terminación por mutuo acuerdo" },
-          { id: "2", name: "Terminación por vencimiento del término" },
-          { id: "3", name: "Terminación por justa causa" },
-          { id: "4", name: "Renuncia del empleado" },
-          { id: "5", name: "Despido sin justa causa" }
-        ]}
+        terminationReasons={terminationReasons}
         loading={endContractLoading}
       />
 

@@ -240,6 +240,13 @@ export const getDaysOfWeek = async () => {
  * @returns {Promise} - Lista de razones de terminación
  */
 export const getContractTerminationReasons = async () => {
+  try {
+    const { data } = await apiMain.get("/types/list/active/20/");
+    return data;
+  } catch (error) {
+    console.error("Error al obtener razones de terminación:", error);
+    throw error;
+  }
 };
 
 /**
@@ -251,4 +258,14 @@ export const getContractTerminationReasons = async () => {
  * @returns {Promise} - Respuesta del servidor
  */
 export const terminateContract = async (contractCode, payload) => {
+  try {
+    const { data } = await apiMain.post(
+      `/employees/${contractCode}/terminate-contract/`,
+      payload
+    );
+    return data;
+  } catch (error) {
+    console.error("Error al finalizar contrato:", error);
+    throw error;
+  }
 };
