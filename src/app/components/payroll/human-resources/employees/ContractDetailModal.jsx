@@ -4,8 +4,7 @@ import React, { useEffect, useState } from "react";
 import { FiX, FiArrowLeft, FiEdit, FiPause, FiPlay } from "react-icons/fi";
 import { getContractDetails, getContractHistory } from "@/services/employeeService";
 import EndContractModal from "./EndContractModal";
-import GenerateAddendumModal from "@/app/components/payroll/contractManagement/contracts/GenerateAddendumModal";
-import AddContractModal from "@/app/components/payroll/contractManagement/contracts/AddContractModal";
+import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
 
 export default function ContractDetailModal({
   isOpen,
@@ -19,6 +18,12 @@ export default function ContractDetailModal({
   const [error, setError] = useState(null);
   const [showEndContractModal, setShowEndContractModal] = useState(false);
   const [endContractLoading, setEndContractLoading] = useState(false);
+  const [terminationReasons, setTerminationReasons] = useState([]);
+  const [terminationReasonsLoading, setTerminationReasonsLoading] = useState(false);
+  const [successModalOpen, setSuccessModalOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [showAddendumModal, setShowAddendumModal] = useState(false);
   const [showAddContractModal, setShowAddContractModal] = useState(false);
   const [addendumFields, setAddendumFields] = useState([]);
@@ -89,17 +94,39 @@ export default function ContractDetailModal({
   };
 
   const handleEndContractConfirm = async (formData) => {
+    if (!selectedContract?.contract_code) {
+      setErrorMessage("No se ha seleccionado un contrato válido");
+      setErrorModalOpen(true);
+      return;
+    }
+
     setEndContractLoading(true);
     try {
       // Aquí iría la llamada al servicio para finalizar el contrato
       console.log("Finalizando contrato con datos:", formData);
       
+      if (response.success) {
+        // Cerrar modal
+        setShowEndContractModal(false);
+        
+        // Recargar detalles del contrato para reflejar el nuevo estado
+        await loadContractDetails();
+        await loadContractHistory();
+        
+        // Mostrar mensaje de éxito con modal reutilizable
+        setSuccessMessage(response.message || "Contrato finalizado exitosamente.");
+        setSuccessModalOpen(true);
+      }
       // Simular llamada al API
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Cerrar modal y actualizar datos
       setShowEndContractModal(false);
       
+      // Mostrar mensaje de error específico en modal reutilizable
+      const errorMsg = error.message || "Error al finalizar el contrato. Intente nuevamente.";
+      setErrorMessage(errorMsg);
+      setErrorModalOpen(true);
       // Recargar detalles del contrato para reflejar el nuevo estado
       await loadContractDetails();
       
@@ -443,26 +470,21 @@ export default function ContractDetailModal({
         loading={endContractLoading}
       />
 
-      {/* Modal de Selección de Campos para Otro Sí */}
-      <GenerateAddendumModal
-        isOpen={showAddendumModal}
-        onClose={() => setShowAddendumModal(false)}
-        onConfirm={handleConfirmAddendum}
-        contractData={contractDetails}
+      {/* Modal de éxito al finalizar contrato */}
+      <SuccessModal
+        isOpen={successModalOpen}
+        onClose={() => setSuccessModalOpen(false)}
+        title="Contrato finalizado"
+        message={successMessage}
       />
 
-      {/* Modal de Creación de Contrato (usado para Otro Sí) */}
-      {showAddContractModal && (
-        <AddContractModal
-          isOpen={showAddContractModal}
-          onClose={handleAddContractClose}
-          contractToEdit={contractDetails}
-          onSuccess={handleAddContractSuccess}
-          isAddendum={true}
-          modifiableFields={addendumFields}
-          employeeId={employeeData.id}
-        />
-      )}
+      {/* Modal de error al finalizar contrato */}
+      <ErrorModal
+        isOpen={errorModalOpen}
+        onClose={() => setErrorModalOpen(false)}
+        title="Error al finalizar contrato"
+        message={errorMessage}
+      />
     </div>
   );
 }
