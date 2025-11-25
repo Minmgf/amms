@@ -1,0 +1,395 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { FiX, FiEdit, FiFileText, FiCalendar, FiUser, FiClock } from "react-icons/fi";
+import { getEmployeeDetails, getEmployeeHistory } from "@/services/employeeService";
+import ContractDetailModal from "./ContractDetailModal";
+
+export default function EmployeeDetailModal({
+  isOpen,
+  onClose,
+  employeeId,
+  onEdit
+}) {
+  const [activeTab, setActiveTab] = useState("personal");
+  const [employeeData, setEmployeeData] = useState(null);
+  const [employeeHistory, setEmployeeHistory] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [isContractModalOpen, setIsContractModalOpen] = useState(false);
+
+  // Date range filter for history
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
+  useEffect(() => {
+    if (isOpen && employeeId) {
+      loadEmployeeData();
+      loadEmployeeHistory();
+    }
+  }, [isOpen, employeeId]);
+
+  const loadEmployeeData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await getEmployeeDetails(employeeId);
+      
+      if (response.success && response.data) {
+        // Mapear los datos de la API a la estructura esperada por el componente
+        const mappedData = {
+          // Información personal
+          id: response.data.personal_info.id_user,
+          employeeId: employeeId, // Usar el employeeId que se pasa como parámetro
+          fullName: response.data.personal_info.full_name,
+          documentType: response.data.personal_info.document_type,
+          document: response.data.personal_info.document_number,
+          gender: response.data.personal_info.gender,
+          genderId: response.data.personal_info.gender_id,
+          birthDate: response.data.personal_info.birth_date,
+          email: response.data.personal_info.email,
+          phone: response.data.personal_info.phone,
+          country: response.data.personal_info.country,
+          state: response.data.personal_info.state,
+          city: response.data.personal_info.city,
+          address: response.data.personal_info.address,
+          
+          // Información del contrato
+          status: response.data.contract_info.status_name,
+          statusId: response.data.contract_info.status_id,
+          position: response.data.contract_info.charge_name,
+          positionId: response.data.contract_info.charge_id,
+          department: response.data.contract_info.department_name,
+          departmentId: response.data.contract_info.department_id,
+          contractCode: response.data.contract_info.contract_code,
+          
+          // Información adicional del contrato
+          contract: {
+            id: response.data.contract_info.contract_code,
+            code: response.data.contract_info.contract_code,
+            status: response.data.contract_info.status_name
+          }
+        };
+        
+        setEmployeeData(mappedData);
+        
+        // También establecer el historial desde la respuesta de la API
+        if (response.data.news_history && Array.isArray(response.data.news_history)) {
+          setEmployeeHistory(response.data.news_history);
+        }
+      } else {
+        throw new Error('Respuesta inválida del servidor');
+      }
+    } catch (err) {
+      setError("Error al cargar la información del empleado");
+      console.error("Error loading employee data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadEmployeeHistory = async () => {
+    // El historial ahora se carga junto con los datos del empleado
+    // Esta función se mantiene para compatibilidad pero no hace nada
+    // ya que el historial viene en la respuesta de getEmployeeDetails
+  };
+
+  const handleContractView = () => {
+    setIsContractModalOpen(true);
+  };
+
+  const handleDateFilter = () => {
+    // Apply date filter to history
+    loadEmployeeHistory();
+  };
+
+  const clearDateFilter = () => {
+    setStartDate("");
+    setEndDate("");
+    loadEmployeeHistory();
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "—";
+    return new Date(dateString).toLocaleDateString("es-CO", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    });
+  };
+
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "—";
+    return new Date(dateString).toLocaleString("es-CO", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  };
+
+  if (!isOpen) return null;
+
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) onClose?.();
+  };
+
+  return (
+    <>
+      <div
+        className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+        onClick={handleBackdropClick}
+      >
+        <div className="modal-theme rounded-xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-y-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between p-theme-lg border-b border-primary">
+            <h2 className="text-theme-2xl font-theme-bold text-primary">
+              Información del Empleado
+            </h2>
+            <button
+              className="p-theme-sm hover:bg-hover rounded-theme-md transition-fast cursor-pointer"
+              onClick={onClose}
+              aria-label="Cerrar modal de detalles del empleado"
+            >
+              <FiX className="w-5 h-5 text-secondary" />
+            </button>
+          </div>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent mx-auto mb-4"></div>
+                <p className="text-secondary">Cargando información del empleado...</p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center text-error">
+                <p>{error}</p>
+              </div>
+            </div>
+          ) : employeeData ? (
+            <>
+
+              {/* Tabs */}
+              <div className="flex border-b border-primary bg-surface">
+                <button
+                  onClick={() => setActiveTab("personal")}
+                  className={`flex items-center gap-2 px-6 py-4 font-theme-medium transition-fast ${
+                    activeTab === "personal"
+                      ? "border-b-2 border-accent text-accent bg-background"
+                      : "text-secondary hover:text-primary"
+                  }`}
+                >
+                  <FiUser className="w-4 h-4" />
+                  Información Personal
+                </button>
+                <button
+                  onClick={() => setActiveTab("history")}
+                  className={`flex items-center gap-2 px-6 py-4 font-theme-medium transition-fast ${
+                    activeTab === "history"
+                      ? "border-b-2 border-accent text-accent bg-background"
+                      : "text-secondary hover:text-primary"
+                  }`}
+                >
+                  <FiClock className="w-4 h-4" />
+                  Historial de Novedades
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-theme-lg">
+                {activeTab === "personal" && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Left Column - Personal Information */}
+                    <div className="space-y-6">
+                      <div className="card-theme">
+                        <h3 className="text-theme-lg font-theme-semibold text-primary mb-4">
+                          Información Personal
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <InfoField label="Nombre completo" value={employeeData.fullName} />
+                          <InfoField label="Tipo de documento" value={employeeData.documentType} />
+                          <InfoField label="Número de documento" value={employeeData.document} />
+                          <InfoField label="Género" value={employeeData.gender} />
+                          <InfoField label="Fecha de nacimiento" value={formatDate(employeeData.birthDate)} />
+                          <InfoField label="Correo electrónico" value={employeeData.email} />
+                          <InfoField label="Número telefónico" value={employeeData.phone} />
+                          <InfoField label="País" value={employeeData.country} />
+                          <InfoField label="Estado/Departamento" value={employeeData.state} />
+                          <InfoField label="Ciudad" value={employeeData.city} />
+                          <InfoField label="Dirección" value={employeeData.address} />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column - Contract Information */}
+                    <div className="space-y-6">
+                      <div className="card-theme">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-theme-lg font-theme-semibold text-primary">
+                            Información del Contrato
+                          </h3>
+                          <button
+                            onClick={handleContractView}
+                            className="btn-theme btn-outline text-theme-sm gap-2"
+                          >
+                            <FiFileText className="w-4 h-4" />
+                            Contratos
+                          </button>
+                        </div>
+                        <div className="space-y-4">
+                          <InfoField label="Cargo" value={employeeData.position} />
+                          <InfoField label="Departamento" value={employeeData.department} />
+                          <InfoField 
+                            label="Estado" 
+                            value={
+                              <span className={`parametrization-badge ${
+                                employeeData.status === "Activo" || employeeData.status === "Active"
+                                  ? "parametrization-badge-5"
+                                  : "parametrization-badge-1"
+                              }`}>
+                                {employeeData.status}
+                              </span>
+                            } 
+                          />
+                          <InfoField label="Contrato asociado" value={employeeData.contractCode} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === "history" && (
+                  <div className="space-y-6">
+                    {/* History Filters */}
+                    <div className="card-theme">
+                      <div className="flex flex-col sm:flex-row gap-4 items-end">
+                        <div className="flex-1">
+                          <label className="block text-theme-sm font-theme-medium text-secondary mb-1">
+                            Inicio
+                          </label>
+                          <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            className="input-theme"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-theme-sm font-theme-medium text-secondary mb-1">
+                            Fin
+                          </label>
+                          <input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            className="input-theme"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={clearDateFilter}
+                            className="btn-theme btn-secondary"
+                          >
+                            Limpiar
+                          </button>
+                          <button
+                            onClick={handleDateFilter}
+                            className="btn-theme btn-primary"
+                          >
+                            Aplicar
+                          </button>                          
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* History List */}
+                    <div className="card-theme">
+                      <div className="p-theme-md border-b border-primary bg-surface">
+                        <h3 className="text-theme-lg font-theme-semibold text-primary">
+                          Historial de Novedades
+                        </h3>
+                      </div>
+                      <div className="p-theme-md">
+                        {employeeHistory.length === 0 ? (
+                          <div className="text-center py-8 text-secondary">
+                            Este empleado no tiene novedades registradas.
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            {employeeHistory.map((item, index) => (
+                              <div
+                                key={index}
+                                className="border border-primary rounded-theme-lg p-theme-md hover:bg-hover transition-fast"
+                              >
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-2">
+                                      <span className="text-theme-sm font-theme-medium text-primary">
+                                        {formatDateTime(item.date)}
+                                      </span>
+                                      <span className="text-theme-sm text-secondary">
+                                        por {item.responsible_user_name}
+                                      </span>
+                                    </div>
+                                    <p className="text-primary mb-1">{item.description}</p>
+                                    <span className={`parametrization-badge ${
+                                      item.action === "Creación de empleado" ? "parametrization-badge-5" :
+                                      item.action === "Actualizar empleado" ? "parametrization-badge-8" :
+                                      item.action === "Cambio de contrato" ? "parametrization-badge-4" :
+                                      "parametrization-badge-10"
+                                    }`}>
+                                      {item.action}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="flex justify-end gap-3 p-theme-lg border-t border-primary bg-surface">
+                <button
+                  onClick={() => onEdit?.(employeeData)}
+                  className="btn-theme btn-primary gap-2"
+                >
+                  <FiEdit className="w-4 h-4" />
+                  Editar información
+                </button>
+              </div>
+            </>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Contract Detail Modal */}
+      <ContractDetailModal
+        isOpen={isContractModalOpen}
+        onClose={() => setIsContractModalOpen(false)}
+        employeeData={employeeData}
+      />
+    </>
+  );
+}
+
+// Helper component for displaying information fields
+function InfoField({ label, value }) {
+  return (
+    <div>
+      <label className="block text-theme-sm font-theme-medium text-secondary mb-1">
+        {label}
+      </label>
+      <div className="text-primary parametrization-text">
+        {value || "—"}
+      </div>
+    </div>
+  );
+}
