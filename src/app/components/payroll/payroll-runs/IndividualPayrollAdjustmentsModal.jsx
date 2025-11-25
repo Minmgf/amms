@@ -189,6 +189,18 @@ const IndividualPayrollAdjustmentsModal = ({
     onClose?.();
   };
 
+  const handleNextStep = () => {
+    if (activeTab === "deductions") {
+      setActiveTab("increments");
+    }
+  };
+
+  const handlePreviousStep = () => {
+    if (activeTab === "increments") {
+      setActiveTab("deductions");
+    }
+  };
+
   const handleAddDeduction = () => {
     setDeductions((prev) => [...prev, createEmptyDeduction()]);
   };
@@ -411,152 +423,61 @@ const IndividualPayrollAdjustmentsModal = ({
   return (
     <>
       <div
-        className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
-        onClick={(e) => e.target === e.currentTarget && handleCancel()}
+        className="modal-overlay"
+        style={{ padding: "var(--spacing-sm)", zIndex: 60 }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            handleCancel();
+          }
+        }}
       >
-        <div className="card-theme rounded-xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-primary">
-            <h2 className="text-2xl font-bold text-primary">
-              Ajustes adicionales de nómina
-            </h2>
-            <button
-              onClick={handleCancel}
-              className="p-2 hover:bg-hover rounded-full transition-colors cursor-pointer"
-              aria-label="Cerrar modal de ajustes adicionales"
-            >
-              <FiX className="w-6 h-6 text-secondary" />
-            </button>
-          </div>
+        <div
+          className="modal-theme"
+          style={{
+            width: "100%",
+            minWidth: "280px",
+            maxWidth: "min(95vw, 1400px)",
+            maxHeight: "min(95vh, 900px)",
+            overflowY: "auto",
+            margin: "0 auto",
+          }}
+        >
+          <div className="p-3 sm:p-6 md:p-8 lg:p-theme-xl">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-4 sm:mb-6 md:mb-8">
+              <h2 className="text-lg sm:text-xl md:text-theme-xl font-theme-semibold text-primary">
+                Ajustes adicionales de nómina
+              </h2>
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="text-secondary hover:text-primary cursor-pointer"
+                aria-label="Cerrar modal de ajustes adicionales"
+              >
+                <FiX size={18} />
+              </button>
+            </div>
 
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto max-h-[calc(95vh-90px)]">
-            <div className="p-6 space-y-6">
+            <div className="space-y-4 sm:space-y-6">
+              {/* Paso / Tabs - reutilizando el estilo del wizard de contratos */}
+              <AdjustmentsStepIndicator
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+              />
+
               {/* Rango de nómina */}
               {payrollStartDate && payrollEndDate && (
-                <div className="text-xs text-secondary mb-2">
-                  Rango de nómina seleccionado: <span className="text-primary font-medium">{payrollStartDate}</span> a {" "}
-                  <span className="text-primary font-medium">{payrollEndDate}</span>
+                <div className="text-xs text-secondary">
+                  Rango de nómina seleccionado:{" "}
+                  <span className="text-primary font-medium">
+                    {payrollStartDate}
+                  </span>{" "}
+                  a{" "}
+                  <span className="text-primary font-medium">
+                    {payrollEndDate}
+                  </span>
                 </div>
               )}
-
-              {/* Paso / Tabs - estilo similar al stepper de contratos */}
-              <div className="mb-4 sm:mb-6 md:mb-8">
-                <div className="flex items-center justify-center gap-8 sm:gap-12">
-                  {/* Paso 1: Deducciones adicionales */}
-                  <button
-                    type="button"
-                    className="flex flex-col items-center gap-1 focus:outline-none"
-                    onClick={() => setActiveTab("deductions")}
-                  >
-                    <div
-                      className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-xs sm:text-theme-sm font-theme-bold border-2 mb-1 transition-all duration-300"
-                      style={{
-                        backgroundColor:
-                          activeTab === "deductions"
-                            ? "var(--color-accent)"
-                            : "var(--color-surface)",
-                        borderColor:
-                          activeTab === "deductions"
-                            ? "var(--color-accent)"
-                            : "var(--color-border)",
-                        color:
-                          activeTab === "deductions"
-                            ? "white"
-                            : "var(--color-text-secondary)",
-                      }}
-                    >
-                      1
-                    </div>
-                    <div className="mt-1 text-center max-w-24">
-                      <div
-                        className="text-xs sm:text-theme-xs font-theme-medium"
-                        style={{
-                          color:
-                            activeTab === "deductions"
-                              ? "var(--color-accent)"
-                              : "var(--color-text-secondary)",
-                        }}
-                      >
-                        Deducciones adicionales
-                      </div>
-                      <div
-                        className="text-[10px] sm:text-theme-xs mt-0.5"
-                        style={{
-                          color:
-                            activeTab === "deductions"
-                              ? "var(--color-accent)"
-                              : "var(--color-text-secondary)",
-                        }}
-                      >
-                        {activeTab === "deductions" ? "En progreso" : "Completo"}
-                      </div>
-                    </div>
-                  </button>
-
-                  {/* Línea de conexión */}
-                  <div
-                    className="h-0.5 w-8 sm:w-12 md:w-16 mx-2 sm:mx-4 rounded-full transition-colors duration-300"
-                    style={{
-                      backgroundColor:
-                        activeTab === "increments"
-                          ? "var(--color-accent)"
-                          : "var(--color-border)",
-                    }}
-                  />
-
-                  {/* Paso 2: Incrementos adicionales */}
-                  <button
-                    type="button"
-                    className="flex flex-col items-center gap-1 focus:outline-none"
-                    onClick={() => setActiveTab("increments")}
-                  >
-                    <div
-                      className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-xs sm:text-theme-sm font-theme-bold border-2 mb-1 transition-all duration-300"
-                      style={{
-                        backgroundColor:
-                          activeTab === "increments"
-                            ? "var(--color-accent)"
-                            : "var(--color-surface)",
-                        borderColor:
-                          activeTab === "increments"
-                            ? "var(--color-accent)"
-                            : "var(--color-border)",
-                        color:
-                          activeTab === "increments"
-                            ? "white"
-                            : "var(--color-text-secondary)",
-                      }}
-                    >
-                      2
-                    </div>
-                    <div className="mt-1 text-center max-w-24">
-                      <div
-                        className="text-xs sm:text-theme-xs font-theme-medium"
-                        style={{
-                          color:
-                            activeTab === "increments"
-                              ? "var(--color-accent)"
-                              : "var(--color-text-secondary)",
-                        }}
-                      >
-                        Incrementos adicionales
-                      </div>
-                      <div
-                        className="text-[10px] sm:text-theme-xs mt-0.5"
-                        style={{
-                          color:
-                            activeTab === "increments"
-                              ? "var(--color-accent)"
-                              : "var(--color-text-secondary)",
-                        }}
-                      >
-                        {activeTab === "increments" ? "En progreso" : "Pendiente"}
-                      </div>
-                    </div>
-                  </button>
-                </div>
-              </div>
 
               {/* Secciones */}
               {activeTab === "deductions" ? (
@@ -591,25 +512,15 @@ const IndividualPayrollAdjustmentsModal = ({
                 </div>
               )}
 
-              {/* Botones inferiores */}
-              <div className="flex flex-col md:flex-row gap-4 pt-6 pb-6 border-t border-primary mt-4">
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  className="btn-theme btn-error flex-1"
-                  disabled={loading}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  className="btn-theme btn-primary flex-1 disabled:opacity-50"
-                  disabled={loading}
-                >
-                  {loading ? "Guardando..." : "Guardar ajustes"}
-                </button>
-              </div>
+              {/* Footer con navegación tipo wizard */}
+              <AdjustmentsFooter
+                activeTab={activeTab}
+                loading={loading}
+                onCancel={handleCancel}
+                onNext={handleNextStep}
+                onPrevious={handlePreviousStep}
+                onSave={handleSave}
+              />
             </div>
           </div>
         </div>
@@ -639,7 +550,10 @@ const IndividualPayrollAdjustmentsModal = ({
           onClose?.();
         }}
         title="Ajustes guardados"
-        message={successMessage || "Los ajustes adicionales se han guardado correctamente."}
+        message={
+          successMessage ||
+          "Los ajustes adicionales se han guardado correctamente."
+        }
       />
 
       <ErrorModal
@@ -650,6 +564,164 @@ const IndividualPayrollAdjustmentsModal = ({
         buttonText="Cerrar"
       />
     </>
+  );
+};
+
+const AdjustmentsStepIndicator = ({ activeTab, onTabChange }) => {
+  const steps = [
+    { id: 1, key: "deductions", label: "Deducciones adicionales" },
+    { id: 2, key: "increments", label: "Incrementos adicionales" },
+  ];
+
+  const getStatus = (key) => {
+    if (key === "deductions") {
+      return activeTab === "deductions" ? "En progreso" : "Completo";
+    }
+    if (key === "increments") {
+      return activeTab === "increments" ? "En progreso" : "Pendiente";
+    }
+    return "Pendiente";
+  };
+
+  return (
+    <div className="mb-4 sm:mb-6 md:mb-8">
+      <div className="flex items-center justify-center gap-8 sm:gap-12">
+        {steps.map((step, index) => {
+          const isActive = activeTab === step.key;
+          const status = getStatus(step.key);
+          const isCompleted =
+            step.key === "deductions" && activeTab === "increments";
+
+          return (
+            <React.Fragment key={step.key}>
+              <button
+                type="button"
+                className="flex flex-col items-center gap-1 focus:outline-none"
+                onClick={() => onTabChange(step.key)}
+              >
+                <div
+                  className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-xs sm:text-theme-sm font-theme-bold border-2 mb-1 transition-all duration-300"
+                  style={{
+                    backgroundColor:
+                      isActive || isCompleted
+                        ? "var(--color-accent)"
+                        : "var(--color-surface)",
+                    borderColor:
+                      isActive || isCompleted
+                        ? "var(--color-accent)"
+                        : "var(--color-border)",
+                    color:
+                      isActive || isCompleted
+                        ? "white"
+                        : "var(--color-text-secondary)",
+                  }}
+                >
+                  {step.id}
+                </div>
+                <div className="mt-1 text-center max-w-24">
+                  <div
+                    className="text-xs sm:text-theme-xs font-theme-medium"
+                    style={{
+                      color:
+                        isActive || isCompleted
+                          ? "var(--color-accent)"
+                          : "var(--color-text-secondary)",
+                    }}
+                  >
+                    {step.label}
+                  </div>
+                  <div
+                    className="text-[10px] sm:text-theme-xs mt-0.5"
+                    style={{
+                      color:
+                        isActive || isCompleted
+                          ? "var(--color-accent)"
+                          : "var(--color-text-secondary)",
+                    }}
+                  >
+                    {status}
+                  </div>
+                </div>
+              </button>
+              {index < steps.length - 1 && (
+                <div
+                  className="h-0.5 w-8 sm:w-12 md:w-16 mx-2 sm:mx-4 rounded-full transition-colors duration-300"
+                  style={{
+                    backgroundColor:
+                      activeTab === "increments"
+                        ? "var(--color-accent)"
+                        : "var(--color-border)",
+                  }}
+                />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const AdjustmentsFooter = ({
+  activeTab,
+  loading,
+  onCancel,
+  onNext,
+  onPrevious,
+  onSave,
+}) => {
+  const isLastStep = activeTab === "increments";
+
+  return (
+    <div className="flex flex-row justify-between items-center mt-6 sm:mt-theme-xl pt-4 sm:pt-theme-lg border-t border-primary">
+      {/* Botón Anterior */}
+      <button
+        type="button"
+        aria-label="Previous Button"
+        onClick={onPrevious}
+        disabled={activeTab === "deductions" || loading}
+        className="btn-theme btn-secondary w-auto"
+      >
+        Anterior
+      </button>
+
+      <div className="flex gap-4">
+        {/* Botón Cancelar */}
+        <button
+          type="button"
+          aria-label="Cancel Button"
+          onClick={onCancel}
+          disabled={loading}
+          className="btn-theme w-auto"
+          style={{
+            backgroundColor: "#EF4444",
+            color: "white",
+            border: "none",
+          }}
+        >
+          Cancelar
+        </button>
+
+        {/* Botón Siguiente / Guardar */}
+        <button
+          type="button"
+          aria-label={isLastStep ? "Save Button" : "Next Button"}
+          onClick={isLastStep ? onSave : onNext}
+          disabled={loading}
+          className="btn-theme btn-primary w-auto"
+          style={{
+            backgroundColor: "#000000",
+            color: "white",
+          }}
+        >
+          {loading
+            ? "Guardando..."
+            : isLastStep
+            ? "Guardar ajustes"
+            : "Siguiente"}
+        </button>
+      </div>
+    </div>
   );
 };
 
