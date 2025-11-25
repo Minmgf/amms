@@ -3,7 +3,7 @@ import { useFormContext } from "react-hook-form";
 import { useState, useEffect } from "react";
 import { getActiveUnits, getDaysOfWeek } from "@/services/contractService";
 
-export default function Step2ContractTerms({ isAddendum = false, modifiableFields = [] }) {
+export default function Step2ContractTerms() {
   const {
     register,
     formState: { errors },
@@ -11,11 +11,6 @@ export default function Step2ContractTerms({ isAddendum = false, modifiableField
     setValue,
     getValues,
   } = useFormContext();
-
-  const isDisabled = (fieldName) => {
-    if (!isAddendum) return false;
-    return !modifiableFields.includes(fieldName);
-  };
 
   const cumulative = watch("cumulative");
   const salaryModality = watch("salaryType") || "";
@@ -128,11 +123,9 @@ export default function Step2ContractTerms({ isAddendum = false, modifiableField
             {...register("salaryType", {
               required: "Este campo es obligatorio",
             })}
-            disabled={isDisabled("salaryType")}
             value={selectedSalaryType}
-            className={`input-theme w-full ${
-              errors.salaryType ? "border-red-500" : ""
-            } ${isDisabled("salaryType") ? "bg-gray-100 cursor-not-allowed opacity-70" : ""}`}
+            className={`input-theme w-full ${errors.salaryType ? "border-red-500" : ""
+              }`}
             style={{
               backgroundColor: "var(--color-surface)",
               borderColor: errors.salaryType
@@ -268,7 +261,6 @@ export default function Step2ContractTerms({ isAddendum = false, modifiableField
             {...register("currency", {
               required: "Este campo es obligatorio",
             })}
-            disabled={isDisabled("currency")}
             value={selectedCurrency}
             className={`input-theme w-full ${errors.currency ? "border-red-500" : ""
               }`}
@@ -293,52 +285,6 @@ export default function Step2ContractTerms({ isAddendum = false, modifiableField
             </p>
           )}
         </div>
-      </div>
-
-      {/* Campo condicional: Cantidad de horas/días contratados */}
-      {(salaryModality === "Por horas" || salaryModality === "Por días") && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-          <div>
-            <label
-              htmlFor="contractedAmount"
-              className="block text-theme-sm font-theme-medium text-primary mb-2"
-            >
-              {salaryModality === "Por horas"
-                ? "Cantidad de horas contratadas"
-                : "Cantidad de días contratados"}
-              <span className="text-red-500 ml-1">*</span>
-            </label>
-            <input
-              id="contractedAmount"
-              type="number"
-              min="1"
-              {...register("contractedAmount", {
-                required: (salaryModality === "Por horas" || salaryModality === "Por días")
-                  ? "Este campo es obligatorio"
-                  : false,
-                min: { value: 1, message: "Debe ser mayor a 0" },
-              })}
-              disabled={isDisabled("contractedAmount")} // Check if this field name is correct in GenerateAddendumModal
-              className={`input-theme w-full ${
-                errors.contractedAmount ? "border-red-500" : ""
-              } ${isDisabled("contractedAmount") ? "bg-gray-100 cursor-not-allowed opacity-70" : ""}`}
-              style={{
-                backgroundColor: "var(--color-surface)",
-                borderColor: errors.contractedAmount
-                  ? "#EF4444"
-                  : "var(--color-border)",
-                color: "var(--color-text-primary)",
-              }}
-              placeholder={salaryModality === "Por horas" ? "Ej: 160 horas" : "Ej: 20 días"}
-            />
-            {errors.contractedAmount && (
-              <p className="text-red-500 text-xs mt-1">
-                {errors.contractedAmount.message}
-              </p>
-            )}
-          </div>
-        </div>
-      )}
 
         {/* Trial period */}
         <div>
@@ -360,10 +306,8 @@ export default function Step2ContractTerms({ isAddendum = false, modifiableField
                 message: "Debe ser mayor o igual a 0",
               },
             })}
-            disabled={isDisabled("trialPeriod")}
-            className={`input-theme w-full ${
-              errors.trialPeriod ? "border-red-500" : ""
-            } ${isDisabled("trialPeriod") ? "bg-gray-100 cursor-not-allowed opacity-70" : ""}`}
+            className={`input-theme w-full ${errors.trialPeriod ? "border-red-500" : ""
+              }`}
             style={{
               backgroundColor: "var(--color-surface)",
               borderColor: errors.trialPeriod
@@ -400,10 +344,8 @@ export default function Step2ContractTerms({ isAddendum = false, modifiableField
                 message: "Debe ser mayor o igual a 0",
               },
             })}
-            disabled={isDisabled("vacationDays")}
-            className={`input-theme w-full ${
-              errors.vacationDays ? "border-red-500" : ""
-            } ${isDisabled("vacationDays") ? "bg-gray-100 cursor-not-allowed opacity-70" : ""}`}
+            className={`input-theme w-full ${errors.vacationDays ? "border-red-500" : ""
+              }`}
             style={{
               backgroundColor: "var(--color-surface)",
               borderColor: errors.vacationDays
@@ -427,30 +369,28 @@ export default function Step2ContractTerms({ isAddendum = false, modifiableField
             <span className="text-red-500 ml-1">*</span>
           </label>
           <div className="flex items-center space-x-6 mt-3">
-            <label className={`flex items-center cursor-pointer ${isDisabled("cumulative") ? "opacity-70 cursor-not-allowed" : ""}`}>
+            <label className="flex items-center cursor-pointer">
               <input
                 type="radio"
                 value="yes"
-                disabled={isDisabled("cumulative")}
                 {...register("cumulative", {
                   required: "Debe seleccionar una opción",
                 })}
-                className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
+                className="w-4 h-4 cursor-pointer"
                 style={{
                   accentColor: "var(--color-accent)",
                 }}
               />
               <span className="ml-2 text-theme-sm text-primary">Sí</span>
             </label>
-            <label className={`flex items-center cursor-pointer ${isDisabled("cumulative") ? "opacity-70 cursor-not-allowed" : ""}`}>
+            <label className="flex items-center cursor-pointer">
               <input
                 type="radio"
                 value="no"
-                disabled={isDisabled("cumulative")}
                 {...register("cumulative", {
                   required: "Debe seleccionar una opción",
                 })}
-                className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
+                className="w-4 h-4 cursor-pointer"
                 style={{
                   accentColor: "var(--color-accent)",
                 }}
@@ -482,10 +422,8 @@ export default function Step2ContractTerms({ isAddendum = false, modifiableField
                 required:
                   cumulative === "yes" ? "Este campo es obligatorio" : false,
               })}
-            disabled={isDisabled("effectiveFrom")}
-            className={`input-theme w-full ${
-              errors.effectiveFrom ? "border-red-500" : ""
-            } ${isDisabled("effectiveFrom") ? "bg-gray-100 cursor-not-allowed opacity-70" : ""}`}
+              className={`input-theme w-full ${errors.effectiveFrom ? "border-red-500" : ""
+                }`}
               style={{
                 backgroundColor: "var(--color-surface)",
                 borderColor: errors.effectiveFrom
@@ -571,10 +509,8 @@ export default function Step2ContractTerms({ isAddendum = false, modifiableField
                 message: "Debe ser mayor o igual a 0",
               },
             })}
-            disabled={isDisabled("vacationGrantFrequency")}
-            className={`input-theme w-full ${
-              errors.vacationGrantFrequency ? "border-red-500" : ""
-            } ${isDisabled("vacationGrantFrequency") ? "bg-gray-100 cursor-not-allowed opacity-70" : ""}`}
+            className={`input-theme w-full ${errors.vacationGrantFrequency ? "border-red-500" : ""
+              }`}
             style={{
               backgroundColor: "var(--color-surface)",
               borderColor: errors.vacationGrantFrequency
@@ -611,10 +547,8 @@ export default function Step2ContractTerms({ isAddendum = false, modifiableField
                 message: "Debe ser mayor o igual a 0",
               },
             })}
-            disabled={isDisabled("maximumDisabilityDays")}
-            className={`input-theme w-full ${
-              errors.maximumDisabilityDays ? "border-red-500" : ""
-            } ${isDisabled("maximumDisabilityDays") ? "bg-gray-100 cursor-not-allowed opacity-70" : ""}`}
+            className={`input-theme w-full ${errors.maximumDisabilityDays ? "border-red-500" : ""
+              }`}
             style={{
               backgroundColor: "var(--color-surface)",
               borderColor: errors.maximumDisabilityDays
@@ -651,10 +585,8 @@ export default function Step2ContractTerms({ isAddendum = false, modifiableField
                 message: "Debe ser mayor o igual a 0",
               },
             })}
-            disabled={isDisabled("maximumOvertime")}
-            className={`input-theme w-full ${
-              errors.maximumOvertime ? "border-red-500" : ""
-            } ${isDisabled("maximumOvertime") ? "bg-gray-100 cursor-not-allowed opacity-70" : ""}`}
+            className={`input-theme w-full ${errors.maximumOvertime ? "border-red-500" : ""
+              }`}
             style={{
               backgroundColor: "var(--color-surface)",
               borderColor: errors.maximumOvertime
@@ -688,11 +620,9 @@ export default function Step2ContractTerms({ isAddendum = false, modifiableField
             {...register("overtimePeriod", {
               required: "Este campo es obligatorio",
             })}
-            disabled={isDisabled("overtimePeriod")}
             value={selectedOvertimePeriod}
-            className={`input-theme w-full ${
-              errors.overtimePeriod ? "border-red-500" : ""
-            } ${isDisabled("overtimePeriod") ? "bg-gray-100 cursor-not-allowed opacity-70" : ""}`}
+            className={`input-theme w-full ${errors.overtimePeriod ? "border-red-500" : ""
+              }`}
             style={{
               backgroundColor: "var(--color-surface)",
               borderColor: errors.overtimePeriod
@@ -735,10 +665,8 @@ export default function Step2ContractTerms({ isAddendum = false, modifiableField
                 message: "Debe ser mayor o igual a 0",
               },
             })}
-            disabled={isDisabled("terminationNoticePeriod")}
-            className={`input-theme w-full ${
-              errors.terminationNoticePeriod ? "border-red-500" : ""
-            } ${isDisabled("terminationNoticePeriod") ? "bg-gray-100 cursor-not-allowed opacity-70" : ""}`}
+            className={`input-theme w-full ${errors.terminationNoticePeriod ? "border-red-500" : ""
+              }`}
             style={{
               backgroundColor: "var(--color-surface)",
               borderColor: errors.terminationNoticePeriod
@@ -758,4 +686,3 @@ export default function Step2ContractTerms({ isAddendum = false, modifiableField
     </div>
   );
 }
-
