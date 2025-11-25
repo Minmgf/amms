@@ -5,12 +5,14 @@ import { useState, useEffect } from "react";
 import { ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
 import { getDeductionTypes } from "@/services/contractService";
 
-export default function Step3Deductions() {
+export default function Step3Deductions({ isAddendum = false, modifiableFields = [] }) {
   const {
     register,
     control,
     formState: { errors },
   } = useFormContext();
+
+  const isDisabled = isAddendum && !modifiableFields.includes("changeDeductions");
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -108,15 +110,15 @@ export default function Step3Deductions() {
           <button
             type="button"
             onClick={handleDeleteClick}
-            disabled={selectedRows.length === 0}
+            disabled={selectedRows.length === 0 || isDisabled}
             className="flex items-center gap-2 px-4 py-2 text-theme-sm font-theme-medium rounded-lg transition-colors"
             style={{
               backgroundColor:
-                selectedRows.length === 0
+                selectedRows.length === 0 || isDisabled
                   ? "var(--color-border)"
                   : "var(--color-error)",
-              color: selectedRows.length === 0 ? "var(--color-text-secondary)" : "white",
-              cursor: selectedRows.length === 0 ? "not-allowed" : "pointer",
+              color: selectedRows.length === 0 || isDisabled ? "var(--color-text-secondary)" : "white",
+              cursor: selectedRows.length === 0 || isDisabled ? "not-allowed" : "pointer",
             }}
             aria-label="Delete Selected Deductions"
           >
@@ -126,10 +128,12 @@ export default function Step3Deductions() {
           <button
             type="button"
             onClick={handleAddDeduction}
+            disabled={isDisabled}
             className="flex items-center gap-2 px-4 py-2 text-theme-sm font-theme-medium rounded-lg transition-colors"
             style={{
-              backgroundColor: "var(--color-accent)",
-              color: "white",
+              backgroundColor: isDisabled ? "var(--color-border)" : "var(--color-accent)",
+              color: isDisabled ? "var(--color-text-secondary)" : "white",
+              cursor: isDisabled ? "not-allowed" : "pointer",
             }}
             aria-label="Add Deduction"
           >
@@ -149,7 +153,8 @@ export default function Step3Deductions() {
                 type="checkbox"
                 onChange={handleSelectAll}
                 checked={selectedRows.length === fields.length && fields.length > 0}
-                className="w-4 h-4 cursor-pointer"
+                disabled={isDisabled}
+                className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                 style={{ accentColor: "var(--color-accent)" }}
                 aria-label="Select All"
               />
@@ -191,7 +196,8 @@ export default function Step3Deductions() {
                     type="checkbox"
                     checked={selectedRows.includes(index)}
                     onChange={() => handleSelectRow(index)}
-                    className="w-4 h-4 cursor-pointer"
+                    disabled={isDisabled}
+                    className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                     style={{ accentColor: "var(--color-accent)" }}
                     aria-label={`Select deduction ${index + 1}`}
                   />
@@ -214,7 +220,7 @@ export default function Step3Deductions() {
                       color: "var(--color-text-primary)",
                       padding: "0.375rem 0.5rem",
                     }}
-                    disabled={loadingDeductions}
+                    disabled={loadingDeductions || isDisabled}
                   >
                     <option value="">
                       {loadingDeductions ? "Cargando..." : "Seleccionar"}
@@ -264,9 +270,10 @@ export default function Step3Deductions() {
                       required: "Requerido",
                       min: { value: 0, message: "Debe ser >= 0" },
                     })}
+                    disabled={isDisabled}
                     className={`input-theme w-full text-sm ${
                       errors.deductions?.[index]?.amount_value ? "border-red-500" : ""
-                    }`}
+                    } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
                     style={{
                       backgroundColor: "var(--color-background)",
                       borderColor: errors.deductions?.[index]?.amount_value
@@ -313,9 +320,10 @@ export default function Step3Deductions() {
                     {...register(`deductions.${index}.start_date_deduction`, {
                       required: "Requerido",
                     })}
+                    disabled={isDisabled}
                     className={`input-theme w-full text-sm ${
                       errors.deductions?.[index]?.start_date_deduction ? "border-red-500" : ""
-                    }`}
+                    } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
                     style={{
                       backgroundColor: "var(--color-background)",
                       borderColor: errors.deductions?.[index]?.start_date_deduction
@@ -334,9 +342,10 @@ export default function Step3Deductions() {
                     {...register(`deductions.${index}.end_date_deductions`, {
                       required: "Requerido",
                     })}
+                    disabled={isDisabled}
                     className={`input-theme w-full text-sm ${
                       errors.deductions?.[index]?.end_date_deductions ? "border-red-500" : ""
-                    }`}
+                    } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
                     style={{
                       backgroundColor: "var(--color-background)",
                       borderColor: errors.deductions?.[index]?.end_date_deductions
@@ -353,7 +362,8 @@ export default function Step3Deductions() {
                   <input
                     type="text"
                     {...register(`deductions.${index}.description`)}
-                    className="input-theme w-full text-sm"
+                    disabled={isDisabled}
+                    className={`input-theme w-full text-sm ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
                     style={{
                       backgroundColor: "var(--color-background)",
                       borderColor: "var(--color-border)",
@@ -373,9 +383,10 @@ export default function Step3Deductions() {
                     {...register(`deductions.${index}.amount`, {
                       min: { value: 0, message: "Debe ser >= 0" },
                     })}
+                    disabled={isDisabled}
                     className={`input-theme w-full text-sm ${
                       errors.deductions?.[index]?.amount ? "border-red-500" : ""
-                    }`}
+                    } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
                     style={{
                       backgroundColor: "var(--color-background)",
                       borderColor: errors.deductions?.[index]?.amount

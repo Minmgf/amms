@@ -276,6 +276,28 @@ export default function ContractDetailModal({
     setShowEndContractModal(false);
   };
 
+  const handleGenerateAddendum = () => {
+    setShowAddendumModal(true);
+  };
+
+  const handleConfirmAddendum = (selectedFields) => {
+    setAddendumFields(selectedFields);
+    setShowAddendumModal(false);
+    setShowAddContractModal(true);
+  };
+
+  const handleAddContractClose = () => {
+    setShowAddContractModal(false);
+    setAddendumFields([]);
+  };
+
+  const handleAddContractSuccess = () => {
+    setShowAddContractModal(false);
+    setAddendumFields([]);
+    loadContractDetails();
+    loadContractHistory();
+  };
+
   const isActiveContract = contractDetails?.status === "Active" || contractDetails?.status === "Activo";
 
   if (!isOpen) return null;
@@ -344,7 +366,10 @@ export default function ContractDetailModal({
                     <FiPause className="w-4 h-4" />
                     Terminar Contrato
                   </button>
-                  <button className="btn-theme btn-primary gap-2">
+                  <button 
+                    className="btn-theme btn-primary gap-2"
+                    onClick={handleGenerateAddendum}
+                  >
                     <FiPlay className="w-4 h-4" />
                     Generar Otrosi
                   </button>
