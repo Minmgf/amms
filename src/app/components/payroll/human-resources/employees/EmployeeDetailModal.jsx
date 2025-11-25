@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { FiX, FiEdit, FiFileText, FiCalendar, FiUser, FiClock } from "react-icons/fi";
 import { getEmployeeDetails, getEmployeeHistory } from "@/services/employeeService";
+import { getCitiesByCountry } from "@/services/locationService";
 import ContractDetailModal from "./ContractDetailModal";
 
 export default function EmployeeDetailModal({
@@ -36,6 +37,33 @@ export default function EmployeeDetailModal({
       const response = await getEmployeeDetails(employeeId);
       
       if (response.success && response.data) {
+        let cityValue = response.data.personal_info.city;
+
+        try {
+          const countryName = response.data.personal_info.country;
+          if (countryName && typeof countryName === "string") {
+            const countryIso2 = countryName.slice(0, 2).toUpperCase();
+            const cities = await getCitiesByCountry(countryIso2);
+            const citiesList = Array.isArray(cities) ? cities : cities?.data || [];
+
+            const cityMatch = citiesList.find((c) => {
+              const code = response.data.personal_info.city;
+              return (
+                c.id === code ||
+                c.city_id === code ||
+                c.iso2 === code ||
+                c.code === code
+              );
+            });
+
+            if (cityMatch) {
+              cityValue = cityMatch.name || cityMatch.city_name || cityValue;
+            }
+          }
+        } catch (cityError) {
+          console.error("Error resolving city name:", cityError);
+        }
+
         // Mapear los datos de la API a la estructura esperada por el componente
         const mappedData = {
           // Información personal
@@ -51,7 +79,7 @@ export default function EmployeeDetailModal({
           phone: response.data.personal_info.phone,
           country: response.data.personal_info.country,
           state: response.data.personal_info.state,
-          city: response.data.personal_info.city,
+          city: cityValue,
           address: response.data.personal_info.address,
           
           // Información del contrato
@@ -111,6 +139,13 @@ export default function EmployeeDetailModal({
 
   const formatDate = (dateString) => {
     if (!dateString) return "—";
+    // Si viene en formato YYYY-MM-DD, formatear manualmente para evitar desfases por zona horaria
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      const [year, month, day] = dateString.split("-");
+      return `${day}/${month}/${year}`;
+    }
+
+    // Para otros formatos (con hora incluida), usar toLocaleDateString normalmente
     return new Date(dateString).toLocaleDateString("es-CO", {
       year: "numeric",
       month: "2-digit",
@@ -387,7 +422,7 @@ function InfoField({ label, value }) {
       <label className="block text-theme-sm font-theme-medium text-secondary mb-1">
         {label}
       </label>
-      <div className="text-primary parametrization-text">
+      <div className="text-primary parametrization-text break-words">
         {value || "—"}
       </div>
     </div>
