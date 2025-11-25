@@ -3,8 +3,19 @@
 import React, { useEffect, useState } from "react";
 import { FiX, FiArrowLeft, FiEdit, FiPause, FiPlay } from "react-icons/fi";
 import { TbExchange } from "react-icons/tb";
-import { getContractDetails, getContractHistory, getHistoryByContract } from "@/services/employeeService";
-import { getContractTerminationReasons, terminateContract } from "@/services/contractService";
+import {
+  getContractDetails,
+  getContractHistory,
+  getHistoryByContract,
+  getEstablishedContracts,
+  getEstablishedContractDetails
+} from "@/services/employeeService";
+import {
+  getContractTerminationReasons,
+  terminateContract,
+  getActiveDepartments,
+  getActiveCharges
+} from "@/services/contractService";
 import { SuccessModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
 import EndContractModal from "./EndContractModal";
 import GenerateAddendumModal from "@/app/components/payroll/contractManagement/contracts/GenerateAddendumModal";
@@ -37,9 +48,24 @@ export default function ContractDetailModal({
   const [errorModalOpen, setErrorModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Estados para Cambio de Contrato (Colleague's work)
+  // Estados para Cambio de Contrato
   const [isChangeContractModalOpen, setIsChangeContractModalOpen] = useState(false);
   const [selectedChangeOption, setSelectedChangeOption] = useState("predefined");
+  const [changeContractStep, setChangeContractStep] = useState(1); // 1: selección opción, 2: selección contrato predefinido
+  const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [selectedCharge, setSelectedCharge] = useState("");
+  const [availableCharges, setAvailableCharges] = useState([]);
+  const [predefinedContracts, setPredefinedContracts] = useState([]);
+  const [selectedPredefinedContract, setSelectedPredefinedContract] = useState(null);
+  const [noveltyDescription, setNoveltyDescription] = useState("");
+  const [departments, setDepartments] = useState([]);
+  const [loadingDepartments, setLoadingDepartments] = useState(false);
+  const [loadingCharges, setLoadingCharges] = useState(false);
+  const [loadingContracts, setLoadingContracts] = useState(false);
+  const [descriptionError, setDescriptionError] = useState("");
+  const [isChangeContractMode, setIsChangeContractMode] = useState(false); // Para distinguir entre Cambio de Contrato y Otro Sí
+  const [changeContractData, setChangeContractData] = useState(null); // Datos del contrato predefinido seleccionado
+  const [changeContractObservation, setChangeContractObservation] = useState(""); // Observación del cambio de contrato
 
   // Cargar historial de contratos al abrir el modal
   useEffect(() => {
@@ -317,17 +343,177 @@ export default function ContractDetailModal({
   const handleAddContractClose = () => {
     setShowAddContractModal(false);
     setAddendumFields([]);
+    setIsChangeContractMode(false);
+    setChangeContractData(null);
+    setChangeContractObservation("");
   };
 
   const handleAddContractSuccess = () => {
     setShowAddContractModal(false);
     setAddendumFields([]);
+    setIsChangeContractMode(false);
+    setChangeContractData(null);
+    setChangeContractObservation("");
     loadContractDetails();
     loadContractHistory();
   };
 
   // Lógica de estado activo mejorada (User's fix)
   const isActiveContract = ["active", "activo", "creado", "vigente"].includes(contractDetails?.status?.toLowerCase() || "");
+
+  // Funciones para Cambio de Contrato
+  const handleOpenChangeContract = async () => {
+    setIsChangeContractModalOpen(true);
+    setChangeContractStep(1);
+    setSelectedChangeOption("predefined");
+    setSelectedDepartment("");
+    setSelectedCharge("");
+    setAvailableCharges([]);
+    setPredefinedContracts([]);
+    setSelectedPredefinedContract(null);
+    setNoveltyDescription("");
+    setDescriptionError("");
+
+    // Cargar departamentos al abrir
+    await loadDepartments();
+  };
+
+  const loadDepartments = async () => {
+    setLoadingDepartments(true);
+    try {
+      const response = await getActiveDepartments();
+      const deptList = response?.data || [];
+      setDepartments(deptList);
+    } catch (error) {
+      console.error("Error loading departments:", error);
+      setErrorMessage("Error al cargar departamentos");
+      setErrorModalOpen(true);
+      setDepartments([]);
+    } finally {
+      setLoadingDepartments(false);
+    }
+  };
+
+  const handleDepartmentChange = async (departmentId) => {
+    setSelectedDepartment(departmentId);
+    setSelectedCharge("");
+    setAvailableCharges([]);
+    setPredefinedContracts([]);
+    setSelectedPredefinedContract(null);
+
+    if (!departmentId) return;
+
+    setLoadingCharges(true);
+    try {
+      const charges = await getActiveCharges(departmentId);
+      // El servicio puede retornar directamente el array o en data
+      const chargesList = Array.isArray(charges) ? charges : (charges?.data || []);
+      setAvailableCharges(chargesList);
+    } catch (error) {
+      console.error("Error loading charges:", error);
+      setErrorMessage("Error al cargar cargos");
+      setErrorModalOpen(true);
+      setAvailableCharges([]);
+    } finally {
+      setLoadingCharges(false);
+    }
+  };
+
+  const handleChargeChange = async (chargeId) => {
+    setSelectedCharge(chargeId);
+    setSelectedPredefinedContract(null);
+    setPredefinedContracts([]);
+
+    if (!chargeId) return;
+
+    setLoadingContracts(true);
+    try {
+      const response = await getEstablishedContracts(chargeId);
+      const contractsList = response?.data || [];
+      setPredefinedContracts(contractsList);
+    } catch (error) {
+      console.error("Error loading predefined contracts:", error);
+      setErrorMessage("Error al cargar contratos predefinidos");
+      setErrorModalOpen(true);
+      setPredefinedContracts([]);
+    } finally {
+      setLoadingContracts(false);
+    }
+  };
+
+  const handleSelectContractOption = () => {
+    const trimmedDescription = noveltyDescription.trim();
+
+    // Validar descripción de novedades (obligatorio, máx 350 caracteres)
+    if (!trimmedDescription) {
+      setDescriptionError("La descripción de novedades es obligatoria");
+      return;
+    }
+
+    if (trimmedDescription.length > 350) {
+      setDescriptionError("La descripción no puede exceder 350 caracteres");
+      return;
+    }
+
+    if (selectedChangeOption === "new") {
+      // Flujo: Crear nuevo contrato
+      setIsChangeContractModalOpen(false);
+      setIsChangeContractMode(true); // Activar modo cambio de contrato
+      setChangeContractData(null); // No hay datos precargados
+      setChangeContractObservation(trimmedDescription); // Guardar observación
+      setShowAddContractModal(true);
+    } else if (selectedChangeOption === "predefined") {
+      // Validar que se haya seleccionado departamento, cargo y contrato
+      if (!selectedDepartment) {
+        setDescriptionError("Debe seleccionar un departamento");
+        return;
+      }
+      if (!selectedCharge) {
+        setDescriptionError("Debe seleccionar un cargo");
+        return;
+      }
+      if (!selectedPredefinedContract) {
+        setDescriptionError("Debe seleccionar un contrato predefinido");
+        return;
+      }
+
+      // Flujo: Seleccionar contrato existente
+      // Cargar los detalles del contrato seleccionado y abrir AddContractModal con datos precargados
+      loadPredefinedContractAndOpenModal();
+    }
+  };
+
+  const loadPredefinedContractAndOpenModal = async () => {
+    try {
+      // Usar contract_code para obtener detalles (según la nota en employeeService.js)
+      const contractIdentifier = selectedPredefinedContract.id || selectedPredefinedContract.contract_code;
+      const response = await getEstablishedContractDetails(contractIdentifier);
+      const contractData = response?.data || response;
+
+      setIsChangeContractModalOpen(false);
+      setIsChangeContractMode(true); // Activar modo cambio de contrato
+      setChangeContractData(contractData); // Guardar datos del contrato predefinido
+      setChangeContractObservation(noveltyDescription.trim()); // Guardar observación
+      setShowAddContractModal(true);
+    } catch (error) {
+      console.error("Error loading predefined contract details:", error);
+      setErrorMessage("Error al cargar detalles del contrato predefinido");
+      setErrorModalOpen(true);
+    }
+  };
+
+  const handleCloseChangeContractModal = () => {
+    setIsChangeContractModalOpen(false);
+    setChangeContractStep(1);
+    setSelectedChangeOption("predefined");
+    setSelectedDepartment("");
+    setSelectedCharge("");
+    setAvailableCharges([]);
+    setPredefinedContracts([]);
+    setSelectedPredefinedContract(null);
+    setNoveltyDescription("");
+    setDescriptionError("");
+  };
 
   if (!isOpen) return null;
 
@@ -407,7 +593,7 @@ export default function ContractDetailModal({
                   
                   <button
                     className="btn-theme btn-primary gap-2"
-                    onClick={() => setIsChangeContractModalOpen(true)}
+                    onClick={handleOpenChangeContract}
                   >
                     <TbExchange className="w-4 h-4" />
                     Cambiar contrato
@@ -675,32 +861,58 @@ export default function ContractDetailModal({
         contractData={contractDetails}
       />
 
-      {/* Modal de Creación de Contrato (usado para Otro Sí) (User's work) */}
+      {/* Modal de Creación de Contrato (usado para Otro Sí y Cambio de Contrato) */}
       {showAddContractModal && (
         <AddContractModal
           isOpen={showAddContractModal}
           onClose={handleAddContractClose}
-          contractToEdit={contractDetails}
+          contractToEdit={isChangeContractMode ? changeContractData : contractDetails}
           onSuccess={handleAddContractSuccess}
-          isAddendum={true}
+          isAddendum={!isChangeContractMode}
           modifiableFields={addendumFields}
           employeeId={employeeData.employeeId}
+          isChangeContract={isChangeContractMode}
+          changeContractObservation={changeContractObservation}
         />
       )}
 
-      {/* Change Contract Modal (Colleague's work) */}
+      {/* Change Contract Modal */}
       {isChangeContractModalOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4">
-          <div className="modal-theme rounded-xl shadow-2xl w-full max-w-lg p-6 bg-white dark:bg-gray-800">
-            <h3 className="text-xl font-bold text-center mb-6 text-primary">
+          <div className="modal-theme rounded-xl shadow-2xl w-full max-w-2xl p-theme-lg">
+            <h3 className="text-theme-xl font-theme-bold text-center mb-theme-lg text-primary">
               Cambiar Contrato
             </h3>
 
-            <p className="text-secondary mb-6 text-center">
+            {/* Descripción de novedades - Siempre visible y obligatorio */}
+            <div className="mb-theme-lg">
+              <label className="block text-theme-sm font-theme-medium text-primary mb-2">
+                Descripción de novedades <span className="text-error">*</span>
+              </label>
+              <textarea
+                value={noveltyDescription}
+                onChange={(e) => {
+                  setNoveltyDescription(e.target.value);
+                  setDescriptionError("");
+                }}
+                placeholder="Describa los cambios realizados en este contrato (máximo 350 caracteres)"
+                className="parametrization-input w-full"
+                rows="3"
+                maxLength={350}
+              />
+              <div className="flex justify-between items-center mt-1">
+                <span className={`text-theme-xs ${descriptionError ? 'text-error' : 'text-secondary'}`}>
+                  {descriptionError || `${noveltyDescription.length}/350 caracteres`}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-secondary mb-theme-md text-center parametrization-text">
               Por favor seleccione una de las siguientes opciones:
             </p>
 
-            <div className="flex justify-center gap-8 mb-8">
+            {/* Radio buttons para selección de opción */}
+            <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-8 mb-theme-lg">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
@@ -708,9 +920,9 @@ export default function ContractDetailModal({
                   value="predefined"
                   checked={selectedChangeOption === "predefined"}
                   onChange={(e) => setSelectedChangeOption(e.target.value)}
-                  className="w-4 h-4 text-primary focus:ring-primary"
+                  className="w-4 h-4 text-accent focus:ring-accent"
                 />
-                <span className="text-primary">Seleccionar un contrato predefinido</span>
+                <span className="text-primary parametrization-text">Seleccionar un contrato predefinido</span>
               </label>
 
               <label className="flex items-center gap-2 cursor-pointer">
@@ -720,26 +932,128 @@ export default function ContractDetailModal({
                   value="new"
                   checked={selectedChangeOption === "new"}
                   onChange={(e) => setSelectedChangeOption(e.target.value)}
-                  className="w-4 h-4 text-primary focus:ring-primary"
+                  className="w-4 h-4 text-accent focus:ring-accent"
                 />
-                <span className="text-primary">Crear un nuevo contrato</span>
+                <span className="text-primary parametrization-text">Crear un nuevo contrato</span>
               </label>
             </div>
 
+            {/* Campos condicionales para contrato predefinido */}
+            {selectedChangeOption === "predefined" && (
+              <div className="space-y-4 mb-theme-lg p-theme-md bg-surface rounded-theme-lg border border-primary">
+                {/* Selector de Departamento */}
+                <div>
+                  <label className="block text-theme-sm font-theme-medium text-primary mb-2">
+                    Departamento <span className="text-error">*</span>
+                  </label>
+                  <select
+                    value={selectedDepartment}
+                    onChange={(e) => handleDepartmentChange(e.target.value)}
+                    className="parametrization-input w-full"
+                    disabled={loadingDepartments}
+                  >
+                    <option value="">
+                      {loadingDepartments ? "Cargando departamentos..." : "Seleccione un departamento"}
+                    </option>
+                    {departments.map((dept) => (
+                      <option key={dept.id_employee_department} value={dept.id_employee_department}>
+                        {dept.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Selector de Cargo */}
+                <div>
+                  <label className="block text-theme-sm font-theme-medium text-primary mb-2">
+                    Cargo <span className="text-error">*</span>
+                  </label>
+                  <select
+                    value={selectedCharge}
+                    onChange={(e) => handleChargeChange(e.target.value)}
+                    className="parametrization-input w-full"
+                    disabled={!selectedDepartment || loadingCharges}
+                  >
+                    <option value="">
+                      {loadingCharges ? "Cargando cargos..." : "Seleccione un cargo"}
+                    </option>
+                    {availableCharges.map((charge) => (
+                      <option key={charge.id_employee_charge} value={charge.id_employee_charge}>
+                        {charge.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Listado de contratos predefinidos */}
+                {selectedCharge && (
+                  <div>
+                    <label className="block text-theme-sm font-theme-medium text-primary mb-2">
+                      Contrato predefinido <span className="text-error">*</span>
+                    </label>
+                    {loadingContracts ? (
+                      <div className="text-center py-theme-md">
+                        <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-accent"></div>
+                        <p className="text-secondary text-theme-sm mt-2">Cargando contratos...</p>
+                      </div>
+                    ) : predefinedContracts.length === 0 ? (
+                      <p className="text-secondary text-theme-sm text-center py-theme-md">
+                        No hay contratos predefinidos para este cargo
+                      </p>
+                    ) : (
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {predefinedContracts.map((contract) => (
+                          <label
+                            key={contract.contract_code}
+                            className={`flex items-center gap-3 p-theme-sm border rounded-theme-lg cursor-pointer transition-fast ${
+                              selectedPredefinedContract?.contract_code === contract.contract_code
+                                ? "border-accent bg-accent/10"
+                                : "border-primary hover:bg-hover"
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="predefinedContract"
+                              value={contract.contract_code}
+                              checked={selectedPredefinedContract?.contract_code === contract.contract_code}
+                              onChange={() => setSelectedPredefinedContract(contract)}
+                              className="w-4 h-4 text-accent focus:ring-accent"
+                            />
+                            <div className="flex-1">
+                              <div className="font-theme-medium text-primary parametrization-text">{contract.contract_code}</div>
+                              <div className="text-theme-xs text-secondary">
+                                {contract.contract_type_name || "Tipo de contrato no especificado"}
+                              </div>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Botones de acción */}
             <div className="flex justify-center gap-4">
               <button
-                onClick={() => setIsChangeContractModalOpen(false)}
-                className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                onClick={handleCloseChangeContractModal}
+                className="btn-theme"
+                style={{
+                  backgroundColor: "#EF4444",
+                  color: "white",
+                  border: "none",
+                }}
               >
                 Cancelar
               </button>
               <button
-                onClick={() => {
-                  // Handle selection logic here
-                  console.log("Selected option:", selectedChangeOption);
-                  setIsChangeContractModalOpen(false);
+                onClick={handleSelectContractOption}
+                className="btn-theme btn-primary"
+                style={{
+                  backgroundColor: "#000000",
+                  color: "white",
                 }}
-                className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium dark:bg-white dark:text-black dark:hover:bg-gray-200"
               >
                 Seleccionar
               </button>

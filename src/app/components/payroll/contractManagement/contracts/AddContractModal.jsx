@@ -13,7 +13,8 @@ import {
   getContractDetail,
   updateEstablishedContract,
   getActiveDepartments,
-  getActiveCharges
+  getActiveCharges,
+  changeEmployeeContract
 } from "@/services/contractService";
 import { createContractAddendum, getLatestEmployeeContract } from "@/services/employeeService";
 
@@ -25,10 +26,12 @@ export default function AddContractModal({
   isAddendum = false,
   modifiableFields = [],
   employeeId,
+  isChangeContract = false,
+  changeContractObservation = "",
 }) {
   // Si es Addendum, NO es modo edición (se crea un nuevo registro), pero sí necesitamos cargar los datos del contrato base.
-  const isEditMode = !!contractToEdit && !isAddendum;
-  const modalTitle = isAddendum ? "Generar Otro Sí" : (isEditMode ? "Editar contrato" : "Añadir contrato");
+  const isEditMode = !!contractToEdit && !isAddendum && !isChangeContract;
+  const modalTitle = isAddendum ? "Generar Otro Sí" : (isChangeContract ? "Añadir contrato" : (isEditMode ? "Editar contrato" : "Añadir contrato"));
   const [step, setStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState([]);
   const [isSubmittingStep, setIsSubmittingStep] = useState(false);
@@ -768,6 +771,14 @@ export default function AddContractModal({
       };
     }
 
+    if (isChangeContract) {
+      return {
+        observation: changeContractObservation,
+        id_employee_charge: parseInt(formData.charge),
+        contract: [contractData]
+      };
+    }
+
     return contractData;
   };
 
@@ -786,8 +797,8 @@ export default function AddContractModal({
 
       // Si es Addendum, asegurarnos de que se envíe como una creación (POST) pero quizás con alguna marca de que es un addendum
       // O simplemente se crea un nuevo contrato asociado al empleado (el backend manejará la versión/otro sí).
-      
-      console.log(`Payload a ${isEditMode ? 'actualizar' : (isAddendum ? 'generar otro sí' : 'crear')}:`, payload);
+
+      console.log(`Payload a ${isEditMode ? 'actualizar' : (isAddendum ? 'generar otro sí' : (isChangeContract ? 'cambiar contrato' : 'crear'))}:`, payload);
 
       let response;
       if (isEditMode) {
@@ -799,6 +810,12 @@ export default function AddContractModal({
           throw new Error("ID de empleado no encontrado para generar Otro Sí");
         }
         response = await createContractAddendum(employeeId, payload);
+      } else if (isChangeContract) {
+        // Llamar al endpoint de cambio de contrato (requiere employeeId)
+        if (!employeeId) {
+          throw new Error("ID de empleado no encontrado para cambiar contrato");
+        }
+        response = await changeEmployeeContract(employeeId, payload);
       } else {
         // Llamar al endpoint POST de creación normal
         response = await createEstablishedContract(payload);
@@ -809,7 +826,12 @@ export default function AddContractModal({
       setCompletedSteps((prev) => [...prev, 3]);
 
       // Mostrar mensaje de éxito
-      setModalMessage(response.message || (isEditMode ? "Contrato actualizado exitosamente" : (isAddendum ? "Otro Sí generado exitosamente" : "Contrato creado exitosamente")));
+      setModalMessage(
+        response.message ||
+        (isEditMode ? "Contrato actualizado exitosamente" :
+         (isAddendum ? "Otro Sí generado exitosamente" :
+          (isChangeContract ? "Contrato cambiado exitosamente" : "Contrato creado exitosamente")))
+      );
       setSuccessOpen(true);
 
       // Cerrar el modal y recargar datos

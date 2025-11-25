@@ -311,3 +311,68 @@ export const terminateContract = async (contractCode, payload) => {
     throw error;
   }
 };
+
+/**
+ * Cambiar contrato de empleado
+ * @param {string} employeeId - ID del empleado
+ * @param {Object} payload - Datos del cambio de contrato
+ * @param {string} payload.observation - Descripción de novedades del cambio
+ * @param {number} payload.id_employee_charge - ID del cargo del empleado
+ * @param {Array} payload.contract - Array con el objeto del nuevo contrato
+ * @returns {Promise} - Respuesta del servidor
+ */
+export const changeEmployeeContract = async (employeeId, payload) => {
+  try {
+    const { data } = await apiMain.post(
+      `/employees/${employeeId}/change-contract/`,
+      payload
+    );
+    return data;
+  } catch (error) {
+    if (error.response) {
+      const status = error.response.status;
+      let message = "Error al cambiar el contrato";
+
+      switch (status) {
+        case 400: {
+          const errors = error.response.data?.errors;
+          if (errors) {
+            const errorMessages = [];
+            Object.values(errors).forEach((messages) => {
+              if (Array.isArray(messages)) {
+                errorMessages.push(...messages);
+              }
+            });
+            if (errorMessages.length > 0) {
+              message = errorMessages.join(". ");
+            }
+          } else if (error.response.data?.message) {
+            message = error.response.data.message;
+          }
+          break;
+        }
+        case 401:
+          message = "Usuario no autenticado";
+          break;
+        case 403:
+          message = "No tiene permisos para cambiar este contrato";
+          break;
+        case 404:
+          message = "Empleado no encontrado";
+          break;
+        case 500:
+          message = "Error interno del servidor al cambiar el contrato";
+          break;
+        default:
+          message = error.response.data?.message || `Error del servidor: ${status}`;
+      }
+
+      const customError = new Error(message);
+      customError.status = status;
+      customError.validationErrors = error.response.data?.errors || {};
+      throw customError;
+    }
+
+    throw error;
+  }
+};
