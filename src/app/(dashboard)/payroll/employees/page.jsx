@@ -9,7 +9,7 @@ import { createColumnHelper } from "@tanstack/react-table";
 import { useTheme } from "@/contexts/ThemeContext";
 import RegisterEmployeeModal from "@/app/components/payroll/human-resources/employees/RegisterEmployeeModal";
 import EmployeeDetailModal from "@/app/components/payroll/human-resources/employees/EmployeeDetailModal";
-import GeneratePayrollModal from "@/app/components/payroll/human-resources/employees/GenerateIndividualPayrollModal";
+import GeneratePayrollModal from "@/app/components/payroll/payroll-runs/GenerateIndividualPayrollModal";
 import ToggleStatusModal from "@/app/components/payroll/human-resources/employees/ToggleStatusModal";
 import { getEmployeesList, toggleEmployeeStatus } from "@/services/employeeService";
 
