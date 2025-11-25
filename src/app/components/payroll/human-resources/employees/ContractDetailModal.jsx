@@ -4,6 +4,9 @@ import React, { useEffect, useState } from "react";
 import { FiX, FiArrowLeft, FiEdit, FiPause, FiPlay } from "react-icons/fi";
 import { TbExchange } from "react-icons/tb";
 import { getContractDetails, getContractHistory, getHistoryByContract } from "@/services/employeeService";
+import EndContractModal from "./EndContractModal";
+import GenerateAddendumModal from "@/app/components/payroll/contractManagement/contracts/GenerateAddendumModal";
+import AddContractModal from "@/app/components/payroll/contractManagement/contracts/AddContractModal";
 
 export default function ContractDetailModal({
   isOpen,
@@ -18,6 +21,14 @@ export default function ContractDetailModal({
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [error, setError] = useState(null);
 
+  // Estados para funcionalidades de Otrosí y Terminación (User's work)
+  const [showEndContractModal, setShowEndContractModal] = useState(false);
+  const [endContractLoading, setEndContractLoading] = useState(false);
+  const [showAddendumModal, setShowAddendumModal] = useState(false);
+  const [showAddContractModal, setShowAddContractModal] = useState(false);
+  const [addendumFields, setAddendumFields] = useState([]);
+
+  // Estados para Cambio de Contrato (Colleague's work)
   const [isChangeContractModalOpen, setIsChangeContractModalOpen] = useState(false);
   const [selectedChangeOption, setSelectedChangeOption] = useState("predefined");
 
@@ -213,7 +224,66 @@ export default function ContractDetailModal({
     }).format(amount);
   };
 
-  const isActiveContract = contractDetails?.status === "Active" || contractDetails?.status === "Activo";
+  // Funciones para manejar la finalización del contrato (User's logic)
+  const handleEndContract = () => {
+    setShowEndContractModal(true);
+  };
+
+  const handleEndContractConfirm = async (formData) => {
+    setEndContractLoading(true);
+    try {
+      // Aquí iría la llamada al servicio para finalizar el contrato
+      console.log("Finalizando contrato con datos:", formData);
+      
+      // Simular llamada al API
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Cerrar modal y actualizar datos
+      setShowEndContractModal(false);
+      
+      // Recargar detalles del contrato para reflejar el nuevo estado
+      await loadContractDetails();
+      
+      // Mostrar mensaje de éxito
+      alert("Contrato finalizado exitosamente");
+      
+    } catch (error) {
+      console.error("Error al finalizar contrato:", error);
+      alert("Error al finalizar el contrato. Intente nuevamente.");
+    } finally {
+      setEndContractLoading(false);
+    }
+  };
+
+  const handleEndContractCancel = () => {
+    setShowEndContractModal(false);
+  };
+
+  // Funciones para Otrosí (User's logic)
+  const handleGenerateAddendum = () => {
+    setShowAddendumModal(true);
+  };
+
+  const handleConfirmAddendum = (selectedFields) => {
+    setAddendumFields(selectedFields);
+    setShowAddendumModal(false);
+    setShowAddContractModal(true);
+  };
+
+  const handleAddContractClose = () => {
+    setShowAddContractModal(false);
+    setAddendumFields([]);
+  };
+
+  const handleAddContractSuccess = () => {
+    setShowAddContractModal(false);
+    setAddendumFields([]);
+    loadContractDetails();
+    loadContractHistory();
+  };
+
+  // Lógica de estado activo mejorada (User's fix)
+  const isActiveContract = ["active", "activo", "creado", "vigente"].includes(contractDetails?.status?.toLowerCase() || "");
 
   if (!isOpen) return null;
 
@@ -273,14 +343,24 @@ export default function ContractDetailModal({
                     <FiEdit className="w-4 h-4" />
                     Corrección de Contrato
                   </button>
-                  <button className="btn-theme btn-primary gap-2">
+                  
+                  <button 
+                    className="btn-theme btn-primary gap-2"
+                    onClick={handleEndContract}
+                    disabled={endContractLoading}
+                  >
                     <FiPause className="w-4 h-4" />
                     Terminar Contrato
                   </button>
-                  <button className="btn-theme btn-primary gap-2">
+                  
+                  <button 
+                    className="btn-theme btn-primary gap-2"
+                    onClick={handleGenerateAddendum}
+                  >
                     <FiPlay className="w-4 h-4" />
                     Generar Otrosi
                   </button>
+                  
                   <button
                     className="btn-theme btn-primary gap-2"
                     onClick={() => setIsChangeContractModalOpen(true)}
@@ -532,7 +612,45 @@ export default function ContractDetailModal({
         ) : null}
       </div>
 
-      {/* Change Contract Modal */}
+      {/* Modal de finalización de contrato (User's work) */}
+      <EndContractModal
+        isOpen={showEndContractModal}
+        onClose={handleEndContractCancel}
+        onConfirm={handleEndContractConfirm}
+        contractData={selectedContract} // Assuming selectedContract is the target
+        employeeData={employeeData}
+        terminationReasons={[
+          { id: "1", name: "Terminación por mutuo acuerdo" },
+          { id: "2", name: "Terminación por vencimiento del término" },
+          { id: "3", name: "Terminación por justa causa" },
+          { id: "4", name: "Renuncia del empleado" },
+          { id: "5", name: "Despido sin justa causa" }
+        ]}
+        loading={endContractLoading}
+      />
+
+      {/* Modal de Selección de Campos para Otro Sí (User's work) */}
+      <GenerateAddendumModal
+        isOpen={showAddendumModal}
+        onClose={() => setShowAddendumModal(false)}
+        onConfirm={handleConfirmAddendum}
+        contractData={contractDetails}
+      />
+
+      {/* Modal de Creación de Contrato (usado para Otro Sí) (User's work) */}
+      {showAddContractModal && (
+        <AddContractModal
+          isOpen={showAddContractModal}
+          onClose={handleAddContractClose}
+          contractToEdit={contractDetails}
+          onSuccess={handleAddContractSuccess}
+          isAddendum={true}
+          modifiableFields={addendumFields}
+          employeeId={employeeData.employeeId}
+        />
+      )}
+
+      {/* Change Contract Modal (Colleague's work) */}
       {isChangeContractModalOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4">
           <div className="modal-theme rounded-xl shadow-2xl w-full max-w-lg p-6 bg-white dark:bg-gray-800">
