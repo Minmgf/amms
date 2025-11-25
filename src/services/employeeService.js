@@ -436,7 +436,7 @@ export const createContractAddendum = async (employeeId, payload) => {
  */
 export const getUserById = async (userId) => {
   try {
-    const response = await apiUsers.get(`/users/${userId}/`);
+    const response = await apiUsers.get(`/users/${userId}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching user by ID:', error);
