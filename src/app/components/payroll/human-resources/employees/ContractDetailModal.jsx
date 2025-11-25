@@ -246,6 +246,14 @@ export default function ContractDetailModal({
 
   const formatDate = (dateString) => {
     if (!dateString) return "—";
+
+    // Si viene en formato YYYY-MM-DD, formatear manualmente para evitar desfases por zona horaria
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      const [year, month, day] = dateString.split("-");
+      return `${day}/${month}/${year}`;
+    }
+
+    // Para otros formatos (con hora incluida), usar toLocaleDateString normalmente
     return new Date(dateString).toLocaleDateString("es-CO", {
       year: "numeric",
       month: "2-digit",
