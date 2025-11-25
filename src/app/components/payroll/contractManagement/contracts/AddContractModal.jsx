@@ -25,6 +25,7 @@ export default function AddContractModal({
   isAddendum = false,
   modifiableFields = [],
   employeeId,
+  preventTemplateUpdate = false,
 }) {
   // Si es Addendum, NO es modo edición (se crea un nuevo registro), pero sí necesitamos cargar los datos del contrato base.
   const isEditMode = !!contractToEdit && !isAddendum;
@@ -779,29 +780,38 @@ export default function AddContractModal({
       // Transformar datos al formato del backend (sin id_employee_charge para actualización)
       const payload = transformDataForBackend(data);
 
+      const shouldUpdateTemplate = isEditMode && !preventTemplateUpdate;
+
       // Para actualización, remover id_employee_charge ya que no se envía en el PUT
-      if (isEditMode) {
+      if (shouldUpdateTemplate) {
         delete payload.id_employee_charge;
       }
 
       // Si es Addendum, asegurarnos de que se envíe como una creación (POST) pero quizás con alguna marca de que es un addendum
       // O simplemente se crea un nuevo contrato asociado al empleado (el backend manejará la versión/otro sí).
       
-      console.log(`Payload a ${isEditMode ? 'actualizar' : (isAddendum ? 'generar otro sí' : 'crear')}:`, payload);
+      console.log(`Payload a ${shouldUpdateTemplate ? 'actualizar' : (isAddendum ? 'generar otro sí' : 'crear')}:`, payload);
 
       let response;
-      if (isEditMode) {
-        // Llamar al endpoint PUT
-        response = await updateEstablishedContract(contractToEdit.contract_code, payload);
-      } else if (isAddendum) {
+      let newContractId = null;
+      if (isAddendum) {
         // Llamar al endpoint de generar otro sí (requiere employeeId)
         if (!employeeId) {
           throw new Error("ID de empleado no encontrado para generar Otro Sí");
         }
         response = await createContractAddendum(employeeId, payload);
+      } else if (shouldUpdateTemplate) {
+        // Llamar al endpoint PUT
+        response = await updateEstablishedContract(contractToEdit.contract_code, payload);
       } else {
         // Llamar al endpoint POST de creación normal
         response = await createEstablishedContract(payload);
+
+        newContractId =
+          response.contract_code ||
+          (response.data && (response.data.contract_code || response.data.id)) ||
+          response.id ||
+          null;
       }
 
       console.log("Respuesta del servidor:", response);
@@ -809,7 +819,12 @@ export default function AddContractModal({
       setCompletedSteps((prev) => [...prev, 3]);
 
       // Mostrar mensaje de éxito
-      setModalMessage(response.message || (isEditMode ? "Contrato actualizado exitosamente" : (isAddendum ? "Otro Sí generado exitosamente" : "Contrato creado exitosamente")));
+      setModalMessage(
+        response.message ||
+        (isAddendum
+          ? "Otro Sí generado exitosamente"
+          : (shouldUpdateTemplate ? "Contrato actualizado exitosamente" : "Contrato creado exitosamente"))
+      );
       setSuccessOpen(true);
 
       // Cerrar el modal y recargar datos
@@ -817,7 +832,7 @@ export default function AddContractModal({
         methods.reset(defaultValues);
         setStep(0);
         setCompletedSteps([]);
-        if (onSuccess) onSuccess(); // Recargar lista de contratos
+        if (onSuccess) onSuccess(newContractId); // Recargar lista de contratos
         onClose();
       }, 1500);
     } catch (error) {
