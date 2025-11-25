@@ -192,9 +192,9 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           permissions: [],
         },
         {
-          name: "Nominas",
+          name: "Nominas Generadas",
           icon: <FaClipboardList />,
-          path: "/payroll/payrolls",
+          path: "/payroll/generatedPayrolls",
           permissions: [],
         },
       ],

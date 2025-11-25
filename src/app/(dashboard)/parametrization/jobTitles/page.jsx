@@ -133,6 +133,7 @@ const ParameterizationView = () => {
           charges: departmentData.jobTitles.map((job) => ({
             name: job.name,
             description: job.description,
+            contract_prefix: job.contractPrefix || job.contract_prefix,
           })),
         };
 
