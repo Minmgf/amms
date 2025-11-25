@@ -6,7 +6,7 @@ import { FiSearch, FiFilter, FiEdit2, FiTrash2, FiPlus, FiX, FiEye } from "react
 import { FaCalendar, FaCheckCircle, FaDollarSign, FaFileContract } from "react-icons/fa";
 import { SuccessModal, ErrorModal, ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
 import FilterModal from "@/app/components/shared/FilterModal";
-import { getContracts, deleteContract, toggleContractStatus, getEstablishedContracts } from "@/services/contractService";
+import { deleteContract, toggleContractStatus, getEstablishedContracts } from "@/services/contractService";
 import { useTheme } from "@/contexts/ThemeContext";
 import TableList from "@/app/components/shared/TableList";
 import { createColumnHelper } from "@tanstack/react-table";
@@ -183,34 +183,40 @@ const ContractManagementPage = () => {
     setIsConfirmDeleteOpen(false);
     if (!selectedContract) return;
 
-    // TODO: Implementar endpoint de eliminación para established_contracts
-    setModalTitle("Función no disponible");
-    setModalMessage("La función de eliminar contratos establecidos estará disponible próximamente.");
-    setIsErrorModalOpen(true);
-    setSelectedContract(null);
-
-    /* try {
+    try {
+      // Intentar eliminación física del contrato
       const response = await deleteContract(selectedContract.contract_code);
 
       if (response.success) {
-        setData(prevData =>
-          prevData.filter(contract => contract.contract_code !== selectedContract.contract_code)
-        );
+        // Eliminación exitosa - recargar datos
+        await loadInitialData();
 
         setModalTitle("Eliminación Exitosa");
         setModalMessage(response.message || "El contrato ha sido eliminado exitosamente.");
         setIsSuccessModalOpen(true);
+        setSelectedContract(null);
       }
     } catch (error) {
       console.error("Error deleting contract:", error);
-      setModalTitle("Error");
-      setModalMessage(
-        error.response?.data?.message ||
-        "Ocurrió un error al eliminar el contrato. Por favor, inténtelo de nuevo."
-      );
-      setIsErrorModalOpen(true);
-      setSelectedContract(null);
-    } */
+      
+      // Verificar si el error es por información relacionada (400 o 409)
+      if (error.response?.status === 400 || error.response?.status === 409) {
+        // El contrato tiene información relacionada - ofrecer desactivación
+        setModalTitle("Contrato con Información Asociada");
+        setModalMessage("Este contrato tiene información asociada (nómina, deducciones, historial u otros registros). Se procederá a su desactivación.");
+        setIsConfirmDeactivateOpen(true);
+        // No limpiar selectedContract aquí porque se necesita para la desactivación
+      } else {
+        // Otro tipo de error
+        setModalTitle("Error");
+        setModalMessage(
+          error.response?.data?.message || 
+          "No se pudo completar la eliminación del contrato. Intente nuevamente o contacte al administrador."
+        );
+        setIsErrorModalOpen(true);
+        setSelectedContract(null);
+      }
+    }
   };
 
   const handleOpenActivateConfirm = (contract) => {
@@ -239,17 +245,17 @@ const ContractManagementPage = () => {
           )
         );
 
-        // Mostrar modal de éxito
-        setModalTitle("Estado Actualizado");
-        setModalMessage(response.message || "El estado del contrato ha sido actualizado exitosamente.");
+        // Mostrar modal de éxito con mensaje específico para activación
+        setModalTitle("Contrato Activado");
+        setModalMessage(response.message || "El contrato ha sido activado exitosamente y puede recibir nuevas modificaciones.");
         setIsSuccessModalOpen(true);
       }
     } catch (error) {
-      console.error("Error toggling contract status:", error);
+      console.error("Error activating contract:", error);
       setModalTitle("Error");
       setModalMessage(
-        error.response?.data?.message ||
-        "Ocurrió un error al cambiar el estado del contrato. Por favor, inténtelo de nuevo."
+        error.response?.data?.message || 
+        "No se pudo completar la activación del contrato. Intente nuevamente o contacte al administrador."
       );
       setIsErrorModalOpen(true);
     } finally {
@@ -283,13 +289,13 @@ const ContractManagementPage = () => {
           )
         );
 
-        // Mostrar modal de éxito
-        setModalTitle("Estado Actualizado");
-        setModalMessage(response.message || "El estado del contrato ha sido actualizado exitosamente.");
+        // Mostrar modal de éxito con mensaje específico para desactivación
+        setModalTitle("Contrato Desactivado");
+        setModalMessage(response.message || "El contrato ha sido desactivado exitosamente. Permanecerá disponible únicamente para consulta histórica o auditoría.");
         setIsSuccessModalOpen(true);
       }
     } catch (error) {
-      console.error("Error toggling contract status:", error);
+      console.error("Error deactivating contract:", error);
       setModalTitle("Error");
       setModalMessage(
         error.response?.data?.message ||
@@ -303,12 +309,17 @@ const ContractManagementPage = () => {
 
   const deleteConfirmMessage = useMemo(() => {
     if (!selectedContract) return "";
-    return `¿Está seguro que desea eliminar el contrato "${selectedContract?.contract_code}"?`;
+    return `¿Está seguro de eliminar este contrato? Esta acción eliminará definitivamente el registro y no podrá deshacerse.`;
   }, [selectedContract]);
 
   const activateConfirmMessage = useMemo(() => {
     if (!selectedContract) return "";
-    return `¿Está seguro que desea activar el contrato "${selectedContract?.contract_code}"?`;
+    return `¿Está seguro que desea activar el contrato "${selectedContract?.contract_code}"? El contrato podrá recibir nuevas deducciones, incrementos o modificaciones.`;
+  }, [selectedContract]);
+
+  const deactivateConfirmMessage = useMemo(() => {
+    if (!selectedContract) return "";
+    return `¿Está seguro que desea desactivar el contrato "${selectedContract?.contract_code}"? El contrato permanecerá disponible únicamente para consulta histórica.`;
   }, [selectedContract]);
 
   const columnHelper = createColumnHelper();
@@ -619,8 +630,8 @@ const ContractManagementPage = () => {
         isOpen={isConfirmDeactivateOpen}
         onClose={() => { setIsConfirmDeactivateOpen(false); setSelectedContract(null); }}
         onConfirm={handleConfirmDeactivate}
-        title={modalTitle}
-        message={modalMessage}
+        title="Confirmar Desactivación"
+        message={deactivateConfirmMessage}
         confirmText="Desactivar"
         cancelText="Cancelar"
         confirmColor="btn-primary"
@@ -646,7 +657,7 @@ const ContractManagementPage = () => {
         onClose={() => { setIsContractDetailsOpen(false); setSelectedContract(null); }}
         contractData={selectedContract}
         onBackToList={() => { setIsContractDetailsOpen(false); setSelectedContract(null); }}
-        onExport={(format) => { setModalTitle("Exportar"); setModalMessage(`Export solicitado: ${format} (pendiente de implementar)`); setIsSuccessModalOpen(true); }}
+        onExport={(format) => { setModalTitle("Exportar"); setModalMessage(`Export solicitado: ${format}`); setIsSuccessModalOpen(true); }}
         themeColors={{}}
         canViewContract={true}
       />

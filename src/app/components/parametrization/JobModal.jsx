@@ -25,10 +25,12 @@ const JobModal = ({
     jobTitle: "",
     description: "",
     isActive: true,
+    contractPrefix: "",
   });
 
   const [errors, setErrors] = useState({
     jobTitle: "",
+    contractPrefix: "",
   });
 
   const [successOpen, setSuccessOpen] = useState(false);
@@ -43,6 +45,7 @@ const JobModal = ({
         jobTitle: jobData.name || "",
         description: jobData.description || "",
         isActive: jobData.idStatues === 1,
+        contractPrefix: jobData.contractPrefix || jobData.contract_prefix || "",
       });
     } else {
       // Reset form for add mode
@@ -51,12 +54,14 @@ const JobModal = ({
         jobTitle: "",
         description: "",
         isActive: true,
+        contractPrefix: "",
       });
     }
 
     // Reset errors when modal opens/closes
     setErrors({
       jobTitle: "",
+      contractPrefix: "",
     });
   }, [jobData, mode, isOpen, departmentName]);
 
@@ -116,6 +121,17 @@ const JobModal = ({
       if (isDuplicate) {
         newErrors.jobTitle = "This job title already exists in this department";
       }
+    }
+
+    // Validación de prefijo de contrato
+    const prefix = formData.contractPrefix.trim();
+    if (!prefix) {
+      newErrors.contractPrefix = "Contract prefix is required";
+    } else if (prefix.includes(" ")) {
+      newErrors.contractPrefix = "Contract prefix cannot contain spaces";
+    } else if (!/^[A-Za-z]+$/.test(prefix)) {
+      newErrors.contractPrefix =
+        "Contract prefix can only contain letters (no numbers or special characters)";
     }
 
     setErrors(newErrors);
@@ -211,6 +227,43 @@ const JobModal = ({
                         />
                       </svg>
                       {errors.jobTitle}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label
+                    className={`block text-sm font-medium mb-2 ${
+                      errors.contractPrefix ? "text-red-500" : "text-gray-700"
+                    }`}
+                  >
+                    Prefijo del contrato
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.contractPrefix}
+                    onChange={(e) =>
+                      handleInputChange("contractPrefix", e.target.value.toUpperCase())
+                    }
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                      errors.contractPrefix
+                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                        : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    }`}
+                  />
+                  {errors.contractPrefix && (
+                    <div className="flex items-center mt-1 text-red-500 text-xs">
+                      <svg
+                        className="w-4 h-4 mr-1"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      {errors.contractPrefix}
                     </div>
                   )}
                 </div>

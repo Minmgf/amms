@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useEffect, useMemo, useState } from "react";
 import { FiSearch, FiFilter, FiPlus, FiEye, FiFileText, FiPower, FiRefreshCw, FiX } from "react-icons/fi";
 import { SuccessModal, ErrorModal, ConfirmModal } from "@/app/components/shared/SuccessErrorModal";
@@ -8,6 +9,9 @@ import { createColumnHelper } from "@tanstack/react-table";
 import { useTheme } from "@/contexts/ThemeContext";
 import RegisterEmployeeModal from "@/app/components/payroll/human-resources/employees/RegisterEmployeeModal";
 import EmployeeDetailModal from "@/app/components/payroll/human-resources/employees/EmployeeDetailModal";
+import GeneratePayrollModal from "@/app/components/payroll/payroll-runs/GenerateIndividualPayrollModal";
+import ToggleStatusModal from "@/app/components/payroll/human-resources/employees/ToggleStatusModal";
+import { getEmployeesList, toggleEmployeeStatus } from "@/services/employeeService";
 
 const EmployeesPage = () => {
   useTheme();
@@ -21,6 +25,8 @@ const EmployeesPage = () => {
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedEmployeeForDetail, setSelectedEmployeeForDetail] = useState(null);
+  const [registerModalMode, setRegisterModalMode] = useState("create");
+  const [employeeIdToEdit, setEmployeeIdToEdit] = useState(null);
 
   const [searchType, setSearchType] = useState("document");
   const [advancedSearchText, setAdvancedSearchText] = useState("");
@@ -34,6 +40,12 @@ const EmployeesPage = () => {
 
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [actionType, setActionType] = useState(null);
+  const [isGeneratePayrollModalOpen, setIsGeneratePayrollModalOpen] = useState(false);
+  const [employeeForPayroll, setEmployeeForPayroll] = useState(null);
+  const [generatedPayrolls, setGeneratedPayrolls] = useState([]);
+  
+  const [isToggleStatusModalOpen, setIsToggleStatusModalOpen] = useState(false);
+  const [isTogglingStatus, setIsTogglingStatus] = useState(false);
 
   useEffect(() => {
     loadEmployees();
@@ -42,31 +54,53 @@ const EmployeesPage = () => {
   const loadEmployees = async () => {
     setLoading(true);
     try {
-      const mockEmployees = [
-        {
-          id: 1,
-          document: "1076500031",
-          fullName: "Cristiano Ronaldo",
-          position: "Operador",
-          status: "Activo",
-          canGeneratePayroll: true,
-        },
-        {
-          id: 2,
-          document: "1076500032",
-          fullName: "Cristiano Ronaldo",
-          position: "Operador",
-          status: "Inactivo",
-          canGeneratePayroll: false,
-        },
-      ];
+      const response = await getEmployeesList();
+      
+      if (response.success) {
+        // Mapear los datos del endpoint a la estructura esperada por el componente
+        const mappedEmployees = response.data.map(employee => ({
+          id: employee.id_employee,
+          id_user: employee.id_user,
+          document: employee.document_number,
+          fullName: employee.full_name,
+          position: employee.charge_name,
+          positionId: employee.charge_id,
+          status: employee.status_name,
+          statusId: employee.status_id,
+          email: employee.email,
+          canGeneratePayroll: employee.status_id === 1, // Solo activos pueden generar nómina
+        }));
 
-      const ordered = orderEmployees(mockEmployees);
-      setEmployees(ordered);
-      setFilteredEmployees(ordered);
+        const ordered = orderEmployees(mappedEmployees);
+        setEmployees(ordered);
+        setFilteredEmployees(ordered);
+      } else {
+        throw new Error('Respuesta inválida del servidor');
+      }
     } catch (error) {
+      console.error('Error loading employees:', error);
+      
+      let errorMessage = "Error al cargar el listado de empleados.";
+      
+      // Manejo de errores específicos
+      if (error.status) {
+        switch (error.status) {
+          case 401:
+            errorMessage = "Su sesión ha expirado. Por favor, inicie sesión nuevamente.";
+            break;
+          case 403:
+            errorMessage = "No tiene permisos para acceder al listado de empleados.";
+            break;
+          case 400:
+            errorMessage = error.message || "Parámetros de consulta inválidos.";
+            break;
+          default:
+            errorMessage = error.message || errorMessage;
+        }
+      }
+      
       setModalTitle("Error");
-      setModalMessage("Error al cargar el listado de empleados.");
+      setModalMessage(errorMessage);
       setErrorOpen(true);
       setEmployees([]);
       setFilteredEmployees([]);
@@ -146,7 +180,7 @@ const EmployeesPage = () => {
         header: "Documento",
         cell: (info) => (
           <div className="text-primary font-medium parametrization-text">
-            {info.getValue()}
+            {info.getValue() || 'N/A'}
           </div>
         ),
       }),
@@ -200,13 +234,15 @@ const EmployeesPage = () => {
                 <FiEye className="w-3 h-3" /> Ver
               </button>
 
-              <button
-                aria-label="Generar nómina individual"
-                onClick={() => handleGeneratePayroll(employee)}
-                className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
-              >
-                <FiFileText className="w-3 h-3" /> Nómina
-              </button>
+              {isActive && employee.canGeneratePayroll && (
+                <button
+                  aria-label="Generar nómina individual"
+                  onClick={() => handleGeneratePayroll(employee)}
+                  className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
+                >
+                  <FiFileText className="w-3 h-3" /> Nómina
+                </button>
+              )}
 
               {isActive ? (
                 <button
@@ -241,52 +277,87 @@ const EmployeesPage = () => {
       return;
     }
 
-    setModalTitle("Generar nómina");
-    setModalMessage(
-      "Redirigir a la vista de generación de nómina individual (pendiente de integración)."
-    );
-    setSuccessOpen(true);
+    if (!employee.canGeneratePayroll) {
+      setModalTitle("Acceso restringido");
+      setModalMessage(
+        "No tiene permisos para generar la nómina individual de este empleado."
+      );
+      setErrorOpen(true);
+      return;
+    }
+
+    setEmployeeForPayroll(employee);
+    setIsGeneratePayrollModalOpen(true);
   };
 
   const handleToggleStatus = (employee, type) => {
     setSelectedEmployee(employee);
     setActionType(type);
-    setModalTitle(type === "deactivate" ? "Desactivar empleado" : "Activar empleado");
-    setModalMessage(
-      type === "deactivate"
-        ? `¿Está seguro que desea desactivar al empleado "${employee.fullName}"?`
-        : `¿Está seguro que desea activar al empleado "${employee.fullName}"?`
-    );
-    setConfirmOpen(true);
+    setIsToggleStatusModalOpen(true);
   };
 
-  const handleConfirmToggleStatus = () => {
+  const handleConfirmToggleStatus = async (observation) => {
+    console.log('handleConfirmToggleStatus called', { observation, selectedEmployee, actionType });
+    
     if (!selectedEmployee || !actionType) {
-      setConfirmOpen(false);
+      setIsToggleStatusModalOpen(false);
       return;
     }
 
-    setEmployees((prev) => {
-      const updated = prev.map((emp) =>
-        emp.id === selectedEmployee.id
-          ? {
-              ...emp,
-              status: actionType === "deactivate" ? "Inactivo" : "Activo",
-            }
-          : emp
+    setIsTogglingStatus(true);
+    
+    try {
+      const response = await toggleEmployeeStatus(
+        selectedEmployee.id, 
+        observation || null
       );
-      const ordered = orderEmployees(updated);
-      setFilteredEmployees(ordered);
-      return ordered;
-    });
 
-    setConfirmOpen(false);
-    setSelectedEmployee(null);
-    setActionType(null);
+      // Actualizar el estado local del empleado
+      setEmployees((prev) => {
+        const updated = prev.map((emp) =>
+          emp.id === selectedEmployee.id
+            ? {
+                ...emp,
+                status: actionType === "deactivate" ? "Inactivo" : "Activo",
+                statusId: actionType === "deactivate" ? 2 : 1,
+                canGeneratePayroll: actionType === "activate",
+              }
+            : emp
+        );
+        const ordered = orderEmployees(updated);
+        setFilteredEmployees(ordered);
+        return ordered;
+      });
 
-    setModalTitle("Estado actualizado");
-    setModalMessage("El estado del empleado se actualizó correctamente.");
-    setSuccessOpen(true);
+      setIsToggleStatusModalOpen(false);
+      setSelectedEmployee(null);
+      setActionType(null);
+
+      setModalTitle("Estado actualizado");
+      setModalMessage(
+        response.message || 
+        `El empleado ha sido ${actionType === "deactivate" ? "desactivado" : "activado"} exitosamente.`
+      );
+      setSuccessOpen(true);
+    } catch (error) {
+      console.error('Error toggling employee status:', error);
+      
+      let errorMessage = "Error al cambiar el estado del empleado.";
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.status === 403) {
+        errorMessage = "No tiene permisos para cambiar el estado de empleados.";
+      } else if (error.response?.status === 404) {
+        errorMessage = "Empleado no encontrado.";
+      }
+      
+      setModalTitle("Error");
+      setModalMessage(errorMessage);
+      setErrorOpen(true);
+    } finally {
+      setIsTogglingStatus(false);
+    }
   };
 
   const handleViewDetails = (employee) => {
@@ -294,12 +365,11 @@ const EmployeesPage = () => {
     setIsDetailModalOpen(true);
   };
 
-  const handleEditEmployee = () => {
+  const handleEditEmployee = (employeeData) => {
     setIsDetailModalOpen(false);
-    // TODO: Open edit modal or navigate to edit page
-    setModalTitle("Editar empleado");
-    setModalMessage("Redirigir a la vista de edición del empleado (pendiente de integración).");
-    setSuccessOpen(true);
+    setRegisterModalMode("edit");
+    setEmployeeIdToEdit(employeeData?.id || selectedEmployeeForDetail?.id);
+    setIsRegisterModalOpen(true);
   };
 
   const noResultsByFilter =
@@ -365,7 +435,11 @@ const EmployeesPage = () => {
             )}
 
             <button
-              onClick={() => setIsRegisterModalOpen(true)}
+              onClick={() => {
+                setRegisterModalMode("create");
+                setEmployeeIdToEdit(null);
+                setIsRegisterModalOpen(true);
+              }}
               aria-label="Nuevo empleado"
               className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit bg-black text-white hover:bg-gray-800"
             >
@@ -383,6 +457,7 @@ const EmployeesPage = () => {
             pageSizeOptions={[10, 25, 50, 100]}
             onRowDoubleClick={handleViewDetails}
           />
+
 
           {noResultsByFilter && (
             <div className="text-center py-8 text-secondary">
@@ -445,20 +520,32 @@ const EmployeesPage = () => {
 
       <RegisterEmployeeModal
         isOpen={isRegisterModalOpen}
-        onClose={() => setIsRegisterModalOpen(false)}
+        onClose={() => {
+          setIsRegisterModalOpen(false);
+          setRegisterModalMode("create");
+          setEmployeeIdToEdit(null);
+        }}
         onSuccess={loadEmployees}
+        mode={registerModalMode}
+        employeeId={employeeIdToEdit}
       />
 
-      <ConfirmModal
-        isOpen={confirmOpen}
-        onClose={() => setConfirmOpen(false)}
+      <ToggleStatusModal
+        isOpen={isToggleStatusModalOpen}
+        onClose={() => {
+          setIsToggleStatusModalOpen(false);
+          setSelectedEmployee(null);
+          setActionType(null);
+        }}
         onConfirm={handleConfirmToggleStatus}
-        title={modalTitle}
-        message={modalMessage}
-        confirmText="Confirmar"
-        cancelText="Cancelar"
-        confirmColor="btn-primary"
-        cancelColor="btn-error"
+        title={actionType === "deactivate" ? "Desactivar empleado" : "Activar empleado"}
+        message={
+          actionType === "deactivate"
+            ? `¿Está seguro que desea desactivar al empleado "${selectedEmployee?.fullName}"?`
+            : `¿Está seguro que desea activar al empleado "${selectedEmployee?.fullName}"?`
+        }
+        type={actionType}
+        isLoading={isTogglingStatus}
       />
 
       <SuccessModal
@@ -478,8 +565,22 @@ const EmployeesPage = () => {
       <EmployeeDetailModal
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
-        employeeId={selectedEmployeeForDetail?.id}
+        employeeId={selectedEmployeeForDetail?.id_employee || selectedEmployeeForDetail?.id}
         onEdit={handleEditEmployee}
+      />
+
+      <GeneratePayrollModal
+        isOpen={isGeneratePayrollModalOpen}
+        onClose={() => {
+          setIsGeneratePayrollModalOpen(false);
+          setEmployeeForPayroll(null);
+        }}
+        employee={employeeForPayroll}
+        generatedPayrolls={generatedPayrolls}
+        onRegisterPayroll={(newPayroll) => {
+          setGeneratedPayrolls((prev) => [...prev, newPayroll]);
+        }}
+        canGeneratePayroll={employeeForPayroll?.canGeneratePayroll ?? true}
       />
     </>
   );
