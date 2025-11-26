@@ -5,8 +5,8 @@ import { FiX } from "react-icons/fi";
 import { useTheme } from "@/contexts/ThemeContext";
 import { ErrorModal } from "@/app/components/shared/SuccessErrorModal";
 import IndividualPayrollAdjustmentsModal from "@/app/components/payroll/payroll-runs/AdditionalSettingsModal";
-import MassiveAdjustmentsUploadModal from "@/app/components/payroll/payroll-runs/MassiveAdjustmentsUploadModal";
-import MassiveAdjustmentsProcessingModal from "@/app/components/payroll/payroll-runs/MassiveAdjustmentsProcessingModal";
+import MassiveAdjustmentsUploadModal from "@/app/components/payroll/payroll-runs/masive/MassiveAdjustmentsUploadModal";
+import MassiveAdjustmentsProcessingModal from "@/app/components/payroll/payroll-runs/masive/MassiveAdjustmentsProcessingModal";
 
 const MassPayrollAdjustmentsModal = ({
   isOpen,
