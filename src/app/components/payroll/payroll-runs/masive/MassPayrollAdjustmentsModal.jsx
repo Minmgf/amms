@@ -5,6 +5,8 @@ import { FiX } from "react-icons/fi";
 import { useTheme } from "@/contexts/ThemeContext";
 import { ErrorModal } from "@/app/components/shared/SuccessErrorModal";
 import IndividualPayrollAdjustmentsModal from "@/app/components/payroll/payroll-runs/AdditionalSettingsModal";
+import MassiveAdjustmentsUploadModal from "@/app/components/payroll/payroll-runs/MassiveAdjustmentsUploadModal";
+import MassiveAdjustmentsProcessingModal from "@/app/components/payroll/payroll-runs/MassiveAdjustmentsProcessingModal";
 
 const MassPayrollAdjustmentsModal = ({
   isOpen,
@@ -33,6 +35,14 @@ const MassPayrollAdjustmentsModal = ({
     increments: [],
   });
 
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isProcessingModalOpen, setIsProcessingModalOpen] = useState(false);
+  const [lastUploadResult, setLastUploadResult] = useState({
+    fileName: "",
+    description: "",
+    rows: [],
+  });
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -59,6 +69,80 @@ const MassPayrollAdjustmentsModal = ({
         ? prev.filter((id) => id !== employeeId)
         : [...prev, employeeId]
     );
+  };
+
+  const handleOpenUploadModal = () => {
+    if (!hasEligibleEmployees) return;
+    setIsUploadModalOpen(true);
+  };
+
+  const handleProcessMockFile = ({ fileName, description, rows }) => {
+    setIsUploadModalOpen(false);
+    setLastUploadResult({ fileName, description, rows });
+    setIsProcessingModalOpen(true);
+  };
+
+  const handleApplyFromProcessing = ({ acceptedRows }) => {
+    // Mapear documentos a empleados existentes (mock):
+    // asumimos que el "document" de la fila corresponde a employee.document si existiera;
+    // para este mock, usaremos el nombre del empleado para encontrarlo.
+    const updated = { ...adjustmentsByEmployee };
+    const timestamp = new Date().toISOString();
+
+    acceptedRows.forEach((row) => {
+      const employee = employees.find(
+        (emp) =>
+          emp.fullName &&
+          emp.fullName.toLowerCase() === row.employeeName?.toLowerCase()
+      );
+
+      if (!employee) {
+        return;
+      }
+
+      const existing = updated[employee.id] || {
+        deductions: [],
+        increments: [],
+      };
+
+      const baseAdjustment = {
+        id:
+          Date.now().toString() +
+          Math.random().toString(36).slice(2),
+        seleccionado: false,
+        nombreId: row.adjustmentName || "",
+        tipoMonto:
+          row.amountType === "percentage"
+            ? "PERCENT"
+            : "FIXED",
+        valorMonto: row.amount,
+        aplicacion:
+          row.application === "Salario Final" ? "FINAL" : "BASE",
+        cantidad: row.quantity,
+        descripcion: row.description || "",
+        fechaInicio: row.startDate || "",
+        fechaFin: row.endDate || "",
+        origin: "EXCEL",
+        uploadDescription: lastUploadResult.description || "",
+        createdBy: "mock-user",
+        createdAt: timestamp,
+      };
+
+      if (row.adjustmentType === "deduction") {
+        updated[employee.id] = {
+          ...existing,
+          deductions: [...(existing.deductions || []), baseAdjustment],
+        };
+      } else {
+        updated[employee.id] = {
+          ...existing,
+          increments: [...(existing.increments || []), baseAdjustment],
+        };
+      }
+    });
+
+    setAdjustmentsByEmployee(updated);
+    setIsProcessingModalOpen(false);
   };
 
   const toggleSelectAll = () => {
@@ -104,27 +188,41 @@ const MassPayrollAdjustmentsModal = ({
       return;
     }
 
+    const timestamp = new Date().toISOString();
+    const mapWithMeta = (items) =>
+      (items || []).map((item) => ({
+        ...item,
+        origin: "MANUAL",
+        createdBy: "mock-user",
+        createdAt: timestamp,
+      }));
+
+    const normalized = {
+      deductions: mapWithMeta(ajustes.deductions),
+      increments: mapWithMeta(ajustes.increments),
+    };
+
     if (adjustMode === "mass") {
       setAdjustmentsByEmployee((prev) => {
         const updated = { ...prev };
         selectedEmployeeIds.forEach((employeeId) => {
           updated[employeeId] = {
-            deductions: ajustes.deductions || [],
-            increments: ajustes.increments || [],
+            deductions: normalized.deductions,
+            increments: normalized.increments,
           };
         });
         return updated;
       });
       setLastMassAdjustments({
-        deductions: ajustes.deductions || [],
-        increments: ajustes.increments || [],
+        deductions: normalized.deductions,
+        increments: normalized.increments,
       });
     } else if (adjustMode === "individual" && activeEmployeeId != null) {
       setAdjustmentsByEmployee((prev) => ({
         ...prev,
         [activeEmployeeId]: {
-          deductions: ajustes.deductions || [],
-          increments: ajustes.increments || [],
+          deductions: mapWithMeta(ajustes.deductions),
+          increments: mapWithMeta(ajustes.increments),
         },
       }));
     }
@@ -210,6 +308,7 @@ const MassPayrollAdjustmentsModal = ({
                   type="button"
                   className="btn-theme btn-secondary text-xs px-4 py-2"
                   disabled={!hasEligibleEmployees}
+                  onClick={handleOpenUploadModal}
                 >
                   Cargar ajustes masivos (Excel)
                 </button>
@@ -319,6 +418,28 @@ const MassPayrollAdjustmentsModal = ({
         payrollStartDate={payrollStartDate}
         payrollEndDate={payrollEndDate}
         canManagePayroll={canManagePayroll}
+      />
+
+      <MassiveAdjustmentsUploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        onProcessMockFile={handleProcessMockFile}
+        payrollStartDate={payrollStartDate}
+        payrollEndDate={payrollEndDate}
+        canManagePayroll={canManagePayroll}
+      />
+
+      <MassiveAdjustmentsProcessingModal
+        isOpen={isProcessingModalOpen}
+        onClose={() => setIsProcessingModalOpen(false)}
+        fileName={lastUploadResult.fileName}
+        description={lastUploadResult.description}
+        rows={lastUploadResult.rows}
+        onUploadNewFile={() => {
+          setIsProcessingModalOpen(false);
+          setIsUploadModalOpen(true);
+        }}
+        onAcceptAndContinue={handleApplyFromProcessing}
       />
     </>
   );

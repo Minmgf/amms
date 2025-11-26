@@ -681,7 +681,20 @@ const GeneratePayrollModal = ({
         isOpen={isAdjustmentsModalOpen}
         onClose={() => setIsAdjustmentsModalOpen(false)}
         onSave={(ajustes) => {
-          setAdjustments(ajustes || { deductions: [], increments: [] });
+          const base = ajustes || { deductions: [], increments: [] };
+          const timestamp = new Date().toISOString();
+          const mapWithMeta = (items, origin) =>
+            (items || []).map((item) => ({
+              ...item,
+              origin,
+              createdBy: "mock-user",
+              createdAt: timestamp,
+            }));
+
+          setAdjustments({
+            deductions: mapWithMeta(base.deductions, "MANUAL"),
+            increments: mapWithMeta(base.increments, "MANUAL"),
+          });
         }}
         initialAdjustments={adjustments}
         payrollStartDate={startDate}
