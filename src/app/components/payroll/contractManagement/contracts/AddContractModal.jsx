@@ -29,6 +29,7 @@ export default function AddContractModal({
   preventTemplateUpdate = false,
   isChangeContract = false,
   changeContractObservation = "",
+  onBack, // Function to go back to selection modal (for Addendum)
 }) {
   // Si es Addendum, NO es modo edición (se crea un nuevo registro), pero sí necesitamos cargar los datos del contrato base.
   const isEditMode = !!contractToEdit && !isAddendum && !isChangeContract;
@@ -954,7 +955,13 @@ export default function AddContractModal({
     }
   };
 
-  const prevStep = () => setStep((s) => Math.max(s - 1, 0));
+  const prevStep = () => {
+    if (step === 0 && isAddendum && onBack) {
+      onBack();
+      return;
+    }
+    setStep((s) => Math.max(s - 1, 0));
+  };
 
   const goToStep = (targetStep) => {
     if (completedSteps.includes(targetStep) || targetStep === 0) {
@@ -1273,10 +1280,10 @@ export default function AddContractModal({
                 type="button"
                 aria-label="Previous Button"
                 onClick={prevStep}
-                disabled={step === 0 || isSubmittingStep}
+                disabled={(step === 0 && !isAddendum) || isSubmittingStep}
                 className="btn-theme btn-secondary w-auto"
               >
-                Anterior
+                {step === 0 && isAddendum ? "Volver a selección" : "Anterior"}
               </button>
 
               <div className="flex gap-4">

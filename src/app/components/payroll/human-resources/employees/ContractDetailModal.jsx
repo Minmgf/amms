@@ -348,6 +348,11 @@ export default function ContractDetailModal({
     setShowAddContractModal(true);
   };
 
+  const handleBackToSelection = () => {
+    setShowAddContractModal(false);
+    setShowAddendumModal(true);
+  };
+
   const handleAddContractClose = () => {
     setShowAddContractModal(false);
     setAddendumFields([]);
@@ -881,6 +886,7 @@ export default function ContractDetailModal({
           employeeId={employeeData.employeeId}
           isChangeContract={isChangeContractMode}
           changeContractObservation={changeContractObservation}
+          onBack={!isChangeContractMode ? handleBackToSelection : undefined}
         />
       )}
 

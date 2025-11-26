@@ -821,14 +821,14 @@ const AdditionalDeductionsSection = ({
                 aria-label="Seleccionar todas las deducciones adicionales"
               />
             </div>
-            <div>Name</div>
-            <div>Type</div>
-            <div>Amount</div>
-            <div>Application</div>
-            <div>Start</div>
-            <div>End</div>
-            <div>Description</div>
-            <div>Quantity</div>
+            <div>Nombre</div>
+            <div>Tipo</div>
+            <div>Monto</div>
+            <div>Aplicación</div>
+            <div>Inicio</div>
+            <div>Fin</div>
+            <div>Descripción</div>
+            <div>Cantidad</div>
           </div>
 
           {deductions.length === 0 ? (
@@ -1039,14 +1039,14 @@ const AdditionalIncrementsSection = ({
                 aria-label="Seleccionar todos los incrementos adicionales"
               />
             </div>
-            <div>Name</div>
-            <div>Type</div>
-            <div>Amount</div>
-            <div>Application</div>
-            <div>Start</div>
-            <div>End</div>
-            <div>Description</div>
-            <div>Quantity</div>
+            <div>Nombre</div>
+            <div>Tipo</div>
+            <div>Monto</div>
+            <div>Aplicación</div>
+            <div>Inicio</div>
+            <div>Fin</div>
+            <div>Descripción</div>
+            <div>Cantidad</div>
           </div>
 
           {increments.length === 0 ? (
