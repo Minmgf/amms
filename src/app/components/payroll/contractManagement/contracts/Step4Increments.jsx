@@ -10,6 +10,7 @@ export default function Step4Increments({ isAddendum = false, modifiableFields =
     register,
     control,
     formState: { errors },
+    watch,
   } = useFormContext();
 
   const isDisabled = isAddendum && !modifiableFields.includes("changeIncrements");
@@ -205,11 +206,10 @@ export default function Step4Increments({ isAddendum = false, modifiableFields =
                 <div>
                   <select
                     {...register(`increments.${index}.increase_type`, {
-                      required: "Requerido",
+                      required: "Este campo es obligatorio.",
                     })}
-                    className={`input-theme w-full text-sm ${
-                      errors.increments?.[index]?.increase_type ? "border-red-500" : ""
-                    }`}
+                    className={`input-theme w-full text-sm ${errors.increments?.[index]?.increase_type ? "border-red-500" : ""
+                      }`}
                     style={{
                       backgroundColor: "var(--color-background)",
                       borderColor: errors.increments?.[index]?.increase_type
@@ -229,17 +229,21 @@ export default function Step4Increments({ isAddendum = false, modifiableFields =
                       </option>
                     ))}
                   </select>
+                  {errors.increments?.[index]?.increase_type && (
+                    <p className="text-red-500 text-[10px] mt-1 leading-tight">
+                      {errors.increments[index].increase_type.message}
+                    </p>
+                  )}
                 </div>
 
                 {/* Type - amount_type */}
                 <div>
                   <select
                     {...register(`increments.${index}.amount_type`, {
-                      required: "Requerido",
+                      required: "Este campo es obligatorio.",
                     })}
-                    className={`input-theme w-full text-sm ${
-                      errors.increments?.[index]?.amount_type ? "border-red-500" : ""
-                    }`}
+                    className={`input-theme w-full text-sm ${errors.increments?.[index]?.amount_type ? "border-red-500" : ""
+                      }`}
                     style={{
                       backgroundColor: "var(--color-background)",
                       borderColor: errors.increments?.[index]?.amount_type
@@ -256,6 +260,11 @@ export default function Step4Increments({ isAddendum = false, modifiableFields =
                       </option>
                     ))}
                   </select>
+                  {errors.increments?.[index]?.amount_type && (
+                    <p className="text-red-500 text-[10px] mt-1 leading-tight">
+                      {errors.increments[index].amount_type.message}
+                    </p>
+                  )}
                 </div>
 
                 {/* Amount - amount_value */}
@@ -265,13 +274,19 @@ export default function Step4Increments({ isAddendum = false, modifiableFields =
                     step="0.01"
                     min="0"
                     {...register(`increments.${index}.amount_value`, {
-                      required: "Requerido",
-                      min: { value: 0, message: "Debe ser >= 0" },
+                      required: "Este campo es obligatorio.",
+                      min: { value: 0, message: "El monto debe ser mayor que cero." },
+                      validate: (value) => {
+                        const type = watch(`increments.${index}.amount_type`);
+                        if (type === "Porcentaje" && parseFloat(value) > 100) {
+                          return "El porcentaje no puede ser mayor a 100%.";
+                        }
+                        return true;
+                      }
                     })}
                     disabled={isDisabled}
-                    className={`input-theme w-full text-sm ${
-                      errors.increments?.[index]?.amount_value ? "border-red-500" : ""
-                    } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                    className={`input-theme w-full text-sm ${errors.increments?.[index]?.amount_value ? "border-red-500" : ""
+                      } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
                     style={{
                       backgroundColor: "var(--color-background)",
                       borderColor: errors.increments?.[index]?.amount_value
@@ -282,17 +297,21 @@ export default function Step4Increments({ isAddendum = false, modifiableFields =
                     }}
                     placeholder="0.00"
                   />
+                  {errors.increments?.[index]?.amount_value && (
+                    <p className="text-red-500 text-[10px] mt-1 leading-tight">
+                      {errors.increments[index].amount_value.message}
+                    </p>
+                  )}
                 </div>
 
                 {/* Application - application_increase_type */}
                 <div>
                   <select
                     {...register(`increments.${index}.application_increase_type`, {
-                      required: "Requerido",
+                      required: "Este campo es obligatorio.",
                     })}
-                    className={`input-theme w-full text-sm ${
-                      errors.increments?.[index]?.application_increase_type ? "border-red-500" : ""
-                    }`}
+                    className={`input-theme w-full text-sm ${errors.increments?.[index]?.application_increase_type ? "border-red-500" : ""
+                      }`}
                     style={{
                       backgroundColor: "var(--color-background)",
                       borderColor: errors.increments?.[index]?.application_increase_type
@@ -309,6 +328,11 @@ export default function Step4Increments({ isAddendum = false, modifiableFields =
                       </option>
                     ))}
                   </select>
+                  {errors.increments?.[index]?.application_increase_type && (
+                    <p className="text-red-500 text-[10px] mt-1 leading-tight">
+                      {errors.increments[index].application_increase_type.message}
+                    </p>
+                  )}
                 </div>
 
                 {/* Start Date - start_date_increase */}
@@ -316,12 +340,18 @@ export default function Step4Increments({ isAddendum = false, modifiableFields =
                   <input
                     type="date"
                     {...register(`increments.${index}.start_date_increase`, {
-                      required: "Requerido",
+                      required: "Este campo es obligatorio.",
+                      validate: (value) => {
+                        const contractStart = watch("startDate");
+                        const contractEnd = watch("endDate");
+                        if (contractStart && value < contractStart) return "La fecha debe estar dentro del rango de vigencia del contrato.";
+                        if (contractEnd && value > contractEnd) return "La fecha debe estar dentro del rango de vigencia del contrato.";
+                        return true;
+                      }
                     })}
                     disabled={isDisabled}
-                    className={`input-theme w-full text-sm ${
-                      errors.increments?.[index]?.start_date_increase ? "border-red-500" : ""
-                    } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                    className={`input-theme w-full text-sm ${errors.increments?.[index]?.start_date_increase ? "border-red-500" : ""
+                      } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
                     style={{
                       backgroundColor: "var(--color-background)",
                       borderColor: errors.increments?.[index]?.start_date_increase
@@ -331,6 +361,11 @@ export default function Step4Increments({ isAddendum = false, modifiableFields =
                       padding: "0.375rem 0.5rem",
                     }}
                   />
+                  {errors.increments?.[index]?.start_date_increase && (
+                    <p className="text-red-500 text-[10px] mt-1 leading-tight">
+                      {errors.increments[index].start_date_increase.message}
+                    </p>
+                  )}
                 </div>
 
                 {/* End Date - end_date_increase */}
@@ -338,12 +373,18 @@ export default function Step4Increments({ isAddendum = false, modifiableFields =
                   <input
                     type="date"
                     {...register(`increments.${index}.end_date_increase`, {
-                      required: "Requerido",
+                      required: "Este campo es obligatorio.",
+                      validate: (value) => {
+                        const start = watch(`increments.${index}.start_date_increase`);
+                        const contractEnd = watch("endDate");
+                        if (start && value <= start) return "La fecha de fin debe ser posterior a la fecha de inicio.";
+                        if (contractEnd && value > contractEnd) return "La fecha debe estar dentro del rango de vigencia del contrato.";
+                        return true;
+                      }
                     })}
                     disabled={isDisabled}
-                    className={`input-theme w-full text-sm ${
-                      errors.increments?.[index]?.end_date_increase ? "border-red-500" : ""
-                    } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                    className={`input-theme w-full text-sm ${errors.increments?.[index]?.end_date_increase ? "border-red-500" : ""
+                      } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
                     style={{
                       backgroundColor: "var(--color-background)",
                       borderColor: errors.increments?.[index]?.end_date_increase
@@ -353,23 +394,36 @@ export default function Step4Increments({ isAddendum = false, modifiableFields =
                       padding: "0.375rem 0.5rem",
                     }}
                   />
+                  {errors.increments?.[index]?.end_date_increase && (
+                    <p className="text-red-500 text-[10px] mt-1 leading-tight">
+                      {errors.increments[index].end_date_increase.message}
+                    </p>
+                  )}
                 </div>
 
                 {/* Description */}
                 <div>
                   <input
                     type="text"
-                    {...register(`increments.${index}.description`)}
+                    {...register(`increments.${index}.description`, {
+                      maxLength: { value: 255, message: "La descripción excede el límite permitido." }
+                    })}
                     disabled={isDisabled}
-                    className={`input-theme w-full text-sm ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                    className={`input-theme w-full text-sm ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""} ${errors.increments?.[index]?.description ? "border-red-500" : ""
+                      }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: "var(--color-border)",
+                      borderColor: errors.increments?.[index]?.description ? "#EF4444" : "var(--color-border)",
                       color: "var(--color-text-primary)",
                       padding: "0.375rem 0.5rem",
                     }}
                     placeholder="Descripción"
                   />
+                  {errors.increments?.[index]?.description && (
+                    <p className="text-red-500 text-[10px] mt-1 leading-tight">
+                      {errors.increments[index].description.message}
+                    </p>
+                  )}
                 </div>
 
                 {/* Quantity - amount */}
@@ -379,12 +433,11 @@ export default function Step4Increments({ isAddendum = false, modifiableFields =
                     step="0.01"
                     min="0"
                     {...register(`increments.${index}.amount`, {
-                      min: { value: 0, message: "Debe ser >= 0" },
+                      min: { value: 0, message: "El monto debe ser mayor que cero." },
                     })}
                     disabled={isDisabled}
-                    className={`input-theme w-full text-sm ${
-                      errors.increments?.[index]?.amount ? "border-red-500" : ""
-                    } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                    className={`input-theme w-full text-sm ${errors.increments?.[index]?.amount ? "border-red-500" : ""
+                      } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
                     style={{
                       backgroundColor: "var(--color-background)",
                       borderColor: errors.increments?.[index]?.amount
@@ -395,6 +448,11 @@ export default function Step4Increments({ isAddendum = false, modifiableFields =
                     }}
                     placeholder="0.00"
                   />
+                  {errors.increments?.[index]?.amount && (
+                    <p className="text-red-500 text-[10px] mt-1 leading-tight">
+                      {errors.increments[index].amount.message}
+                    </p>
+                  )}
                 </div>
               </div>
             ))

@@ -435,7 +435,7 @@ export default function AddContractModal({
   };
 
   // Validación del paso 3
-  const validateStep3 = () => {
+  const validateStep3 = async () => {
     const currentValues = methods.getValues();
     const deductions = currentValues.deductions || [];
 
@@ -444,67 +444,22 @@ export default function AddContractModal({
       return true;
     }
 
-    // Validar cada deducción
-    let hasErrors = false;
-    deductions.forEach((deduction, index) => {
-      const requiredFields = [
-        "deduction_type",
-        "amount_type",
-        "amount_value",
-        "application_deduction_type",
-        "start_date_deduction",
-        "end_date_deductions"
-      ];
+    const fieldsToValidate = deductions.flatMap((_, index) => [
+      `deductions.${index}.deduction_type`,
+      `deductions.${index}.amount_type`,
+      `deductions.${index}.amount_value`,
+      `deductions.${index}.application_deduction_type`,
+      `deductions.${index}.start_date_deduction`,
+      `deductions.${index}.end_date_deductions`,
+      `deductions.${index}.description`,
+      `deductions.${index}.amount`
+    ]);
 
-      requiredFields.forEach((field) => {
-        const value = deduction[field];
-        if (!value || (typeof value === "string" && value.trim() === "")) {
-          methods.setError(`deductions.${index}.${field}`, {
-            type: "required",
-            message: "Requerido",
-          });
-          hasErrors = true;
-        }
-      });
-
-      // Validar que la fecha de fin sea posterior a la fecha de inicio
-      if (deduction.start_date_deduction && deduction.end_date_deductions) {
-        const startDate = new Date(deduction.start_date_deduction);
-        const endDate = new Date(deduction.end_date_deductions);
-
-        if (endDate <= startDate) {
-          methods.setError(`deductions.${index}.end_date_deductions`, {
-            type: "validate",
-            message: "Debe ser posterior a la fecha de inicio",
-          });
-          hasErrors = true;
-        }
-      }
-
-      // Validar que amount_value sea mayor o igual a 0
-      if (deduction.amount_value !== "" && parseFloat(deduction.amount_value) < 0) {
-        methods.setError(`deductions.${index}.amount_value`, {
-          type: "validate",
-          message: "Debe ser >= 0",
-        });
-        hasErrors = true;
-      }
-
-      // Validar que amount sea mayor o igual a 0
-      if (deduction.amount !== "" && deduction.amount !== undefined && parseFloat(deduction.amount) < 0) {
-        methods.setError(`deductions.${index}.amount`, {
-          type: "validate",
-          message: "Debe ser >= 0",
-        });
-        hasErrors = true;
-      }
-    });
-
-    return !hasErrors;
+    return await methods.trigger(fieldsToValidate);
   };
 
   // Validación del paso 4
-  const validateStep4 = () => {
+  const validateStep4 = async () => {
     const currentValues = methods.getValues();
     const increments = currentValues.increments || [];
 
@@ -513,63 +468,18 @@ export default function AddContractModal({
       return true;
     }
 
-    // Validar cada incremento
-    let hasErrors = false;
-    increments.forEach((increment, index) => {
-      const requiredFields = [
-        "increase_type",
-        "amount_type",
-        "amount_value",
-        "application_increase_type",
-        "start_date_increase",
-        "end_date_increase"
-      ];
+    const fieldsToValidate = increments.flatMap((_, index) => [
+      `increments.${index}.increase_type`,
+      `increments.${index}.amount_type`,
+      `increments.${index}.amount_value`,
+      `increments.${index}.application_increase_type`,
+      `increments.${index}.start_date_increase`,
+      `increments.${index}.end_date_increase`,
+      `increments.${index}.description`,
+      `increments.${index}.amount`
+    ]);
 
-      requiredFields.forEach((field) => {
-        const value = increment[field];
-        if (!value || (typeof value === "string" && value.trim() === "")) {
-          methods.setError(`increments.${index}.${field}`, {
-            type: "required",
-            message: "Requerido",
-          });
-          hasErrors = true;
-        }
-      });
-
-      // Validar que la fecha de fin sea posterior a la fecha de inicio
-      if (increment.start_date_increase && increment.end_date_increase) {
-        const startDate = new Date(increment.start_date_increase);
-        const endDate = new Date(increment.end_date_increase);
-
-        if (endDate <= startDate) {
-          methods.setError(`increments.${index}.end_date_increase`, {
-            type: "validate",
-            message: "Debe ser posterior a la fecha de inicio",
-          });
-          hasErrors = true;
-        }
-      }
-
-      // Validar que amount_value sea mayor o igual a 0
-      if (increment.amount_value !== "" && parseFloat(increment.amount_value) < 0) {
-        methods.setError(`increments.${index}.amount_value`, {
-          type: "validate",
-          message: "Debe ser >= 0",
-        });
-        hasErrors = true;
-      }
-
-      // Validar que amount sea mayor o igual a 0
-      if (increment.amount !== "" && increment.amount !== undefined && parseFloat(increment.amount) < 0) {
-        methods.setError(`increments.${index}.amount`, {
-          type: "validate",
-          message: "Debe ser >= 0",
-        });
-        hasErrors = true;
-      }
-    });
-
-    return !hasErrors;
+    return await methods.trigger(fieldsToValidate);
   };
 
   // Envío del paso 1
@@ -935,13 +845,15 @@ export default function AddContractModal({
       const currentData = methods.getValues();
       submitStep2(currentData);
     } else if (step === 2) {
-      if (!validateStep3()) {
+      const isValid = await validateStep3();
+      if (!isValid) {
         return;
       }
       const currentData = methods.getValues();
       submitStep3(currentData);
     } else if (step === 3) {
-      if (!validateStep4()) {
+      const isValid = await validateStep4();
+      if (!isValid) {
         return;
       }
       const currentData = methods.getValues();
@@ -1027,10 +939,10 @@ export default function AddContractModal({
                   onClick={() => goToStep(index)}
                   disabled={!completedSteps.includes(index) && index !== 0}
                   className={`w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-xs sm:text-theme-sm font-theme-bold border-2 transition-all duration-300 ${isActive
-                      ? "bg-accent text-white"
-                      : isCompleted
-                        ? "bg-success text-white border-success"
-                        : "bg-surface text-secondary border-primary"
+                    ? "bg-accent text-white"
+                    : isCompleted
+                      ? "bg-success text-white border-success"
+                      : "bg-surface text-secondary border-primary"
                     } ${!completedSteps.includes(index) && index !== 0
                       ? "cursor-not-allowed opacity-50"
                       : "hover:shadow-md"
@@ -1072,10 +984,10 @@ export default function AddContractModal({
                 <div className="mt-1 sm:mt-2 text-center max-w-20 sm:max-w-none">
                   <div
                     className={`text-xs sm:text-theme-xs font-theme-medium ${status === "En progreso"
-                        ? "text-accent"
-                        : status === "Completo"
-                          ? "text-success"
-                          : "text-secondary"
+                      ? "text-accent"
+                      : status === "Completo"
+                        ? "text-success"
+                        : "text-secondary"
                       }`}
                     style={{
                       color:
@@ -1093,10 +1005,10 @@ export default function AddContractModal({
                   </div>
                   <div
                     className={`text-xs sm:text-theme-xs mt-0.5 sm:mt-1 ${status === "En progreso"
-                        ? "text-accent"
-                        : status === "Completo"
-                          ? "text-success"
-                          : "text-secondary"
+                      ? "text-accent"
+                      : status === "Completo"
+                        ? "text-success"
+                        : "text-secondary"
                       }`}
                     style={{
                       color:
@@ -1141,10 +1053,10 @@ export default function AddContractModal({
                   onClick={() => goToStep(index)}
                   disabled={!completedSteps.includes(index) && index !== 0}
                   className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-theme-bold border-2 transition-all duration-300 ${isActive
-                      ? "bg-accent text-white"
-                      : isCompleted
-                        ? "bg-success text-white border-success"
-                        : "bg-surface text-secondary border-primary"
+                    ? "bg-accent text-white"
+                    : isCompleted
+                      ? "bg-success text-white border-success"
+                      : "bg-surface text-secondary border-primary"
                     } ${!completedSteps.includes(index) && index !== 0
                       ? "cursor-not-allowed opacity-50"
                       : ""
