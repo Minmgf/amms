@@ -19,3 +19,11 @@ export const getCities = async (countryIso2, stateIso2) => {
   );
   return data;
 };
+
+// Obtener ciudades por pais (usa el ISO2 code del país)
+export const getCitiesByCountry = async (countryIso2) => {
+  const { data } = await apiLocation.get(
+    `/countries/${countryIso2}/cities`
+  );
+  return data;
+};

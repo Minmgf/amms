@@ -4,7 +4,7 @@ import DetailsRequestModal from "@/app/components/request/services/DetailsReques
 import TrackingDashboardModal from "@/app/components/monitoring/TrackingDashboardModal";
 import AddContractModal from "@/app/components/payroll/contractManagement/contracts/AddContractModal";
 import RegisterEmployeeModal from "@/app/components/payroll/human-resources/employees/RegisterEmployeeModal";
-import IndividualPayrollAdjustmentsModal from "@/app/components/payroll/payroll-runs/IndividualPayrollAdjustmentsModal";
+import IndividualPayrollAdjustmentsModal from "@/app/components/payroll/payroll-runs/AdditionalSettingsModal";
 import { useState } from "react";
 import HistoricalDataModal from "@/app/components/monitoring/HistoricalDataModal";
 
@@ -188,7 +188,6 @@ const Prueba = () => {
         onSave={(ajustes) => {
           console.log("Ajustes adicionales guardados (vista de prueba):", ajustes);
           setMockAdjustments(ajustes || { deductions: [], increments: [] });
-          setIsAdjustmentsModalOpen(false);
         }}
         initialAdjustments={mockAdjustments}
         payrollStartDate={mockPayrollStartDate}

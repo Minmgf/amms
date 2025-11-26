@@ -12,7 +12,7 @@ import {
   ErrorModal,
   ConfirmModal,
 } from "@/app/components/shared/SuccessErrorModal";
-import IndividualPayrollAdjustmentsModal from "@/app/components/payroll/human-resources/employees/IndividualPayrollAdjustmentsModal";
+import IndividualPayrollAdjustmentsModal from "@/app/components/payroll/payroll-runs/AdditionalSettingsModal";
 
 // Datos mock de contratos por empleado mientras se integran los endpoints reales
 const MOCK_EMPLOYEE_CONTRACTS = [
@@ -310,6 +310,7 @@ const GeneratePayrollModal = ({
         startDate,
         endDate,
         createdAt: new Date().toISOString(),
+        createdBy: "mock-user",
         adjustments: {
           deductions: adjustments.deductions || [],
           increments: adjustments.increments || [],
@@ -681,7 +682,6 @@ const GeneratePayrollModal = ({
         onClose={() => setIsAdjustmentsModalOpen(false)}
         onSave={(ajustes) => {
           setAdjustments(ajustes || { deductions: [], increments: [] });
-          setIsAdjustmentsModalOpen(false);
         }}
         initialAdjustments={adjustments}
         payrollStartDate={startDate}

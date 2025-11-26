@@ -13,7 +13,8 @@ import {
   getContractDetail,
   updateEstablishedContract,
   getActiveDepartments,
-  getActiveCharges
+  getActiveCharges,
+  changeEmployeeContract
 } from "@/services/contractService";
 import { createContractAddendum, getLatestEmployeeContract } from "@/services/employeeService";
 
@@ -25,10 +26,17 @@ export default function AddContractModal({
   isAddendum = false,
   modifiableFields = [],
   employeeId,
+  preventTemplateUpdate = false,
+  isChangeContract = false,
+  changeContractObservation = "",
 }) {
   // Si es Addendum, NO es modo edición (se crea un nuevo registro), pero sí necesitamos cargar los datos del contrato base.
-  const isEditMode = !!contractToEdit && !isAddendum;
-  const modalTitle = isAddendum ? "Generar Otro Sí" : (isEditMode ? "Editar contrato" : "Añadir contrato");
+  const isEditMode = !!contractToEdit && !isAddendum && !isChangeContract;
+  const modalTitle = isAddendum
+    ? "Generar Otro Sí"
+    : (isChangeContract
+        ? "Añadir contrato"
+        : (isEditMode ? "Editar contrato" : "Añadir contrato"));
   const [step, setStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState([]);
   const [isSubmittingStep, setIsSubmittingStep] = useState(false);
@@ -194,6 +202,19 @@ export default function AddContractModal({
           mappedData.maximumOvertime = contractData.overtime ? String(contractData.overtime) : "";
           mappedData.overtimePeriod = contractData.overtime_period || "";
           mappedData.terminationNoticePeriod = contractData.notice_period_days ? String(contractData.notice_period_days) : "";
+          mappedData.contractedAmount = contractData.working_hours ? String(contractData.working_hours) : "";
+
+          // Horario de trabajo: mapear days_of_week del backend al formato del formulario
+          // Soporta tanto arrays de IDs (por ejemplo [1,1,2,3,4,5]) como arrays de objetos
+          mappedData.days_of_week = (contractData.days_of_week || []).map((d) => {
+            if (typeof d === "number") {
+              return { id_day_of_week: d, day_of_week_name: "" };
+            }
+            return {
+              id_day_of_week: d.id_day_of_week,
+              day_of_week_name: d.day_of_week_name || "",
+            };
+          });
 
           // Paso 3 - Deducciones
           mappedData.deductions = (contractData.established_deductions || []).map(d => ({
@@ -728,9 +749,11 @@ export default function AddContractModal({
       overtime: parseInt(formData.maximumOvertime),
       overtime_period: formData.overtimePeriod,
       notice_period_days: formData.terminationNoticePeriod ? parseInt(formData.terminationNoticePeriod) : null,
+      working_hours: formData.contractedAmount ? parseInt(formData.contractedAmount) : null,
       
       // Solo para creación/actualización normal, para addendum se estructura diferente
-      days_of_week: [], // TODO: Agregar lógica para days_of_week si es necesario (Step1GeneralInfo no tiene selector de días para diario/etc, solo paymentDay para semanal)
+      // Horario de trabajo: enviar arreglo de IDs de día de la semana, por ejemplo [1,1,2,3,4,5]
+      days_of_week: (formData.days_of_week || []).map((d) => d.id_day_of_week),
 
       // Mapeo de pagos según frecuencia
       contract_payments: mapContractPayments(),
@@ -768,6 +791,14 @@ export default function AddContractModal({
       };
     }
 
+    if (isChangeContract) {
+      return {
+        observation: changeContractObservation,
+        id_employee_charge: parseInt(formData.charge),
+        contract: [contractData]
+      };
+    }
+
     return contractData;
   };
 
@@ -778,30 +809,51 @@ export default function AddContractModal({
 
       // Transformar datos al formato del backend (sin id_employee_charge para actualización)
       const payload = transformDataForBackend(data);
+      const shouldUpdateTemplate = isEditMode && !preventTemplateUpdate && !isChangeContract;
 
       // Para actualización, remover id_employee_charge ya que no se envía en el PUT
-      if (isEditMode) {
+      if (shouldUpdateTemplate) {
         delete payload.id_employee_charge;
       }
 
       // Si es Addendum, asegurarnos de que se envíe como una creación (POST) pero quizás con alguna marca de que es un addendum
       // O simplemente se crea un nuevo contrato asociado al empleado (el backend manejará la versión/otro sí).
-      
-      console.log(`Payload a ${isEditMode ? 'actualizar' : (isAddendum ? 'generar otro sí' : 'crear')}:`, payload);
+
+      const actionLabel = isAddendum
+        ? "generar otro sí"
+        : (isChangeContract
+            ? "cambiar contrato"
+            : (shouldUpdateTemplate ? "actualizar" : "crear"));
+
+      console.log(`Payload a ${actionLabel}:`, payload);
 
       let response;
-      if (isEditMode) {
-        // Llamar al endpoint PUT
-        response = await updateEstablishedContract(contractToEdit.contract_code, payload);
-      } else if (isAddendum) {
+      let newContractId = null;
+
+      if (isAddendum) {
         // Llamar al endpoint de generar otro sí (requiere employeeId)
         if (!employeeId) {
           throw new Error("ID de empleado no encontrado para generar Otro Sí");
         }
         response = await createContractAddendum(employeeId, payload);
+      } else if (isChangeContract) {
+        // Llamar al endpoint de cambio de contrato (requiere employeeId)
+        if (!employeeId) {
+          throw new Error("ID de empleado no encontrado para cambiar contrato");
+        }
+        response = await changeEmployeeContract(employeeId, payload);
+      } else if (shouldUpdateTemplate) {
+        // Llamar al endpoint PUT para actualizar contrato establecido
+        response = await updateEstablishedContract(contractToEdit.contract_code, payload);
       } else {
         // Llamar al endpoint POST de creación normal
         response = await createEstablishedContract(payload);
+
+        newContractId =
+          response.contract_code ||
+          (response.data && (response.data.contract_code || response.data.id)) ||
+          response.id ||
+          null;
       }
 
       console.log("Respuesta del servidor:", response);
@@ -809,7 +861,16 @@ export default function AddContractModal({
       setCompletedSteps((prev) => [...prev, 3]);
 
       // Mostrar mensaje de éxito
-      setModalMessage(response.message || (isEditMode ? "Contrato actualizado exitosamente" : (isAddendum ? "Otro Sí generado exitosamente" : "Contrato creado exitosamente")));
+      const fallbackMessage = isAddendum
+        ? "Otro Sí generado exitosamente"
+        : (isChangeContract
+            ? "Contrato cambiado exitosamente"
+            : (shouldUpdateTemplate
+                ? "Contrato actualizado exitosamente"
+                : "Contrato creado exitosamente"));
+
+      setModalMessage(response.message || fallbackMessage);
+
       setSuccessOpen(true);
 
       // Cerrar el modal y recargar datos
@@ -817,7 +878,7 @@ export default function AddContractModal({
         methods.reset(defaultValues);
         setStep(0);
         setCompletedSteps([]);
-        if (onSuccess) onSuccess(); // Recargar lista de contratos
+        if (onSuccess) onSuccess(newContractId); // Recargar lista de contratos
         onClose();
       }, 1500);
     } catch (error) {

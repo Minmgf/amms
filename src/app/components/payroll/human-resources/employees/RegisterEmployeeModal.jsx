@@ -1263,6 +1263,7 @@ const RegisterEmployeeModal = ({
         isOpen={isContractModalOpen}
         onClose={() => setIsContractModalOpen(false)}
         contractToEdit={contractTemplateToEdit}
+        preventTemplateUpdate={true}
         onSuccess={async (newContractId) => {
           setIsContractModalOpen(false);
           

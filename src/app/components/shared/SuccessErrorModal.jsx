@@ -232,7 +232,9 @@ const ConfirmModal = ({
   cancelText = "Cancelar",
   confirmColor = "btn-error",
   cancelColor = "btn-secondary",
+  maxWidthClass = "max-w-sm",
 }) => {
+  
   if (!isOpen) return null;
 
   const handleOverlayClick = (e) => {
@@ -256,7 +258,7 @@ const ConfirmModal = ({
       style={{ zIndex: 9999 }}
     >
       <div 
-        className="modal-theme w-full max-w-sm relative" 
+        className={`modal-theme w-full ${maxWidthClass} relative`} 
         onClick={handleModalClick}
         style={{ zIndex: 10000 }}
       >
@@ -283,11 +285,15 @@ const ConfirmModal = ({
           <AiOutlineClose className="w-5 h-5" />
         </button>
 
-        <div className="p-6 text-center">
+        <div className="p-6 text-left">
           <h2 className="text-2xl font-semibold mb-4 text-primary">{title}</h2>
-          <p className="text-secondary text-sm mb-6 leading-relaxed">
-            {message}
-          </p>
+          {typeof message === "string" ? (
+            <p className="text-secondary text-sm mb-6 leading-relaxed">
+              {message}
+            </p>
+          ) : (
+            <div className="mb-6">{message}</div>
+          )}
           <div className="flex gap-3">
             <button
               aria-label="Cancel Button"

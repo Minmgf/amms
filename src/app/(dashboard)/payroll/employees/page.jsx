@@ -9,7 +9,8 @@ import { createColumnHelper } from "@tanstack/react-table";
 import { useTheme } from "@/contexts/ThemeContext";
 import RegisterEmployeeModal from "@/app/components/payroll/human-resources/employees/RegisterEmployeeModal";
 import EmployeeDetailModal from "@/app/components/payroll/human-resources/employees/EmployeeDetailModal";
-import GeneratePayrollModal from "@/app/components/payroll/payroll-runs/GenerateIndividualPayrollModal";
+import GeneratePayrollModal from "@/app/components/payroll/payroll-runs/individual/GenerateIndividualPayrollModal";
+import GenerateMassPayrollModal from "@/app/components/payroll/payroll-runs/masive/GenerateMassPayrollModal";
 import ToggleStatusModal from "@/app/components/payroll/human-resources/employees/ToggleStatusModal";
 import { getEmployeesList, toggleEmployeeStatus } from "@/services/employeeService";
 
@@ -46,6 +47,8 @@ const EmployeesPage = () => {
   
   const [isToggleStatusModalOpen, setIsToggleStatusModalOpen] = useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
+  const [isMassPayrollModalOpen, setIsMassPayrollModalOpen] = useState(false);
+  const [generatedMassPayrolls, setGeneratedMassPayrolls] = useState([]);
 
   useEffect(() => {
     loadEmployees();
@@ -447,6 +450,15 @@ const EmployeesPage = () => {
               <FiPlus className="w-4 h-4" />
               <span className="text-sm">Nuevo empleado</span>
             </button>
+
+            <button
+              onClick={() => setIsMassPayrollModalOpen(true)}
+              aria-label="Generar nómina masiva"
+              className="parametrization-filter-button flex items-center space-x-2 px-3 md:px-4 py-2 transition-colors w-fit bg-black text-white hover:bg-gray-800"
+            >
+              <FiFileText className="w-4 h-4" />
+              <span className="text-sm">Nómina masiva</span>
+            </button>
           </div>
 
           <TableList
@@ -582,6 +594,17 @@ const EmployeesPage = () => {
           setGeneratedPayrolls((prev) => [...prev, newPayroll]);
         }}
         canGeneratePayroll={employeeForPayroll?.canGeneratePayroll ?? true}
+      />
+
+      <GenerateMassPayrollModal
+        isOpen={isMassPayrollModalOpen}
+        onClose={() => {
+          setIsMassPayrollModalOpen(false);
+        }}
+        canGeneratePayroll={true}
+        onRegisterMassPayroll={(newMassPayroll) => {
+          setGeneratedMassPayrolls((prev) => [...prev, newMassPayroll]);
+        }}
       />
     </>
   );
