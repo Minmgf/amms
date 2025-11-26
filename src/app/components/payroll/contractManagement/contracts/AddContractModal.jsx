@@ -36,8 +36,8 @@ export default function AddContractModal({
   const modalTitle = isAddendum
     ? "Generar Otro Sí"
     : (isChangeContract
-        ? "Añadir contrato"
-        : (isEditMode ? "Editar contrato" : "Añadir contrato"));
+      ? "Añadir contrato"
+      : (isEditMode ? "Editar contrato" : "Añadir contrato"));
   const [step, setStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState([]);
   const [isSubmittingStep, setIsSubmittingStep] = useState(false);
@@ -107,22 +107,25 @@ export default function AddContractModal({
 
     // Función para cargar los datos del contrato
     const loadContractData = async () => {
-      // Cargamos datos si es modo edición O si es modo Addendum (usando el contrato base)
-      if (isOpen && (isEditMode || isAddendum)) {
+      // Cargamos datos si es modo edición, modo Addendum, o modo Cambio de Contrato
+      if (isOpen && (isEditMode || isAddendum || isChangeContract)) {
         try {
           setIsLoadingContract(true);
-          
+
           let contractData;
-          
+
           // AJUSTE: Usar el endpoint de la doc para Otro Sí
           if (isAddendum && employeeId) {
-             contractData = await getLatestEmployeeContract(employeeId);
+            contractData = await getLatestEmployeeContract(employeeId);
+          } else if (isChangeContract && contractToEdit) {
+            // En modo cambio de contrato, contractToEdit ya tiene los detalles del contrato predefinido
+            contractData = contractToEdit;
           } else if (contractToEdit && contractToEdit.contract_code) {
-             // Comportamiento normal para editar
-             contractData = await getContractDetail(contractToEdit.contract_code);
+            // Comportamiento normal para editar
+            contractData = await getContractDetail(contractToEdit.contract_code);
           } else {
-             // Fallback o caso donde no hay datos
-             throw new Error("No se pudo identificar el contrato a cargar");
+            // Fallback o caso donde no hay datos
+            throw new Error("No se pudo identificar el contrato a cargar");
           }
 
           // Obtener el departamento del cargo
@@ -213,7 +216,7 @@ export default function AddContractModal({
             }
             return {
               id_day_of_week: d.id_day_of_week,
-              day_of_week_name: d.day_of_week_name || "",
+              name: d.name || d.day_of_week_name || "",
             };
           });
 
@@ -261,7 +264,7 @@ export default function AddContractModal({
     };
 
     loadContractData();
-  }, [isOpen, isEditMode, isAddendum, contractToEdit]);
+  }, [isOpen, isEditMode, isAddendum, contractToEdit, isChangeContract]);
 
   const steps = [
     { id: 1, name: "Información general" },
@@ -273,12 +276,12 @@ export default function AddContractModal({
   // Validación del paso 1
   const validateStep1 = () => {
     const currentValues = methods.getValues();
-    
+
     // Campos obligatorios básicos
     // Si es Addendum, solo validamos los campos que son modificables (y por ende, visibles/habilitados)
     // OJO: Si un campo está deshabilitado, su valor igual se envía (react-hook-form mantiene el valor).
     // Pero startDate está deshabilitado en Addendum y NO debe ser validado como si el usuario lo hubiera ingresado (ya tiene valor).
-    
+
     const requiredFields = [
       "department",
       "charge",
@@ -312,7 +315,7 @@ export default function AddContractModal({
 
     // Validar campos condicionales según frecuencia de pago
     const paymentFrequency = currentValues.paymentFrequency;
-    
+
     if (paymentFrequency === "semanal") {
       if (!currentValues.paymentDay || currentValues.paymentDay.trim() === "") {
         methods.setError("paymentDay", {
@@ -350,7 +353,7 @@ export default function AddContractModal({
     if (currentValues.startDate && currentValues.endDate) {
       const startDate = new Date(currentValues.startDate);
       const endDate = new Date(currentValues.endDate);
-      
+
       if (endDate <= startDate) {
         methods.setError("endDate", {
           type: "validate",
@@ -452,7 +455,7 @@ export default function AddContractModal({
         "start_date_deduction",
         "end_date_deductions"
       ];
-      
+
       requiredFields.forEach((field) => {
         const value = deduction[field];
         if (!value || (typeof value === "string" && value.trim() === "")) {
@@ -468,7 +471,7 @@ export default function AddContractModal({
       if (deduction.start_date_deduction && deduction.end_date_deductions) {
         const startDate = new Date(deduction.start_date_deduction);
         const endDate = new Date(deduction.end_date_deductions);
-        
+
         if (endDate <= startDate) {
           methods.setError(`deductions.${index}.end_date_deductions`, {
             type: "validate",
@@ -521,7 +524,7 @@ export default function AddContractModal({
         "start_date_increase",
         "end_date_increase"
       ];
-      
+
       requiredFields.forEach((field) => {
         const value = increment[field];
         if (!value || (typeof value === "string" && value.trim() === "")) {
@@ -537,7 +540,7 @@ export default function AddContractModal({
       if (increment.start_date_increase && increment.end_date_increase) {
         const startDate = new Date(increment.start_date_increase);
         const endDate = new Date(increment.end_date_increase);
-        
+
         if (endDate <= startDate) {
           methods.setError(`increments.${index}.end_date_increase`, {
             type: "validate",
@@ -584,7 +587,7 @@ export default function AddContractModal({
       setStep(1);
     } catch (error) {
       let message = "Error al guardar los datos. Por favor, inténtelo de nuevo.";
-      
+
       if (error.response?.data?.details || error.response?.data?.errors) {
         const details = error.response.data.details || error.response.data.errors;
         message = Object.entries(details)
@@ -622,7 +625,7 @@ export default function AddContractModal({
       setStep(2);
     } catch (error) {
       let message = "Error al guardar los datos. Por favor, inténtelo de nuevo.";
-      
+
       if (error.response?.data?.details || error.response?.data?.errors) {
         const details = error.response.data.details || error.response.data.errors;
         message = Object.entries(details)
@@ -660,7 +663,7 @@ export default function AddContractModal({
       setStep(3);
     } catch (error) {
       let message = "Error al guardar los datos. Por favor, inténtelo de nuevo.";
-      
+
       if (error.response?.data?.details || error.response?.data?.errors) {
         const details = error.response.data.details || error.response.data.errors;
         message = Object.entries(details)
@@ -751,7 +754,7 @@ export default function AddContractModal({
       overtime_period: formData.overtimePeriod,
       notice_period_days: formData.terminationNoticePeriod ? parseInt(formData.terminationNoticePeriod) : null,
       working_hours: formData.contractedAmount ? parseInt(formData.contractedAmount) : null,
-      
+
       // Solo para creación/actualización normal, para addendum se estructura diferente
       // Horario de trabajo: enviar arreglo de IDs de día de la semana, por ejemplo [1,1,2,3,4,5]
       days_of_week: (formData.days_of_week || []).map((d) => d.id_day_of_week),
@@ -823,8 +826,8 @@ export default function AddContractModal({
       const actionLabel = isAddendum
         ? "generar otro sí"
         : (isChangeContract
-            ? "cambiar contrato"
-            : (shouldUpdateTemplate ? "actualizar" : "crear"));
+          ? "cambiar contrato"
+          : (shouldUpdateTemplate ? "actualizar" : "crear"));
 
       console.log(`Payload a ${actionLabel}:`, payload);
 
@@ -865,10 +868,10 @@ export default function AddContractModal({
       const fallbackMessage = isAddendum
         ? "Otro Sí generado exitosamente"
         : (isChangeContract
-            ? "Contrato cambiado exitosamente"
-            : (shouldUpdateTemplate
-                ? "Contrato actualizado exitosamente"
-                : "Contrato creado exitosamente"));
+          ? "Contrato cambiado exitosamente"
+          : (shouldUpdateTemplate
+            ? "Contrato actualizado exitosamente"
+            : "Contrato creado exitosamente"));
 
       setModalMessage(response.message || fallbackMessage);
 
@@ -1023,28 +1026,26 @@ export default function AddContractModal({
                   type="button"
                   onClick={() => goToStep(index)}
                   disabled={!completedSteps.includes(index) && index !== 0}
-                  className={`w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-xs sm:text-theme-sm font-theme-bold border-2 transition-all duration-300 ${
-                    isActive
+                  className={`w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-xs sm:text-theme-sm font-theme-bold border-2 transition-all duration-300 ${isActive
                       ? "bg-accent text-white"
                       : isCompleted
-                      ? "bg-success text-white border-success"
-                      : "bg-surface text-secondary border-primary"
-                  } ${
-                    !completedSteps.includes(index) && index !== 0
+                        ? "bg-success text-white border-success"
+                        : "bg-surface text-secondary border-primary"
+                    } ${!completedSteps.includes(index) && index !== 0
                       ? "cursor-not-allowed opacity-50"
                       : "hover:shadow-md"
-                  }`}
+                    }`}
                   style={{
                     backgroundColor: isActive
                       ? "var(--color-accent)"
                       : isCompleted
-                      ? "var(--color-success)"
-                      : "var(--color-surface)",
+                        ? "var(--color-success)"
+                        : "var(--color-surface)",
                     borderColor: isActive
                       ? "var(--color-accent)"
                       : isCompleted
-                      ? "var(--color-success)"
-                      : "var(--color-border)",
+                        ? "var(--color-success)"
+                        : "var(--color-border)",
                     color:
                       isActive || isCompleted
                         ? "white"
@@ -1070,20 +1071,19 @@ export default function AddContractModal({
 
                 <div className="mt-1 sm:mt-2 text-center max-w-20 sm:max-w-none">
                   <div
-                    className={`text-xs sm:text-theme-xs font-theme-medium ${
-                      status === "En progreso"
+                    className={`text-xs sm:text-theme-xs font-theme-medium ${status === "En progreso"
                         ? "text-accent"
                         : status === "Completo"
-                        ? "text-success"
-                        : "text-secondary"
-                    }`}
+                          ? "text-success"
+                          : "text-secondary"
+                      }`}
                     style={{
                       color:
                         status === "En progreso"
                           ? "var(--color-accent)"
                           : status === "Completo"
-                          ? "var(--color-success)"
-                          : "var(--color-text-secondary)",
+                            ? "var(--color-success)"
+                            : "var(--color-text-secondary)",
                     }}
                   >
                     <span className="hidden md:block">{stepItem.name}</span>
@@ -1092,20 +1092,19 @@ export default function AddContractModal({
                     </span>
                   </div>
                   <div
-                    className={`text-xs sm:text-theme-xs mt-0.5 sm:mt-1 ${
-                      status === "En progreso"
+                    className={`text-xs sm:text-theme-xs mt-0.5 sm:mt-1 ${status === "En progreso"
                         ? "text-accent"
                         : status === "Completo"
-                        ? "text-success"
-                        : "text-secondary"
-                    }`}
+                          ? "text-success"
+                          : "text-secondary"
+                      }`}
                     style={{
                       color:
                         status === "En progreso"
                           ? "var(--color-accent)"
                           : status === "Completo"
-                          ? "var(--color-success)"
-                          : "var(--color-text-secondary)",
+                            ? "var(--color-success)"
+                            : "var(--color-text-secondary)",
                     }}
                   >
                     {status}
@@ -1141,28 +1140,26 @@ export default function AddContractModal({
                   type="button"
                   onClick={() => goToStep(index)}
                   disabled={!completedSteps.includes(index) && index !== 0}
-                  className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-theme-bold border-2 transition-all duration-300 ${
-                    isActive
+                  className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-theme-bold border-2 transition-all duration-300 ${isActive
                       ? "bg-accent text-white"
                       : isCompleted
-                      ? "bg-success text-white border-success"
-                      : "bg-surface text-secondary border-primary"
-                  } ${
-                    !completedSteps.includes(index) && index !== 0
+                        ? "bg-success text-white border-success"
+                        : "bg-surface text-secondary border-primary"
+                    } ${!completedSteps.includes(index) && index !== 0
                       ? "cursor-not-allowed opacity-50"
                       : ""
-                  }`}
+                    }`}
                   style={{
                     backgroundColor: isActive
                       ? "var(--color-accent)"
                       : isCompleted
-                      ? "var(--color-success)"
-                      : "var(--color-surface)",
+                        ? "var(--color-success)"
+                        : "var(--color-surface)",
                     borderColor: isActive
                       ? "var(--color-accent)"
                       : isCompleted
-                      ? "var(--color-success)"
-                      : "var(--color-border)",
+                        ? "var(--color-success)"
+                        : "var(--color-border)",
                     color:
                       isActive || isCompleted
                         ? "white"
@@ -1265,10 +1262,10 @@ export default function AddContractModal({
                 </div>
               ) : (
                 <>
-              {step === 0 && <Step1GeneralInfo isAddendum={isAddendum} modifiableFields={modifiableFields} />}
-              {step === 1 && <Step2ContractTerms isAddendum={isAddendum} modifiableFields={modifiableFields} />}
-              {step === 2 && <Step3Deductions isAddendum={isAddendum} modifiableFields={modifiableFields} />}
-              {step === 3 && <Step4Increments isAddendum={isAddendum} modifiableFields={modifiableFields} />}
+                  {step === 0 && <Step1GeneralInfo isAddendum={isAddendum} modifiableFields={modifiableFields} />}
+                  {step === 1 && <Step2ContractTerms isAddendum={isAddendum} modifiableFields={modifiableFields} />}
+                  {step === 2 && <Step3Deductions isAddendum={isAddendum} modifiableFields={modifiableFields} />}
+                  {step === 3 && <Step4Increments isAddendum={isAddendum} modifiableFields={modifiableFields} />}
                 </>
               )}
             </div>
