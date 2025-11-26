@@ -427,6 +427,7 @@ const MassPayrollAdjustmentsModal = ({
         payrollStartDate={payrollStartDate}
         payrollEndDate={payrollEndDate}
         canManagePayroll={canManagePayroll}
+        employees={employees}
       />
 
       <MassiveAdjustmentsProcessingModal

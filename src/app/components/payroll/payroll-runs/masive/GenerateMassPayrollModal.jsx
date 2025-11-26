@@ -19,6 +19,7 @@ const MOCK_MASSIVE_EMPLOYEES = [
   {
     id: 1,
     fullName: "Maria Gonzalez",
+    document: "1001",
     chargeId: 1,
     status: "Activo",
     contracts: [
@@ -40,6 +41,7 @@ const MOCK_MASSIVE_EMPLOYEES = [
   {
     id: 2,
     fullName: "Carlos Rodriguez",
+    document: "1002",
     chargeId: 1,
     status: "Activo",
     contracts: [
@@ -55,6 +57,7 @@ const MOCK_MASSIVE_EMPLOYEES = [
   {
     id: 3,
     fullName: "Ana Martinez",
+    document: "1003",
     chargeId: 1,
     status: "Activo",
     contracts: [

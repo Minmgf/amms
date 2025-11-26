@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { FiX } from "react-icons/fi";
 import { useTheme } from "@/contexts/ThemeContext";
 import { ConfirmModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
+import { uploadMassiveAdjustments } from "@/services/payrollService";
 
 const MassiveAdjustmentsUploadModal = ({
   isOpen,
@@ -12,6 +13,7 @@ const MassiveAdjustmentsUploadModal = ({
   payrollStartDate,
   payrollEndDate,
   canManagePayroll = true,
+  employees = [],
 }) => {
   useTheme();
 
@@ -58,25 +60,76 @@ const MassiveAdjustmentsUploadModal = ({
     return true;
   };
 
-  const handleUploadClick = () => {
+  const handleUploadClick = async () => {
     if (!validateBeforeUpload()) return;
 
     setLoading(true);
+    setErrorMessage("");
 
-    // Simulación de procesamiento mock del archivo
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const formattedEmployees = employees.map((emp) => ({
+        id_employee: emp.id,
+        document_number: emp.document || emp.documentNumber || String(emp.id),
+      }));
 
-      const mockRows = buildMockRows(payrollStartDate, payrollEndDate);
+      const fileInput = document.querySelector('input[type="file"]');
+      const file = fileInput?.files?.[0];
 
-      if (onProcessMockFile) {
-        onProcessMockFile({
-          fileName: selectedFileName,
-          description: "",
-          rows: mockRows,
-        });
+      if (!file) {
+        setErrorMessage("No se encontró el archivo seleccionado.");
+        setErrorOpen(true);
+        setLoading(false);
+        return;
       }
-    }, 800);
+
+      const response = await uploadMassiveAdjustments(
+        file,
+        payrollStartDate,
+        payrollEndDate,
+        formattedEmployees
+      );
+
+      if (response.success) {
+        const apiResults = response.data.results || [];
+
+        const mappedRows = apiResults.map((row, index) => ({
+          id: index,
+          document: row.employee_identification,
+          employeeName: row.employee_name,
+          adjustmentName: row.adjustment_name,
+          adjustmentType: row.adjustment_type,
+          amountType: row.amount_type,
+          amount: parseFloat(row.amount_value),
+          application: row.application_type,
+          quantity: parseFloat(row.amount),
+          startDate: row.start_date_adjustment,
+          endDate: row.end_date_adjustment,
+          description: row.description,
+          status: row.status?.toLowerCase() === "aceptado" ? "accepted" : "rejected",
+          rejectionReason: row.reason_rejection,
+        }));
+
+        if (onProcessMockFile) {
+          onProcessMockFile({
+            fileName: selectedFileName,
+            description: "",
+            rows: mappedRows,
+          });
+        }
+      } else {
+        setErrorMessage(response.message || "Error al procesar el archivo.");
+        setErrorOpen(true);
+      }
+    } catch (error) {
+      console.error(error);
+      setErrorMessage(
+        error.response?.data?.message ||
+          "Ocurrió un error al cargar el archivo. Verifique su conexión o el formato del archivo."
+      );
+      setErrorOpen(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isOpen) return null;
