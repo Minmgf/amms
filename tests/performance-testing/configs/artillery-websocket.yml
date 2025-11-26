@@ -1,0 +1,46 @@
+# Artillery WebSocket Load Test Configuration - FIXED SYNTAX
+# Tests concurrent WebSocket connections to AMMS telemetry endpoint
+#
+# Prueba enfocada en validar capacidad de conexiones concurrentes
+#
+# Usage: artillery run artillery-websocket.yml
+
+config:
+  target: "wss://api.inmero.co"
+  phases:
+    # Fase 1: Prueba inicial con pocas conexiones
+    - duration: 30
+      arrivalRate: 2
+      name: "Fase 1: Prueba inicial - 2 conexiones/seg"
+    
+    # Fase 2: Incremento gradual
+    - duration: 60
+      arrivalRate: 2
+      rampTo: 10
+      name: "Fase 2: Incremento gradual - 2 a 10 conexiones/seg"
+    
+    # Fase 3: Carga sostenida
+    - duration: 60
+      arrivalRate: 10
+      name: "Fase 3: Carga sostenida - 10 conexiones/seg"
+  
+  # WebSocket engine configuration
+  ws:
+    # Opciones del engine WebSocket
+  
+  # Performance thresholds
+  ensure:
+    maxErrorRate: 10  # Max 10% error rate
+
+scenarios:
+  - name: "WebSocket Concurrent Connection Test"
+    engine: ws
+    flow:
+      # 1. Conectar al WebSocket con URL completa
+      - send:
+          target: "wss://api.inmero.co/telemetry/ws/telemetria/SOL-2025-0011?password=telemetry_password_2024"
+      
+      # 2. Esperar para mantener conexión activa
+      - think: 50
+      
+      # 3. La conexión se cierra automáticamente al finalizar el VU

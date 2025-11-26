@@ -1,0 +1,6 @@
+# Generated performance results
+results/**
+!results/.gitkeep
+
+# Logs
+*.log
