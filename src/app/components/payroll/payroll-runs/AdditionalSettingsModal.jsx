@@ -150,7 +150,12 @@ const IndividualPayrollAdjustmentsModal = ({
     setActiveTab("deductions");
     setRowErrors({ deductions: {}, increments: {}, globalMessages: [] });
     setLoading(false);
-  }, [isOpen, initialAdjustments]);
+    setSuccessOpen(false);
+    setErrorOpen(false);
+    setSuccessMessage("");
+    setErrorMessage("");
+    setShowCancelConfirm(false);
+  }, [isOpen]);
 
   const hasChanges = useMemo(() => {
     if (!isOpen) return false;

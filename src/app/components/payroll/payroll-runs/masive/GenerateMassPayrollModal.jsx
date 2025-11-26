@@ -333,6 +333,7 @@ const GenerateMassPayrollModal = ({
         startDate,
         endDate,
         createdAt,
+        createdBy: "mock-user",
         employees: employeesToGenerate.map((emp, index) => {
           const empAdjustments =
             adjustmentsByEmployee?.[emp.id] || {
@@ -340,11 +341,21 @@ const GenerateMassPayrollModal = ({
               increments: [],
             };
 
+          const activeContract = (emp.contracts || []).find(
+            (contract) =>
+              contract.isActive &&
+              contract.startDate <= startDate &&
+              contract.endDate >= endDate
+          );
+
           return {
             payrollId: `${Date.now()}-${index + 1}`,
             employeeId: emp.id,
             employeeName: emp.fullName,
+            contractId: activeContract ? activeContract.id : null,
             generatedAt: createdAt,
+            createdBy: "mock-user",
+            adjustmentsOrigin: "MANUAL",
             adjustments: {
               deductions: empAdjustments.deductions || [],
               increments: empAdjustments.increments || [],

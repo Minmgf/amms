@@ -310,6 +310,7 @@ const GeneratePayrollModal = ({
         startDate,
         endDate,
         createdAt: new Date().toISOString(),
+        createdBy: "mock-user",
         adjustments: {
           deductions: adjustments.deductions || [],
           increments: adjustments.increments || [],
@@ -681,7 +682,6 @@ const GeneratePayrollModal = ({
         onClose={() => setIsAdjustmentsModalOpen(false)}
         onSave={(ajustes) => {
           setAdjustments(ajustes || { deductions: [], increments: [] });
-          setIsAdjustmentsModalOpen(false);
         }}
         initialAdjustments={adjustments}
         payrollStartDate={startDate}

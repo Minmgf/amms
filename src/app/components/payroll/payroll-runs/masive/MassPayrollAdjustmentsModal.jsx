@@ -101,7 +101,6 @@ const MassPayrollAdjustmentsModal = ({
 
   const handleSaveAdjustments = (ajustes) => {
     if (!ajustes) {
-      setIsAdditionalModalOpen(false);
       return;
     }
 
@@ -129,8 +128,6 @@ const MassPayrollAdjustmentsModal = ({
         },
       }));
     }
-
-    setIsAdditionalModalOpen(false);
   };
 
   const handleClose = () => {

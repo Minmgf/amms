@@ -188,7 +188,6 @@ const Prueba = () => {
         onSave={(ajustes) => {
           console.log("Ajustes adicionales guardados (vista de prueba):", ajustes);
           setMockAdjustments(ajustes || { deductions: [], increments: [] });
-          setIsAdjustmentsModalOpen(false);
         }}
         initialAdjustments={mockAdjustments}
         payrollStartDate={mockPayrollStartDate}
