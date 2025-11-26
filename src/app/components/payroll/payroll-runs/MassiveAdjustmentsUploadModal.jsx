@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { FiX } from "react-icons/fi";
 import { useTheme } from "@/contexts/ThemeContext";
 import { ConfirmModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
@@ -16,15 +16,12 @@ const MassiveAdjustmentsUploadModal = ({
   useTheme();
 
   const [selectedFileName, setSelectedFileName] = useState("");
-  const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorOpen, setErrorOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
-  const hasChanges = useMemo(() => {
-    return !!selectedFileName || !!description;
-  }, [selectedFileName, description]);
+  const hasChanges = !!selectedFileName;
 
   const handleCancel = () => {
     if (hasChanges) {
@@ -44,12 +41,6 @@ const MassiveAdjustmentsUploadModal = ({
   };
 
   const validateBeforeUpload = () => {
-    if (!description.trim()) {
-      setErrorMessage("Debe ingresar una descripción para continuar.");
-      setErrorOpen(true);
-      return false;
-    }
-
     if (!selectedFileName) {
       setErrorMessage("Debe seleccionar un archivo Excel para continuar.");
       setErrorOpen(true);
@@ -81,7 +72,7 @@ const MassiveAdjustmentsUploadModal = ({
       if (onProcessMockFile) {
         onProcessMockFile({
           fileName: selectedFileName,
-          description: description.trim(),
+          description: "",
           rows: mockRows,
         });
       }
@@ -98,7 +89,7 @@ const MassiveAdjustmentsUploadModal = ({
         onClick={(e) => e.target === e.currentTarget && handleCancel()}
       >
         <div
-          className="card-theme rounded-xl shadow-2xl w-full max-w-3xl max-h-[92vh] overflow-hidden"
+          className="card-theme rounded-xl shadow-2xl w-full max-w-xl max-h-[92vh] overflow-hidden"
           style={{ zIndex: 71 }}
         >
           <div className="flex items-center justify-between p-4 border-b border-primary">
@@ -136,20 +127,6 @@ const MassiveAdjustmentsUploadModal = ({
                   {selectedFileName || "Ningún archivo seleccionado"}
                 </span>
               </div>
-            </div>
-
-            {/* Descripción */}
-            <div>
-              <label className="block text-sm font-medium text-secondary mb-2">
-                Descripción *
-              </label>
-              <textarea
-                className="input-theme text-sm resize-none h-20"
-                placeholder="Describe el propósito de estos ajustes masivos"
-                maxLength={255}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
             </div>
 
             {/* Mensaje importante */}
