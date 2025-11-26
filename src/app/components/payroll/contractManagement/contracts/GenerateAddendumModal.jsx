@@ -26,13 +26,16 @@ export default function GenerateAddendumModal({
       
       // Terms
       baseSalary: false, // Hourly wage / Salary
+      currency: false,
+      contractedAmount: false, // Contracted Hours
+      days_of_week: false, // Work Schedule
       trialPeriod: false,
+      vacationDays: false,
+      cumulative: false, // Cumulative vacation
+      vacationGrantFrequency: false, // frequency of grading additional vacation
       effectiveFrom: false, // Since when can they be used
       maximumDisabilityDays: false,
       overtimePeriod: false,
-      currency: false,
-      vacationDays: false,
-      vacationGrantFrequency: false, // frequency of grading additional vacation
       maximumOvertime: false,
       terminationNoticePeriod: false, // Notification of contract termination
 
@@ -126,16 +129,22 @@ export default function GenerateAddendumModal({
                 <div className="space-y-3">
                   <div className="grid grid-cols-1 gap-3">
                     <CheckboxField label="Salario / Salario por hora" name="baseSalary" register={register} />
-                    <CheckboxField label="Periodo de prueba" name="trialPeriod" register={register} />
-                    <CheckboxField label="¿Desde cuándo se pueden usar?" name="effectiveFrom" register={register} />
-                    <CheckboxField label="Días máximos de incapacidad" name="maximumDisabilityDays" register={register} />
-                    <CheckboxField label="Periodo de horas extra" name="overtimePeriod" register={register} />
+                    <CheckboxField label="Moneda" name="currency" register={register} />
+                    <CheckboxField label="Horas contratadas" name="contractedAmount" register={register} />
+                    <CheckboxField label="Horario de trabajo" name="days_of_week" register={register} />
                     
                     <div className="pt-4"></div>
 
-                    <CheckboxField label="Moneda" name="currency" register={register} />
+                    <CheckboxField label="Periodo de prueba" name="trialPeriod" register={register} />
                     <CheckboxField label="Días de vacaciones" name="vacationDays" register={register} />
+                    <CheckboxField label="Vacaciones acumulables" name="cumulative" register={register} />
                     <CheckboxField label="Frecuencia de vacaciones adicionales" name="vacationGrantFrequency" register={register} />
+                    <CheckboxField label="¿Desde cuándo se pueden usar?" name="effectiveFrom" register={register} />
+                    
+                    <div className="pt-4"></div>
+
+                    <CheckboxField label="Días máximos de incapacidad" name="maximumDisabilityDays" register={register} />
+                    <CheckboxField label="Periodo de horas extra" name="overtimePeriod" register={register} />
                     <CheckboxField label="Máximo de horas extra" name="maximumOvertime" register={register} />
                     <CheckboxField label="Notificación de terminación" name="terminationNoticePeriod" register={register} />
                   </div>
