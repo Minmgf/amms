@@ -190,6 +190,9 @@ const GeneratePayrollModal = ({
               isActive = Boolean(contract.is_active);
             } else if (typeof contract.isActive !== "undefined") {
               isActive = Boolean(contract.isActive);
+            } else if (typeof contract.contract_status_name === "string") {
+              const status = contract.contract_status_name.toLowerCase();
+              isActive = status.includes("activo") || status.includes("vigente");
             } else if (typeof contract.status === "string") {
               const status = contract.status.toLowerCase();
               isActive =
@@ -208,7 +211,7 @@ const GeneratePayrollModal = ({
               endDate: end,
             };
           })
-          .filter((contract) => contract.id && contract.startDate && contract.endDate);
+          .filter((contract) => contract.id && contract.startDate);
 
         if (!mappedContracts || mappedContracts.length === 0) {
           setErrorMessage(
@@ -338,10 +341,15 @@ const GeneratePayrollModal = ({
     }
 
     if (selectedContract && startDate && endDate) {
-      if (
-        startDate < selectedContract.startDate ||
-        endDate > selectedContract.endDate
-      ) {
+      const contractStart = selectedContract.startDate;
+      const contractEnd = selectedContract.endDate || null;
+
+      if (startDate < contractStart) {
+        newErrors.dateRange =
+          "Las fechas deben estar dentro de la vigencia del contrato seleccionado.";
+      }
+
+      if (contractEnd && endDate > contractEnd) {
         newErrors.dateRange =
           "Las fechas deben estar dentro de la vigencia del contrato seleccionado.";
       }
@@ -391,8 +399,8 @@ const GeneratePayrollModal = ({
 
     const mapDeductions = (items) => {
       return (items || []).map((d) => ({
-        deduction_type: d.nombreId,
-        amount_type: d.tipoMonto === "PERCENT" ? "Porcentaje" : "Monto fijo",
+        deduction_type: d.nombreId != null ? Number(d.nombreId) : null,
+        amount_type: d.tipoMonto === "PERCENT" ? "Porcentaje" : "fijo",
         amount_value: parseFloat(d.valorMonto),
         application_deduction_type:
           d.aplicacion === "BASE"
@@ -409,8 +417,8 @@ const GeneratePayrollModal = ({
 
     const mapIncrements = (items) => {
       return (items || []).map((i) => ({
-        increase_type: i.nombreId,
-        amount_type: i.tipoMonto === "PERCENT" ? "Porcentaje" : "Monto fijo",
+        increase_type: i.nombreId != null ? Number(i.nombreId) : null,
+        amount_type: i.tipoMonto === "PERCENT" ? "Porcentaje" : "fijo",
         amount_value: parseFloat(i.valorMonto),
         application_increase_type:
           i.aplicacion === "BASE"
@@ -427,12 +435,12 @@ const GeneratePayrollModal = ({
 
     try {
       const payload = {
-        employee_id: employee.id,
-        contract_id: selectedContract.id,
+        id_employee: employee.id,
+        contract_code: selectedContract.code,
         start_date: startDate,
         end_date: endDate,
-        deductions: mapDeductions(adjustments.deductions),
-        increases: mapIncrements(adjustments.increments),
+        additional_deductions: mapDeductions(adjustments.deductions),
+        additional_increases: mapIncrements(adjustments.increments),
       };
 
       const response = await generateIndividualPayroll(payload);
@@ -441,15 +449,26 @@ const GeneratePayrollModal = ({
         const backendPayroll = response.data || {};
 
         const payrollRecord = {
-          id: backendPayroll.id || Date.now(),
+          id: backendPayroll.payroll_id || backendPayroll.id || Date.now(),
           employeeId: employee.id,
           employeeName: employee.fullName,
           contractId: selectedContract.id,
-          contractCode: selectedContract.code,
+          contractCode: backendPayroll.contract_code || selectedContract.code,
           startDate,
           endDate,
-          createdAt: backendPayroll.created_at || new Date().toISOString(),
-          createdBy: backendPayroll.created_by || "backend",
+          createdAt:
+            backendPayroll.creation_date ||
+            backendPayroll.created_at ||
+            new Date().toISOString(),
+          createdBy:
+            backendPayroll.responsible_user?.name ||
+            backendPayroll.created_by ||
+            "backend",
+          baseSalary: backendPayroll.base_salary,
+          timeWorked: backendPayroll.time_worked,
+          totalDeductions: backendPayroll.total_deductions,
+          totalIncrements: backendPayroll.total_increments,
+          netPay: backendPayroll.net_pay,
           adjustments: {
             deductions: adjustments.deductions || [],
             increments: adjustments.increments || [],

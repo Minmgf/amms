@@ -59,6 +59,7 @@ const GenerateMassPayrollModal = ({
   const [departments, setDepartments] = useState([]);
   const [charges, setCharges] = useState([]);
   const [applicableEmployees, setApplicableEmployees] = useState([]);
+  const [hasTriedLoadEmployees, setHasTriedLoadEmployees] = useState(false);
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -113,6 +114,7 @@ const GenerateMassPayrollModal = ({
     setErrorMessage("");
     setConflictEmployees([]);
     setApplicableEmployees([]);
+    setHasTriedLoadEmployees(false);
   };
 
   useEffect(() => {
@@ -163,8 +165,10 @@ const GenerateMassPayrollModal = ({
   useEffect(() => {
     if (!selectedChargeId || !startDate || !endDate || !selectedDepartmentId) {
       setApplicableEmployees([]);
+      setHasTriedLoadEmployees(false);
       return;
     }
+
     const fetchEmployees = async () => {
       try {
         const response = await getPayrollApplicableEmployees(
@@ -183,14 +187,19 @@ const GenerateMassPayrollModal = ({
             email: emp.email,
           }));
           setApplicableEmployees(mappedEmployees);
+        } else {
+          setApplicableEmployees([]);
         }
       } catch (error) {
         console.error("Error fetching applicable employees", error);
         setApplicableEmployees([]);
+      } finally {
+        setHasTriedLoadEmployees(true);
       }
     };
+
     fetchEmployees();
-  }, [selectedChargeId, startDate, endDate]);
+  }, [selectedChargeId, startDate, endDate, selectedDepartmentId]);
 
   const employeesData = useMemo(() => {
     return {
@@ -306,7 +315,7 @@ const GenerateMassPayrollModal = ({
       const adjustments = adjustmentsByEmployee[emp.id] || {};
       const deductions = (adjustments.deductions || []).map((d) => ({
         deduction_type: d.nombreId, // Assuming nombreId holds the ID
-        amount_type: d.tipoMonto === "PERCENT" ? "Porcentaje" : "Monto fijo",
+        amount_type: d.tipoMonto === "PERCENT" ? "Porcentaje" : "fijo",
         amount_value: parseFloat(d.valorMonto),
         application_deduction_type:
           d.aplicacion === "BASE" ? "SalarioBase" : "SalarioFinal",
@@ -318,7 +327,7 @@ const GenerateMassPayrollModal = ({
 
       const increases = (adjustments.increments || []).map((i) => ({
         increase_type: i.nombreId, // Assuming nombreId holds the ID
-        amount_type: i.tipoMonto === "PERCENT" ? "Porcentaje" : "Monto fijo",
+        amount_type: i.tipoMonto === "PERCENT" ? "Porcentaje" : "fijo",
         amount_value: parseFloat(i.valorMonto),
         application_increase_type:
           i.aplicacion === "BASE" ? "SalarioBase" : "SalarioFinal",
@@ -552,6 +561,18 @@ const GenerateMassPayrollModal = ({
                 {errors.charge && (
                   <p className="text-red-500 text-xs mt-1">{errors.charge}</p>
                 )}
+                {!errors.charge &&
+                  selectedDepartmentId &&
+                  selectedChargeId &&
+                  startDate &&
+                  endDate &&
+                  hasTriedLoadEmployees &&
+                  eligibleEmployees.length === 0 && (
+                    <p className="text-red-500 text-xs mt-1">
+                      No hay empleados disponibles para el cargo y periodo
+                      seleccionados.
+                    </p>
+                  )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

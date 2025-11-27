@@ -45,7 +45,7 @@ export const generateMassivePayroll = async (payload) => {
 
 export const generateIndividualPayroll = async (payload) => {
   try {
-    const response = await apiMain.post("/payroll/generate-individual/", payload);
+    const response = await apiMain.post("/payroll/create-payroll/", payload);
     return response.data;
   } catch (error) {
     throw error;

@@ -108,8 +108,15 @@ const IndividualPayrollAdjustmentsModal = ({
           getTypesByCategory(18),
           getTypesByCategory(19),
         ]);
-        if (deductionsRes.success) setDeductionTypes(deductionsRes.data);
-        if (incrementsRes.success) setIncrementTypes(incrementsRes.data);
+
+        const formatResponse = (response) => {
+          if (Array.isArray(response)) return response;
+          if (response.success && response.data) return response.data;
+          return [];
+        };
+
+        setDeductionTypes(formatResponse(deductionsRes));
+        setIncrementTypes(formatResponse(incrementsRes));
       } catch (error) {
         console.error("Error fetching types", error);
       }
@@ -363,8 +370,10 @@ const IndividualPayrollAdjustmentsModal = ({
       if (row.fechaInicio && row.fechaFin) {
         const fechaInicio = new Date(row.fechaInicio);
         const fechaFin = new Date(row.fechaFin);
-        if (fechaFin < fechaInicio) {
-          mensajes.push("La fecha de fin no puede ser anterior a la fecha de inicio.");
+        if (fechaFin <= fechaInicio) {
+          mensajes.push(
+            "La fecha de fin debe ser posterior a la fecha de inicio."
+          );
         }
       }
 
@@ -418,6 +427,16 @@ const IndividualPayrollAdjustmentsModal = ({
       Object.keys(incrementErrors).length > 0;
 
     if (hasRowErrors || globalMessages.length > 0) {
+      const hasDeductionRowErrors = Object.keys(deductionErrors).length > 0;
+      const hasIncrementRowErrors = Object.keys(incrementErrors).length > 0;
+
+      // Enfocar la pestaña donde están los errores de fila
+      if (hasDeductionRowErrors && !hasIncrementRowErrors) {
+        setActiveTab("deductions");
+      } else if (hasIncrementRowErrors && !hasDeductionRowErrors) {
+        setActiveTab("increments");
+      }
+
       setRowErrors({
         deductions: deductionErrors,
         increments: incrementErrors,
@@ -852,7 +871,7 @@ const AdditionalDeductionsSection = ({
                 <div
                   key={item.id}
                   className={`grid grid-cols-[40px_150px_150px_120px_150px_150px_150px_200px_100px] gap-2 px-4 py-2 border-b border-primary/40 items-start text-xs ${
-                    rowError ? "bg-error/5" : ""
+                    rowError ? "bg-red-50 ring-1 ring-red-500" : ""
                   }`}
                 >
                   {/* Checkbox fila */}
@@ -875,8 +894,11 @@ const AdditionalDeductionsSection = ({
                       }
                     >
                       <option value="">Seleccione</option>
-                      {types.map((option) => (
-                        <option key={option.id} value={option.id}>
+                      {types.map((option, index) => (
+                        <option
+                          key={`${option.id_types ?? option.id ?? "type"}-${index}`}
+                          value={option.id_types ?? option.id}
+                        >
                           {option.name}
                         </option>
                       ))}
@@ -893,8 +915,11 @@ const AdditionalDeductionsSection = ({
                       }
                     >
                       <option value="">Seleccione</option>
-                      {MOCK_AMOUNT_TYPES.map((option) => (
-                        <option key={option.id} value={option.id}>
+                      {MOCK_AMOUNT_TYPES.map((option, index) => (
+                        <option
+                          key={`${option.id}-${index}`}
+                          value={option.id}
+                        >
                           {option.etiqueta}
                         </option>
                       ))}
@@ -1071,7 +1096,7 @@ const AdditionalIncrementsSection = ({
                 <div
                   key={item.id}
                   className={`grid grid-cols-[40px_150px_150px_120px_150px_150px_150px_200px_100px] gap-2 px-4 py-2 border-b border-primary/40 items-start text-xs ${
-                    rowError ? "bg-error/5" : ""
+                    rowError ? "bg-red-50 ring-1 ring-red-500" : ""
                   }`}
                 >
                   {/* Checkbox fila */}
@@ -1094,8 +1119,11 @@ const AdditionalIncrementsSection = ({
                       }
                     >
                       <option value="">Seleccione</option>
-                      {types.map((option) => (
-                        <option key={option.id} value={option.id}>
+                      {types.map((option, index) => (
+                        <option
+                          key={`${option.id_types ?? option.id ?? "type"}-${index}`}
+                          value={option.id_types ?? option.id}
+                        >
                           {option.name}
                         </option>
                       ))}
@@ -1112,8 +1140,11 @@ const AdditionalIncrementsSection = ({
                       }
                     >
                       <option value="">Seleccione</option>
-                      {MOCK_AMOUNT_TYPES.map((option) => (
-                        <option key={option.id} value={option.id}>
+                      {MOCK_AMOUNT_TYPES.map((option, index) => (
+                        <option
+                          key={`${option.id}-${index}`}
+                          value={option.id}
+                        >
                           {option.etiqueta}
                         </option>
                       ))}
