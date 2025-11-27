@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { FiX } from "react-icons/fi";
 import { useTheme } from "@/contexts/ThemeContext";
 import { ConfirmModal, ErrorModal } from "@/app/components/shared/SuccessErrorModal";
+import { uploadMassiveAdjustments } from "@/services/payrollService";
 
 const MassiveAdjustmentsUploadModal = ({
   isOpen,
@@ -12,6 +13,7 @@ const MassiveAdjustmentsUploadModal = ({
   payrollStartDate,
   payrollEndDate,
   canManagePayroll = true,
+  employees = [],
 }) => {
   useTheme();
 
@@ -58,25 +60,183 @@ const MassiveAdjustmentsUploadModal = ({
     return true;
   };
 
-  const handleUploadClick = () => {
+  const normalizeAdjustmentType = (rawType) => {
+    const value = (rawType || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
+    // Backend puede enviar "incremento", "increment", etc.
+    if (value.includes("increment")) return "increment";
+
+    // Para deducciones: "deduccion", "deducción" u otras variantes
+    return "deduction";
+  };
+
+  const normalizeAmountType = (rawType) => {
+    const value = (rawType || "").toLowerCase();
+
+    // Backend documentado: "porcentaje" / "fijo". Otros tipos ("monetario", "dias", etc.)
+    // los tratamos como monto fijo para efectos de visualización.
+    if (value.includes("porcen")) return "percentage";
+    return "fixed";
+  };
+
+  const handleUploadClick = async () => {
     if (!validateBeforeUpload()) return;
 
     setLoading(true);
+    setErrorMessage("");
 
-    // Simulación de procesamiento mock del archivo
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const formattedEmployees = employees.map((emp) => ({
+        id_employee: emp.id,
+        document_number: emp.document || emp.documentNumber || String(emp.id),
+      }));
 
-      const mockRows = buildMockRows(payrollStartDate, payrollEndDate);
+      const fileInput = document.querySelector('input[type="file"]');
+      const file = fileInput?.files?.[0];
 
-      if (onProcessMockFile) {
+      if (!file) {
+        setErrorMessage("No se encontró el archivo seleccionado.");
+        setErrorOpen(true);
+        setLoading(false);
+        return;
+      }
+
+      const response = await uploadMassiveAdjustments(
+        file,
+        payrollStartDate,
+        payrollEndDate,
+        formattedEmployees
+      );
+
+      if (response.success) {
+        const root = response || {};
+        const inner = root.data || root;
+        const apiResults = inner.results || [];
+        const batchId = inner.batch_id || null;
+
+        const mappedRows = apiResults.map((row, index) => ({
+          id: index,
+          document: row.employee_identification,
+          employeeName: row.employee_name,
+          adjustmentName: row.adjustment_name,
+          adjustmentType: normalizeAdjustmentType(row.adjustment_type),
+          amountType: normalizeAmountType(row.amount_type),
+          amount: parseFloat(row.amount_value),
+          application: row.application_type,
+          quantity: parseFloat(row.amount),
+          startDate: row.start_date_adjustment,
+          endDate: row.end_date_adjustment,
+          description: row.description,
+          status: row.status?.toLowerCase() === "aceptado" ? "accepted" : "rejected",
+          rejectionReason: row.reason_rejection,
+        }));
+
+        if (onProcessMockFile) {
+          onProcessMockFile({
+            fileName: selectedFileName,
+            description: "",
+            rows: mappedRows,
+            batchId: batchId,
+          });
+        }
+      } else {
+        const root = response || {};
+        const inner = root.data || root;
+        const apiResults = inner.results || [];
+        const batchId = inner.batch_id || null;
+
+        // Caso: success = false pero el backend devuelve resultados detallados
+        // (por ejemplo, todas las filas rechazadas). Debemos mostrar igualmente
+        // el modal de resultados.
+        if (apiResults.length > 0 && onProcessMockFile) {
+          const mappedRows = apiResults.map((row, index) => ({
+            id: index,
+            document: row.employee_identification,
+            employeeName: row.employee_name,
+            adjustmentName: row.adjustment_name,
+            adjustmentType: normalizeAdjustmentType(row.adjustment_type),
+            amountType: normalizeAmountType(row.amount_type),
+            amount: parseFloat(row.amount_value),
+            application: row.application_type,
+            quantity: parseFloat(row.amount),
+            startDate: row.start_date_adjustment,
+            endDate: row.end_date_adjustment,
+            description: row.description,
+            status:
+              row.status?.toLowerCase() === "aceptado" ||
+              row.status?.toLowerCase() === "accepted"
+                ? "accepted"
+                : "rejected",
+            rejectionReason: row.reason_rejection,
+          }));
+
+          onProcessMockFile({
+            fileName: selectedFileName,
+            description: "",
+            rows: mappedRows,
+            batchId: batchId,
+          });
+        } else {
+          const backendMessage = response.error || response.message;
+          setErrorMessage(
+            backendMessage || "Error al procesar el archivo."
+          );
+          setErrorOpen(true);
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      const data = error.response?.data;
+      const inner = data?.data || {};
+      const apiResults = inner.results || [];
+      const batchId = inner.batch_id || null;
+
+      // Caso especial: todas las filas rechazadas pero el backend devuelve
+      // el detalle de resultados (results). Debemos mostrar el modal de
+      // procesamiento con la tabla de filas rechazadas, incluso si success=false
+      // o el estado HTTP es 400.
+      if (apiResults.length > 0 && onProcessMockFile) {
+        const mappedRows = apiResults.map((row, index) => ({
+          id: index,
+          document: row.employee_identification,
+          employeeName: row.employee_name,
+          adjustmentName: row.adjustment_name,
+          adjustmentType: normalizeAdjustmentType(row.adjustment_type),
+          amountType: normalizeAmountType(row.amount_type),
+          amount: parseFloat(row.amount_value),
+          application: row.application_type,
+          quantity: parseFloat(row.amount),
+          startDate: row.start_date_adjustment,
+          endDate: row.end_date_adjustment,
+          description: row.description,
+          status:
+            row.status?.toLowerCase() === "aceptado" ||
+            row.status?.toLowerCase() === "accepted"
+              ? "accepted"
+              : "rejected",
+          rejectionReason: row.reason_rejection,
+        }));
+
         onProcessMockFile({
           fileName: selectedFileName,
           description: "",
-          rows: mockRows,
+          rows: mappedRows,
+          batchId: batchId,
         });
+      } else {
+        const backendMessage = data?.error || data?.message;
+        setErrorMessage(
+          backendMessage ||
+            "Ocurrió un error al cargar el archivo. Verifique su conexión o el formato del archivo."
+        );
+        setErrorOpen(true);
       }
-    }, 800);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -131,12 +291,15 @@ const MassiveAdjustmentsUploadModal = ({
 
             {/* Mensaje importante */}
             <div className="mt-2 border border-dashed border-primary/50 rounded-lg p-3 flex items-start gap-3 bg-surface">
-              <div className="mt-0.5 text-secondary">ℹ️</div>
+              <div className="mt-0.5 text-secondary">
+                ℹ️
+              </div>
               <div className="text-xs text-secondary leading-relaxed">
-                Cargue un archivo .xlsx que respete la estructura definida. El
-                archivo debe incluir las columnas requeridas y los tipos de dato
-                especificados (documento del empleado, novedad, tipo, valor,
-                aplicación, fechas y descripción).
+                Use un archivo Excel con el formato de ajustes masivos de nómina.
+                Debe contener todas las columnas obligatorias (identificación y nombre del empleado,
+                nombre del ajuste, tipo de ajuste, tipo de monto, valor, aplicación, cantidad,
+                fechas de inicio/fin y descripción). Si falta alguna columna o el formato es inválido,
+                el sistema rechazará el archivo y mostrará el detalle del error.
               </div>
             </div>
 

@@ -8,20 +8,9 @@ import {
   ErrorModal,
   ConfirmModal,
 } from "@/app/components/shared/SuccessErrorModal";
+import { getTypesByCategory } from "@/services/parametrizationService";
 
 // Datos mock de catálogos mientras se integran endpoints reales
-const MOCK_DEDUCTIONS = [
-  { id: "salud", nombre: "Descuento por salud" },
-  { id: "pension", nombre: "Descuento por pensión" },
-  { id: "prestamo", nombre: "Préstamo interno" },
-];
-
-const MOCK_INCREMENTS = [
-  { id: "bono_productividad", nombre: "Bono de productividad" },
-  { id: "bono_transporte", nombre: "Auxilio de transporte adicional" },
-  { id: "horas_extra", nombre: "Horas extra especiales" },
-];
-
 const MOCK_AMOUNT_TYPES = [
   { id: "PERCENT", etiqueta: "Porcentual" },
   { id: "FIXED", etiqueta: "Fijo" },
@@ -86,6 +75,8 @@ const IndividualPayrollAdjustmentsModal = ({
   const [activeTab, setActiveTab] = useState("deductions");
   const [deductions, setDeductions] = useState([]);
   const [increments, setIncrements] = useState([]);
+  const [deductionTypes, setDeductionTypes] = useState([]);
+  const [incrementTypes, setIncrementTypes] = useState([]);
 
   const [loading, setLoading] = useState(false);
   const [rowErrors, setRowErrors] = useState({
@@ -109,6 +100,29 @@ const IndividualPayrollAdjustmentsModal = ({
     () => (payrollEndDate ? new Date(payrollEndDate) : null),
     [payrollEndDate]
   );
+
+  useEffect(() => {
+    const fetchTypes = async () => {
+      try {
+        const [deductionsRes, incrementsRes] = await Promise.all([
+          getTypesByCategory(18),
+          getTypesByCategory(19),
+        ]);
+
+        const formatResponse = (response) => {
+          if (Array.isArray(response)) return response;
+          if (response.success && response.data) return response.data;
+          return [];
+        };
+
+        setDeductionTypes(formatResponse(deductionsRes));
+        setIncrementTypes(formatResponse(incrementsRes));
+      } catch (error) {
+        console.error("Error fetching types", error);
+      }
+    };
+    fetchTypes();
+  }, []);
 
   useEffect(() => {
     if (!isOpen) {
@@ -356,8 +370,10 @@ const IndividualPayrollAdjustmentsModal = ({
       if (row.fechaInicio && row.fechaFin) {
         const fechaInicio = new Date(row.fechaInicio);
         const fechaFin = new Date(row.fechaFin);
-        if (fechaFin < fechaInicio) {
-          mensajes.push("La fecha de fin no puede ser anterior a la fecha de inicio.");
+        if (fechaFin <= fechaInicio) {
+          mensajes.push(
+            "La fecha de fin debe ser posterior a la fecha de inicio."
+          );
         }
       }
 
@@ -411,6 +427,16 @@ const IndividualPayrollAdjustmentsModal = ({
       Object.keys(incrementErrors).length > 0;
 
     if (hasRowErrors || globalMessages.length > 0) {
+      const hasDeductionRowErrors = Object.keys(deductionErrors).length > 0;
+      const hasIncrementRowErrors = Object.keys(incrementErrors).length > 0;
+
+      // Enfocar la pestaña donde están los errores de fila
+      if (hasDeductionRowErrors && !hasIncrementRowErrors) {
+        setActiveTab("deductions");
+      } else if (hasIncrementRowErrors && !hasDeductionRowErrors) {
+        setActiveTab("increments");
+      }
+
       setRowErrors({
         deductions: deductionErrors,
         increments: incrementErrors,
@@ -533,6 +559,7 @@ const IndividualPayrollAdjustmentsModal = ({
                   errors={rowErrors.deductions}
                   payrollStartDate={payrollStartDate}
                   payrollEndDate={payrollEndDate}
+                  types={deductionTypes}
                 />
               ) : (
                 <AdditionalIncrementsSection
@@ -545,6 +572,7 @@ const IndividualPayrollAdjustmentsModal = ({
                   errors={rowErrors.increments}
                   payrollStartDate={payrollStartDate}
                   payrollEndDate={payrollEndDate}
+                  types={incrementTypes}
                 />
               )}
 
@@ -779,6 +807,7 @@ const AdditionalDeductionsSection = ({
   errors,
   payrollStartDate,
   payrollEndDate,
+  types = [],
 }) => {
   const allSelected =
     deductions.length > 0 && deductions.every((item) => !!item.seleccionado);
@@ -842,7 +871,7 @@ const AdditionalDeductionsSection = ({
                 <div
                   key={item.id}
                   className={`grid grid-cols-[40px_150px_150px_120px_150px_150px_150px_200px_100px] gap-2 px-4 py-2 border-b border-primary/40 items-start text-xs ${
-                    rowError ? "bg-error/5" : ""
+                    rowError ? "bg-red-50 ring-1 ring-red-500" : ""
                   }`}
                 >
                   {/* Checkbox fila */}
@@ -865,9 +894,12 @@ const AdditionalDeductionsSection = ({
                       }
                     >
                       <option value="">Seleccione</option>
-                      {MOCK_DEDUCTIONS.map((option) => (
-                        <option key={option.id} value={option.id}>
-                          {option.nombre}
+                      {types.map((option, index) => (
+                        <option
+                          key={`${option.id_types ?? option.id ?? "type"}-${index}`}
+                          value={option.id_types ?? option.id}
+                        >
+                          {option.name}
                         </option>
                       ))}
                     </select>
@@ -883,8 +915,11 @@ const AdditionalDeductionsSection = ({
                       }
                     >
                       <option value="">Seleccione</option>
-                      {MOCK_AMOUNT_TYPES.map((option) => (
-                        <option key={option.id} value={option.id}>
+                      {MOCK_AMOUNT_TYPES.map((option, index) => (
+                        <option
+                          key={`${option.id}-${index}`}
+                          value={option.id}
+                        >
                           {option.etiqueta}
                         </option>
                       ))}
@@ -997,6 +1032,7 @@ const AdditionalIncrementsSection = ({
   errors,
   payrollStartDate,
   payrollEndDate,
+  types = [],
 }) => {
   const allSelected =
     increments.length > 0 && increments.every((item) => !!item.seleccionado);
@@ -1060,7 +1096,7 @@ const AdditionalIncrementsSection = ({
                 <div
                   key={item.id}
                   className={`grid grid-cols-[40px_150px_150px_120px_150px_150px_150px_200px_100px] gap-2 px-4 py-2 border-b border-primary/40 items-start text-xs ${
-                    rowError ? "bg-error/5" : ""
+                    rowError ? "bg-red-50 ring-1 ring-red-500" : ""
                   }`}
                 >
                   {/* Checkbox fila */}
@@ -1083,9 +1119,12 @@ const AdditionalIncrementsSection = ({
                       }
                     >
                       <option value="">Seleccione</option>
-                      {MOCK_INCREMENTS.map((option) => (
-                        <option key={option.id} value={option.id}>
-                          {option.nombre}
+                      {types.map((option, index) => (
+                        <option
+                          key={`${option.id_types ?? option.id ?? "type"}-${index}`}
+                          value={option.id_types ?? option.id}
+                        >
+                          {option.name}
                         </option>
                       ))}
                     </select>
@@ -1101,8 +1140,11 @@ const AdditionalIncrementsSection = ({
                       }
                     >
                       <option value="">Seleccione</option>
-                      {MOCK_AMOUNT_TYPES.map((option) => (
-                        <option key={option.id} value={option.id}>
+                      {MOCK_AMOUNT_TYPES.map((option, index) => (
+                        <option
+                          key={`${option.id}-${index}`}
+                          value={option.id}
+                        >
                           {option.etiqueta}
                         </option>
                       ))}

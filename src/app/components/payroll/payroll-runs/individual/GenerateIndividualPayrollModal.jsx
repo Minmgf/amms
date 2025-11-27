@@ -13,6 +13,8 @@ import {
   ConfirmModal,
 } from "@/app/components/shared/SuccessErrorModal";
 import IndividualPayrollAdjustmentsModal from "@/app/components/payroll/payroll-runs/AdditionalSettingsModal";
+import { generateIndividualPayroll } from "@/services/payrollService";
+import { getContractHistory } from "@/services/employeeService";
 
 // Datos mock de contratos por empleado mientras se integran los endpoints reales
 const MOCK_EMPLOYEE_CONTRACTS = [
@@ -94,13 +96,7 @@ const GeneratePayrollModal = ({
   const [isAdjustmentsModalOpen, setIsAdjustmentsModalOpen] = useState(false);
 
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
-
-  const employeeContracts = useMemo(() => {
-    if (!employee) return [];
-    return MOCK_EMPLOYEE_CONTRACTS.filter(
-      (contract) => contract.employeeId === employee.id
-    );
-  }, [employee]);
+  const [employeeContracts, setEmployeeContracts] = useState([]);
 
   const hasActiveContract = useMemo(
     () => employeeContracts.some((contract) => contract.isActive),
@@ -137,28 +133,124 @@ const GeneratePayrollModal = ({
   useEffect(() => {
     if (!isOpen) {
       resetState();
+      setEmployeeContracts([]);
       return;
     }
 
     resetState();
+    setEmployeeContracts([]);
 
-    if (employeeContracts.length === 0) {
-      setErrorMessage(
-        "El empleado no tiene contratos registrados. No es posible generar la nómina."
-      );
-      setShowErrorModal(true);
+    if (!employee) {
       return;
     }
 
-    const activeContract =
-      employeeContracts.find((contract) => contract.isActive) ||
-      employeeContracts[0];
+    const loadContracts = async () => {
+      try {
+        const response = await getContractHistory(employee.id);
 
-    setSelectedContractId(String(activeContract.id));
-    setStartDate(activeContract.startDate);
-    setEndDate(activeContract.endDate);
-    setCalendarMonth(new Date(activeContract.startDate));
-  }, [isOpen, employeeContracts]);
+        let rawContracts = [];
+        if (Array.isArray(response)) {
+          rawContracts = response;
+        } else if (Array.isArray(response?.data)) {
+          rawContracts = response.data;
+        } else if (Array.isArray(response?.contracts)) {
+          rawContracts = response.contracts;
+        }
+
+        const mappedContracts = (rawContracts || [])
+          .map((contract) => {
+            const id =
+              contract.id ||
+              contract.id_contract ||
+              contract.id_established_contract ||
+              contract.contract_id ||
+              contract.contract_code;
+
+            const code =
+              contract.contract_code ||
+              contract.code ||
+              contract.name ||
+              (id ? `Contrato ${id}` : "");
+
+            const name = contract.name || contract.contract_name || code;
+
+            const start =
+              contract.start_date ||
+              contract.startDate ||
+              contract.fecha_inicio ||
+              "";
+            const end =
+              contract.end_date ||
+              contract.endDate ||
+              contract.fecha_fin ||
+              "";
+
+            let isActive = false;
+            if (typeof contract.is_active !== "undefined") {
+              isActive = Boolean(contract.is_active);
+            } else if (typeof contract.isActive !== "undefined") {
+              isActive = Boolean(contract.isActive);
+            } else if (typeof contract.contract_status_name === "string") {
+              const status = contract.contract_status_name.toLowerCase();
+              isActive = status.includes("activo") || status.includes("vigente");
+            } else if (typeof contract.status === "string") {
+              const status = contract.status.toLowerCase();
+              isActive =
+                status.includes("vigente") || status.includes("activo");
+            } else {
+              // Si el backend no provee estado explícito, asumimos activo para no bloquear
+              isActive = true;
+            }
+
+            return {
+              id,
+              code,
+              name,
+              isActive,
+              startDate: start,
+              endDate: end,
+            };
+          })
+          .filter((contract) => contract.id && contract.startDate);
+
+        if (!mappedContracts || mappedContracts.length === 0) {
+          setErrorMessage(
+            "El empleado no tiene contratos registrados. No es posible generar la nómina."
+          );
+          setShowErrorModal(true);
+          return;
+        }
+
+        setEmployeeContracts(mappedContracts);
+
+        const activeContract =
+          mappedContracts.find((contract) => contract.isActive) ||
+          mappedContracts[0];
+
+        setSelectedContractId(String(activeContract.id));
+        setStartDate(activeContract.startDate);
+        setEndDate(activeContract.endDate);
+        setCalendarMonth(
+          activeContract.startDate
+            ? new Date(activeContract.startDate)
+            : new Date()
+        );
+      } catch (error) {
+        console.error("Error fetching employee contract history", error);
+        const backendMessage =
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          error.message;
+        setErrorMessage(
+          backendMessage ||
+            "Ocurrió un error al cargar los contratos del empleado. Intente nuevamente."
+        );
+        setShowErrorModal(true);
+      }
+    };
+
+    loadContracts();
+  }, [isOpen, employee]);
 
   useEffect(() => {
     if (!selectedContract) return;
@@ -249,10 +341,15 @@ const GeneratePayrollModal = ({
     }
 
     if (selectedContract && startDate && endDate) {
-      if (
-        startDate < selectedContract.startDate ||
-        endDate > selectedContract.endDate
-      ) {
+      const contractStart = selectedContract.startDate;
+      const contractEnd = selectedContract.endDate || null;
+
+      if (startDate < contractStart) {
+        newErrors.dateRange =
+          "Las fechas deben estar dentro de la vigencia del contrato seleccionado.";
+      }
+
+      if (contractEnd && endDate > contractEnd) {
         newErrors.dateRange =
           "Las fechas deben estar dentro de la vigencia del contrato seleccionado.";
       }
@@ -293,37 +390,118 @@ const GeneratePayrollModal = ({
     return true;
   };
 
-  const proceedGeneratePayroll = () => {
+  const proceedGeneratePayroll = async () => {
     if (!validateForm()) return;
 
     if (!employee || !selectedContract) return;
 
     setLoading(true);
 
-    setTimeout(() => {
-      const payrollRecord = {
-        id: Date.now(),
-        employeeId: employee.id,
-        employeeName: employee.fullName,
-        contractId: selectedContract.id,
-        contractCode: selectedContract.code,
-        startDate,
-        endDate,
-        createdAt: new Date().toISOString(),
-        createdBy: "mock-user",
-        adjustments: {
-          deductions: adjustments.deductions || [],
-          increments: adjustments.increments || [],
-        },
+    const mapDeductions = (items) => {
+      return (items || []).map((d) => ({
+        deduction_type: d.nombreId != null ? Number(d.nombreId) : null,
+        amount_type: d.tipoMonto === "PERCENT" ? "Porcentaje" : "fijo",
+        amount_value: parseFloat(d.valorMonto),
+        application_deduction_type:
+          d.aplicacion === "BASE"
+            ? "SalarioBase"
+            : d.aplicacion === "HOUR"
+            ? "SalarioHora"
+            : "SalarioFinal",
+        start_date_deduction: d.fechaInicio || null,
+        end_date_deductions: d.fechaFin || null,
+        description: d.descripcion,
+        amount: parseFloat(d.cantidad) || 1,
+      }));
+    };
+
+    const mapIncrements = (items) => {
+      return (items || []).map((i) => ({
+        increase_type: i.nombreId != null ? Number(i.nombreId) : null,
+        amount_type: i.tipoMonto === "PERCENT" ? "Porcentaje" : "fijo",
+        amount_value: parseFloat(i.valorMonto),
+        application_increase_type:
+          i.aplicacion === "BASE"
+            ? "SalarioBase"
+            : i.aplicacion === "HOUR"
+            ? "SalarioHora"
+            : "SalarioFinal",
+        start_date_increase: i.fechaInicio || null,
+        end_date_increase: i.fechaFin || null,
+        description: i.descripcion,
+        amount: parseFloat(i.cantidad) || 1,
+      }));
+    };
+
+    try {
+      const payload = {
+        id_employee: employee.id,
+        contract_code: selectedContract.code,
+        start_date: startDate,
+        end_date: endDate,
+        additional_deductions: mapDeductions(adjustments.deductions),
+        additional_increases: mapIncrements(adjustments.increments),
       };
 
-      if (onRegisterPayroll) {
-        onRegisterPayroll(payrollRecord);
-      }
+      const response = await generateIndividualPayroll(payload);
 
+      if (response?.success) {
+        const backendPayroll = response.data || {};
+
+        const payrollRecord = {
+          id: backendPayroll.payroll_id || backendPayroll.id || Date.now(),
+          employeeId: employee.id,
+          employeeName: employee.fullName,
+          contractId: selectedContract.id,
+          contractCode: backendPayroll.contract_code || selectedContract.code,
+          startDate,
+          endDate,
+          createdAt:
+            backendPayroll.creation_date ||
+            backendPayroll.created_at ||
+            new Date().toISOString(),
+          createdBy:
+            backendPayroll.responsible_user?.name ||
+            backendPayroll.created_by ||
+            "backend",
+          baseSalary: backendPayroll.base_salary,
+          timeWorked: backendPayroll.time_worked,
+          totalDeductions: backendPayroll.total_deductions,
+          totalIncrements: backendPayroll.total_increments,
+          netPay: backendPayroll.net_pay,
+          adjustments: {
+            deductions: adjustments.deductions || [],
+            increments: adjustments.increments || [],
+          },
+        };
+
+        if (onRegisterPayroll) {
+          onRegisterPayroll(payrollRecord);
+        }
+
+        setShowSuccessModal(true);
+      } else {
+        const backendMessage = response?.message || response?.error;
+        setErrorMessage(
+          backendMessage ||
+            "No fue posible generar la nómina. Intente nuevamente."
+        );
+        setShowErrorModal(true);
+      }
+    } catch (error) {
+      console.error("Error generating individual payroll", error);
+      const backendMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message;
+      setErrorMessage(
+        backendMessage ||
+          "Ocurrió un error al generar la nómina individual. Verifique la información e intente nuevamente."
+      );
+      setShowErrorModal(true);
+    } finally {
       setLoading(false);
-      setShowSuccessModal(true);
-    }, 800);
+    }
   };
 
   const handleGenerateClick = () => {
