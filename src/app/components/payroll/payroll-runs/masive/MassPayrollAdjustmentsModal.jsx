@@ -7,6 +7,7 @@ import { ErrorModal } from "@/app/components/shared/SuccessErrorModal";
 import IndividualPayrollAdjustmentsModal from "@/app/components/payroll/payroll-runs/AdditionalSettingsModal";
 import MassiveAdjustmentsUploadModal from "@/app/components/payroll/payroll-runs/masive/MassiveAdjustmentsUploadModal";
 import MassiveAdjustmentsProcessingModal from "@/app/components/payroll/payroll-runs/masive/MassiveAdjustmentsProcessingModal";
+import { getTypesByCategory } from "@/services/parametrizationService";
 
 const MassPayrollAdjustmentsModal = ({
   isOpen,
@@ -42,6 +43,25 @@ const MassPayrollAdjustmentsModal = ({
     description: "",
     rows: [],
   });
+
+  const [deductionTypes, setDeductionTypes] = useState([]);
+  const [incrementTypes, setIncrementTypes] = useState([]);
+
+  useEffect(() => {
+    const fetchTypes = async () => {
+      try {
+        const [deductions, increments] = await Promise.all([
+          getTypesByCategory(18),
+          getTypesByCategory(19),
+        ]);
+        if (deductions.success) setDeductionTypes(deductions.data);
+        if (increments.success) setIncrementTypes(increments.data);
+      } catch (error) {
+        console.error("Error fetching types", error);
+      }
+    };
+    fetchTypes();
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -92,8 +112,9 @@ const MassPayrollAdjustmentsModal = ({
     acceptedRows.forEach((row) => {
       const employee = employees.find(
         (emp) =>
-          emp.fullName &&
-          emp.fullName.toLowerCase() === row.employeeName?.toLowerCase()
+          (emp.fullName &&
+            emp.fullName.toLowerCase() === row.employeeName?.toLowerCase()) ||
+          (emp.document && String(emp.document) === String(row.document))
       );
 
       if (!employee) {
@@ -105,19 +126,26 @@ const MassPayrollAdjustmentsModal = ({
         increments: [],
       };
 
+      let typeId = null;
+      if (row.adjustmentType === "deduction" || row.adjustmentType === "deduccion") {
+        const type = deductionTypes.find(
+          (t) => t.name.toLowerCase() === row.adjustmentName?.toLowerCase()
+        );
+        typeId = type ? type.id : null;
+      } else {
+        const type = incrementTypes.find(
+          (t) => t.name.toLowerCase() === row.adjustmentName?.toLowerCase()
+        );
+        typeId = type ? type.id : null;
+      }
+
       const baseAdjustment = {
-        id:
-          Date.now().toString() +
-          Math.random().toString(36).slice(2),
+        id: Date.now().toString() + Math.random().toString(36).slice(2),
         seleccionado: false,
-        nombreId: row.adjustmentName || "",
-        tipoMonto:
-          row.amountType === "percentage"
-            ? "PERCENT"
-            : "FIXED",
+        nombreId: typeId || row.adjustmentName,
+        tipoMonto: row.amountType === "percentage" ? "PERCENT" : "FIXED",
         valorMonto: row.amount,
-        aplicacion:
-          row.application === "Salario Final" ? "FINAL" : "BASE",
+        aplicacion: row.application === "Salario Final" ? "FINAL" : "BASE",
         cantidad: row.quantity,
         descripcion: row.description || "",
         fechaInicio: row.startDate || "",
@@ -128,7 +156,7 @@ const MassPayrollAdjustmentsModal = ({
         createdAt: timestamp,
       };
 
-      if (row.adjustmentType === "deduction") {
+      if (row.adjustmentType === "deduction" || row.adjustmentType === "deduccion") {
         updated[employee.id] = {
           ...existing,
           deductions: [...(existing.deductions || []), baseAdjustment],

@@ -9,74 +9,11 @@ import {
   ConfirmModal,
 } from "@/app/components/shared/SuccessErrorModal";
 import MassPayrollAdjustmentsModal from "@/app/components/payroll/payroll-runs/masive/MassPayrollAdjustmentsModal";
-
-const MOCK_CHARGES = [
-  { id: 1, name: "Example" },
-  { id: 2, name: "Operator" },
-];
-
-const MOCK_MASSIVE_EMPLOYEES = [
-  {
-    id: 1,
-    fullName: "Maria Gonzalez",
-    document: "1001",
-    chargeId: 1,
-    status: "Activo",
-    contracts: [
-      {
-        id: 101,
-        startDate: "2026-01-01",
-        endDate: "2026-12-31",
-        isActive: true,
-      },
-    ],
-    previousPayrolls: [
-      {
-        id: "PAY-001",
-        startDate: "2026-01-01",
-        endDate: "2026-01-31",
-      },
-    ],
-  },
-  {
-    id: 2,
-    fullName: "Carlos Rodriguez",
-    document: "1002",
-    chargeId: 1,
-    status: "Activo",
-    contracts: [
-      {
-        id: 102,
-        startDate: "2026-01-01",
-        endDate: "2026-12-31",
-        isActive: true,
-      },
-    ],
-    previousPayrolls: [],
-  },
-  {
-    id: 3,
-    fullName: "Ana Martinez",
-    document: "1003",
-    chargeId: 1,
-    status: "Activo",
-    contracts: [
-      {
-        id: 103,
-        startDate: "2026-01-01",
-        endDate: "2026-12-31",
-        isActive: true,
-      },
-    ],
-    previousPayrolls: [
-      {
-        id: "PAY-002",
-        startDate: "2026-01-01",
-        endDate: "2026-01-31",
-      },
-    ],
-  },
-];
+import { getDepartments, getPositions } from "@/services/employeeService";
+import {
+  getPayrollApplicableEmployees,
+  generateMassivePayroll,
+} from "@/services/payrollService";
 
 const getMonthLabel = (date) => {
   const formatter = new Intl.DateTimeFormat("es-ES", {
@@ -117,7 +54,12 @@ const GenerateMassPayrollModal = ({
 }) => {
   useTheme();
 
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState("");
   const [selectedChargeId, setSelectedChargeId] = useState("");
+  const [departments, setDepartments] = useState([]);
+  const [charges, setCharges] = useState([]);
+  const [applicableEmployees, setApplicableEmployees] = useState([]);
+
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [errors, setErrors] = useState({});
@@ -137,6 +79,7 @@ const GenerateMassPayrollModal = ({
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   const [conflictEmployees, setConflictEmployees] = useState([]);
   const [generatedMassPayrolls, setGeneratedMassPayrolls] = useState([]);
@@ -151,6 +94,7 @@ const GenerateMassPayrollModal = ({
   }, [adjustmentsByEmployee]);
 
   const resetState = () => {
+    setSelectedDepartmentId("");
     setSelectedChargeId("");
     setStartDate("");
     setEndDate("");
@@ -166,6 +110,7 @@ const GenerateMassPayrollModal = ({
     setShowErrorModal(false);
     setErrorMessage("");
     setConflictEmployees([]);
+    setApplicableEmployees([]);
   };
 
   useEffect(() => {
@@ -176,50 +121,85 @@ const GenerateMassPayrollModal = ({
 
     resetState();
 
-    if (MOCK_CHARGES.length > 0) {
-      setSelectedChargeId(String(MOCK_CHARGES[0].id));
-    }
+    const fetchDepartments = async () => {
+      try {
+        const response = await getDepartments();
+        if (response.success) {
+          setDepartments(response.data);
+        }
+      } catch (error) {
+        console.error("Error fetching departments", error);
+      }
+    };
+    fetchDepartments();
 
-    const defaultStart = "2026-01-01";
-    const defaultEnd = "2026-01-31";
+    const defaultStart = new Date().toISOString().split("T")[0];
+    const defaultEnd = new Date().toISOString().split("T")[0];
     setStartDate(defaultStart);
     setEndDate(defaultEnd);
     setCalendarMonth(new Date(defaultStart));
   }, [isOpen]);
 
-  const employeesData = useMemo(() => {
-    if (!selectedChargeId || !startDate || !endDate) {
-      return {
-        employeesForCharge: [],
-        eligibleEmployees: [],
-        employeesWithExistingPayrolls: [],
-      };
+  useEffect(() => {
+    if (!selectedDepartmentId) {
+      setCharges([]);
+      return;
     }
-
-    const chargeIdNumber = Number(selectedChargeId);
-
-    const employeesForCharge = MOCK_MASSIVE_EMPLOYEES.filter(
-      (emp) => emp.chargeId === chargeIdNumber
-    );
-
-    const eligibleEmployees = employeesForCharge.filter((emp) => {
-      if (emp.status !== "Activo") return false;
-      return hasActiveContractInRange(emp, startDate, endDate);
-    });
-
-    const employeesWithExistingPayrolls = eligibleEmployees.filter((emp) =>
-      hasExistingPayrollInRange(emp, startDate, endDate)
-    );
-
-    return {
-      employeesForCharge,
-      eligibleEmployees,
-      employeesWithExistingPayrolls,
+    const fetchCharges = async () => {
+      try {
+        const response = await getPositions(selectedDepartmentId);
+        if (response.success) {
+          setCharges(response.data);
+        }
+      } catch (error) {
+        console.error("Error fetching charges", error);
+      }
     };
+    fetchCharges();
+  }, [selectedDepartmentId]);
+
+  useEffect(() => {
+    if (!selectedChargeId || !startDate || !endDate) {
+      setApplicableEmployees([]);
+      return;
+    }
+    const fetchEmployees = async () => {
+      try {
+        const response = await getPayrollApplicableEmployees(
+          selectedChargeId,
+          startDate,
+          endDate
+        );
+        if (response.success) {
+          const mappedEmployees = response.data.map((emp) => ({
+            id: emp.id_employee,
+            fullName: emp.full_name,
+            document: emp.document_number,
+            chargeId: emp.charge_id,
+            status: emp.status_name,
+            email: emp.email,
+          }));
+          setApplicableEmployees(mappedEmployees);
+        }
+      } catch (error) {
+        console.error("Error fetching applicable employees", error);
+        setApplicableEmployees([]);
+      }
+    };
+    fetchEmployees();
   }, [selectedChargeId, startDate, endDate]);
 
+  const employeesData = useMemo(() => {
+    return {
+      employeesForCharge: applicableEmployees,
+      eligibleEmployees: applicableEmployees,
+      employeesWithExistingPayrolls: [], // Handled by backend validation
+    };
+  }, [applicableEmployees]);
+
   const hasChanges = () => {
-    if (selectedChargeId || startDate || endDate) return true;
+    if (selectedDepartmentId || selectedChargeId || startDate || endDate)
+      return true;
     if (hasAdjustments) return true;
     if (selectedEmployeeIds.length > 0) return true;
     return false;
@@ -231,6 +211,12 @@ const GenerateMassPayrollModal = ({
       return;
     }
     onClose?.();
+  };
+
+  const handleDepartmentChange = (value) => {
+    setSelectedDepartmentId(value);
+    setSelectedChargeId("");
+    setErrors((prev) => ({ ...prev, department: "", charge: "" }));
   };
 
   const handleChargeChange = (value) => {
@@ -251,6 +237,10 @@ const GenerateMassPayrollModal = ({
   const validateForm = () => {
     const newErrors = {};
 
+    if (!selectedDepartmentId) {
+      newErrors.department = "Debe seleccionar un departamento.";
+    }
+
     if (!selectedChargeId) {
       newErrors.charge = "Debe seleccionar un cargo.";
     }
@@ -268,27 +258,8 @@ const GenerateMassPayrollModal = ({
         "La fecha de inicio no puede ser posterior a la fecha final.";
     }
 
-    if (selectedChargeId && startDate && endDate) {
-      const exists = generatedMassPayrolls.some(
-        (run) =>
-          String(run.chargeId) === String(selectedChargeId) &&
-          run.startDate === startDate &&
-          run.endDate === endDate
-      );
-
-      if (exists) {
-        newErrors.dateRange =
-          "Ya existe una nómina masiva generada para este cargo en el periodo seleccionado.";
-      }
-    }
-
     if (startDate && endDate && selectedChargeId) {
-      const { employeesForCharge, eligibleEmployees } = employeesData;
-
-      if (!employeesForCharge || employeesForCharge.length === 0) {
-        newErrors.charge =
-          "No existen empleados asociados al cargo seleccionado.";
-      } else if (!eligibleEmployees || eligibleEmployees.length === 0) {
+      if (!applicableEmployees || applicableEmployees.length === 0) {
         newErrors.dateRange =
           "No hay empleados activos con contrato vigente en el periodo seleccionado.";
       }
@@ -311,126 +282,13 @@ const GenerateMassPayrollModal = ({
     return true;
   };
 
-  const proceedGenerateMassPayroll = (employeesToGenerate) => {
-    if (!employeesToGenerate || employeesToGenerate.length === 0) {
-      setErrorMessage(
-        "No hay empleados disponibles para generar la nómina masiva en el periodo seleccionado."
-      );
-      setShowErrorModal(true);
-      return;
-    }
-
-    setLoading(true);
-
-    const charge = MOCK_CHARGES.find(
-      (c) => String(c.id) === String(selectedChargeId)
-    );
-
-    setTimeout(() => {
-      const createdAt = new Date().toISOString();
-
-      const record = {
-        id: Date.now(),
-        chargeId: charge?.id || null,
-        chargeName: charge?.name || "",
-        startDate,
-        endDate,
-        createdAt,
-        createdBy: "mock-user",
-        employees: employeesToGenerate.map((emp, index) => {
-          const empAdjustments =
-            adjustmentsByEmployee?.[emp.id] || {
-              deductions: [],
-              increments: [],
-            };
-
-          const activeContract = (emp.contracts || []).find(
-            (contract) =>
-              contract.isActive &&
-              contract.startDate <= startDate &&
-              contract.endDate >= endDate
-          );
-
-          return {
-            payrollId: `${Date.now()}-${index + 1}`,
-            employeeId: emp.id,
-            employeeName: emp.fullName,
-            contractId: activeContract ? activeContract.id : null,
-            generatedAt: createdAt,
-            createdBy: "mock-user",
-            adjustmentsOrigin: "MANUAL",
-            adjustments: {
-              deductions: empAdjustments.deductions || [],
-              increments: empAdjustments.increments || [],
-            },
-          };
-        }),
-        adjustmentsByEmployee,
-      };
-
-      setGeneratedMassPayrolls((prev) => [...prev, record]);
-
-      if (onRegisterMassPayroll) {
-        onRegisterMassPayroll(record);
-      }
-
-      setLoading(false);
-      setShowSuccessModal(true);
-    }, 800);
-  };
-
-  const proceedGenerateWithEmployees = ({ excludeExisting = false } = {}) => {
-    const {
-      employeesForCharge,
-      eligibleEmployees,
-      employeesWithExistingPayrolls,
-    } = employeesData;
-
-    if (!employeesForCharge || employeesForCharge.length === 0) {
-      setErrorMessage(
-        "No existen empleados asociados al cargo seleccionado para el periodo indicado."
-      );
-      setShowErrorModal(true);
-      return;
-    }
-
-    if (!eligibleEmployees || eligibleEmployees.length === 0) {
-      setErrorMessage(
-        "Ningún empleado cumple las condiciones para generar nómina masiva en el periodo seleccionado."
-      );
-      setShowErrorModal(true);
-      return;
-    }
-
-    if (employeesWithExistingPayrolls.length > 0 && !excludeExisting) {
-      setConflictEmployees(employeesWithExistingPayrolls);
-      setShowExistingPayrollConfirm(true);
-      return;
-    }
-
-    const finalEmployees = excludeExisting
-      ? eligibleEmployees.filter(
-          (emp) =>
-            !employeesWithExistingPayrolls.some(
-              (conflict) => conflict.id === emp.id
-            )
-        )
-      : eligibleEmployees;
-
-    if (!finalEmployees || finalEmployees.length === 0) {
-      setErrorMessage(
-        "No hay empleados disponibles luego de excluir aquellos que ya tienen nómina generada para este periodo."
-      );
-      setShowErrorModal(true);
-      return;
-    }
-
-    const employeesToGenerate =
+  const proceedGenerateMassPayroll = async ({ excludeConflicts = false } = {}) => {
+    const employeesToProcess =
       selectedEmployeeIds.length > 0
-        ? finalEmployees.filter((emp) => selectedEmployeeIds.includes(emp.id))
-        : finalEmployees;
+        ? applicableEmployees.filter((emp) => selectedEmployeeIds.includes(emp.id))
+        : applicableEmployees;
 
-    if (!employeesToGenerate || employeesToGenerate.length === 0) {
+    if (!employeesToProcess || employeesToProcess.length === 0) {
       setErrorMessage(
         "No hay empleados seleccionados para generar la nómina masiva."
       );
@@ -438,7 +296,79 @@ const GenerateMassPayrollModal = ({
       return;
     }
 
-    proceedGenerateMassPayroll(employeesToGenerate);
+    setLoading(true);
+
+    const payloadEmployees = employeesToProcess.map((emp) => {
+      const adjustments = adjustmentsByEmployee[emp.id] || {};
+      const deductions = (adjustments.deductions || []).map((d) => ({
+        deduction_type: d.nombreId, // Assuming nombreId holds the ID
+        amount_type: d.tipoMonto === "PERCENT" ? "Porcentaje" : "Monto fijo",
+        amount_value: parseFloat(d.valorMonto),
+        application_deduction_type:
+          d.aplicacion === "BASE" ? "SalarioBase" : "SalarioFinal",
+        start_date_deduction: d.fechaInicio || null,
+        end_date_deductions: d.fechaFin || null,
+        description: d.descripcion,
+        amount: parseFloat(d.cantidad) || 1,
+      }));
+
+      const increases = (adjustments.increments || []).map((i) => ({
+        increase_type: i.nombreId, // Assuming nombreId holds the ID
+        amount_type: i.tipoMonto === "PERCENT" ? "Porcentaje" : "Monto fijo",
+        amount_value: parseFloat(i.valorMonto),
+        application_increase_type:
+          i.aplicacion === "BASE" ? "SalarioBase" : "SalarioFinal",
+        start_date_increase: i.fechaInicio || null,
+        end_date_increase: i.fechaFin || null,
+        description: i.descripcion,
+        amount: parseFloat(i.cantidad) || 1,
+      }));
+
+      return {
+        employee_id: emp.id,
+        increases,
+        deductions,
+      };
+    });
+
+    const payload = {
+      start_date: startDate,
+      end_date: endDate,
+      id_employee_department: parseInt(selectedDepartmentId),
+      id_employee_charge: parseInt(selectedChargeId),
+      exclude_conflicts: excludeConflicts,
+      employees: payloadEmployees,
+    };
+
+    try {
+      const response = await generateMassivePayroll(payload);
+      if (response.success) {
+        setSuccessMessage(response.message);
+        setShowSuccessModal(true);
+        if (onRegisterMassPayroll) {
+          onRegisterMassPayroll(response.data);
+        }
+      }
+    } catch (error) {
+      console.error("Error generating massive payroll", error);
+      if (error.response?.status === 400 && error.response?.data?.errors?.employees?.rejected) {
+        const rejected = error.response.data.errors.employees.rejected;
+        setConflictEmployees(rejected.map(r => ({
+            id: r.employee_id,
+            fullName: r.employee_name,
+            reason: r.reason
+        })));
+        setShowExistingPayrollConfirm(true);
+      } else {
+        setErrorMessage(
+          error.response?.data?.message ||
+            "Ocurrió un error al generar la nómina masiva."
+        );
+        setShowErrorModal(true);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGenerateClick = () => {
@@ -449,7 +379,7 @@ const GenerateMassPayrollModal = ({
       return;
     }
 
-    proceedGenerateWithEmployees();
+    proceedGenerateMassPayroll({ excludeConflicts: false });
   };
 
   const changeMonth = (direction) => {
@@ -500,10 +430,9 @@ const GenerateMassPayrollModal = ({
     return (
       <div className="text-left">
         <p className="text-secondary text-sm mb-4 leading-relaxed">
-          The following employees already have a generated payroll for the
-          selected period ({formattedStart}-{formattedEnd}):
+          Los siguientes empleados no pueden ser procesados por las siguientes razones ({formattedStart}-{formattedEnd}):
         </p>
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden max-h-60 overflow-y-auto">
           {conflictEmployees.map((emp, index) => (
             <div
               key={emp.id || index}
@@ -516,7 +445,7 @@ const GenerateMassPayrollModal = ({
               <div className="text-sm font-medium text-primary">
                 {emp.fullName}
               </div>
-              <div className="text-xs text-secondary">Payroll ID: Example</div>
+              <div className="text-xs text-secondary">{emp.reason || "Conflicto detectado"}</div>
             </div>
           ))}
         </div>
@@ -563,6 +492,31 @@ const GenerateMassPayrollModal = ({
             >
               <div>
                 <label className="block text-sm font-medium text-secondary mb-2">
+                  Departamento *
+                </label>
+                <select
+                  value={selectedDepartmentId}
+                  onChange={(e) => handleDepartmentChange(e.target.value)}
+                  className={`input-theme ${
+                    errors.department ? "border-red-500" : ""
+                  }`}
+                >
+                  <option value="">Seleccione un departamento</option>
+                  {departments.map((dept) => (
+                    <option key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.department && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.department}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-secondary mb-2">
                   Cargo *
                 </label>
                 <select
@@ -571,9 +525,10 @@ const GenerateMassPayrollModal = ({
                   className={`input-theme ${
                     errors.charge ? "border-red-500" : ""
                   }`}
+                  disabled={!selectedDepartmentId}
                 >
                   <option value="">Seleccione un cargo</option>
-                  {MOCK_CHARGES.map((charge) => (
+                  {charges.map((charge) => (
                     <option key={charge.id} value={charge.id}>
                       {charge.name}
                     </option>
@@ -805,7 +760,7 @@ const GenerateMassPayrollModal = ({
           onClose?.();
         }}
         title="Nómina masiva generada correctamente"
-        message="La nómina masiva se generó correctamente. Podrá descargar los PDFs individuales desde el listado de nóminas cuando esté disponible."
+        message={successMessage || "La nómina masiva se generó correctamente. Podrá descargar los PDFs individuales desde el listado de nóminas cuando esté disponible."}
       />
 
       <ErrorModal

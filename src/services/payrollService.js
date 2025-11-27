@@ -18,3 +18,27 @@ export const uploadMassiveAdjustments = async (file, startDate, endDate, employe
     throw error;
   }
 };
+
+export const getPayrollApplicableEmployees = async (chargeId, startDate, endDate) => {
+  try {
+    const response = await apiMain.get("/payroll/payroll-applicable-employees/", {
+      params: {
+        cargo_id: chargeId,
+        fecha_desde: startDate,
+        fecha_hasta: endDate,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const generateMassivePayroll = async (payload) => {
+  try {
+    const response = await apiMain.post("/payroll/generate-massive/", payload);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

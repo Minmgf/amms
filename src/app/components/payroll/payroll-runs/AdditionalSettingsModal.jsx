@@ -8,20 +8,9 @@ import {
   ErrorModal,
   ConfirmModal,
 } from "@/app/components/shared/SuccessErrorModal";
+import { getTypesByCategory } from "@/services/parametrizationService";
 
 // Datos mock de catálogos mientras se integran endpoints reales
-const MOCK_DEDUCTIONS = [
-  { id: "salud", nombre: "Descuento por salud" },
-  { id: "pension", nombre: "Descuento por pensión" },
-  { id: "prestamo", nombre: "Préstamo interno" },
-];
-
-const MOCK_INCREMENTS = [
-  { id: "bono_productividad", nombre: "Bono de productividad" },
-  { id: "bono_transporte", nombre: "Auxilio de transporte adicional" },
-  { id: "horas_extra", nombre: "Horas extra especiales" },
-];
-
 const MOCK_AMOUNT_TYPES = [
   { id: "PERCENT", etiqueta: "Porcentual" },
   { id: "FIXED", etiqueta: "Fijo" },
@@ -86,6 +75,8 @@ const IndividualPayrollAdjustmentsModal = ({
   const [activeTab, setActiveTab] = useState("deductions");
   const [deductions, setDeductions] = useState([]);
   const [increments, setIncrements] = useState([]);
+  const [deductionTypes, setDeductionTypes] = useState([]);
+  const [incrementTypes, setIncrementTypes] = useState([]);
 
   const [loading, setLoading] = useState(false);
   const [rowErrors, setRowErrors] = useState({
@@ -109,6 +100,22 @@ const IndividualPayrollAdjustmentsModal = ({
     () => (payrollEndDate ? new Date(payrollEndDate) : null),
     [payrollEndDate]
   );
+
+  useEffect(() => {
+    const fetchTypes = async () => {
+      try {
+        const [deductionsRes, incrementsRes] = await Promise.all([
+          getTypesByCategory(18),
+          getTypesByCategory(19),
+        ]);
+        if (deductionsRes.success) setDeductionTypes(deductionsRes.data);
+        if (incrementsRes.success) setIncrementTypes(incrementsRes.data);
+      } catch (error) {
+        console.error("Error fetching types", error);
+      }
+    };
+    fetchTypes();
+  }, []);
 
   useEffect(() => {
     if (!isOpen) {
@@ -533,6 +540,7 @@ const IndividualPayrollAdjustmentsModal = ({
                   errors={rowErrors.deductions}
                   payrollStartDate={payrollStartDate}
                   payrollEndDate={payrollEndDate}
+                  types={deductionTypes}
                 />
               ) : (
                 <AdditionalIncrementsSection
@@ -545,6 +553,7 @@ const IndividualPayrollAdjustmentsModal = ({
                   errors={rowErrors.increments}
                   payrollStartDate={payrollStartDate}
                   payrollEndDate={payrollEndDate}
+                  types={incrementTypes}
                 />
               )}
 
@@ -779,6 +788,7 @@ const AdditionalDeductionsSection = ({
   errors,
   payrollStartDate,
   payrollEndDate,
+  types = [],
 }) => {
   const allSelected =
     deductions.length > 0 && deductions.every((item) => !!item.seleccionado);
@@ -865,9 +875,9 @@ const AdditionalDeductionsSection = ({
                       }
                     >
                       <option value="">Seleccione</option>
-                      {MOCK_DEDUCTIONS.map((option) => (
+                      {types.map((option) => (
                         <option key={option.id} value={option.id}>
-                          {option.nombre}
+                          {option.name}
                         </option>
                       ))}
                     </select>
@@ -997,6 +1007,7 @@ const AdditionalIncrementsSection = ({
   errors,
   payrollStartDate,
   payrollEndDate,
+  types = [],
 }) => {
   const allSelected =
     increments.length > 0 && increments.every((item) => !!item.seleccionado);
@@ -1083,9 +1094,9 @@ const AdditionalIncrementsSection = ({
                       }
                     >
                       <option value="">Seleccione</option>
-                      {MOCK_INCREMENTS.map((option) => (
+                      {types.map((option) => (
                         <option key={option.id} value={option.id}>
-                          {option.nombre}
+                          {option.name}
                         </option>
                       ))}
                     </select>
