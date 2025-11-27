@@ -171,7 +171,10 @@ const GeneratedPayrollsPage = () => {
       const mappedPayrolls = items.map((item) => ({
         ...item,
         id: item.id_payroll != null ? String(item.id_payroll) : "",
-        employeeDocument: item.document_number || "",
+        employeeDocument:
+          item.document_number !== undefined && item.document_number !== null
+            ? String(item.document_number)
+            : "",
         employeeName: item.employee_full_name || "",
         generatedBy: item.responsible_user_full_name || "",
         generationDate: item.creation_date || "",
