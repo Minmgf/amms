@@ -278,6 +278,10 @@ export default function SeePayrollDetails({ isOpen, onClose, payroll }) {
 
               <div className="space-y-4">
                 <InfoBlock
+                  label="ID nómina"
+                  value={currentPayroll.id || currentPayroll.id_payroll}
+                />
+                <InfoBlock
                   label="Nombre completo"
                   value={currentPayroll.employeeName}
                 />
