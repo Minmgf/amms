@@ -197,15 +197,37 @@ const GeneratedPayrollsPage = () => {
 
     if (employeeDocument.trim()) {
       const term = employeeDocument.toLowerCase();
-      data = data.filter((payroll) => payroll.employeeDocument?.toLowerCase().includes(term));
+      data = data.filter((payroll) => {
+        const value =
+          payroll.employeeDocument !== undefined &&
+          payroll.employeeDocument !== null
+            ? String(payroll.employeeDocument)
+            : "";
+        return value.toLowerCase().includes(term);
+      });
     }
 
+    const getGenerationDate = (payroll) => {
+      if (!payroll?.generationDate) return null;
+      // La API retorna un ISO con tiempo (ej: 2025-11-26T03:07:14Z),
+      // usamos solo la parte de fecha para comparar con el input (YYYY-MM-DD)
+      return String(payroll.generationDate).slice(0, 10);
+    };
+
     if (dateFrom) {
-      // Implementar filtro por fecha desde
+      data = data.filter((payroll) => {
+        const genDate = getGenerationDate(payroll);
+        if (!genDate) return false;
+        return genDate >= dateFrom;
+      });
     }
 
     if (dateTo) {
-      // Implementar filtro por fecha hasta
+      data = data.filter((payroll) => {
+        const genDate = getGenerationDate(payroll);
+        if (!genDate) return false;
+        return genDate <= dateTo;
+      });
     }
 
     setFilteredPayrolls(data);
