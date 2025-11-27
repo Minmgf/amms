@@ -118,6 +118,27 @@ const GeneratePayrollModal = ({
     return d.length > 0 || i.length > 0;
   }, [adjustments]);
 
+  const extractBackendErrorMessages = (errors) => {
+    if (!errors || typeof errors !== "object") return [];
+
+    const messages = [];
+
+    const traverse = (value) => {
+      if (!value) return;
+      if (Array.isArray(value)) {
+        value.forEach((item) => traverse(item));
+      } else if (typeof value === "object") {
+        Object.values(value).forEach((val) => traverse(val));
+      } else if (typeof value === "string") {
+        messages.push(value);
+      }
+    };
+
+    traverse(errors);
+
+    return Array.from(new Set(messages));
+  };
+
   const resetState = () => {
     setSelectedContractId("");
     setStartDate("");
@@ -482,20 +503,42 @@ const GeneratePayrollModal = ({
         setShowSuccessModal(true);
       } else {
         const backendMessage = response?.message || response?.error;
+        const detailMessages = extractBackendErrorMessages(response?.errors);
+
+        let finalMessage = backendMessage || "";
+        if (detailMessages.length > 0) {
+          const detailsText = `\n- ${detailMessages.join("\n- ")}`;
+          finalMessage =
+            backendMessage ||
+            "Se encontraron errores de validación en los datos de la nómina:";
+          finalMessage += detailsText;
+        }
+
         setErrorMessage(
-          backendMessage ||
+          finalMessage ||
             "No fue posible generar la nómina. Intente nuevamente."
         );
         setShowErrorModal(true);
       }
     } catch (error) {
       console.error("Error generating individual payroll", error);
+      const responseData = error.response?.data || {};
       const backendMessage =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        error.message;
+        responseData.message || responseData.error || error.message;
+
+      const detailMessages = extractBackendErrorMessages(responseData.errors);
+
+      let finalMessage = backendMessage || "";
+      if (detailMessages.length > 0) {
+        const detailsText = `\n- ${detailMessages.join("\n- ")}`;
+        finalMessage =
+          backendMessage ||
+          "Se encontraron errores de validación en los datos de la nómina:";
+        finalMessage += detailsText;
+      }
+
       setErrorMessage(
-        backendMessage ||
+        finalMessage ||
           "Ocurrió un error al generar la nómina individual. Verifique la información e intente nuevamente."
       );
       setShowErrorModal(true);
