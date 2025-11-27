@@ -191,14 +191,14 @@ export default function ReportsGenerationModal({ isOpen, onClose }) {
                                         <span className="text-xs text-gray-500">Nombre Completo</span>
                                         <span className="font-medium text-gray-900">{employeeData?.name || "---"}</span>
                                     </div>
-                                    <div className="flex flex-col">
+                                    {/* <div className="flex flex-col">
                                         <span className="text-xs text-gray-500">Departamento</span>
                                         <span className="font-medium text-gray-900">{employeeData?.department || "---"}</span>
                                     </div>
                                     <div className="flex flex-col">
                                         <span className="text-xs text-gray-500">Cargo</span>
                                         <span className="font-medium text-gray-900">{employeeData?.charge || "---"}</span>
-                                    </div>
+                                    </div> */}
                                 </div>
                             </div>
                         </div>
