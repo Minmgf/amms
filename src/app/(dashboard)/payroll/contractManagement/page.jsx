@@ -198,7 +198,7 @@ const ContractManagementPage = () => {
       }
     } catch (error) {
       console.error("Error deleting contract:", error);
-      
+
       // Verificar si el error es por información relacionada (400 o 409)
       if (error.response?.status === 400 || error.response?.status === 409) {
         // El contrato tiene información relacionada - ofrecer desactivación
@@ -210,7 +210,7 @@ const ContractManagementPage = () => {
         // Otro tipo de error
         setModalTitle("Error");
         setModalMessage(
-          error.response?.data?.message || 
+          error.response?.data?.message ||
           "No se pudo completar la eliminación del contrato. Intente nuevamente o contacte al administrador."
         );
         setIsErrorModalOpen(true);
@@ -254,7 +254,7 @@ const ContractManagementPage = () => {
       console.error("Error activating contract:", error);
       setModalTitle("Error");
       setModalMessage(
-        error.response?.data?.message || 
+        error.response?.data?.message ||
         "No se pudo completar la activación del contrato. Intente nuevamente o contacte al administrador."
       );
       setIsErrorModalOpen(true);
@@ -451,9 +451,9 @@ const ContractManagementPage = () => {
   const formatDate = (dateString) => {
     if (!dateString) return "";
     const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = date.getFullYear();
+    const day = String(date.getUTCDate()).padStart(2, "0");
+    const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+    const year = date.getUTCFullYear();
     return `${day}/${month}/${year}`;
   };
 
@@ -572,7 +572,19 @@ const ContractManagementPage = () => {
               <FaCalendar className="inline w-4 h-4 mr-2" />
               Fecha de Inicio (Desde)
             </label>
-            <input type="date" value={startDateFilter} max={endDateFilter} onChange={(e) => setStartDateFilter(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent" />
+            <input
+              type="date"
+              value={startDateFilter}
+              max={endDateFilter}
+              onChange={(e) => {
+                const newStart = e.target.value;
+                setStartDateFilter(newStart);
+                if (endDateFilter && newStart > endDateFilter) {
+                  setEndDateFilter(newStart);
+                }
+              }}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
+            />
           </div>
 
           <div>
@@ -580,7 +592,23 @@ const ContractManagementPage = () => {
               <FaCalendar className="inline w-4 h-4 mr-2" />
               Fecha de Finalización (Hasta)
             </label>
-            <input type="date" value={endDateFilter} min={startDateFilter} onChange={(e) => setEndDateFilter(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent" />
+            <input
+              type="date"
+              value={endDateFilter}
+              min={startDateFilter}
+              onChange={(e) => {
+                const newEnd = e.target.value;
+                if (startDateFilter && newEnd < startDateFilter) {
+                  // Don't allow setting end date before start date
+                  // Optionally we could set it to start date, but preventing the invalid selection is also good.
+                  // Let's force it to start date if they try to go lower.
+                  setEndDateFilter(startDateFilter);
+                } else {
+                  setEndDateFilter(newEnd);
+                }
+              }}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
+            />
           </div>
 
           <div>
@@ -588,7 +616,20 @@ const ContractManagementPage = () => {
               <FaDollarSign className="inline w-4 h-4 mr-2" />
               Salario Mínimo
             </label>
-            <input type="number" value={minSalaryFilter} max={maxSalaryFilter} onChange={(e) => setMinSalaryFilter(e.target.value)} placeholder="0" className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent" />
+            <input
+              type="number"
+              value={minSalaryFilter}
+              max={maxSalaryFilter}
+              onChange={(e) => {
+                const newMin = e.target.value;
+                setMinSalaryFilter(newMin);
+                if (maxSalaryFilter && parseFloat(newMin) > parseFloat(maxSalaryFilter)) {
+                  setMaxSalaryFilter(newMin);
+                }
+              }}
+              placeholder="0"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
+            />
           </div>
 
           <div>
@@ -596,7 +637,21 @@ const ContractManagementPage = () => {
               <FaDollarSign className="inline w-4 h-4 mr-2" />
               Salario Máximo
             </label>
-            <input type="number" value={maxSalaryFilter} min={minSalaryFilter} onChange={(e) => setMaxSalaryFilter(e.target.value)} placeholder="0" className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent" />
+            <input
+              type="number"
+              value={maxSalaryFilter}
+              min={minSalaryFilter}
+              onChange={(e) => {
+                const newMax = e.target.value;
+                if (minSalaryFilter && parseFloat(newMax) < parseFloat(minSalaryFilter)) {
+                  setMaxSalaryFilter(minSalaryFilter);
+                } else {
+                  setMaxSalaryFilter(newMax);
+                }
+              }}
+              placeholder="0"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
+            />
           </div>
 
         </div>
