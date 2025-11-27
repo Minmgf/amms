@@ -24,6 +24,32 @@ const GeneratedPayrollsPage = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedPayrollForDetail, setSelectedPayrollForDetail] = useState(null);
 
+  const formatDateTime = (value) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+
+    return date.toLocaleString("es-CO", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const formatDate = (value) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+
+    return date.toLocaleDateString("es-CO", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+  };
+
   const columnHelper = createColumnHelper();
 
   const columns = useMemo(
@@ -62,19 +88,30 @@ const GeneratedPayrollsPage = () => {
       }),
       columnHelper.accessor("generationDate", {
         header: "Fecha de Generación",
-        cell: (info) => (
-          <div className="text-secondary parametrization-text">
-            {info.getValue()}
-          </div>
-        ),
+        cell: (info) => {
+          const value = info.getValue();
+          return (
+            <div className="text-secondary parametrization-text">
+              {formatDateTime(value)}
+            </div>
+          );
+        },
       }),
       columnHelper.accessor("payrollPeriod", {
         header: "Período de Nómina",
-        cell: (info) => (
-          <div className="text-secondary parametrization-text">
-            {info.getValue()}
-          </div>
-        ),
+        cell: (info) => {
+          const row = info.row.original;
+          const start = formatDate(row.start_date);
+          const end = formatDate(row.end_date);
+
+          const label = start && end ? `Del ${start} al ${end}` : info.getValue();
+
+          return (
+            <div className="text-secondary parametrization-text">
+              {label}
+            </div>
+          );
+        },
       }),
       columnHelper.accessor("actions", {
         header: "Acciones",
