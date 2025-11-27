@@ -523,3 +523,25 @@ export const getHistoryByContract = async (contractId) => {
     throw error;
   }
 };
+
+/**
+ * Generar informe de historial de contratos y cargos en PDF.
+ * Endpoint: POST /employees/contract-history-pdf/
+ * @param {Object} payload - Datos para el reporte { employee_document, date_from, date_to }
+ * @returns {Promise<Blob>} Blob del PDF generado.
+ */
+export const generateContractHistoryReport = async (payload) => {
+  try {
+    const response = await apiMain.post(
+      "/employees/contract-history-pdf/",
+      payload,
+      {
+        responseType: "blob",
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error generating contract history report:", error);
+    throw error;
+  }
+};

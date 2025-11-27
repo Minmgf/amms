@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FiX, FiCalendar, FiSearch, FiDownload, FiAlertCircle } from "react-icons/fi";
 import { getUserByDocument } from "@/services/employeeService";
 import { generatePayrollHistoryReport } from "@/services/payrollService";
+import { generateContractHistoryReport } from "@/services/employeeService";
 
 export default function ReportsGenerationModal({ isOpen, onClose }) {
     const [employeeId, setEmployeeId] = useState("");
@@ -89,23 +90,35 @@ export default function ReportsGenerationModal({ isOpen, onClose }) {
         setSuccessMessage("");
 
         try {
-            const payload = {
-                employeeIdentification: employeeData.document,
-                dateFrom: dateFrom,
-                dateTo: dateTo,
-                reportType: reportType
-            };
+            let blob;
+            let filename;
+            const dateStr = new Date().toISOString().split('T')[0];
 
-            const blob = await generatePayrollHistoryReport(payload);
+            if (reportType === "PAYROLL_HISTORY") {
+                const payload = {
+                    employeeIdentification: employeeData.document,
+                    dateFrom: dateFrom,
+                    dateTo: dateTo,
+                    reportType: reportType
+                };
+                blob = await generatePayrollHistoryReport(payload);
+                filename = `Historial_Nomina_${employeeData.document}_${dateStr}.pdf`;
+            } else if (reportType === "CONTRACT_HISTORY") {
+                const payload = {
+                    employee_document: employeeData.document,
+                    date_from: dateFrom,
+                    date_to: dateTo
+                };
+                blob = await generateContractHistoryReport(payload);
+                filename = `Historial_Contratos_${employeeData.document}_${dateStr}.pdf`;
+            }
 
             // Create download link
             const url = window.URL.createObjectURL(new Blob([blob]));
             const link = document.createElement('a');
             link.href = url;
 
-            // Generate filename with current date
-            const dateStr = new Date().toISOString().split('T')[0];
-            link.setAttribute('download', `Historial_Nomina_${employeeData.document}_${dateStr}.pdf`);
+            link.setAttribute('download', filename);
 
             document.body.appendChild(link);
             link.click();
@@ -216,7 +229,7 @@ export default function ReportsGenerationModal({ isOpen, onClose }) {
                                 >
                                     <option value="">Seleccione un tipo...</option>
                                     <option value="PAYROLL_HISTORY">Historial de nóminas generadas</option>
-                                    {/* <option value="CONTRACT_HISTORY">Historial de contratos y cargos</option> */}
+                                    <option value="CONTRACT_HISTORY">Historial de contratos y cargos</option>
                                 </select>
                             </div>
 
