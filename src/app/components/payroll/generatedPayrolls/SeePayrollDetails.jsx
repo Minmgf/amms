@@ -93,6 +93,12 @@ export default function SeePayrollDetails({ isOpen, onClose, payroll }) {
           return;
         }
 
+        const baseSalaryRaw = Number(payload.base_salary) || 0;
+        const timeWorkedRaw = Number(payload.time_worked) || 0;
+
+        const baseUnit =
+          timeWorkedRaw > 0 ? baseSalaryRaw / timeWorkedRaw : baseSalaryRaw;
+
         const mapped = {
           ...payroll,
           employeeDocument: payload.document_number ?? payroll.employeeDocument,
@@ -107,9 +113,9 @@ export default function SeePayrollDetails({ isOpen, onClose, payroll }) {
               : payroll.payrollPeriod,
           generatedBy:
             payload.responsible_user_full_name ?? payroll.generatedBy,
-          baseSalary: payload.base_salary,
-          timeWorked: payload.time_worked,
-          baseSalaryTotal: payload.base_salary,
+          baseSalary: baseUnit,
+          timeWorked: timeWorkedRaw,
+          baseSalaryTotal: baseSalaryRaw,
           accruedFixed: [],
           accruedAdditional:
             payload.payroll_increases?.map((item) => ({
@@ -180,25 +186,24 @@ export default function SeePayrollDetails({ isOpen, onClose, payroll }) {
     const sum = (items) =>
       (items || []).reduce((acc, item) => acc + (Number(item.amount) || 0), 0);
 
-    const baseTotal = Number(payroll.baseSalaryTotal) || 0;
+    const baseSalary = Number(currentPayroll.baseSalary) || 0;
+    const baseTotal =
+      Number(currentPayroll.baseSalaryTotal) || baseSalary;
     const totalAccruedFixed = sum(accruedFixed);
     const totalAccruedAdditional = sum(accruedAdditional);
     const totalAccrued =
-      payroll.totalAccrued != null
-        ? Number(payroll.totalAccrued)
+      currentPayroll.totalAccrued != null
+        ? Number(currentPayroll.totalAccrued)
         : totalAccruedFixed + totalAccruedAdditional;
 
     const totalDeductionsFixed = sum(deductionsFixed);
     const totalDeductionsAdditional = sum(deductionsAdditional);
     const totalDeductions =
-      payroll.totalDeductions != null
-        ? Number(payroll.totalDeductions)
+      currentPayroll.totalDeductions != null
+        ? Number(currentPayroll.totalDeductions)
         : totalDeductionsFixed + totalDeductionsAdditional;
 
-    const netAmount =
-      payroll.netAmount != null
-        ? Number(payroll.netAmount)
-        : baseTotal + totalAccrued - totalDeductions;
+    const netAmount = baseTotal + totalAccrued - totalDeductions;
 
     return {
       baseTotal,
@@ -211,10 +216,10 @@ export default function SeePayrollDetails({ isOpen, onClose, payroll }) {
       netAmount,
     };
   }, [
+    currentPayroll?.baseSalary,
     currentPayroll?.baseSalaryTotal,
     currentPayroll?.totalAccrued,
     currentPayroll?.totalDeductions,
-    currentPayroll?.netAmount,
     accruedFixed,
     accruedAdditional,
     deductionsFixed,
@@ -272,6 +277,10 @@ export default function SeePayrollDetails({ isOpen, onClose, payroll }) {
               </div>
 
               <div className="space-y-4">
+                <InfoBlock
+                  label="ID nómina"
+                  value={currentPayroll.id || currentPayroll.id_payroll}
+                />
                 <InfoBlock
                   label="Nombre completo"
                   value={currentPayroll.employeeName}
@@ -412,8 +421,7 @@ export default function SeePayrollDetails({ isOpen, onClose, payroll }) {
               </p>
             </div>
             <div className="text-xs md:text-sm text-gray-300 max-w-md md:text-right">
-              Cálculo: (Salario base × tiempo trabajado) + Total devengado 
-              − Total deducciones
+              Cálculo: Salario base + Total devengado − Total deducciones
             </div>
           </section>
         </div>
