@@ -197,6 +197,12 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           path: "/payroll/generatedPayrolls",
           permissions: [],
         },
+        {
+          name: "Novedades",
+          icon: <FaRssSquare />,
+          path: "/payroll/employeeNews",
+          permissions: [189],
+        },
       ],
     },
     {
