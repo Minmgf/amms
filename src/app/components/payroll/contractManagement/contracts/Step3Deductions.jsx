@@ -11,6 +11,7 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
     control,
     formState: { errors },
     watch,
+    getValues,
   } = useFormContext();
 
   const isDisabled = isAddendum && !modifiableFields.includes("changeDeductions");
@@ -57,13 +58,16 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
   ];
 
   const handleAddDeduction = () => {
+    const startDate = getValues("startDate");
+    const endDate = getValues("endDate");
+    
     append({
       deduction_type: "",
       amount_type: "",
       amount_value: "",
       application_deduction_type: "",
-      start_date_deduction: "",
-      end_date_deductions: "",
+      start_date_deduction: startDate || "",
+      end_date_deductions: endDate || "",
       description: "",
       amount: "",
     });
@@ -341,6 +345,8 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
                 <div>
                   <input
                     type="date"
+                    min={watch("startDate")}
+                    max={watch("endDate")}
                     {...register(`deductions.${index}.start_date_deduction`, {
                       required: "Este campo es obligatorio.",
                       validate: (value) => {
@@ -374,6 +380,8 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
                 <div>
                   <input
                     type="date"
+                    min={watch(`deductions.${index}.start_date_deduction`) || watch("startDate")}
+                    max={watch("endDate")}
                     {...register(`deductions.${index}.end_date_deductions`, {
                       required: "Este campo es obligatorio.",
                       validate: (value) => {

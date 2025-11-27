@@ -48,7 +48,92 @@ export const toggleContractStatus = async (contractId) => {
   }
 };
 
-export const downloadContract = async (contractCode, fileType = 'pdf') => {
+/**
+ * Descargar contrato en formato PDF o DOCX
+ * @param {string} contractCode - Código del contrato
+ * @param {string} fileType - Tipo de archivo ('pdf' o 'docx')
+ * @returns {Promise<{ success: boolean, filename: string }>}
+ */
+export const downloadContract = async (contractCode, fileType = "pdf") => {
+  try {
+    // Validar formato
+    if (!["pdf", "docx"].includes(fileType.toLowerCase())) {
+      throw new Error("Formato inválido. Formatos permitidos: pdf, docx");
+    }
+
+    const response = await apiMain.get(
+      `/established_contracts/${contractCode}/download/`,
+      {
+        params: { file_type: fileType.toLowerCase() },
+        responseType: "blob", // Importante para manejar archivos binarios
+      }
+    );
+
+    // Crear nombre del archivo con timestamp
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[-:]/g, "")
+      .replace(/\..+/, "")
+      .replace("T", "_");
+    const filename = `contrato_${contractCode}_${timestamp}.${fileType.toLowerCase()}`;
+
+    // Crear blob con el tipo de contenido correcto
+    const contentType =
+      fileType.toLowerCase() === "pdf"
+        ? "application/pdf"
+        : "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+    const blob = new Blob([response.data], { type: contentType });
+
+    // Crear URL temporal y descargar
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+
+    // Limpiar
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    return { success: true, filename };
+  } catch (error) {
+    // Manejar errores específicos del endpoint
+    if (error.response) {
+      const status = error.response.status;
+      let message = "Error al descargar el contrato";
+
+      switch (status) {
+        case 400:
+          message = "Formato inválido. Formatos permitidos: pdf, docx";
+          break;
+        case 401:
+          message = "Usuario no autenticado";
+          break;
+        case 403:
+          message =
+            "No tiene permisos o el contrato seleccionado no se encuentra disponible para descarga.";
+          break;
+        case 404:
+          message =
+            "No tiene permisos o el contrato seleccionado no se encuentra disponible para descarga.";
+          break;
+        case 500:
+          message = "Error al generar el documento del contrato.";
+          break;
+        default:
+          message = `Error del servidor: ${status}`;
+      }
+
+      const customError = new Error(message);
+      customError.status = status;
+      throw customError;
+    }
+
+    console.error("Error al descargar contrato:", error);
+    throw error;
+  }
 };
 
 // =============================================================================
