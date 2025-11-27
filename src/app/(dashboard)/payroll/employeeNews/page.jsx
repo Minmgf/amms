@@ -6,6 +6,7 @@ import TableList from "@/app/components/shared/TableList";
 import FilterModal from "@/app/components/shared/FilterModal";
 import { getEmployeeNews } from "@/services/payrollService";
 import { FaFilter, FaFileAlt } from "react-icons/fa";
+import ReportsGenerationModal from "@/app/components/payroll/reports/ReportsGenerationModal";
 
 const NEWS_TYPE_CHOICES = [
     { value: 'CREACION_EMPLEADO', label: 'Creación de empleado' },
@@ -22,6 +23,7 @@ const EmployeeNewsPage = () => {
     const [loading, setLoading] = useState(true);
     const [globalFilter, setGlobalFilter] = useState("");
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     const [filters, setFilters] = useState({
         news_type: "",
         start_date: "",
@@ -80,13 +82,13 @@ const EmployeeNewsPage = () => {
             // Filtro por fecha (rango)
             if (filters.start_date || filters.end_date) {
                 const itemDate = new Date(item.news_date);
-                
+
                 if (filters.start_date) {
                     const startDate = new Date(filters.start_date);
                     startDate.setHours(0, 0, 0, 0);
                     if (itemDate < startDate) return false;
                 }
-                
+
                 if (filters.end_date) {
                     const endDate = new Date(filters.end_date);
                     endDate.setHours(23, 59, 59, 999);
@@ -113,7 +115,7 @@ const EmployeeNewsPage = () => {
             if (!filterValue) return true;
             const search = filterValue.toLowerCase();
             const item = row.original;
-            
+
             return (
                 item.employee_associated?.toLowerCase().includes(search) ||
                 item.news_type_display?.toLowerCase().includes(search) ||
@@ -202,6 +204,7 @@ const EmployeeNewsPage = () => {
                             )}
                         </button>
                         <button
+                            onClick={() => setIsReportModalOpen(true)}
                             className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-gray-700 font-medium"
                         >
                             <FaFileAlt className="text-gray-500" />
@@ -288,6 +291,11 @@ const EmployeeNewsPage = () => {
                         </div>
                     </div>
                 </FilterModal>
+
+                <ReportsGenerationModal
+                    isOpen={isReportModalOpen}
+                    onClose={() => setIsReportModalOpen(false)}
+                />
             </div>
         </PermissionGuard>
     );
