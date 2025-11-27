@@ -10,6 +10,7 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
     register,
     control,
     formState: { errors },
+    watch,
   } = useFormContext();
 
   const isDisabled = isAddendum && !modifiableFields.includes("changeDeductions");
@@ -207,11 +208,10 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
                 <div>
                   <select
                     {...register(`deductions.${index}.deduction_type`, {
-                      required: "Requerido",
+                      required: "Este campo es obligatorio.",
                     })}
-                    className={`input-theme w-full text-sm ${
-                      errors.deductions?.[index]?.deduction_type ? "border-red-500" : ""
-                    }`}
+                    className={`input-theme w-full text-sm ${errors.deductions?.[index]?.deduction_type ? "border-red-500" : ""
+                      }`}
                     style={{
                       backgroundColor: "var(--color-background)",
                       borderColor: errors.deductions?.[index]?.deduction_type
@@ -231,17 +231,21 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
                       </option>
                     ))}
                   </select>
+                  {errors.deductions?.[index]?.deduction_type && (
+                    <p className="text-red-500 text-[10px] mt-1 leading-tight">
+                      {errors.deductions[index].deduction_type.message}
+                    </p>
+                  )}
                 </div>
 
                 {/* Type - amount_type */}
                 <div>
                   <select
                     {...register(`deductions.${index}.amount_type`, {
-                      required: "Requerido",
+                      required: "Este campo es obligatorio.",
                     })}
-                    className={`input-theme w-full text-sm ${
-                      errors.deductions?.[index]?.amount_type ? "border-red-500" : ""
-                    }`}
+                    className={`input-theme w-full text-sm ${errors.deductions?.[index]?.amount_type ? "border-red-500" : ""
+                      }`}
                     style={{
                       backgroundColor: "var(--color-background)",
                       borderColor: errors.deductions?.[index]?.amount_type
@@ -258,6 +262,11 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
                       </option>
                     ))}
                   </select>
+                  {errors.deductions?.[index]?.amount_type && (
+                    <p className="text-red-500 text-[10px] mt-1 leading-tight">
+                      {errors.deductions[index].amount_type.message}
+                    </p>
+                  )}
                 </div>
 
                 {/* Amount - amount_value */}
@@ -267,13 +276,19 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
                     step="0.01"
                     min="0"
                     {...register(`deductions.${index}.amount_value`, {
-                      required: "Requerido",
-                      min: { value: 0, message: "Debe ser >= 0" },
+                      required: "Este campo es obligatorio.",
+                      min: { value: 0, message: "El monto debe ser mayor que cero." },
+                      validate: (value) => {
+                        const type = watch(`deductions.${index}.amount_type`);
+                        if (type === "Porcentaje" && parseFloat(value) > 100) {
+                          return "El porcentaje no puede ser mayor a 100%.";
+                        }
+                        return true;
+                      }
                     })}
                     disabled={isDisabled}
-                    className={`input-theme w-full text-sm ${
-                      errors.deductions?.[index]?.amount_value ? "border-red-500" : ""
-                    } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                    className={`input-theme w-full text-sm ${errors.deductions?.[index]?.amount_value ? "border-red-500" : ""
+                      } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
                     style={{
                       backgroundColor: "var(--color-background)",
                       borderColor: errors.deductions?.[index]?.amount_value
@@ -284,17 +299,21 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
                     }}
                     placeholder="0.00"
                   />
+                  {errors.deductions?.[index]?.amount_value && (
+                    <p className="text-red-500 text-[10px] mt-1 leading-tight">
+                      {errors.deductions[index].amount_value.message}
+                    </p>
+                  )}
                 </div>
 
                 {/* Application - application_deduction_type */}
                 <div>
                   <select
                     {...register(`deductions.${index}.application_deduction_type`, {
-                      required: "Requerido",
+                      required: "Este campo es obligatorio.",
                     })}
-                    className={`input-theme w-full text-sm ${
-                      errors.deductions?.[index]?.application_deduction_type ? "border-red-500" : ""
-                    }`}
+                    className={`input-theme w-full text-sm ${errors.deductions?.[index]?.application_deduction_type ? "border-red-500" : ""
+                      }`}
                     style={{
                       backgroundColor: "var(--color-background)",
                       borderColor: errors.deductions?.[index]?.application_deduction_type
@@ -311,6 +330,11 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
                       </option>
                     ))}
                   </select>
+                  {errors.deductions?.[index]?.application_deduction_type && (
+                    <p className="text-red-500 text-[10px] mt-1 leading-tight">
+                      {errors.deductions[index].application_deduction_type.message}
+                    </p>
+                  )}
                 </div>
 
                 {/* Start Date - start_date_deduction */}
@@ -318,12 +342,18 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
                   <input
                     type="date"
                     {...register(`deductions.${index}.start_date_deduction`, {
-                      required: "Requerido",
+                      required: "Este campo es obligatorio.",
+                      validate: (value) => {
+                        const contractStart = watch("startDate");
+                        const contractEnd = watch("endDate");
+                        if (contractStart && value < contractStart) return "La fecha debe estar dentro del rango de vigencia del contrato.";
+                        if (contractEnd && value > contractEnd) return "La fecha debe estar dentro del rango de vigencia del contrato.";
+                        return true;
+                      }
                     })}
                     disabled={isDisabled}
-                    className={`input-theme w-full text-sm ${
-                      errors.deductions?.[index]?.start_date_deduction ? "border-red-500" : ""
-                    } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                    className={`input-theme w-full text-sm ${errors.deductions?.[index]?.start_date_deduction ? "border-red-500" : ""
+                      } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
                     style={{
                       backgroundColor: "var(--color-background)",
                       borderColor: errors.deductions?.[index]?.start_date_deduction
@@ -333,6 +363,11 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
                       padding: "0.375rem 0.5rem",
                     }}
                   />
+                  {errors.deductions?.[index]?.start_date_deduction && (
+                    <p className="text-red-500 text-[10px] mt-1 leading-tight">
+                      {errors.deductions[index].start_date_deduction.message}
+                    </p>
+                  )}
                 </div>
 
                 {/* End Date - end_date_deductions */}
@@ -340,12 +375,18 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
                   <input
                     type="date"
                     {...register(`deductions.${index}.end_date_deductions`, {
-                      required: "Requerido",
+                      required: "Este campo es obligatorio.",
+                      validate: (value) => {
+                        const start = watch(`deductions.${index}.start_date_deduction`);
+                        const contractEnd = watch("endDate");
+                        if (start && value <= start) return "La fecha de fin debe ser posterior a la fecha de inicio.";
+                        if (contractEnd && value > contractEnd) return "La fecha debe estar dentro del rango de vigencia del contrato.";
+                        return true;
+                      }
                     })}
                     disabled={isDisabled}
-                    className={`input-theme w-full text-sm ${
-                      errors.deductions?.[index]?.end_date_deductions ? "border-red-500" : ""
-                    } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                    className={`input-theme w-full text-sm ${errors.deductions?.[index]?.end_date_deductions ? "border-red-500" : ""
+                      } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
                     style={{
                       backgroundColor: "var(--color-background)",
                       borderColor: errors.deductions?.[index]?.end_date_deductions
@@ -355,23 +396,36 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
                       padding: "0.375rem 0.5rem",
                     }}
                   />
+                  {errors.deductions?.[index]?.end_date_deductions && (
+                    <p className="text-red-500 text-[10px] mt-1 leading-tight">
+                      {errors.deductions[index].end_date_deductions.message}
+                    </p>
+                  )}
                 </div>
 
                 {/* Description */}
                 <div>
                   <input
                     type="text"
-                    {...register(`deductions.${index}.description`)}
+                    {...register(`deductions.${index}.description`, {
+                      maxLength: { value: 255, message: "La descripción excede el límite permitido." }
+                    })}
                     disabled={isDisabled}
-                    className={`input-theme w-full text-sm ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                    className={`input-theme w-full text-sm ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""} ${errors.deductions?.[index]?.description ? "border-red-500" : ""
+                      }`}
                     style={{
                       backgroundColor: "var(--color-background)",
-                      borderColor: "var(--color-border)",
+                      borderColor: errors.deductions?.[index]?.description ? "#EF4444" : "var(--color-border)",
                       color: "var(--color-text-primary)",
                       padding: "0.375rem 0.5rem",
                     }}
                     placeholder="Descripción"
                   />
+                  {errors.deductions?.[index]?.description && (
+                    <p className="text-red-500 text-[10px] mt-1 leading-tight">
+                      {errors.deductions[index].description.message}
+                    </p>
+                  )}
                 </div>
 
                 {/* Quantity - amount */}
@@ -381,12 +435,11 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
                     step="0.01"
                     min="0"
                     {...register(`deductions.${index}.amount`, {
-                      min: { value: 0, message: "Debe ser >= 0" },
+                      min: { value: 0, message: "El monto debe ser mayor que cero." },
                     })}
                     disabled={isDisabled}
-                    className={`input-theme w-full text-sm ${
-                      errors.deductions?.[index]?.amount ? "border-red-500" : ""
-                    } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                    className={`input-theme w-full text-sm ${errors.deductions?.[index]?.amount ? "border-red-500" : ""
+                      } ${isDisabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
                     style={{
                       backgroundColor: "var(--color-background)",
                       borderColor: errors.deductions?.[index]?.amount
@@ -397,6 +450,11 @@ export default function Step3Deductions({ isAddendum = false, modifiableFields =
                     }}
                     placeholder="0.00"
                   />
+                  {errors.deductions?.[index]?.amount && (
+                    <p className="text-red-500 text-[10px] mt-1 leading-tight">
+                      {errors.deductions[index].amount.message}
+                    </p>
+                  )}
                 </div>
               </div>
             ))
