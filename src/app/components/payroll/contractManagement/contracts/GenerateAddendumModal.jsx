@@ -26,6 +26,7 @@ export default function GenerateAddendumModal({
       
       // Terms
       baseSalary: false, // Hourly wage / Salary
+      salaryModality: false,
       currency: false,
       contractedAmount: false, // Contracted Hours
       days_of_week: false, // Work Schedule
@@ -129,6 +130,7 @@ export default function GenerateAddendumModal({
                 <div className="space-y-3">
                   <div className="grid grid-cols-1 gap-3">
                     <CheckboxField label="Salario / Salario por hora" name="baseSalary" register={register} />
+                    <CheckboxField label="Modalidad salarial" name="salaryModality" register={register} />
                     <CheckboxField label="Moneda" name="currency" register={register} />
                     <CheckboxField label="Horas contratadas" name="contractedAmount" register={register} />
                     <CheckboxField label="Horario de trabajo" name="days_of_week" register={register} />
