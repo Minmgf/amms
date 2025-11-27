@@ -193,8 +193,7 @@ export default function ContractDetail({
       setDownloadError(null);
       
       const result = await downloadContract(contractData.contract_code, format);
-      
-      if (result.success) {
+      if (result && result.success) {
         console.log(`Contract downloaded successfully: ${result.filename}`);
       }
     } catch (error) {
