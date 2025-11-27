@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { FiX } from "react-icons/fi";
 import { useTheme } from "@/contexts/ThemeContext";
+import { getPayrollDetail } from "@/services/payrollService";
 
 const formatCurrency = (value) => {
   if (value == null || isNaN(value)) return "—";
@@ -66,13 +67,104 @@ function SectionCard({ title, children }) {
 export default function SeePayrollDetails({ isOpen, onClose, payroll }) {
   useTheme();
 
-  const accruedFixed = payroll?.accruedFixed || [];
-  const accruedAdditional = payroll?.accruedAdditional || [];
-  const deductionsFixed = payroll?.deductionsFixed || [];
-  const deductionsAdditional = payroll?.deductionsAdditional || [];
+  const [detail, setDetail] = useState(null);
+
+  useEffect(() => {
+    if (!isOpen || !payroll) {
+      setDetail(null);
+      return;
+    }
+
+    const payrollId = payroll.id_payroll ?? payroll.id;
+    if (!payrollId) return;
+
+    let cancelled = false;
+
+    const fetchDetail = async () => {
+      try {
+        const result = await getPayrollDetail(payrollId);
+        const payload =
+          result && result.data && !Array.isArray(result.data)
+            ? result.data
+            : result?.data?.[0] || result;
+
+        if (!payload) {
+          console.error("No se encontró detalle de la nómina:", result);
+          return;
+        }
+
+        const mapped = {
+          ...payroll,
+          employeeDocument: payload.document_number ?? payroll.employeeDocument,
+          employeeName: payload.employee_full_name ?? payroll.employeeName,
+          position: payroll.position,
+          generationDate: payload.creation_date ?? payroll.generationDate,
+          contractCode:
+            payload.id_employee_contract ?? payroll.contractCode ?? payroll.id,
+          payrollPeriod:
+            payload.start_date && payload.end_date
+              ? `${payload.start_date} - ${payload.end_date}`
+              : payroll.payrollPeriod,
+          generatedBy:
+            payload.responsible_user_full_name ?? payroll.generatedBy,
+          baseSalary: payload.base_salary,
+          timeWorked: payload.time_worked,
+          baseSalaryTotal: payload.base_salary,
+          accruedFixed: [],
+          accruedAdditional:
+            payload.payroll_increases?.map((item) => ({
+              name:
+                item.description ||
+                `Incremento #${item.id_payroll_increase}`,
+              amount:
+                item.calculated_amount ??
+                item.amount ??
+                item.amount_value ??
+                0,
+            })) || [],
+          totalAccrued: payload.total_increments,
+          deductionsFixed: [],
+          deductionsAdditional:
+            payload.payroll_deductions?.map((item) => ({
+              name:
+                item.description ||
+                `Deducción #${item.id_payroll_deduction}`,
+              amount:
+                item.calculated_amount ??
+                item.amount ??
+                item.amount_value ??
+                0,
+            })) || [],
+          totalDeductions: payload.total_deductions,
+          netAmount: payload.net_pay,
+        };
+
+        if (!cancelled) {
+          setDetail(mapped);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Error loading payroll detail:", err);
+        }
+      }
+    };
+
+    fetchDetail();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, payroll]);
+
+  const currentPayroll = detail || payroll;
+
+  const accruedFixed = currentPayroll?.accruedFixed || [];
+  const accruedAdditional = currentPayroll?.accruedAdditional || [];
+  const deductionsFixed = currentPayroll?.deductionsFixed || [];
+  const deductionsAdditional = currentPayroll?.deductionsAdditional || [];
 
   const totals = useMemo(() => {
-    if (!payroll) {
+    if (!currentPayroll) {
       return {
         baseTotal: 0,
         totalAccruedFixed: 0,
@@ -119,10 +211,10 @@ export default function SeePayrollDetails({ isOpen, onClose, payroll }) {
       netAmount,
     };
   }, [
-    payroll?.baseSalaryTotal,
-    payroll?.totalAccrued,
-    payroll?.totalDeductions,
-    payroll?.netAmount,
+    currentPayroll?.baseSalaryTotal,
+    currentPayroll?.totalAccrued,
+    currentPayroll?.totalDeductions,
+    currentPayroll?.netAmount,
     accruedFixed,
     accruedAdditional,
     deductionsFixed,
@@ -163,34 +255,34 @@ export default function SeePayrollDetails({ isOpen, onClose, payroll }) {
               <div className="space-y-4">
                 <InfoBlock
                   label="Número de identificación"
-                  value={payroll.employeeDocument}
+                  value={currentPayroll.employeeDocument}
                 />
                 <InfoBlock
                   label="Cargo"
-                  value={payroll.position || "Ejemplo"}
+                  value={currentPayroll.position || "Ejemplo"}
                 />
                 <InfoBlock
                   label="Fecha de generación"
-                  value={payroll.generationDate}
+                  value={currentPayroll.generationDate}
                 />
                 <InfoBlock
                   label="Código de contrato seleccionado"
-                  value={payroll.contractCode || payroll.id}
+                  value={currentPayroll.contractCode || currentPayroll.id}
                 />
               </div>
 
               <div className="space-y-4">
                 <InfoBlock
                   label="Nombre completo"
-                  value={payroll.employeeName}
+                  value={currentPayroll.employeeName}
                 />
                 <InfoBlock
                   label="Período de nómina"
-                  value={payroll.payrollPeriod}
+                  value={currentPayroll.payrollPeriod}
                 />
                 <InfoBlock
                   label="Autor"
-                  value={payroll.generatedBy}
+                  value={currentPayroll.generatedBy}
                 />
               </div>
             </div>
@@ -200,11 +292,11 @@ export default function SeePayrollDetails({ isOpen, onClose, payroll }) {
             <div className="space-y-1.5">
               <DetailRow
                 label="Salario base"
-                value={formatCurrency(Number(payroll.baseSalary) || 0)}
+                value={formatCurrency(Number(currentPayroll.baseSalary) || 0)}
               />
               <DetailRow
                 label="Tiempo trabajado"
-                value={payroll.timeWorked || "2 meses"}
+                value={currentPayroll.timeWorked || "2 meses"}
               />
               <div className="mt-3 pt-3 border-t border-dashed border-primary">
                 <DetailRow
