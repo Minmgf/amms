@@ -94,6 +94,7 @@ const GeneratePayrollModal = ({
     increments: [],
   });
   const [isAdjustmentsModalOpen, setIsAdjustmentsModalOpen] = useState(false);
+  const [backendAdjustmentErrors, setBackendAdjustmentErrors] = useState(null);
 
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
   const [employeeContracts, setEmployeeContracts] = useState([]);
@@ -139,6 +140,58 @@ const GeneratePayrollModal = ({
     return Array.from(new Set(messages));
   };
 
+  const buildBackendAdjustmentErrors = (backendErrors, currentAdjustments) => {
+    if (!backendErrors || typeof backendErrors !== "object") return null;
+
+    const result = {
+      deductions: {},
+      increments: {},
+      globalMessages: [],
+    };
+
+    const currentDeductions = currentAdjustments?.deductions || [];
+    const currentIncrements = currentAdjustments?.increments || [];
+
+    const additionalDeductions = backendErrors.additional_deductions;
+    const additionalIncreases = backendErrors.additional_increases;
+
+    if (Array.isArray(additionalDeductions)) {
+      additionalDeductions.forEach((itemErrors, index) => {
+        const row = currentDeductions[index];
+        if (!row) return;
+        const msgs = extractBackendErrorMessages(itemErrors);
+        if (msgs.length > 0) {
+          result.deductions[row.id] = msgs.join(" ");
+        }
+      });
+    }
+
+    if (Array.isArray(additionalIncreases)) {
+      additionalIncreases.forEach((itemErrors, index) => {
+        const row = currentIncrements[index];
+        if (!row) return;
+        const msgs = extractBackendErrorMessages(itemErrors);
+        if (msgs.length > 0) {
+          result.increments[row.id] = msgs.join(" ");
+        }
+      });
+    }
+
+    const { additional_deductions, additional_increases, ...rest } =
+      backendErrors;
+    const globalMsgs = extractBackendErrorMessages(rest);
+    if (globalMsgs.length > 0) {
+      result.globalMessages = globalMsgs;
+    }
+
+    const hasAny =
+      Object.keys(result.deductions).length > 0 ||
+      Object.keys(result.increments).length > 0 ||
+      result.globalMessages.length > 0;
+
+    return hasAny ? result : null;
+  };
+
   const resetState = () => {
     setSelectedContractId("");
     setStartDate("");
@@ -149,6 +202,7 @@ const GeneratePayrollModal = ({
     setShowNoAdjustmentsConfirm(false);
     setShowCancelConfirm(false);
     setIsAdjustmentsModalOpen(false);
+    setBackendAdjustmentErrors(null);
   };
 
   useEffect(() => {
@@ -503,7 +557,16 @@ const GeneratePayrollModal = ({
         setShowSuccessModal(true);
       } else {
         const backendMessage = response?.message || response?.error;
-        const detailMessages = extractBackendErrorMessages(response?.errors);
+        const backendErrors = response?.errors || {};
+        const detailMessages = extractBackendErrorMessages(backendErrors);
+
+        const adjustmentErrors = buildBackendAdjustmentErrors(
+          backendErrors,
+          adjustments
+        );
+        if (adjustmentErrors) {
+          setBackendAdjustmentErrors(adjustmentErrors);
+        }
 
         let finalMessage = backendMessage || "";
         if (detailMessages.length > 0) {
@@ -526,7 +589,16 @@ const GeneratePayrollModal = ({
       const backendMessage =
         responseData.message || responseData.error || error.message;
 
-      const detailMessages = extractBackendErrorMessages(responseData.errors);
+      const backendErrors = responseData.errors || {};
+      const detailMessages = extractBackendErrorMessages(backendErrors);
+
+      const adjustmentErrors = buildBackendAdjustmentErrors(
+        backendErrors,
+        adjustments
+      );
+      if (adjustmentErrors) {
+        setBackendAdjustmentErrors(adjustmentErrors);
+      }
 
       let finalMessage = backendMessage || "";
       if (detailMessages.length > 0) {
@@ -916,11 +988,13 @@ const GeneratePayrollModal = ({
             deductions: mapWithMeta(base.deductions, "MANUAL"),
             increments: mapWithMeta(base.increments, "MANUAL"),
           });
+          setBackendAdjustmentErrors(null);
         }}
         initialAdjustments={adjustments}
         payrollStartDate={startDate}
         payrollEndDate={endDate}
         canManagePayroll={canGeneratePayroll}
+        backendErrors={backendAdjustmentErrors}
       />
     </>
   );
