@@ -7,6 +7,7 @@ import RegisterEmployeeModal from "@/app/components/payroll/human-resources/empl
 import IndividualPayrollAdjustmentsModal from "@/app/components/payroll/payroll-runs/AdditionalSettingsModal";
 import { useState } from "react";
 import HistoricalDataModal from "@/app/components/monitoring/HistoricalDataModal";
+import ReportsGenerationModal from "@/app/components/payroll/reports/ReportsGenerationModal";
 
 const Prueba = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -21,6 +22,7 @@ const Prueba = () => {
     deductions: [],
     increments: [],
   });
+  const [isReportsModalOpen, setIsReportsModalOpen] = useState(false);
 
   const mockPayrollStartDate = "2025-11-01";
   const mockPayrollEndDate = "2025-11-30";
@@ -28,10 +30,10 @@ const Prueba = () => {
   return (
     <div className="p-6">
       <div className="max-w-4xl mx-auto">
-        
+
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">Modal de Registro de Cliente</h2>
-          
+
           <p className="text-gray-600 mb-6">
             Haz clic en el botón para abrir el modal de registro de cliente.
           </p>
@@ -54,7 +56,7 @@ const Prueba = () => {
 
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">Modal de Detalles de Solicitud</h2>
-          
+
           <p className="text-gray-600 mb-6">
             Haz clic en el botón para ver el modal de detalles de solicitud (HU-SOL-004).
           </p>
@@ -69,7 +71,7 @@ const Prueba = () => {
 
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold mb-4">Modal de Monitoreo en Tiempo Real</h2>
-          
+
           <p className="text-gray-600 mb-6">
             Haz clic en el botón para ver el modal de monitoreo (Tracking Dashboard) con visualización de maquinarias en tiempo real (HU-MS-003).
           </p>
@@ -93,7 +95,7 @@ const Prueba = () => {
 
         <div className="bg-white rounded-lg shadow p-6 mt-6">
           <h2 className="text-xl font-semibold mb-4">Modal de Contratos</h2>
-          
+
           <p className="text-gray-600 mb-6">
             Formulario multipasos para añadir contratos. Incluye información general, términos del contrato, deducciones e incrementos.
           </p>
@@ -108,7 +110,7 @@ const Prueba = () => {
 
         <div className="bg-white rounded-lg shadow p-6 mt-6">
           <h2 className="text-xl font-semibold mb-4">Modal de Registro de Empleado</h2>
-          
+
           <p className="text-gray-600 mb-6">
             Formulario completo para registrar un nuevo empleado (HU-EMP-001). Incluye datos personales, de contacto y laborales con validaciones completas.
           </p>
@@ -123,7 +125,7 @@ const Prueba = () => {
 
         <div className="bg-white rounded-lg shadow p-6 mt-6">
           <h2 className="text-xl font-semibold mb-4">Modal de Ajustes Adicionales de Nómina</h2>
-          
+
           <p className="text-gray-600 mb-6">
             Prueba el flujo de registro de deducciones e incrementos adicionales para una nómina individual usando datos de ejemplo.
           </p>
@@ -135,6 +137,19 @@ const Prueba = () => {
             Abrir ajustes adicionales de nómina
           </button>
         </div>
+
+        <div className="bg-white rounded-lg shadow p-6 mt-6">
+          <h2 className="text-xl font-semibold mb-4">Modal de Generación de Reportes</h2>
+          <p className="text-gray-600 mb-6">
+            Modal para generar reportes de nómina (Vista de prueba).
+          </p>
+          <button
+            onClick={() => setIsReportsModalOpen(true)}
+            className="px-6 py-3 bg-black text-white font-semibold rounded-lg hover:bg-gray-800 transition-colors"
+          >
+            Ver Modal de Reportes
+          </button>
+        </div>
       </div>
 
       {/* Modal de Registro */}
@@ -142,7 +157,7 @@ const Prueba = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
       />
-      
+
       {/* Modal de Detalles de Solicitud */}
       <DetailsRequestModal
         isOpen={isRequestDetailsOpen}
@@ -157,7 +172,7 @@ const Prueba = () => {
       />
 
       {/* Historical Data Modal */}
-      <HistoricalDataModal 
+      <HistoricalDataModal
         isOpen={isHistoricalModalOpen}
         onClose={() => setIsHistoricalModalOpen(false)}
       />
@@ -193,6 +208,11 @@ const Prueba = () => {
         payrollStartDate={mockPayrollStartDate}
         payrollEndDate={mockPayrollEndDate}
         canManagePayroll={true}
+      />
+
+      <ReportsGenerationModal
+        isOpen={isReportsModalOpen}
+        onClose={() => setIsReportsModalOpen(false)}
       />
     </div>
   );

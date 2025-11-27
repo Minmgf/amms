@@ -108,7 +108,7 @@ export default function AddContractModal({
     // Función para cargar los datos del contrato
     const loadContractData = async () => {
       // Cargamos datos si es modo edición, modo Addendum, o modo Cambio de Contrato
-      if (isOpen && (isEditMode || isAddendum || isChangeContract)) {
+      if (isOpen && (isEditMode || isAddendum || (isChangeContract && contractToEdit))) {
         try {
           setIsLoadingContract(true);
 
