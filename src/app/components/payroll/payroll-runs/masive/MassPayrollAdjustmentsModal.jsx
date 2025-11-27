@@ -42,7 +42,9 @@ const MassPayrollAdjustmentsModal = ({
     fileName: "",
     description: "",
     rows: [],
+    batchId: null,
   });
+  const [currentBatchId, setCurrentBatchId] = useState(null);
 
   const [deductionTypes, setDeductionTypes] = useState([]);
   const [incrementTypes, setIncrementTypes] = useState([]);
@@ -96,9 +98,12 @@ const MassPayrollAdjustmentsModal = ({
     setIsUploadModalOpen(true);
   };
 
-  const handleProcessMockFile = ({ fileName, description, rows }) => {
+  const handleProcessMockFile = ({ fileName, description, rows, batchId }) => {
     setIsUploadModalOpen(false);
-    setLastUploadResult({ fileName, description, rows });
+    setLastUploadResult({ fileName, description, rows, batchId });
+    if (batchId) {
+      setCurrentBatchId(batchId);
+    }
     setIsProcessingModalOpen(true);
   };
 
@@ -265,6 +270,7 @@ const MassPayrollAdjustmentsModal = ({
       onSave({
         adjustmentsByEmployee,
         selectedEmployeeIds,
+        batchId: currentBatchId,
       });
     }
   };

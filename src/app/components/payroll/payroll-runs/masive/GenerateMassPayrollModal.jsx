@@ -68,6 +68,7 @@ const GenerateMassPayrollModal = ({
   const [adjustmentsByEmployee, setAdjustmentsByEmployee] = useState({});
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState([]);
   const [isAdjustmentsModalOpen, setIsAdjustmentsModalOpen] = useState(false);
+  const [batchId, setBatchId] = useState(null);
 
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
 
@@ -103,6 +104,7 @@ const GenerateMassPayrollModal = ({
     setAdjustmentsByEmployee({});
     setSelectedEmployeeIds([]);
     setIsAdjustmentsModalOpen(false);
+    setBatchId(null);
     setShowNoAdjustmentsConfirm(false);
     setShowExistingPayrollConfirm(false);
     setShowCancelConfirm(false);
@@ -159,13 +161,14 @@ const GenerateMassPayrollModal = ({
   }, [selectedDepartmentId]);
 
   useEffect(() => {
-    if (!selectedChargeId || !startDate || !endDate) {
+    if (!selectedChargeId || !startDate || !endDate || !selectedDepartmentId) {
       setApplicableEmployees([]);
       return;
     }
     const fetchEmployees = async () => {
       try {
         const response = await getPayrollApplicableEmployees(
+          selectedDepartmentId,
           selectedChargeId,
           startDate,
           endDate
@@ -202,6 +205,7 @@ const GenerateMassPayrollModal = ({
       return true;
     if (hasAdjustments) return true;
     if (selectedEmployeeIds.length > 0) return true;
+    if (batchId) return true;
     return false;
   };
 
@@ -339,6 +343,11 @@ const GenerateMassPayrollModal = ({
       exclude_conflicts: excludeConflicts,
       employees: payloadEmployees,
     };
+
+    // Agregar batch_id si existe (proveniente de carga masiva por Excel)
+    if (batchId) {
+      payload.batch_id = batchId;
+    }
 
     try {
       const response = await generateMassivePayroll(payload);
@@ -503,7 +512,10 @@ const GenerateMassPayrollModal = ({
                 >
                   <option value="">Seleccione un departamento</option>
                   {departments.map((dept) => (
-                    <option key={dept.id} value={dept.id}>
+                    <option
+                      key={dept.id_employee_department || dept.id}
+                      value={dept.id_employee_department || dept.id}
+                    >
                       {dept.name}
                     </option>
                   ))}
@@ -529,7 +541,10 @@ const GenerateMassPayrollModal = ({
                 >
                   <option value="">Seleccione un cargo</option>
                   {charges.map((charge) => (
-                    <option key={charge.id} value={charge.id}>
+                    <option
+                      key={charge.id_employee_charge || charge.id}
+                      value={charge.id_employee_charge || charge.id}
+                    >
                       {charge.name}
                     </option>
                   ))}
@@ -712,7 +727,7 @@ const GenerateMassPayrollModal = ({
         onClose={() => setShowNoAdjustmentsConfirm(false)}
         onConfirm={() => {
           setShowNoAdjustmentsConfirm(false);
-          proceedGenerateWithEmployees();
+          proceedGenerateMassPayroll({ excludeConflicts: false });
         }}
         title="Confirmar acción"
         message="La nómina masiva que se va a generar no cuenta con ajustes adicionales. ¿Estás seguro?"
@@ -727,7 +742,7 @@ const GenerateMassPayrollModal = ({
         onClose={() => setShowExistingPayrollConfirm(false)}
         onConfirm={() => {
           setShowExistingPayrollConfirm(false);
-          proceedGenerateWithEmployees({ excludeExisting: true });
+          proceedGenerateMassPayroll({ excludeConflicts: true });
         }}
         title="Confirmar acción"
         message={buildExistingPayrollMessage()}
@@ -783,9 +798,13 @@ const GenerateMassPayrollModal = ({
         onSave={({
           adjustmentsByEmployee: newAdjustmentsByEmployee,
           selectedEmployeeIds: newSelectedEmployeeIds,
+          batchId: newBatchId,
         }) => {
           setAdjustmentsByEmployee(newAdjustmentsByEmployee || {});
           setSelectedEmployeeIds(newSelectedEmployeeIds || []);
+          if (newBatchId) {
+            setBatchId(newBatchId);
+          }
           setIsAdjustmentsModalOpen(false);
         }}
       />
