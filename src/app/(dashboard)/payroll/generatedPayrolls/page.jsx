@@ -7,6 +7,7 @@ import TableList from "@/app/components/shared/TableList";
 import SeePayrollDetails from "@/app/components/payroll/generatedPayrolls/SeePayrollDetails";
 import { createColumnHelper } from "@tanstack/react-table";
 import { useTheme } from "@/contexts/ThemeContext";
+import { getGeneratedPayrolls, downloadPayrollPdf } from "@/services/payrollService";
 
 const GeneratedPayrollsPage = () => {
   useTheme();
@@ -22,46 +23,6 @@ const GeneratedPayrollsPage = () => {
   const [dateTo, setDateTo] = useState("");
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedPayrollForDetail, setSelectedPayrollForDetail] = useState(null);
-
-  // Datos mock para las nóminas generadas
-  const mockPayrollData = [
-    {
-      id: "Example",
-      employeeDocument: "1073950432",
-      employeeName: "Juan Andrés Vera",
-      generatedBy: "Néstor Javier Rojas",
-      generationDate: "14 Ene 2025, 9:23 pm",
-      payrollPeriod: "01/01/2025 - 31/01/2025",
-      status: "Generada",
-      position: "Analista de nómina",
-      contractCode: "CN-2025-001",
-      baseSalary: 2250000,
-      timeWorked: "2 meses",
-      baseSalaryTotal: 4500000,
-      accruedFixed: [
-        { name: "Auxilio de transporte", amount: 162000 },
-        { name: "Auxilio de alimentación", amount: 250000 },
-      ],
-      accruedAdditional: [
-        { name: "Horas extra diurnas", amount: 188000 },
-        { name: "Bono de rendimiento", amount: 700000 },
-        { name: "Bono de productividad", amount: 700000 },
-      ],
-      totalAccrued: 2000000,
-      deductionsFixed: [
-        { name: "Salud (4%)", amount: 180000 },
-        { name: "Pensión (4%)", amount: 180000 },
-        { name: "Fondo de solidaridad", amount: 45000 },
-      ],
-      deductionsAdditional: [
-        { name: "Préstamo de empresa", amount: 500000 },
-        { name: "Libranza bancaria", amount: 500000 },
-        { name: "Embargo judicial", amount: 308000 },
-      ],
-      totalDeductions: 1713000,
-      netAmount: 4787000,
-    },
-  ];
 
   const columnHelper = createColumnHelper();
 
@@ -153,11 +114,42 @@ const GeneratedPayrollsPage = () => {
   const loadPayrolls = async () => {
     setLoading(true);
     try {
-      // Simular carga de datos
-      setPayrolls(mockPayrollData);
-      setFilteredPayrolls(mockPayrollData);
+      const result = await getGeneratedPayrolls();
+
+      let items = [];
+
+      if (Array.isArray(result)) {
+        items = result;
+      } else if (result && Array.isArray(result.data)) {
+        items = result.data;
+      }
+
+      if (!Array.isArray(items)) {
+        console.error("Unexpected payroll list format:", result);
+        setPayrolls([]);
+        setFilteredPayrolls([]);
+        return;
+      }
+
+      const mappedPayrolls = items.map((item) => ({
+        ...item,
+        id: item.id_payroll != null ? String(item.id_payroll) : "",
+        employeeDocument: item.document_number || "",
+        employeeName: item.employee_full_name || "",
+        generatedBy: item.responsible_user_full_name || "",
+        generationDate: item.creation_date || "",
+        payrollPeriod:
+          item.start_date && item.end_date
+            ? `${item.start_date} - ${item.end_date}`
+            : "",
+      }));
+
+      setPayrolls(mappedPayrolls);
+      setFilteredPayrolls(mappedPayrolls);
     } catch (error) {
-      console.error('Error loading payrolls:', error);
+      console.error("Error loading payrolls:", error);
+      setPayrolls([]);
+      setFilteredPayrolls([]);
     } finally {
       setLoading(false);
     }
@@ -217,9 +209,31 @@ const GeneratedPayrollsPage = () => {
     setIsDetailModalOpen(true);
   };
 
-  const handleDownloadPDF = (payroll) => {
-    // Implementar lógica para descargar PDF
-    console.log('Descargar PDF de:', payroll);
+  const handleDownloadPDF = async (payroll) => {
+    const payrollId = payroll.id_payroll ?? payroll.id;
+
+    if (!payrollId) {
+      console.error(
+        "No se pudo determinar el ID de la nómina para descargar el PDF.",
+        payroll
+      );
+      return;
+    }
+
+    try {
+      const { blob, filename } = await downloadPayrollPdf(payrollId);
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename || `nomina_${payrollId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error al descargar la nómina en PDF:", error);
+    }
   };
 
   const handleGenerateMassivePayroll = () => {
