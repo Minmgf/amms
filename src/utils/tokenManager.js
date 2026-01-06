@@ -29,9 +29,9 @@ export const setValidationToken = (token) => {
 };
 
 export const getValidationToken = () => {
-  return localStorage.getItem(VALIDATION_TOKEN_KEY);
+  returnlocalStorage.getItem(VALIDATION_TOKEN_KEY);
 };
 
 export const removeValidationToken = () => {
-  returnlocalStorage.removeItem(VALIDATION_TOKEN_KEY);
+  localStorage.removeItem(VALIDATION_TOKEN_KEY);
 };
