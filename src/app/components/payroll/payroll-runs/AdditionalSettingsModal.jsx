@@ -69,6 +69,7 @@ const IndividualPayrollAdjustmentsModal = ({
   payrollStartDate,
   payrollEndDate,
   canManagePayroll = true,
+  backendErrors = null,
 }) => {
   useTheme();
 
@@ -161,8 +162,21 @@ const IndividualPayrollAdjustmentsModal = ({
         : []
     );
 
+    const initialBackendErrors =
+      backendErrors && typeof backendErrors === "object"
+        ? {
+            deductions: backendErrors.deductions || {},
+            increments: backendErrors.increments || {},
+            globalMessages: backendErrors.globalMessages || [],
+          }
+        : {
+            deductions: {},
+            increments: {},
+            globalMessages: [],
+          };
+
     setActiveTab("deductions");
-    setRowErrors({ deductions: {}, increments: {}, globalMessages: [] });
+    setRowErrors(initialBackendErrors);
     setLoading(false);
     setSuccessOpen(false);
     setErrorOpen(false);

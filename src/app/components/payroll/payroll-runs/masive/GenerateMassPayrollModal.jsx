@@ -46,6 +46,27 @@ const hasExistingPayrollInRange = (employee, startDate, endDate) => {
   );
 };
 
+const extractBackendErrorMessages = (errors) => {
+  if (!errors || typeof errors !== "object") return [];
+
+  const messages = [];
+
+  const traverse = (value) => {
+    if (!value) return;
+    if (Array.isArray(value)) {
+      value.forEach((item) => traverse(item));
+    } else if (typeof value === "object") {
+      Object.values(value).forEach((val) => traverse(val));
+    } else if (typeof value === "string") {
+      messages.push(value);
+    }
+  };
+
+  traverse(errors);
+
+  return Array.from(new Set(messages));
+};
+
 const GenerateMassPayrollModal = ({
   isOpen,
   onClose,
@@ -369,19 +390,81 @@ const GenerateMassPayrollModal = ({
       }
     } catch (error) {
       console.error("Error generating massive payroll", error);
-      if (error.response?.status === 400 && error.response?.data?.errors?.employees?.rejected) {
-        const rejected = error.response.data.errors.employees.rejected;
-        setConflictEmployees(rejected.map(r => ({
-            id: r.employee_id,
-            fullName: r.employee_name,
-            reason: r.reason
-        })));
-        setShowExistingPayrollConfirm(true);
-      } else {
-        setErrorMessage(
-          error.response?.data?.message ||
-            "Ocurrió un error al generar la nómina masiva."
+
+      const status = error.response?.status;
+      const data = error.response?.data || {};
+      const backendMessage = data.message;
+      const backendErrors = data.errors || {};
+
+      // Soportar dos formatos posibles del backend:
+      // 1) errors.rejected (array) y errors.employees (array de mensajes)
+      // 2) errors.employees = { rejected: [...], message, action_required }
+
+      let rejected = [];
+      let employeesErrors = [];
+
+      if (Array.isArray(backendErrors.rejected)) {
+        rejected = backendErrors.rejected;
+      } else if (
+        backendErrors.employees &&
+        Array.isArray(backendErrors.employees.rejected)
+      ) {
+        rejected = backendErrors.employees.rejected;
+      }
+
+      if (Array.isArray(backendErrors.employees)) {
+        employeesErrors = backendErrors.employees;
+      } else if (
+        backendErrors.employees &&
+        typeof backendErrors.employees === "object"
+      ) {
+        const empObj = backendErrors.employees;
+        if (typeof empObj.message === "string") {
+          employeesErrors.push(empObj.message);
+        }
+        if (typeof empObj.action_required === "string") {
+          employeesErrors.push(empObj.action_required);
+        }
+      }
+
+      if (status === 400 && rejected.length > 0) {
+        setConflictEmployees(
+          rejected.map((r, index) => ({
+            id: r.employee_id || r.id || index,
+            fullName: r.employee_name || r.name || "",
+            reason: r.reason || "",
+          }))
         );
+
+        if (excludeConflicts) {
+          // Ya se intentó excluir empleados en conflicto y no quedan empleados válidos
+          let finalMessage =
+            backendMessage ||
+            "No hay empleados válidos para generar la nómina masiva después de descartar los empleados en conflicto.";
+
+          if (employeesErrors.length > 0) {
+            const detailsText = `\n- ${employeesErrors.join("\n- ")}`;
+            finalMessage += detailsText;
+          }
+
+          setErrorMessage(finalMessage);
+          setShowErrorModal(true);
+        } else {
+          // Primer intento: mostrar lista de rechazados y permitir excluirlos y continuar
+          setShowExistingPayrollConfirm(true);
+        }
+      } else {
+        const detailMessages = extractBackendErrorMessages(backendErrors);
+
+        let finalMessage =
+          backendMessage || "Ocurrió un error al generar la nómina masiva.";
+
+        if (detailMessages.length > 0) {
+          const detailsText = `\n- ${detailMessages.join("\n- ")}`;
+          finalMessage += detailsText;
+        }
+
+        setErrorMessage(finalMessage);
         setShowErrorModal(true);
       }
     } finally {
