@@ -223,7 +223,6 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
           {/* Header */}
           <div className="flex justify-between items-center px-8 pt-6 pb-4">
             <div>
-              <div className="text-xs text-gray-400 mb-1">users / new-user</div>
               <Dialog.Title asChild>
                 <h2 className="text-2xl font-bold text-black">
                   Registro de Usuario
@@ -464,7 +463,7 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
             </div>
             {/* Nombre y Apellido */}
             <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
+              <div className="col-span-2">
                 <label className="block text-sm font-semibold text-black mb-1">
                   Nombre
                 </label>
@@ -484,7 +483,7 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-black mb-1">
-                  Apellido
+                  Primer Apellido
                 </label>
                 <input
                   type="text"
@@ -497,6 +496,27 @@ export default function AddUserModal({ isOpen, onClose, onUserCreated }) {
                   }
                   className={`w-full rounded border px-3 py-2 bg-white text-black text-base ${
                     hasSubmitted && !formData.first_last_name
+                      ? "border-red-600"
+                      : "border-gray-300"
+                  }`}
+                  placeholder=""
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-black mb-1">
+                  Segundo Apellido
+                </label>
+                <input
+                  type="text"
+                  value={formData.second_last_name}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      second_last_name: e.target.value,
+                    }))
+                  }
+                  className={`w-full rounded border px-3 py-2 bg-white text-black text-base ${
+                    hasSubmitted && !formData.second_last_name
                       ? "border-red-600"
                       : "border-gray-300"
                   }`}

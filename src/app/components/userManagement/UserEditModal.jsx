@@ -24,7 +24,7 @@ export default function UserEditModal({ isOpen, onClose, userData, onUserUpdated
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const [pendingStatusChange, setPendingStatusChange] = useState(null);
-  
+
   // Estados para el modal interno de cambio de estado
   const [showStatusChangeModal, setShowStatusChangeModal] = useState(false);
   const [statusChangeMessage, setStatusChangeMessage] = useState('');
@@ -102,21 +102,21 @@ export default function UserEditModal({ isOpen, onClose, userData, onUserUpdated
   const getDocumentTypeName = React.useCallback((typeId) => {
     const documentTypeMap = {
       1: 'Cédula de Ciudadanía',
-      2: 'Tarjeta de Identidad', 
+      2: 'Tarjeta de Identidad',
       3: 'Cédula de Extranjería',
       4: 'Pasaporte',
       5: 'NIT'
     };
-    
+
     return documentTypeMap[typeId] || 'Tipo desconocido';
   }, []);
 
   // Función para convertir fecha a formato de input (YYYY-MM-DD)
   const formatDateForInput = React.useCallback((dateString) => {
     if (!dateString) return '';
-    
+
     let date;
-    
+
     // Intentar diferentes formatos de fecha
     if (typeof dateString === 'string') {
       // Si la fecha ya está en formato ISO (YYYY-MM-DD), extraer solo la parte de la fecha
@@ -132,12 +132,12 @@ export default function UserEditModal({ isOpen, onClose, userData, onUserUpdated
     } else {
       date = new Date(dateString);
     }
-    
+
     // Verificar si la fecha es válida
     if (isNaN(date.getTime())) {
       return '';
     }
-    
+
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
@@ -162,7 +162,7 @@ export default function UserEditModal({ isOpen, onClose, userData, onUserUpdated
     if (userData && documentTypes.length > 0 && genderTypes.length > 0) {
       const formattedBirthday = formatDateForInput(userData.birthday);
       const formattedIssuanceDate = formatDateForInput(userData.date_issuance_document);
-      
+
       // Mapear correctamente los IDs desde los datos del usuario
       const documentTypeId = userData.type_document_id || userData.type_document;
       const genderId = userData.gender_id || userData.gender;
@@ -170,40 +170,41 @@ export default function UserEditModal({ isOpen, onClose, userData, onUserUpdated
       // Buscar las opciones correspondientes en los arrays cargados
       const documentTypeOption = documentTypes.find(type => type.id === documentTypeId);
       const genderOption = genderTypes.find(type => type.id === genderId);
-      
+
       setFormData({
         name: userData.name || '',
         first_last_name: userData.first_last_name || '',
         second_last_name: userData.second_last_name || '',
-        type_document_id: documentTypeOption ? { 
-          value: documentTypeOption.id, 
+        type_document_id: documentTypeOption ? {
+          value: documentTypeOption.id,
           label: documentTypeOption.name
         } : null,
         document_number: userData.document_number || '',
         date_issuance_document: formattedIssuanceDate,
         birthday: formattedBirthday,
-        gender_id: genderOption ? { 
-          value: genderOption.id, 
-          label: genderOption.name 
+        gender_id: genderOption ? {
+          value: genderOption.id,
+          label: genderOption.name
         } : null,
-        roles: userData.roles ? userData.roles.map(role => ({ 
-          value: role.role_id || role.id, 
-          label: role.role_name || role.name 
+        roles: userData.roles ? userData.roles.map(role => ({
+          value: role.role_id || role.id,
+          label: role.role_name || role.name
         })) : []
       });
     }
+    onClose();
   }, [userData, formatDateForInput, documentTypes, genderTypes]);
 
   // Funciones para manejar los modales
   const handleSuccessClose = () => {
     setShowSuccessModal(false);
     setIsEditing(true);
-    
+
     // Recargar datos antes de cerrar el modal
     if (onUserUpdated) {
       onUserUpdated();
     }
-    
+
     // Cerrar el modal principal
     onClose();
   };
@@ -299,7 +300,7 @@ export default function UserEditModal({ isOpen, onClose, userData, onUserUpdated
           setDocumentTypes(docTypesResponse.data);
           setGenderTypes(genderTypesResponse.data);
           setRoleTypes(roleTypesResponse.data);
-          
+
         } else {
           setError('Error al cargar los datos de configuración');
         }
@@ -335,20 +336,20 @@ export default function UserEditModal({ isOpen, onClose, userData, onUserUpdated
         name: userData.name || '',
         first_last_name: userData.first_last_name || '',
         second_last_name: userData.second_last_name || '',
-        type_document_id: documentTypeOption ? { 
-          value: documentTypeOption.id, 
+        type_document_id: documentTypeOption ? {
+          value: documentTypeOption.id,
           label: documentTypeOption.name
         } : null,
         document_number: userData.document_number || '',
         date_issuance_document: formattedIssuanceDate,
         birthday: formattedBirthday,
-        gender_id: genderOption ? { 
-          value: genderOption.id, 
-          label: genderOption.name 
+        gender_id: genderOption ? {
+          value: genderOption.id,
+          label: genderOption.name
         } : null,
-        roles: userData.roles ? userData.roles.map(role => ({ 
-          value: role.role_id || role.id, 
-          label: role.role_name || role.name 
+        roles: userData.roles ? userData.roles.map(role => ({
+          value: role.role_id || role.id,
+          label: role.role_name || role.name
         })) : []
       });
     }
@@ -400,12 +401,12 @@ export default function UserEditModal({ isOpen, onClose, userData, onUserUpdated
         setSuccess(true);
         setModalMessage('Usuario actualizado exitosamente');
         setShowSuccessModal(true);
-        
+
         // Recargar datos inmediatamente después del éxito
         if (onUserUpdated) {
           onUserUpdated();
         }
-        
+
         // El modal se encargará de cerrar la edición
       } else {
         setError(response.message || 'Error al actualizar el usuario');
@@ -415,7 +416,7 @@ export default function UserEditModal({ isOpen, onClose, userData, onUserUpdated
     } catch (err) {
       console.error('Error completo:', err);
       let errorMessage = 'Error al actualizar el usuario';
-      
+
       if (err.message === 'No hay token disponible') {
         errorMessage = 'Error de autenticación: No hay token disponible. Por favor, inicie sesión nuevamente.';
       } else if (err.message === 'Token expirado') {
@@ -431,7 +432,7 @@ export default function UserEditModal({ isOpen, onClose, userData, onUserUpdated
       } else {
         errorMessage = 'Error al actualizar el usuario: ' + err.message;
       }
-      
+
       setError(errorMessage);
       setModalMessage(errorMessage);
       setShowErrorModal(true);
@@ -533,24 +534,6 @@ export default function UserEditModal({ isOpen, onClose, userData, onUserUpdated
                       </div>
                     </PermissionGuard>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                    <FormField
-                      label="Nombre"
-                      value={formData.name}
-                      onChange={handleInputChange('name')}
-                      required
-                      disabled={!isEditing}
-                      placeholder="Iván Andrés"
-                    />
-                    <FormField
-                      label="Apellido"
-                      value={formData.first_last_name}
-                      onChange={handleInputChange('first_last_name')}
-                      required
-                      disabled={!isEditing}
-                      placeholder="Espinosa"
-                    />
-                  </div>
                   <div className="mb-8">
                     <div className="bg-neutral-100 rounded-t-md px-4 py-2 font-semibold text-primary border-b border-neutral-300">Roles seleccionados</div>
                     <div className="bg-white rounded-b-md px-4 py-2 min-h-[60px] border border-neutral-300 border-t-0">
@@ -577,6 +560,35 @@ export default function UserEditModal({ isOpen, onClose, userData, onUserUpdated
                           ))}
                         </ul>
                       )}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                      <div className="md:col-span-2">
+
+                        <FormField
+                          label="Nombre"
+                          value={formData.name}
+                          onChange={handleInputChange('name')}
+                          required
+                          disabled={!isEditing}
+                          placeholder="Iván Andrés"
+                        />
+                      </div>
+                      <FormField
+                        label="Primer Apellido"
+                        value={formData.first_last_name}
+                        onChange={handleInputChange('first_last_name')}
+                        required
+                        disabled={!isEditing}
+                        placeholder="Espinosa"
+                      />
+                      <FormField
+                        label="Segundo Apellido"
+                        value={formData.second_last_name}
+                        onChange={handleInputChange('second_last_name')}
+                        required
+                        disabled={!isEditing}
+                        placeholder="Espinosa"
+                      />
                     </div>
                   </div>
                   {!isFormValid && submitLoading && (
