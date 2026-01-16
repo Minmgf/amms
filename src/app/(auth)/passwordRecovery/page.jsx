@@ -74,6 +74,7 @@ const Page = () => {
                     </form>
                     <div className="mt-8 text-center text-white">
                         Ya tiene una cuenta activa? 
+                        <span> </span>
                         <Link
                             aria-label="Login Button"
                             href="/login"

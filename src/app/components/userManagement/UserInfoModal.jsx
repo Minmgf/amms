@@ -36,7 +36,7 @@ const UserInfo = ({ userData, isOpen, onClose }) => {
                             </button>
                         </Dialog.Close>
                     </div>
-                    
+
                     <div className="p-6">
                         <div className="border-2 border-gray-400 rounded-lg p-6 bg-white">
                             <div className="flex gap-6">
@@ -67,7 +67,12 @@ const UserInfo = ({ userData, isOpen, onClose }) => {
                                         </div>
                                         <div>
                                             <div className="text-xs text-gray-500">Apellidos</div>
-                                            <div className="font-medium">{userData.first_last_name || 'No disponible'}</div>
+                                            <div className="font-medium">
+                                                {userData.first_last_name
+                                                    ? `${userData.first_last_name}${userData.second_last_name ? ` ${userData.second_last_name}` : ''
+                                                    }`
+                                                    : 'No disponible'}
+                                            </div>
                                         </div>
                                         <div>
                                             <div className="text-xs text-gray-500">Tipo de Documento</div>
@@ -130,7 +135,7 @@ const UserInfo = ({ userData, isOpen, onClose }) => {
                     </div>
 
                     <div className="flex justify-end p-6 border-t">
-                        <button 
+                        <button
                             onClick={onClose}
                             className="btn-theme px-6 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
                         >

@@ -14,15 +14,23 @@ const Page = () => {
   const [countriesList, setCountriesList] = useState([]);
   const [statesList, setStatesList] = useState([]);
   const [citiesList, setCitiesList] = useState([]);
+
   const router = useRouter();
   const {
     register,
     handleSubmit,
     watch,
     formState: { errors }
-  } = useForm();
+  } = useForm({
+    mode: "onChange"
+  });
+
   const watchCountry = watch("country");
   const watchState = watch("department");
+
+  const photoFile = watch("photo");
+  const [preview, setPreview] = React.useState(null);
+
 
   useEffect(() => {
     const storedUser = localStorage.getItem("userData");
@@ -56,6 +64,33 @@ const Page = () => {
       .then(setCitiesList)
       .catch(console.error);
   }, [watchState]);
+
+  const isValidImage = (file) => {
+    if (!file) return false;
+
+    const allowedTypes = ["image/jpeg", "image/png"];
+    const maxSize = 5 * 1024 * 1024;
+
+    return allowedTypes.includes(file.type) && file.size <= maxSize;
+  };
+
+
+  useEffect(() => {
+    if (photoFile && photoFile.length > 0) {
+      const file = photoFile[0];
+
+      if (isValidImage(file)) {
+        const objectUrl = URL.createObjectURL(file);
+        setPreview(objectUrl);
+
+        return () => URL.revokeObjectURL(objectUrl);
+      }
+    }
+
+    // Si no es válido, limpiar preview
+    setPreview(null);
+  }, [photoFile]);
+
 
 
   const onSubmit = async (data) => {
@@ -195,9 +230,13 @@ const Page = () => {
                   defaultValue="+57"
                   className="h-10 py-2 px-4 rounded-lg border border-gray-300 bg-white text-black mb-3 sm:mb-0 w-full outline-none shadow focus:ring-2 focus:ring-red-500"
                 >
-                  <option value="+57">+57</option>
-                  <option value="+52">+52</option>
-                  <option value="+1">+1</option>
+                  <option value="">Seleccione...</option>
+
+                  {[...new Set(countriesList.map(c => c.phonecode))].map((code) => (
+                    <option key={code} value={`+${code}`}>
+                      +{code}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="col-span-3 relative">
@@ -230,56 +269,89 @@ const Page = () => {
             <label className="block mb-4 text-base font-medium text-white">
               Foto de perfil (Opcional)
             </label>
+
             <div className="flex items-center gap-8">
+              {/* Preview / Upload box */}
               <label
                 htmlFor="photo"
-                className="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-200 transition-colors bg-black/20"
+                className={`flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed rounded-lg cursor-pointer transition-colors
+        ${errors.photo ? 'border-red-500' : 'border-gray-300 hover:border-gray-200'}
+        bg-black/20 overflow-hidden`}
               >
-                <div className="text-xl md:text-3xl mb-1 text-white">+</div>
-                <span className="text-xs md:text-sm text-white">Upload photo</span>
+                {preview ? (
+                  <img
+                    src={preview}
+                    alt="Preview"
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                ) : (
+                  <>
+                    <div className="text-xl md:text-3xl mb-1 text-white">+</div>
+                    <span className="text-xs md:text-sm text-white text-center">
+                      Upload photo
+                    </span>
+                  </>
+                )}
               </label>
+
+              {/* Input */}
               <input
-                aria-label="Profile Photo Input"
                 id="photo"
                 type="file"
                 accept="image/png, image/jpeg"
                 {...register("photo", {
                   validate: (fileList) => {
-                    if (fileList.length === 0) return true;
+                    if (!fileList || fileList.length === 0) return true;
+
                     const file = fileList[0];
                     const allowedTypes = ["image/jpeg", "image/png"];
+
                     if (!allowedTypes.includes(file.type)) {
                       return "Sólo imágenes JPG o PNG son permitidas";
                     }
+
                     if (file.size > 5 * 1024 * 1024) {
                       return "El archivo no debe exceder de 5MB";
                     }
+
                     return true;
                   }
                 })}
-
                 className="hidden"
               />
-              {errors.photo?.message && (
-                <span className="text-red-400 text-xs mt-2 block">
-                  {errors.photo.message}
-                </span>
-              )}
+
+              {/* Actions */}
               <div className="flex flex-col">
                 <button
-                  aria-label="Profile Photo Button"
                   type="button"
                   className="px-6 py-2 bg-gray-500 border border-gray-300 hover:bg-gray-700 text-white rounded-lg text-sm transition-colors mb-2"
                   onClick={() => document.getElementById('photo').click()}
                 >
                   Elegir archivo
                 </button>
-                <span className="text-sm text-gray-300">
-                  Formatos permitidos: JPG, PNG (max. 5MB)
-                </span>
+
+                {preview && !errors.photo && (
+                  <span className="text-sm text-green-400">
+                    ✔ Imagen cargada correctamente
+                  </span>
+                )}
+
+                {!preview && (
+                  <span className="text-sm text-gray-300">
+                    Formatos permitidos: JPG, PNG (max. 5MB)
+                  </span>
+                )}
               </div>
             </div>
+
+            {/* Error */}
+            {errors.photo?.message && (
+              <span className="text-red-400 text-xs mt-2 block">
+                {errors.photo.message}
+              </span>
+            )}
           </div>
+
 
           {(errors.country || errors.region || errors.city || errors.address || errors.phone) && (
             <p className="text-red-500 text-sm text-center">

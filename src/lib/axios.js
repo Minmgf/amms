@@ -115,7 +115,7 @@ const addInterceptors = (instance) => {
         
         // Si no hay token y no estamos en rutas públicas, redirigir al login
         if (typeof window !== 'undefined') {
-          const publicPaths = ['/sigma/login', '/sigma/preregister', '/sigma/passwordRecovery', '/sigma/activation', '/sigma/completeRegister'];
+          const publicPaths = ['/sigma/login', '/sigma/preregister', '/sigma/passwordRecovery', '/sigma/activation', '/sigma/completeRegister', '/sigma/recovery'];
           const isPublicPath = publicPaths.some(path => window.location.pathname.includes(path));
           
           if (!isPublicPath && !window.location.pathname.includes('/login')) {
