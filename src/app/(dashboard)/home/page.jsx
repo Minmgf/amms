@@ -1,27 +1,37 @@
 "use client";
 import React from 'react'
 
-const HomePage = ({ activeMenu = "Home" }) => {
+import MetricsCard from '@/app/components/home/MetricsCard';
+import { FaTractor, FaTools, FaClipboardList } from "react-icons/fa";
 
-    
+
+const HomePage = ({ activeMenu = "Home" }) => {
 
     // Componentes para cada sección del menú
     const HomeContent = () => (
         <div className="space-y-6">
             <h1 className="text-3xl font-bold text-primary">Bienvenido al Dashboard</h1>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="card-theme">
-                    <h3 className="text-lg font-semibold mb-2 text-primary">Resumen General</h3>
-                    <p className="text-secondary">Vista general de las métricas principales del sistema.</p>
-                </div>
-                <div className="card-theme">
-                    <h3 className="text-lg font-semibold mb-2 text-primary">Actividad Reciente</h3>
-                    <p className="text-secondary">Últimas actividades y notificaciones del sistema.</p>
-                </div>
-                <div className="card-theme">
-                    <h3 className="text-lg font-semibold mb-2 text-primary">Accesos Rápidos</h3>
-                    <p className="text-secondary">Enlaces directos a las funciones más utilizadas.</p>
-                </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <MetricsCard
+                    title = "Maquinarias Operativas"
+                    value = "120"
+                    icon = {FaTractor}
+                />
+                <MetricsCard
+                    title = "Mantenimientos Pendientes"
+                    value = "4"
+                    icon = {FaTools}
+                />
+                <MetricsCard
+                    title = "Solicitudes Pendientes"
+                    value = "5"
+                    icon = {FaClipboardList}
+                />
+                <MetricsCard
+                    title = "Empleados Activos"
+                    value = "50"
+                    icon = {FaClipboardList}
+                />
             </div>
         </div>
     );
