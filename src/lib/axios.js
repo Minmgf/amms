@@ -27,7 +27,7 @@ const clearAllTokens = () => {
 // Instancia para el microservicio de usuarios
 export const apiUsers = axios.create({
   baseURL: process.env.NEXT_PUBLIC_BASE_URL_USERS,
-  timeout: 10000,
+  timeout: 20000,
   headers: {
     "Content-Type": "application/json",
   },
@@ -36,7 +36,7 @@ export const apiUsers = axios.create({
 // Instancia para el microservicio principal
 export const apiMain = axios.create({
   baseURL: process.env.NEXT_PUBLIC_BASE_URL_MAIN,
-  timeout: 10000,
+  timeout: 20000,
   headers: {
     "Content-Type": "application/json",
   },
@@ -68,6 +68,7 @@ export const apiBilling = axios.create({
 // Lista de endpoints que NO requieren autenticación
 const PUBLIC_ENDPOINTS = [
   '/auth/login/',
+  '/auth/sso-login',
   '/auth/request-reset-password',
   '/auth/reset-password',
   '/auth/resend-activation',
@@ -115,7 +116,7 @@ const addInterceptors = (instance) => {
         
         // Si no hay token y no estamos en rutas públicas, redirigir al login
         if (typeof window !== 'undefined') {
-          const publicPaths = ['/sigma/login', '/sigma/preregister', '/sigma/passwordRecovery', '/sigma/activate', '/sigma/completeRegister'];
+          const publicPaths = ['/sigma/login','/sigma/sso', '/sigma/preregister', '/sigma/passwordRecovery', '/sigma/activate', '/sigma/completeRegister'];
           const isPublicPath = publicPaths.some(path => window.location.pathname.includes(path));
           
           if (!isPublicPath && !window.location.pathname.includes('/login')) {
