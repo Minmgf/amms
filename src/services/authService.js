@@ -8,6 +8,16 @@ export const login = async (payload, rememberMe = false) => {
     return data;
 };
 
+export const loginSSO = async (ssoToken, rememberMe = false) => {
+  const { data } = await apiUsers.post("/auth/sso-login", {
+    sso_token: ssoToken,
+  });
+
+  setToken(data.access_token, rememberMe);
+
+  return data;
+};
+
 export const logout = async () => {
     try {
         const { data } = await apiUsers.post("/auth/logout");
