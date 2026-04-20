@@ -1,18 +1,19 @@
 "use client";
 
+import { Suspense } from "react";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { loginSSO } from "@/services/authService";
 import { usePermissions } from "@/contexts/PermissionsContext";
 
-const SSOPage = () => {
+const SSOContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { loginSuccess } = usePermissions();
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const ssoToken = searchParams.get("token");
+     const ssoToken = searchParams.get("token");
 
     if (!ssoToken) {
       setError("Token SSO no encontrado");
@@ -30,7 +31,6 @@ const SSOPage = () => {
 
         localStorage.setItem("userData", JSON.stringify(payload));
 
-        // Mantener EXACTAMENTE el mismo flujo de permisos
         loginSuccess(response.access_token, () => {
           if (payload.first_login_complete) {
             router.replace("/home");
@@ -62,4 +62,14 @@ const SSOPage = () => {
   );
 };
 
-export default SSOPage;
+export default function SSOPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Iniciando sesión...</p>
+      </div>
+    }>
+      <SSOContent />
+    </Suspense>
+  );
+}

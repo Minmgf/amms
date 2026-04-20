@@ -4,7 +4,7 @@ export const uploadMassiveAdjustments = async (
   file,
   startDate,
   endDate,
-  employees
+  employees,
 ) => {
   const formData = new FormData();
   formData.append("file", file);
@@ -20,7 +20,7 @@ export const uploadMassiveAdjustments = async (
         headers: {
           "Content-Type": "multipart/form-data",
         },
-      }
+      },
     );
     return response.data;
   } catch (error) {
@@ -32,7 +32,7 @@ export const getPayrollApplicableEmployees = async (
   departmentId,
   chargeId,
   startDate,
-  endDate
+  endDate,
 ) => {
   try {
     const response = await apiMain.get(
@@ -43,7 +43,7 @@ export const getPayrollApplicableEmployees = async (
           fecha_desde: startDate,
           fecha_hasta: endDate,
         },
-      }
+      },
     );
     return response.data;
   } catch (error) {
@@ -103,7 +103,7 @@ export const getGeneratedPayrolls = async () => {
     } else {
       console.error(
         "Error fetching generated payrolls (no response):",
-        error.message || error
+        error.message || error,
       );
     }
     throw error;
@@ -144,7 +144,7 @@ export const downloadPayrollPdf = async (payrollId) => {
     } else {
       console.error(
         "Error downloading payroll PDF (no response):",
-        error.message || error
+        error.message || error,
       );
     }
     throw error;
@@ -160,7 +160,7 @@ export const downloadPayrollPdf = async (payrollId) => {
 export const getPayrollDetail = async (payrollId) => {
   try {
     const response = await apiMain.get(
-      `/payroll/${payrollId}/view-payroll-detail/`
+      `/payroll/${payrollId}/view-payroll-detail/`,
     );
     return response.data;
   } catch (error) {
@@ -173,13 +173,41 @@ export const getPayrollDetail = async (payrollId) => {
     } else {
       console.error(
         "Error fetching payroll detail (no response):",
-        error.message || error
+        error.message || error,
       );
     }
     throw error;
   }
 };
 
+/**
+ * Pagar nómina individual.
+ * Endpoint: POST /payroll/{id_payroll}/pay/
+ * @param {number|string} payrollId - ID de la nómina.
+ * @returns {Promise<Object>} Detalle de la nómina.
+ */
+export const payPayroll = async (payrollId, method) => {
+  try {
+    const response = await apiMain.post(`/payroll/${payrollId}/pay/`, {
+      method: method,
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response) {
+      console.error("Error paying payroll:", {
+        status: error.response.status,
+        data: error.response.data,
+        url: error.config?.url,
+      });
+    } else {
+      console.error(
+        "Error paying payroll (no response):",
+        error.message || error,
+      );
+    }
+    throw error;
+  }
+};
 /**
  * Generar informe de historial de nóminas en PDF.
  * Endpoint: POST /payroll/generate-history-report/
@@ -193,7 +221,7 @@ export const generatePayrollHistoryReport = async (payload) => {
       payload,
       {
         responseType: "blob", // Importante para recibir el archivo binario
-      }
+      },
     );
     return response.data;
   } catch (error) {

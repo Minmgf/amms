@@ -8,6 +8,8 @@ import SeePayrollDetails from "@/app/components/payroll/generatedPayrolls/SeePay
 import { createColumnHelper } from "@tanstack/react-table";
 import { useTheme } from "@/contexts/ThemeContext";
 import { getGeneratedPayrolls, downloadPayrollPdf } from "@/services/payrollService";
+import { MdOutlinePayments } from "react-icons/md";
+import PayrollPayModal from "@/app/components/payroll/generatedPayrolls/PayrollPayModal";
 
 const GeneratedPayrollsPage = () => {
   useTheme();
@@ -16,7 +18,7 @@ const GeneratedPayrollsPage = () => {
   const [filteredPayrolls, setFilteredPayrolls] = useState([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [loading, setLoading] = useState(false);
-
+  const [idPayModal, setIdPayModal] = useState(null);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [employeeDocument, setEmployeeDocument] = useState("");
   const [dateFrom, setDateFrom] = useState("");
@@ -135,6 +137,16 @@ const GeneratedPayrollsPage = () => {
               >
                 <FiFileText className="w-3 h-3" /> PDF
               </button>
+              { payroll.date_payment == null && (
+                <button
+                aria-label="Pagar nómina generada"
+                onClick={() => handlePay(payroll)}
+                className="inline-flex items-center px-2.5 py-1.5 gap-2 border text-xs font-medium rounded border-gray-300 hover:border-green-500 hover:text-green-600 text-gray-700"
+              >
+                <MdOutlinePayments className="w-3 h-3" /> Pagar
+              </button>)
+              }
+              
             </div>
           );
         },
@@ -247,6 +259,10 @@ const GeneratedPayrollsPage = () => {
   const handleViewDetails = (payroll) => {
     setSelectedPayrollForDetail(payroll);
     setIsDetailModalOpen(true);
+  };
+
+  const handlePay = (payroll) => {
+    setIdPayModal(payroll.id_payroll ?? payroll.id);
   };
 
   const handleDownloadPDF = async (payroll) => {
@@ -414,6 +430,14 @@ const GeneratedPayrollsPage = () => {
         onClose={() => setIsDetailModalOpen(false)}
         payroll={selectedPayrollForDetail}
       />
+
+      <PayrollPayModal 
+        isOpen={idPayModal !== null}
+        onClose={() => {setIdPayModal(null); loadPayrolls();}}
+        payrollId={idPayModal}
+      />
+
+
     </>
   );
 };
