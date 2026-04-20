@@ -44,9 +44,7 @@ function InfoBlock({ label, value }) {
       <label className="block text-theme-sm font-theme-medium text-secondary mb-1">
         {label}
       </label>
-      <div className="text-primary parametrization-text">
-        {value || "—"}
-      </div>
+      <div className="text-primary parametrization-text">{value || "—"}</div>
     </div>
   );
 }
@@ -74,6 +72,8 @@ export default function SeePayrollDetails({ isOpen, onClose, payroll }) {
       setDetail(null);
       return;
     }
+
+    console.log(payroll);
 
     const payrollId = payroll.id_payroll ?? payroll.id;
     if (!payrollId) return;
@@ -120,33 +120,38 @@ export default function SeePayrollDetails({ isOpen, onClose, payroll }) {
           accruedAdditional:
             payload.payroll_increases?.map((item) => ({
               name:
-                item.description ||
-                `Incremento #${item.id_payroll_increase}`,
+                item.description || `Incremento #${item.id_payroll_increase}`,
               amount:
-                item.calculated_amount ??
-                item.amount ??
-                item.amount_value ??
-                0,
+                item.calculated_amount ?? item.amount ?? item.amount_value ?? 0,
             })) || [],
           totalAccrued: payload.total_increments,
           deductionsFixed: [],
           deductionsAdditional:
             payload.payroll_deductions?.map((item) => ({
               name:
-                item.description ||
-                `Deducción #${item.id_payroll_deduction}`,
+                item.description || `Deducción #${item.id_payroll_deduction}`,
               amount:
-                item.calculated_amount ??
-                item.amount ??
-                item.amount_value ??
-                0,
+                item.calculated_amount ?? item.amount ?? item.amount_value ?? 0,
             })) || [],
           totalDeductions: payload.total_deductions,
           netAmount: payload.net_pay,
+          paymentMethod: payload.payment_method_name || payload.payment_method,
+          paymentMethodId: payload.payment_method,
+          status: payload.status_name || payload.status,
+          statusId: payload.status_id,
+          datePayment: payload.date_payment,
         };
 
         if (!cancelled) {
           setDetail(mapped);
+          // console.log para verificar las nuevas variables
+          console.log("Detalle de nómina con nuevas variables:", {
+            paymentMethod: mapped.paymentMethod,
+            paymentMethodId: mapped.paymentMethodId,
+            status: mapped.status,
+            statusId: mapped.statusId,
+            datePayment: mapped.datePayment,
+          });
         }
       } catch (err) {
         if (!cancelled) {
@@ -187,8 +192,7 @@ export default function SeePayrollDetails({ isOpen, onClose, payroll }) {
       (items || []).reduce((acc, item) => acc + (Number(item.amount) || 0), 0);
 
     const baseSalary = Number(currentPayroll.baseSalary) || 0;
-    const baseTotal =
-      Number(currentPayroll.baseSalaryTotal) || baseSalary;
+    const baseTotal = Number(currentPayroll.baseSalaryTotal) || baseSalary;
     const totalAccruedFixed = sum(accruedFixed);
     const totalAccruedAdditional = sum(accruedAdditional);
     const totalAccrued =
@@ -289,10 +293,7 @@ export default function SeePayrollDetails({ isOpen, onClose, payroll }) {
                   label="Período de nómina"
                   value={currentPayroll.payrollPeriod}
                 />
-                <InfoBlock
-                  label="Autor"
-                  value={currentPayroll.generatedBy}
-                />
+                <InfoBlock label="Autor" value={currentPayroll.generatedBy} />
               </div>
             </div>
           </SectionCard>
@@ -325,7 +326,9 @@ export default function SeePayrollDetails({ isOpen, onClose, payroll }) {
                 </p>
                 <div className="space-y-1.5">
                   {accruedFixed.length === 0 && (
-                    <p className="text-xs text-secondary">Sin devengados fijos.</p>
+                    <p className="text-xs text-secondary">
+                      Sin devengados fijos.
+                    </p>
                   )}
                   {accruedFixed.map((item, index) => (
                     <DetailRow
@@ -343,7 +346,9 @@ export default function SeePayrollDetails({ isOpen, onClose, payroll }) {
                 </p>
                 <div className="space-y-1.5">
                   {accruedAdditional.length === 0 && (
-                    <p className="text-xs text-secondary">Sin devengados adicionales.</p>
+                    <p className="text-xs text-secondary">
+                      Sin devengados adicionales.
+                    </p>
                   )}
                   {accruedAdditional.map((item, index) => (
                     <DetailRow
@@ -373,7 +378,9 @@ export default function SeePayrollDetails({ isOpen, onClose, payroll }) {
                 </p>
                 <div className="space-y-1.5">
                   {deductionsFixed.length === 0 && (
-                    <p className="text-xs text-secondary">Sin deducciones fijas.</p>
+                    <p className="text-xs text-secondary">
+                      Sin deducciones fijas.
+                    </p>
                   )}
                   {deductionsFixed.map((item, index) => (
                     <DetailRow
@@ -391,7 +398,9 @@ export default function SeePayrollDetails({ isOpen, onClose, payroll }) {
                 </p>
                 <div className="space-y-1.5">
                   {deductionsAdditional.length === 0 && (
-                    <p className="text-xs text-secondary">Sin deducciones adicionales.</p>
+                    <p className="text-xs text-secondary">
+                      Sin deducciones adicionales.
+                    </p>
                   )}
                   {deductionsAdditional.map((item, index) => (
                     <DetailRow
@@ -413,9 +422,43 @@ export default function SeePayrollDetails({ isOpen, onClose, payroll }) {
             </div>
           </SectionCard>
 
+          {
+            currentPayroll.paymentMethod && (
+          <SectionCard title="Información de pago">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <InfoBlock
+                  label="Método de pago"
+                  value={currentPayroll.paymentMethod || "—"}
+                />
+                
+              </div>
+
+              <div className="space-y-4">
+                <InfoBlock
+                  label="Estado de la nómina"
+                  value={currentPayroll.status || "—"}
+                />
+              
+              </div>
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-primary">
+              <InfoBlock
+                label="Fecha de pago"
+                value={currentPayroll.datePayment || "Pendiente"}
+              />
+            </div>
+          </SectionCard>
+            )
+          }
+
           <section className="rounded-theme-lg bg-black text-white px-4 md:px-6 py-4 md:py-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div>
-              <p className="text-xs md:text-sm text-gray-300 mb-1">Neto a pagar</p>
+              
+              <p className="text-xs md:text-sm text-gray-300 mb-1">
+                {currentPayroll.paymentMethod  ? "Neto pagado" : "Neto a pagar"}
+              </p>
               <p className="text-2xl md:text-3xl font-theme-bold">
                 {formatCurrency(totals.netAmount)}
               </p>
@@ -429,4 +472,3 @@ export default function SeePayrollDetails({ isOpen, onClose, payroll }) {
     </div>
   );
 }
-
